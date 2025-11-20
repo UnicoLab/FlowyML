@@ -15,6 +15,16 @@ from flowy.core.step import step, Step
 from flowy.core.pipeline import Pipeline
 from flowy.core.executor import Executor, LocalExecutor
 from flowy.core.cache import CacheStrategy
+from flowy.core.conditional import Condition, ConditionalBranch, Switch, when, unless
+from flowy.core.parallel import ParallelExecutor, DataParallelExecutor, BatchExecutor, parallel_map
+from flowy.core.error_handling import (
+    CircuitBreaker,
+    ExponentialBackoff,
+    RetryConfig,
+    FallbackHandler,
+    retry,
+    on_failure,
+)
 
 # Asset imports
 from flowy.assets.base import Asset
@@ -22,6 +32,8 @@ from flowy.assets.dataset import Dataset
 from flowy.assets.model import Model
 from flowy.assets.metrics import Metrics
 from flowy.assets.artifact import Artifact
+from flowy.assets.featureset import FeatureSet
+from flowy.assets.report import Report
 from flowy.assets.registry import AssetRegistry
 
 # Stack imports
@@ -31,6 +43,18 @@ from flowy.stacks.local import LocalStack
 # Tracking imports
 from flowy.tracking.experiment import Experiment
 from flowy.tracking.runs import Run
+
+# Registry imports
+from flowy.registry.model_registry import ModelRegistry, ModelVersion, ModelStage
+
+# Storage imports (for advanced usage)
+from flowy.storage import (
+    ArtifactStore,
+    LocalArtifactStore,
+    MetadataStore,
+    SQLiteMetadataStore,
+    materializer_registry,
+)
 
 __all__ = [
     # Core
@@ -42,12 +66,32 @@ __all__ = [
     "Executor",
     "LocalExecutor",
     "CacheStrategy",
+    # Conditional & Control Flow
+    "Condition",
+    "ConditionalBranch",
+    "Switch",
+    "when",
+    "unless",
+    # Parallel Execution
+    "ParallelExecutor",
+    "DataParallelExecutor",
+    "BatchExecutor",
+    "parallel_map",
+    # Error Handling
+    "CircuitBreaker",
+    "ExponentialBackoff",
+    "RetryConfig",
+    "FallbackHandler",
+    "retry",
+    "on_failure",
     # Assets
     "Asset",
     "Dataset",
     "Model",
     "Metrics",
     "Artifact",
+    "FeatureSet",
+    "Report",
     "AssetRegistry",
     # Stacks
     "Stack",
@@ -55,4 +99,14 @@ __all__ = [
     # Tracking
     "Experiment",
     "Run",
+    # Registry
+    "ModelRegistry",
+    "ModelVersion",
+    "ModelStage",
+    # Storage
+    "ArtifactStore",
+    "LocalArtifactStore",
+    "MetadataStore",
+    "SQLiteMetadataStore",
+    "materializer_registry",
 ]

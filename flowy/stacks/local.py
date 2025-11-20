@@ -1,66 +1,118 @@
-"""
-Local Stack - For local development and testing.
-"""
+"""Local Stack - For local development and testing."""
 
 from pathlib import Path
 from flowy.stacks.base import Stack
 from flowy.core.executor import LocalExecutor
-
-
-class LocalFileStore:
-    """Local filesystem artifact store."""
-    
-    def __init__(self, path: str = ".flowy/artifacts"):
-        self.path = Path(path)
-        self.path.mkdir(parents=True, exist_ok=True)
-    
-    def save(self, key: str, data: any):
-        """Save artifact to local filesystem."""
-        # Simplified - real implementation would serialize properly
-        pass
-    
-    def load(self, key: str):
-        """Load artifact from local filesystem."""
-        pass
-
-
-class SQLiteStore:
-    """SQLite metadata store."""
-    
-    def __init__(self, path: str = ".flowy/metadata.db"):
-        self.path = path
-    
-    def save_run(self, run_data: dict):
-        """Save run metadata."""
-        pass
-    
-    def get_run(self, run_id: str):
-        """Get run metadata."""
-        pass
+from flowy.storage.artifacts import LocalArtifactStore
+from flowy.storage.metadata import SQLiteMetadataStore
 
 
 class LocalStack(Stack):
-    """
-    Local stack for development and testing.
-    
+    """Local stack for development and testing.
+
+    This stack uses:
+    - LocalExecutor for running steps locally
+    - LocalArtifactStore for filesystem-based artifact storage
+    - SQLiteMetadataStore for metadata storage
+
     Example:
-        >>> stack = LocalStack(name="local")
-        >>> pipeline = Pipeline("my_pipeline", stack=stack)
+        ```python
+        from flowy import LocalStack, Pipeline
+
+        # Create local stack
+        stack = LocalStack(
+            name="local",
+            artifact_path=".flowy/artifacts",
+            metadata_path=".flowy/metadata.db"
+        )
+
+        # Use with pipeline
+        pipeline = Pipeline("my_pipeline", stack=stack)
+        result = pipeline.run()
+        ```
     """
-    
+
     def __init__(
         self,
         name: str = "local",
         artifact_path: str = ".flowy/artifacts",
-        metadata_path: str = ".flowy/metadata.db"
+        metadata_path: str = ".flowy/metadata.db",
     ):
+        """Initialize LocalStack.
+
+        Args:
+            name: Stack name
+            artifact_path: Path for artifact storage
+            metadata_path: Path for metadata database
+        """
+        # Create storage backends
         executor = LocalExecutor()
-        artifact_store = LocalFileStore(artifact_path)
-        metadata_store = SQLiteStore(metadata_path)
-        
+        artifact_store = LocalArtifactStore(artifact_path)
+        metadata_store = SQLiteMetadataStore(metadata_path)
+
+        # Initialize base stack
         super().__init__(
             name=name,
             executor=executor,
             artifact_store=artifact_store,
-            metadata_store=metadata_store
+            metadata_store=metadata_store,
         )
+
+        # Ensure directories exist
+        Path(artifact_path).mkdir(parents=True, exist_ok=True)
+        Path(metadata_path).parent.mkdir(parents=True, exist_ok=True)
+
+    def validate(self) -> bool:
+        """Validate stack configuration.
+
+        Returns:
+            True if stack is valid
+        """
+        # Check artifact store path exists and is writable
+        artifact_path = Path(self.artifact_store.base_path)
+        if not artifact_path.exists():
+            artifact_path.mkdir(parents=True, exist_ok=True)
+
+        # Check metadata store path parent exists
+        metadata_path = Path(self.metadata_store.db_path)
+        if not metadata_path.parent.exists():
+            metadata_path.parent.mkdir(parents=True, exist_ok=True)
+
+        return True
+
+    def cleanup(self) -> None:
+        """Clean up stack resources."""
+        # Could implement cache cleanup, temp file removal, etc.
+        pass
+
+    def get_stats(self) -> dict:
+        """Get stack usage statistics.
+
+        Returns:
+            Dictionary with stack statistics
+        """
+        from pathlib import Path
+
+        artifact_path = Path(self.artifact_store.base_path)
+        metadata_path = Path(self.metadata_store.db_path)
+
+        # Calculate artifact storage size
+        artifact_size = sum(
+            f.stat().st_size for f in artifact_path.rglob("*") if f.is_file()
+        )
+
+        # Get metadata size
+        metadata_size = metadata_path.stat().st_size if metadata_path.exists() else 0
+
+        # Get metadata stats from store
+        metadata_stats = self.metadata_store.get_statistics()
+
+        return {
+            "name": self.name,
+            "artifact_storage_mb": artifact_size / (1024 * 1024),
+            "metadata_storage_mb": metadata_size / (1024 * 1024),
+            "total_runs": metadata_stats.get("total_runs", 0),
+            "total_artifacts": metadata_stats.get("total_artifacts", 0),
+            "total_metrics": metadata_stats.get("total_metrics", 0),
+            "total_pipelines": metadata_stats.get("total_pipelines", 0),
+        }
