@@ -62,6 +62,18 @@ class Experiment:
         self.experiment_dir = Path(experiment_dir) / name
         self.experiment_dir.mkdir(parents=True, exist_ok=True)
         
+        # Metadata store for UI
+        from flowy.storage.metadata import SQLiteMetadataStore
+        self.metadata_store = SQLiteMetadataStore()
+        
+        # Save experiment to DB
+        self.metadata_store.save_experiment(
+            experiment_id=self.name,
+            name=self.name,
+            description=self.description,
+            tags=tags
+        )
+        
         # Runs
         self.runs: List[str] = []  # run IDs
         self.run_metrics: Dict[str, Dict[str, Any]] = {}
@@ -92,6 +104,14 @@ class Experiment:
         }
         
         self._save_experiment()
+        
+        # Log to DB
+        self.metadata_store.log_experiment_run(
+            experiment_id=self.name,
+            run_id=run_id,
+            metrics=metrics,
+            parameters=parameters
+        )
     
     def get_run_metrics(self, run_id: str) -> Optional[Dict[str, Any]]:
         """Get metrics for a specific run."""

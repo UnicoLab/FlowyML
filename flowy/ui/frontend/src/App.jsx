@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { Routes, Route, Link } from 'react-router-dom'
-import { LayoutDashboard, Activity, Database, Settings, Play, ArrowRight, Box, FileText, Layers } from 'lucide-react'
+import { Routes, Route, Link, useParams } from 'react-router-dom'
+import { LayoutDashboard, Activity, Database, Settings, Play, ArrowRight, Box, FileText, Layers, FlaskConical, BarChart2 } from 'lucide-react'
 import { Layout } from './components/Layout'
 import { Card, CardHeader, CardTitle, CardContent } from './components/ui/Card'
 import { Badge } from './components/ui/Badge'
@@ -17,6 +17,8 @@ function App() {
                 <Route path="/runs" element={<Runs />} />
                 <Route path="/runs/:runId" element={<RunDetails />} />
                 <Route path="/assets" element={<Assets />} />
+                <Route path="/experiments" element={<Experiments />} />
+                <Route path="/experiments/:experimentId" element={<ExperimentDetails />} />
                 <Route path="/settings" element={<div className="p-8">Settings (Coming Soon)</div>} />
             </Routes>
         </Layout>
@@ -289,3 +291,164 @@ function RecentAssetsList({ limit }) {
 }
 
 export default App
+
+function Experiments() {
+    const [experiments, setExperiments] = useState([]);
+
+    useEffect(() => {
+        fetch('/api/experiments')
+            .then(res => res.json())
+            .then(data => setExperiments(data.experiments))
+            .catch(err => console.error(err));
+    }, []);
+
+    return (
+        <div className="space-y-6">
+            <div>
+                <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Experiments</h2>
+                <p className="text-slate-500 mt-2">Track and compare ML experiments.</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {experiments.length > 0 ? (
+                    experiments.map((exp) => (
+                        <Link key={exp.experiment_id} to={`/experiments/${exp.experiment_id}`}>
+                            <Card className="group cursor-pointer hover:border-primary-200 h-full">
+                                <div className="flex items-start justify-between mb-4">
+                                    <div className="p-3 bg-purple-50 rounded-lg text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                                        <FlaskConical size={24} />
+                                    </div>
+                                    <Badge variant="default" className="bg-slate-100 text-slate-600">
+                                        {exp.run_count || 0} runs
+                                    </Badge>
+                                </div>
+                                <h3 className="text-lg font-bold text-slate-900 mb-2">{exp.name}</h3>
+                                <p className="text-sm text-slate-500 mb-4 line-clamp-2">{exp.description || "No description"}</p>
+                                <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+                                    <span className="text-xs text-slate-400">
+                                        {exp.created_at ? format(new Date(exp.created_at), 'MMM d, yyyy') : '-'}
+                                    </span>
+                                    <span className="text-sm font-medium text-primary-600 group-hover:text-primary-700 flex items-center gap-1">
+                                        View <ArrowRight size={16} />
+                                    </span>
+                                </div>
+                            </Card>
+                        </Link>
+                    ))
+                ) : (
+                    <div className="col-span-full p-12 text-center bg-white rounded-xl border border-slate-100 border-dashed">
+                        <div className="mx-auto w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                            <FlaskConical className="text-slate-400" />
+                        </div>
+                        <h3 className="text-lg font-medium text-slate-900">No experiments found</h3>
+                        <p className="text-slate-500 mt-1">Use the Experiment API to track your runs.</p>
+                    </div>
+                )}
+            </div>
+        </div>
+    )
+}
+
+function ExperimentDetails() {
+    const { experimentId } = useParams();
+    const [experiment, setExperiment] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetch(`/api/experiments/${experimentId}`)
+            .then(res => res.json())
+            .then(data => {
+                setExperiment(data);
+                setLoading(false);
+            })
+            .catch(err => {
+                console.error(err);
+                setLoading(false);
+            });
+    }, [experimentId]);
+
+    if (loading) return <div className="p-8 text-center">Loading experiment...</div>;
+    if (!experiment) return <div className="p-8 text-center">Experiment not found</div>;
+
+    return (
+        <div className="space-y-8">
+            <div>
+                <div className="flex items-center gap-2 mb-2">
+                    <Link to="/experiments" className="text-sm text-slate-500 hover:text-slate-700">Experiments</Link>
+                    <span className="text-slate-300">/</span>
+                    <span className="text-sm text-slate-900 font-medium">{experiment.name}</span>
+                </div>
+                <h2 className="text-3xl font-bold text-slate-900 tracking-tight">{experiment.name}</h2>
+                <p className="text-slate-500 mt-2">{experiment.description}</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <Card>
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 bg-blue-50 rounded-lg text-blue-600">
+                            <Activity size={24} />
+                        </div>
+                        <div>
+                            <p className="text-sm text-slate-500 font-medium">Total Runs</p>
+                            <p className="text-3xl font-bold text-slate-900">{experiment.runs?.length || 0}</p>
+                        </div>
+                    </div>
+                </Card>
+            </div>
+
+            <div>
+                <h3 className="text-xl font-bold text-slate-900 mb-4">Runs Comparison</h3>
+                <Card className="p-0 overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead className="bg-slate-50 border-b border-slate-100">
+                                <tr>
+                                    <th className="px-6 py-4 font-semibold text-xs text-slate-500 uppercase tracking-wider">Run ID</th>
+                                    <th className="px-6 py-4 font-semibold text-xs text-slate-500 uppercase tracking-wider">Date</th>
+                                    <th className="px-6 py-4 font-semibold text-xs text-slate-500 uppercase tracking-wider">Metrics</th>
+                                    <th className="px-6 py-4 font-semibold text-xs text-slate-500 uppercase tracking-wider">Parameters</th>
+                                    <th className="px-6 py-4 font-semibold text-xs text-slate-500 uppercase tracking-wider"></th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {experiment.runs?.map((run) => (
+                                    <tr key={run.run_id} className="hover:bg-slate-50/50 transition-colors">
+                                        <td className="px-6 py-4 font-mono text-sm text-slate-700">
+                                            {run.run_id.substring(0, 8)}
+                                        </td>
+                                        <td className="px-6 py-4 text-sm text-slate-500">
+                                            {run.timestamp ? format(new Date(run.timestamp), 'MMM d, HH:mm') : '-'}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex flex-wrap gap-2">
+                                                {Object.entries(run.metrics || {}).map(([k, v]) => (
+                                                    <Badge key={k} variant="outline" className="font-mono text-xs">
+                                                        {k}: {typeof v === 'number' ? v.toFixed(4) : v}
+                                                    </Badge>
+                                                ))}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex flex-wrap gap-2">
+                                                {Object.entries(run.parameters || {}).map(([k, v]) => (
+                                                    <span key={k} className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">
+                                                        {k}={v}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <Link to={`/runs/${run.run_id}`}>
+                                                <Button variant="ghost" size="sm">View Run</Button>
+                                            </Link>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </Card>
+            </div>
+        </div>
+    )
+}

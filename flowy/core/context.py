@@ -111,19 +111,26 @@ class Context:
         
         return injected
     
-    def validate_for_step(self, step_func: callable) -> List[str]:
+    def validate_for_step(self, step_func: callable, exclude: List[str] = None) -> List[str]:
         """
         Validate that all required parameters are available.
         
+        Args:
+            step_func: Step function to validate
+            exclude: List of parameter names to exclude from validation (e.g. inputs)
+            
         Returns:
             List of missing required parameters
         """
         sig = inspect.signature(step_func)
         missing = []
+        exclude = exclude or []
         
         for param_name, param in sig.parameters.items():
             # Skip optional parameters
             if param_name in ('self', 'cls'):
+                continue
+            if param_name in exclude:
                 continue
             if param.default != inspect.Parameter.empty:
                 continue

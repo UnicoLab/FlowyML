@@ -112,12 +112,38 @@ class SQLiteMetadataStore(MetadataStore):
             )
         """)
 
+        # Experiments table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS experiments (
+                experiment_id TEXT PRIMARY KEY,
+                name TEXT,
+                description TEXT,
+                tags TEXT,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # Experiment Runs link table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS experiment_runs (
+                experiment_id TEXT,
+                run_id TEXT,
+                metrics TEXT,
+                parameters TEXT,
+                timestamp TEXT DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (experiment_id, run_id),
+                FOREIGN KEY (experiment_id) REFERENCES experiments(experiment_id),
+                FOREIGN KEY (run_id) REFERENCES runs(run_id)
+            )
+        """)
+
         # Create indexes for better query performance
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_runs_pipeline ON runs(pipeline_name)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_runs_status ON runs(status)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_artifacts_run ON artifacts(run_id)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_metrics_run ON metrics(run_id)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_parameters_run ON parameters(run_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_experiments_name ON experiments(name)")
 
         conn.commit()
         conn.close()
@@ -340,6 +366,140 @@ class SQLiteMetadataStore(MetadataStore):
             {'name': row[0], 'value': row[1], 'step': row[2], 'timestamp': row[3]}
             for row in rows
         ]
+        
+    def save_experiment(self, experiment_id: str, name: str, description: str = "", tags: dict = None) -> None:
+        """Save experiment metadata.
+        
+        Args:
+            experiment_id: Unique experiment identifier
+            name: Experiment name
+            description: Experiment description
+            tags: Experiment tags
+        """
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            INSERT OR REPLACE INTO experiments
+            (experiment_id, name, description, tags)
+            VALUES (?, ?, ?, ?)
+        """, (
+            experiment_id,
+            name,
+            description,
+            json.dumps(tags or {})
+        ))
+        
+        conn.commit()
+        conn.close()
+        
+    def log_experiment_run(self, experiment_id: str, run_id: str, metrics: dict = None, parameters: dict = None) -> None:
+        """Log a run to an experiment.
+        
+        Args:
+            experiment_id: Experiment identifier
+            run_id: Run identifier
+            metrics: Metrics from the run
+            parameters: Parameters used in the run
+        """
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            INSERT OR REPLACE INTO experiment_runs
+            (experiment_id, run_id, metrics, parameters)
+            VALUES (?, ?, ?, ?)
+        """, (
+            experiment_id,
+            run_id,
+            json.dumps(metrics or {}),
+            json.dumps(parameters or {})
+        ))
+        
+        conn.commit()
+        conn.close()
+        
+    def list_experiments(self) -> list[dict]:
+        """List all experiments.
+        
+        Returns:
+            List of experiment dictionaries
+        """
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute("SELECT experiment_id, name, description, tags, created_at FROM experiments ORDER BY created_at DESC")
+        rows = cursor.fetchall()
+        
+        experiments = []
+        for row in rows:
+            # Count runs for each experiment
+            cursor.execute("SELECT COUNT(*) FROM experiment_runs WHERE experiment_id = ?", (row[0],))
+            run_count = cursor.fetchone()[0]
+            
+            experiments.append({
+                'experiment_id': row[0],
+                'name': row[1],
+                'description': row[2],
+                'tags': json.loads(row[3]),
+                'created_at': row[4],
+                'run_count': run_count
+            })
+            
+        conn.close()
+        return experiments
+        
+    def get_experiment(self, experiment_id: str) -> Optional[dict]:
+        """Get experiment details.
+        
+        Args:
+            experiment_id: Experiment identifier
+            
+        Returns:
+            Experiment dictionary or None
+        """
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute("SELECT experiment_id, name, description, tags, created_at FROM experiments WHERE experiment_id = ?", (experiment_id,))
+        row = cursor.fetchone()
+        
+        if not row:
+            conn.close()
+            return None
+            
+        experiment = {
+            'experiment_id': row[0],
+            'name': row[1],
+            'description': row[2],
+            'tags': json.loads(row[3]),
+            'created_at': row[4]
+        }
+        
+        # Get runs
+        cursor.execute("""
+            SELECT er.run_id, er.metrics, er.parameters, er.timestamp, r.status, r.duration
+            FROM experiment_runs er
+            LEFT JOIN runs r ON er.run_id = r.run_id
+            WHERE er.experiment_id = ?
+            ORDER BY er.timestamp DESC
+        """, (experiment_id,))
+        
+        runs = []
+        for r in cursor.fetchall():
+            runs.append({
+                'run_id': r[0],
+                'metrics': json.loads(r[1]),
+                'parameters': json.loads(r[2]),
+                'timestamp': r[3],
+                'status': r[4],
+                'duration': r[5]
+            })
+            
+        experiment['runs'] = runs
+        
+        conn.close()
+        return experiment
 
     def get_statistics(self) -> dict:
         """Get database statistics.
@@ -363,7 +523,11 @@ class SQLiteMetadataStore(MetadataStore):
 
         cursor.execute("SELECT COUNT(DISTINCT pipeline_name) FROM runs")
         stats['total_pipelines'] = cursor.fetchone()[0]
+        
+        cursor.execute("SELECT COUNT(*) FROM experiments")
+        stats['total_experiments'] = cursor.fetchone()[0]
 
         conn.close()
 
         return stats
+

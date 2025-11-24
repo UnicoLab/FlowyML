@@ -25,11 +25,12 @@ async def health_check():
     return {"status": "ok", "version": "0.1.0"}
 
 # Include API routers
-from flowy.ui.backend.routers import pipelines, runs, assets
+from flowy.ui.backend.routers import pipelines, runs, assets, experiments
 
 app.include_router(pipelines.router, prefix="/api/pipelines", tags=["pipelines"])
 app.include_router(runs.router, prefix="/api/runs", tags=["runs"])
 app.include_router(assets.router, prefix="/api/assets", tags=["assets"])
+app.include_router(experiments.router, prefix="/api/experiments", tags=["experiments"])
 
 # Static file serving for frontend
 # Path to frontend build

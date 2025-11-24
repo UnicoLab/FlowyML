@@ -9,7 +9,7 @@ def get_store():
     return SQLiteMetadataStore()
 
 @router.get("/")
-async def list_assets(limit: int = 50, type: str = None):
+async def list_assets(limit: int = 50, type: str = None, run_id: str = None):
     """List all assets."""
     try:
         store = get_store()
@@ -18,11 +18,21 @@ async def list_assets(limit: int = 50, type: str = None):
         conn = sqlite3.connect(store.db_path)
         cursor = conn.cursor()
         
-        query = "SELECT metadata FROM artifacts"
+        conditions = []
         params = []
+        
         if type:
-            query += " WHERE type = ?"
+            conditions.append("type = ?")
             params.append(type)
+            
+        if run_id:
+            conditions.append("run_id = ?")
+            params.append(run_id)
+            
+        if conditions:
+            query = "SELECT artifact_id, metadata FROM artifacts WHERE " + " AND ".join(conditions)
+        else:
+            query = "SELECT artifact_id, metadata FROM artifacts"
             
         query += " ORDER BY created_at DESC LIMIT ?"
         params.append(limit)
@@ -31,7 +41,12 @@ async def list_assets(limit: int = 50, type: str = None):
         rows = cursor.fetchall()
         conn.close()
         
-        assets = [json.loads(row[0]) for row in rows]
+        assets = []
+        for row in rows:
+            asset = json.loads(row[1])
+            asset['artifact_id'] = row[0]
+            assets.append(asset)
+            
         return {"assets": assets}
     except Exception as e:
         return {"assets": [], "error": str(e)}

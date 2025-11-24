@@ -227,8 +227,10 @@ class Pipeline:
                 print(f"\n▶ Executing step: {step.name}")
             
             # Validate context parameters
-            missing_params = self.context.validate_for_step(step.func)
+            missing_params = self.context.validate_for_step(step.func, exclude=step.inputs)
             if missing_params:
+                if debug:
+                    print(f"Missing params: {missing_params}")
                 error_msg = f"Missing required parameters: {missing_params}"
                 step_result = ExecutionResult(
                     step_name=step.name,
@@ -272,14 +274,27 @@ class Pipeline:
                 if debug:
                     print(f"\n✗ Pipeline failed at step: {step.name}")
                     print(f"Error: {step_result.error}")
+                    if not step_result.error:
+                        print(f"Result object: {step_result}")
                 result.finalize(success=False)
                 self._save_run(result)
                 return result
             
             # Store outputs for next steps
             if step_result.output is not None:
-                for output_name in step.outputs:
-                    step_outputs[output_name] = step_result.output
+                if len(step.outputs) == 1:
+                    step_outputs[step.outputs[0]] = step_result.output
+                elif isinstance(step_result.output, (list, tuple)) and len(step_result.output) == len(step.outputs):
+                    for name, val in zip(step.outputs, step_result.output):
+                        step_outputs[name] = val
+                elif isinstance(step_result.output, dict):
+                    for name in step.outputs:
+                        if name in step_result.output:
+                            step_outputs[name] = step_result.output[name]
+                else:
+                    # Fallback: assign to first output if available
+                    if step.outputs:
+                        step_outputs[step.outputs[0]] = step_result.output
         
         # Success!
         result.finalize(success=True)
@@ -311,6 +326,98 @@ class Pipeline:
             'steps': result.to_dict()['steps']
         }
         self.metadata_store.save_run(result.run_id, metadata)
+        
+        # Save artifacts and metrics
+        for step_name, step_result in result.step_results.items():
+            if step_result.success and step_result.output is not None:
+                # Find step definition to get output names
+                step_def = next((s for s in self.steps if s.name == step_name), None)
+                output_names = step_def.outputs if step_def else []
+                
+                # Normalize outputs to a dictionary
+                outputs_to_save = {}
+                
+                # Case 1: Dictionary output (common for metrics)
+                if isinstance(step_result.output, dict):
+                    # If step has defined outputs, try to map them
+                    if output_names and len(output_names) == 1:
+                        outputs_to_save[output_names[0]] = step_result.output
+                    else:
+                        # Otherwise treat keys as output names if they match, or just save whole dict
+                        outputs_to_save[f"{step_name}_output"] = step_result.output
+                        
+                    # Also save individual numeric values as metrics
+                    for k, v in step_result.output.items():
+                        if isinstance(v, (int, float)):
+                            self.metadata_store.save_metric(result.run_id, k, float(v))
+                            
+                # Case 2: Tuple/List output matching output names
+                elif isinstance(step_result.output, (list, tuple)) and len(output_names) == len(step_result.output):
+                    for name, val in zip(output_names, step_result.output):
+                        outputs_to_save[name] = val
+                        
+                # Case 3: Single output
+                else:
+                    name = output_names[0] if output_names else f"{step_name}_output"
+                    outputs_to_save[name] = step_result.output
+
+                # Save artifacts
+                for name, value in outputs_to_save.items():
+                    artifact_id = f"{result.run_id}_{step_name}_{name}"
+                    
+                    # Check if it's a Flowy Asset
+                    is_asset = hasattr(value, 'metadata') and hasattr(value, 'data')
+                    
+                    if is_asset:
+                        # Handle Flowy Asset
+                        asset_type = value.__class__.__name__
+                        artifact_metadata = {
+                            'artifact_id': artifact_id,
+                            'name': value.name,
+                            'type': asset_type,
+                            'run_id': result.run_id,
+                            'step': step_name,
+                            'path': None,
+                            'value': str(value.data)[:1000] if value.data else None,
+                            'created_at': datetime.now().isoformat(),
+                            'properties': self._sanitize_for_json(value.metadata.properties) if hasattr(value.metadata, 'properties') else {}
+                        }
+                        self.metadata_store.save_artifact(artifact_id, artifact_metadata)
+                        
+                        # Special handling for Metrics asset
+                        if asset_type == 'Metrics' and isinstance(value.data, dict):
+                            for k, v in value.data.items():
+                                if isinstance(v, (int, float)):
+                                    self.metadata_store.save_metric(result.run_id, k, float(v))
+                    else:
+                        # Handle standard Python objects
+                        artifact_metadata = {
+                            'artifact_id': artifact_id,
+                            'name': name,
+                            'type': type(value).__name__,
+                            'run_id': result.run_id,
+                            'step': step_name,
+                            'path': str(value) if isinstance(value, (str, Path)) and len(str(value)) < 255 else None,
+                            'value': str(value)[:1000], # Preview
+                            'created_at': datetime.now().isoformat()
+                        }
+                        self.metadata_store.save_artifact(artifact_id, artifact_metadata)
+                        
+                        # Save single value metric if applicable
+                        if isinstance(value, (int, float)):
+                            self.metadata_store.save_metric(result.run_id, name, float(value))
+
+    def _sanitize_for_json(self, obj: Any) -> Any:
+        """Helper to make objects JSON serializable."""
+        if hasattr(obj, 'id') and hasattr(obj, 'name'): # Asset-like
+            return {'type': obj.__class__.__name__, 'id': obj.id, 'name': obj.name}
+        if isinstance(obj, dict):
+            return {k: self._sanitize_for_json(v) for k, v in obj.items()}
+        if isinstance(obj, (list, tuple)):
+            return [self._sanitize_for_json(v) for v in obj]
+        if isinstance(obj, (str, int, float, bool, type(None))):
+            return obj
+        return str(obj)
     
     def cache_stats(self) -> Dict[str, Any]:
         """Get cache statistics."""

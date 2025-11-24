@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Activity, Database, Settings, Play, Box } from 'lucide-react';
+import { LayoutDashboard, Activity, Database, Settings, Play, Box, FlaskConical } from 'lucide-react';
 import { cn } from '../utils/cn';
 
 export function Layout({ children }) {
@@ -34,6 +34,7 @@ function Sidebar() {
                 <NavLink to="/pipelines" icon={<Play size={18} />} label="Pipelines" />
                 <NavLink to="/runs" icon={<Activity size={18} />} label="Runs" />
                 <NavLink to="/assets" icon={<Database size={18} />} label="Artifacts" />
+                <NavLink to="/experiments" icon={<FlaskConical size={18} />} label="Experiments" />
 
                 <div className="px-4 py-2 mt-6 text-xs font-semibold text-slate-400 uppercase tracking-wider">
                     System
