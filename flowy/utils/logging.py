@@ -50,3 +50,16 @@ def setup_logger(
 
 # Default logger
 logger = setup_logger()
+
+
+def get_logger(name: str = "flowy") -> logging.Logger:
+    """Get a logger by name.
+    
+    Args:
+        name: Logger name
+        
+    Returns:
+        Logger instance
+    """
+    return logging.getLogger(name)
+

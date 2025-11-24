@@ -18,6 +18,7 @@ class ExecutionResult:
     error: Optional[str] = None
     duration_seconds: float = 0.0
     cached: bool = False
+    skipped: bool = False
     retries: int = 0
     timestamp: datetime = None
     
@@ -67,6 +68,45 @@ class LocalExecutor(Executor):
         start_time = time.time()
         retries = 0
         
+        # Check condition
+        if step.condition:
+            try:
+                # We pass inputs and context params to condition if it accepts them
+                # For simplicity, let's try to inspect the condition function 
+                # or just pass what we can.
+                # A simple approach: pass nothing if it takes no args, or kwargs if it does.
+                # But inspect is safer.
+                import inspect
+                sig = inspect.signature(step.condition)
+                kwargs = {**inputs, **context_params}
+                
+                # Filter kwargs to only what condition accepts
+                cond_kwargs = {
+                    k: v for k, v in kwargs.items() 
+                    if k in sig.parameters
+                }
+                
+                should_run = step.condition(**cond_kwargs)
+                
+                if not should_run:
+                    duration = time.time() - start_time
+                    return ExecutionResult(
+                        step_name=step.name,
+                        success=True,
+                        output=None, # Skipped steps produce None
+                        duration_seconds=duration,
+                        skipped=True
+                    )
+            except Exception as e:
+                # If condition check fails, treat as step failure
+                duration = time.time() - start_time
+                return ExecutionResult(
+                    step_name=step.name,
+                    success=False,
+                    error=f"Condition check failed: {str(e)}",
+                    duration_seconds=duration
+                )
+        
         # Check cache
         if cache_store and step.cache:
             cache_key = step.get_cache_key(inputs)
@@ -74,10 +114,19 @@ class LocalExecutor(Executor):
             
             if cached_result is not None:
                 duration = time.time() - start_time
+                # Store outputs for next steps
+                step_outputs = {}
+                if cached_result is not None:
+                    if isinstance(cached_result, (list, tuple)) and len(step.outputs) == len(cached_result):
+                        for output_name, out_val in zip(step.outputs, cached_result):
+                            step_outputs[output_name] = out_val
+                    else:
+                        for output_name in step.outputs:
+                            step_outputs[output_name] = cached_result
                 return ExecutionResult(
                     step_name=step.name,
                     success=True,
-                    output=cached_result,
+                    output=step_outputs if step.outputs else cached_result,
                     duration_seconds=duration,
                     cached=True
                 )

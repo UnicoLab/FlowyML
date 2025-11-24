@@ -23,8 +23,42 @@ pip install flowy
 # Or with extras
 pip install "flowy[pytorch]"     # PyTorch support
 pip install "flowy[tensorflow]"   # TensorFlow support
-pip install "flowy[all]"          # Everything
+pip install "flowy[ui]"            # UI for real-time monitoring
+pip install "flowy[all]"           # Everything
 ```
+
+## 🖥️ Real-Time UI
+
+Monitor your pipelines in real-time with the Flowy UI:
+
+```bash
+# Install with UI support
+pip install "flowy[ui]"
+
+# Build the frontend (first time only)
+cd flowy/ui/frontend
+npm install && npm run build
+cd ../../..
+
+# Start the UI server
+flowy ui start
+
+# Or start and open browser automatically
+flowy ui start --open-browser
+
+# Check UI status
+flowy ui status
+```
+
+Then visit **http://localhost:8080** to see:
+- 📊 Live pipeline execution status
+- 📈 Real-time metrics and visualizations
+- 🌳 Interactive DAG visualization
+- 📦 Asset and artifact explorer
+- 🔍 Experiment comparison tools
+
+**See the full [UI Guide](UI_GUIDE.md) for detailed instructions.**
+
 
 ## 🚀 Quick Start
 
@@ -174,7 +208,42 @@ Flowy uses a three-layer architecture:
 
 ## 📚 Documentation
 
-For full documentation, visit: [docs.flowy.ai](https://docs.flowy.ai)
+- **[Quick Start Guide](QUICKSTART.md)** - Get started in 5 minutes
+- **[UI Guide](UI_GUIDE.md)** - Complete guide for the real-time UI
+- **[CLI Reference](CLI_REFERENCE.md)** - All CLI commands
+- **[Development Guide](DEVELOPMENT.md)** - Contributing and development setup
+- **[Architecture](UI_ARCHITECTURE.md)** - System architecture diagrams
+- **[Design Document](DESIGN.md)** - Detailed design philosophy
+
+## ❓ Troubleshooting
+
+### `flowy: command not found`
+
+If you're developing from source:
+
+```bash
+# Install in editable mode
+pip install -e ".[ui]"
+
+# Or run without installing
+python -m flowy.cli.main ui start
+```
+
+See [DEVELOPMENT.md](DEVELOPMENT.md) for details.
+
+### UI shows "Frontend not built"
+
+```bash
+cd flowy/ui/frontend
+npm install
+npm run build
+```
+
+### More Help
+
+For more troubleshooting, see:
+- [UI Guide - Troubleshooting](UI_GUIDE.md#troubleshooting)
+- [Development Guide](DEVELOPMENT.md)
 
 ## 🤝 Contributing
 

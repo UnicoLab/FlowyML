@@ -308,6 +308,8 @@ result = pipeline.run()
 
 **Architecture**: FastAPI backend + React frontend + WebSocket for live updates
 
+> **Note**: While the current implementation uses FastAPI for rapid development and Python ecosystem integration, a future optimization roadmap includes rewriting the backend in **GoLang**. This would provide a single binary executable, smaller footprint, and higher performance, making Flowy even easier to run in any environment without Python dependency conflicts.
+
 ```python
 # Launch UI server
 flowy ui start --port 8080

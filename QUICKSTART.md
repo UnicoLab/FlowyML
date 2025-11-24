@@ -9,8 +9,35 @@ pip install -e .
 
 # Or install with extras
 pip install -e ".[pytorch]"
-pip install -e ".[all]"
+pip install -e ".[ui]"      # With UI support
+pip install -e ".[all]"     # Everything
 ```
+
+## 🖥️ UI Setup (Optional but Recommended)
+
+Get real-time visualization of your pipelines:
+
+```bash
+# 1. Install with UI support
+pip install -e ".[ui]"
+
+# 2. Build the frontend (one-time setup)
+cd flowy/ui/frontend
+npm install
+npm run build
+cd ../../..
+
+# 3. Start the UI server
+flowy ui start --open-browser
+
+# 4. Check it's running
+flowy ui status
+```
+
+Now you can monitor pipelines at **http://localhost:8080**!
+
+**See [UI_GUIDE.md](UI_GUIDE.md) for detailed instructions.**
+
 
 ## Your First Pipeline in 5 Minutes
 

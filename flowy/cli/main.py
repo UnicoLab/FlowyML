@@ -76,12 +76,36 @@ def ui():
 @click.option('--host', default='localhost', help='Host to bind to')
 @click.option('--port', default=8080, help='Port to bind to')
 @click.option('--dev', is_flag=True, help='Run in development mode')
-def start(host: str, port: int, dev: bool):
+@click.option('--open-browser', '-o', is_flag=True, help='Open browser automatically')
+def start(host: str, port: int, dev: bool, open_browser: bool):
     """Start the Flowy UI server."""
-    click.echo(f"Starting Flowy UI on http://{host}:{port}...")
+    from flowy.ui.utils import is_ui_running
+    
+    # Check if already running
+    if is_ui_running(host, port):
+        click.echo(f"ℹ️  UI server is already running at http://{host}:{port}")
+        if open_browser:
+            import webbrowser
+            webbrowser.open(f"http://{host}:{port}")
+        return
+    
+    click.echo(f"🚀 Starting Flowy UI on http://{host}:{port}...")
+    if dev:
+        click.echo("   Development mode: Auto-reload enabled")
 
     try:
         from flowy.cli.ui import start_ui_server
+        
+        # Open browser if requested
+        if open_browser:
+            import webbrowser
+            import threading
+            def open_browser_delayed():
+                import time
+                time.sleep(1.5)  # Wait for server to start
+                webbrowser.open(f"http://{host}:{port}")
+            threading.Thread(target=open_browser_delayed, daemon=True).start()
+        
         start_ui_server(host, port, dev)
     except ImportError:
         click.echo("✗ UI server not available. Install with: pip install flowy[ui]", err=True)
@@ -95,7 +119,27 @@ def start(host: str, port: int, dev: bool):
 def stop():
     """Stop the Flowy UI server."""
     click.echo("Stopping Flowy UI server...")
-    click.echo("✓ UI server stopped")
+    click.echo("ℹ️  To stop the UI server:")
+    click.echo("   - If running in foreground: Press Ctrl+C")
+    click.echo("   - If running in background: pkill -f 'flowy ui start'")
+
+
+@ui.command()
+@click.option('--host', default='localhost', help='Host to check')
+@click.option('--port', default=8080, help='Port to check')
+def status(host: str, port: int):
+    """Check if the UI server is running."""
+    from flowy.ui.utils import is_ui_running, get_ui_url
+    
+    if is_ui_running(host, port):
+        url = get_ui_url(host, port)
+        click.echo(f"✅ UI server is running at {url}")
+        click.echo(f"   Status: Healthy")
+        click.echo(f"   Health endpoint: {url}/api/health")
+    else:
+        click.echo(f"❌ UI server is not running on {host}:{port}")
+        click.echo(f"   Start with: flowy ui start --host {host} --port {port}")
+
 
 
 @cli.group()

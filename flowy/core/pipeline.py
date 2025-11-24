@@ -130,6 +130,10 @@ class Pipeline:
         self.runs_dir = Path(".flowy/runs")
         self.runs_dir.mkdir(parents=True, exist_ok=True)
         
+        # Metadata store for UI integration
+        from flowy.storage.metadata import SQLiteMetadataStore
+        self.metadata_store = SQLiteMetadataStore()
+        
         # State
         self._built = False
     
@@ -205,7 +209,12 @@ class Pipeline:
             print(f"\n🌊 Starting pipeline: {self.name}")
             print(f"Run ID: {run_id}")
             print(f"Steps: {len(execution_order)}")
+            print(f"View run at: http://localhost:8080/runs/{run_id}")
             print(self.dag.visualize())
+        else:
+            # Always print the run URL for better UX
+            print(f"🌊 Pipeline '{self.name}' started. Run ID: {run_id}")
+            print(f"👉 View run at: http://localhost:8080/runs/{run_id}")
         
         # Track outputs from executed steps
         step_outputs: Dict[str, Any] = inputs or {}
@@ -283,10 +292,25 @@ class Pipeline:
         return result
     
     def _save_run(self, result: PipelineResult):
-        """Save run results to disk."""
+        """Save run results to disk and metadata database."""
+        # Save to JSON file
         run_file = self.runs_dir / f"{result.run_id}.json"
         with open(run_file, 'w') as f:
             json.dump(result.to_dict(), f, indent=2)
+        
+        # Save to metadata database for UI
+        metadata = {
+            'run_id': result.run_id,
+            'pipeline_name': result.pipeline_name,
+            'status': 'completed' if result.success else 'failed',
+            'start_time': result.start_time.isoformat(),
+            'end_time': result.end_time.isoformat() if result.end_time else None,
+            'duration': result.duration_seconds,
+            'success': result.success,
+            'context': self.context._params if hasattr(self.context, '_params') else {},
+            'steps': result.to_dict()['steps']
+        }
+        self.metadata_store.save_run(result.run_id, metadata)
     
     def cache_stats(self) -> Dict[str, Any]:
         """Get cache statistics."""

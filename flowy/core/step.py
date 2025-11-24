@@ -22,6 +22,7 @@ class StepConfig:
     timeout: Optional[int] = None
     resources: Dict[str, Any] = field(default_factory=dict)
     tags: Dict[str, str] = field(default_factory=dict)
+    condition: Optional[Callable] = None
     
     def __hash__(self):
         """Make StepConfig hashable."""
@@ -43,7 +44,8 @@ class Step:
         retry: int = 0,
         timeout: Optional[int] = None,
         resources: Optional[Dict[str, Any]] = None,
-        tags: Optional[Dict[str, str]] = None
+        tags: Optional[Dict[str, str]] = None,
+        condition: Optional[Callable] = None
     ):
         self.func = func
         self.name = name or func.__name__
@@ -54,6 +56,7 @@ class Step:
         self.timeout = timeout
         self.resources = resources or {}
         self.tags = tags or {}
+        self.condition = condition
         
         self.config = StepConfig(
             name=self.name,
@@ -64,11 +67,20 @@ class Step:
             retry=self.retry,
             timeout=self.timeout,
             resources=self.resources,
-            tags=self.tags
+            tags=self.tags,
+            condition=self.condition
         )
     
     def __call__(self, *args, **kwargs):
         """Execute the step function."""
+        # Check condition if present
+        if self.condition:
+            # We might need to inject context into condition too, 
+            # but for now assume it takes no args or same args as step?
+            # This is tricky without context injection logic here.
+            # The executor handles execution, so maybe we just store it here.
+            pass
+            
         return self.func(*args, **kwargs)
     
     def get_code_hash(self) -> str:
@@ -112,7 +124,8 @@ def step(
     timeout: Optional[int] = None,
     resources: Optional[Dict[str, Any]] = None,
     tags: Optional[Dict[str, str]] = None,
-    name: Optional[str] = None
+    name: Optional[str] = None,
+    condition: Optional[Callable] = None
 ):
     """
     Decorator to define a pipeline step with automatic context injection.
@@ -126,6 +139,7 @@ def step(
         resources: Resource requirements (e.g., {"gpu": 1, "memory": "16GB"})
         tags: Metadata tags for the step
         name: Optional custom name for the step
+        condition: Optional callable that returns True if step should run
     
     Example:
         >>> @step(inputs=["data/train"], outputs=["model/trained"])
@@ -145,7 +159,8 @@ def step(
             retry=retry,
             timeout=timeout,
             resources=resources,
-            tags=tags
+            tags=tags,
+            condition=condition
         )
     
     return decorator
