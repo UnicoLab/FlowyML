@@ -103,9 +103,10 @@ class Asset:
         """
         asset_name = name or f"{cls.__name__}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         
-        # Extract properties if passed explicitly
+        # Extract tags and properties if passed explicitly
+        tags = kwargs.pop('tags', {})
         props = kwargs.pop('properties', {})
-        # Merge with remaining kwargs
+        # Merge remaining kwargs into properties
         props.update(kwargs)
         
         return cls(
@@ -113,6 +114,7 @@ class Asset:
             version=version,
             data=data,
             parent=parent,
+            tags=tags,
             properties=props
         )
     
