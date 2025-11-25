@@ -1,13 +1,13 @@
 """
-Simple Flowy Pipeline Example.
+Simple UniFlow Pipeline Example.
 
-This is the simplest possible Flowy pipeline to get you started.
+This is the simplest possible UniFlow pipeline to get you started.
 
 Usage:
     $ python examples/simple_pipeline.py
 """
 
-from flowy import Pipeline, step, context, Dataset, Model, Metrics
+from uniflow import Pipeline, step, context, Dataset, Model, Metrics
 import time
 
 # Define context with parameters

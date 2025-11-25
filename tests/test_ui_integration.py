@@ -5,12 +5,12 @@ This should populate the database and show in the UI.
 
 # Force reload to get latest code
 import sys
-if 'flowy.core.pipeline' in sys.modules:
-    del sys.modules['flowy.core.pipeline']
-if 'flowy' in sys.modules:
-    del sys.modules['flowy']
+if 'uniflow.core.pipeline' in sys.modules:
+    del sys.modules['uniflow.core.pipeline']
+if 'uniflow' in sys.modules:
+    del sys.modules['uniflow']
 
-from flowy import Pipeline, step, context
+from uniflow import Pipeline, step, context
 import time
 
 # Define context with parameters
@@ -38,7 +38,7 @@ def train_model(data, learning_rate: float, epochs: int):
 
 # Create and run pipeline
 print("\n" + "="*70)
-print("🧪 Testing Flowy UI Integration")
+print("🧪 Testing UniFlow UI Integration")
 print("="*70)
 
 pipeline = Pipeline("ui_test_pipeline", context=ctx)

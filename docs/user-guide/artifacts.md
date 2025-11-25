@@ -1,0 +1,94 @@
+# Assets & Artifacts 💎
+
+In UniFlow, data is treated as a first-class citizen. Any data passed between steps is an **Artifact**, and structured, versioned artifacts are called **Assets**.
+
+## The Asset Hierarchy 🏛️
+
+UniFlow provides specialized classes for different types of ML assets:
+
+- **Asset**: The base class for all versioned objects.
+- **Dataset**: Represents data (DataFrames, file paths, tensors).
+- **Model**: Represents trained ML models.
+- **Metrics**: Represents evaluation results (accuracy, loss).
+- **FeatureSet**: Represents engineered features.
+
+## Creating Assets 🔨
+
+You can create assets explicitly using the `.create()` factory method. This automatically handles versioning, metadata generation, and lineage tracking.
+
+### Datasets
+
+```python
+from uniflow import Dataset
+import pandas as pd
+
+df = pd.DataFrame(...)
+
+# Create a versioned dataset
+dataset = Dataset.create(
+    data=df,
+    name="training_data",
+    properties={
+        "source": "s3://bucket/data.csv",
+        "rows": len(df)
+    }
+)
+```
+
+### Models
+
+```python
+from uniflow import Model
+
+# Create a versioned model
+model_asset = Model.create(
+    data=trained_model_object,
+    name="resnet50_finetuned",
+    framework="pytorch",
+    parameters={"epochs": 10, "lr": 0.001}
+)
+```
+
+### Metrics
+
+```python
+from uniflow import Metrics
+
+# Create a metrics object
+metrics = Metrics.create(
+    accuracy=0.95,
+    f1_score=0.92,
+    loss=0.15
+)
+```
+
+## Lineage Tracking 🔗
+
+UniFlow automatically tracks the lineage of every asset.
+
+- **Parents**: The assets that were used to create this asset.
+- **Children**: The assets that were created using this asset.
+- **Producer**: The pipeline step that generated this asset.
+
+When you pass an asset from one step to another, UniFlow records this relationship.
+
+```python
+@step
+def preprocess(raw_data):
+    # ...
+    return clean_data  # clean_data's parent is raw_data
+
+@step
+def train(clean_data):
+    # ...
+    return model      # model's parent is clean_data
+```
+
+!!! success "Visualize It"
+    You can visualize this lineage graph in the [UniFlow UI](ui.md).
+
+## Storage 💾
+
+Assets are stored in the **Artifact Store**. By default, this is the `.uniflow/artifacts` directory in your project.
+
+UniFlow supports pluggable storage backends (S3, GCS, Azure) via `fsspec`. Configuration is handled in `uniflow.yaml`.

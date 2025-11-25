@@ -1,9 +1,9 @@
-# 🌊 Flowy - Next-Generation ML Pipeline Framework
+# 🌊 UniFlow - Next-Generation ML Pipeline Framework
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
-**Flowy** is a developer-first ML pipeline orchestration framework that combines the simplicity of Metaflow with the power of ZenML and the elegance of asset-centric design.
+**UniFlow** is a developer-first ML pipeline orchestration framework that combines the simplicity of Metaflow with the power of ZenML and the elegance of asset-centric design.
 
 ## ✨ Features
 
@@ -18,36 +18,36 @@
 ## 📦 Installation
 
 ```bash
-pip install flowy
+pip install uniflow
 
 # Or with extras
-pip install "flowy[pytorch]"     # PyTorch support
-pip install "flowy[tensorflow]"   # TensorFlow support
-pip install "flowy[ui]"            # UI for real-time monitoring
-pip install "flowy[all]"           # Everything
+pip install "uniflow[pytorch]"     # PyTorch support
+pip install "uniflow[tensorflow]"   # TensorFlow support
+pip install "uniflow[ui]"            # UI for real-time monitoring
+pip install "uniflow[all]"           # Everything
 ```
 
 ## 🖥️ Real-Time UI
 
-Monitor your pipelines in real-time with the Flowy UI:
+Monitor your pipelines in real-time with the UniFlow UI:
 
 ```bash
 # Install with UI support
-pip install "flowy[ui]"
+pip install "uniflow[ui]"
 
 # Build the frontend (first time only)
-cd flowy/ui/frontend
+cd uniflow/ui/frontend
 npm install && npm run build
 cd ../../..
 
 # Start the UI server
-flowy ui start
+uniflow ui start
 
 # Or start and open browser automatically
-flowy ui start --open-browser
+uniflow ui start --open-browser
 
 # Check UI status
-flowy ui status
+uniflow ui status
 ```
 
 Then visit **http://localhost:8080** to see:
@@ -63,7 +63,7 @@ Then visit **http://localhost:8080** to see:
 ## 🚀 Quick Start
 
 ```python
-from flowy import Pipeline, step, context
+from uniflow import Pipeline, step, context
 
 # Define context once - parameters auto-injected!
 ctx = context(
@@ -99,7 +99,7 @@ print(result.summary())
 
 ### 1. Automatic Context Injection
 
-No more passing parameters manually! Flowy analyzes function signatures and automatically injects parameters from context.
+No more passing parameters manually! UniFlow analyzes function signatures and automatically injects parameters from context.
 
 ```python
 ctx = context(
@@ -119,7 +119,7 @@ def train(learning_rate: float, epochs: int, device: str):
 Track datasets, models, and metrics as first-class objects with full lineage.
 
 ```python
-from flowy import Dataset, Model, Metrics
+from uniflow import Dataset, Model, Metrics
 
 @step(outputs=["processed_data"])
 def preprocess():
@@ -169,7 +169,7 @@ print(pipeline.visualize())
 ## 🔍 Experiment Tracking
 
 ```python
-from flowy import Experiment
+from uniflow import Experiment
 
 exp = Experiment(
     name="baseline_training",
@@ -189,15 +189,15 @@ comparison = exp.compare_runs()
 
 ## 🏗️ Architecture
 
-Flowy uses a three-layer architecture:
+UniFlow uses a three-layer architecture:
 
 1. **Developer Interface** - Decorator-based API with automatic context injection
 2. **Execution Engine** - Graph-based DAG with intelligent caching
 3. **Storage & Visualization** - SQLite/PostgreSQL + optional web UI
 
-## 🎯 Why Flowy?
+## 🎯 Why UniFlow?
 
-| Feature | Flowy | ZenML | Metaflow | Prefect |
+| Feature | UniFlow | ZenML | Metaflow | Prefect |
 |---------|-------|-------|----------|---------|
 | Setup Time | < 5 min | ~1 hour | ~15 min | ~30 min |
 | Auto Context | ✅ | ❌ | ❌ | ❌ |
@@ -217,7 +217,7 @@ Flowy uses a three-layer architecture:
 
 ## ❓ Troubleshooting
 
-### `flowy: command not found`
+### `uniflow: command not found`
 
 If you're developing from source:
 
@@ -226,7 +226,7 @@ If you're developing from source:
 pip install -e ".[ui]"
 
 # Or run without installing
-python -m flowy.cli.main ui start
+python -m uniflow.cli.main ui start
 ```
 
 See [DEVELOPMENT.md](DEVELOPMENT.md) for details.
@@ -234,7 +234,7 @@ See [DEVELOPMENT.md](DEVELOPMENT.md) for details.
 ### UI shows "Frontend not built"
 
 ```bash
-cd flowy/ui/frontend
+cd uniflow/ui/frontend
 npm install
 npm run build
 ```
@@ -251,11 +251,11 @@ We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for deta
 
 ## 📝 License
 
-Flowy is released under the Apache 2.0 License. See [LICENSE](LICENSE) for details.
+UniFlow is released under the Apache 2.0 License. See [LICENSE](LICENSE) for details.
 
 ## 🌟 Star History
 
-If you find Flowy useful, please star the repository!
+If you find UniFlow useful, please star the repository!
 
 ---
 

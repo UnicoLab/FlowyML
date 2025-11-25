@@ -1,7 +1,7 @@
 """
-Flowy Comprehensive Demo Pipeline.
+UniFlow Comprehensive Demo Pipeline.
 
-This example demonstrates the core features of Flowy:
+This example demonstrates the core features of UniFlow:
 - Pipeline creation and execution
 - Step definition with @step decorator
 - Automatic context injection
@@ -12,7 +12,7 @@ This example demonstrates the core features of Flowy:
 
 Usage:
     1. Ensure the UI server is running (optional but recommended):
-       $ flowy ui start
+       $ uniflow ui start
 
     2. Run this script:
        $ python examples/demo_pipeline.py
@@ -25,16 +25,16 @@ import random
 import logging
 from typing import Tuple, Dict, Any
 
-from flowy import Pipeline, step, context
-from flowy.assets.dataset import Dataset
-from flowy.assets.model import Model
-from flowy.assets.metrics import Metrics
-from flowy.assets.featureset import FeatureSet
-from flowy.monitoring.alerts import alert_manager, AlertLevel
+from uniflow import Pipeline, step, context
+from uniflow.assets.dataset import Dataset
+from uniflow.assets.model import Model
+from uniflow.assets.metrics import Metrics
+from uniflow.assets.featureset import FeatureSet
+from uniflow.monitoring.alerts import alert_manager, AlertLevel
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("flowy.demo")
+logger = logging.getLogger("uniflow.demo")
 
 # 1. Define Context
 # These parameters will be automatically injected into steps that request them
@@ -178,12 +178,12 @@ def deploy_model(model: Model, min_accuracy: float):
 # 3. Build and Run Pipeline
 
 def main():
-    print("🌊 Initializing Flowy Demo Pipeline...")
+    print("🌊 Initializing UniFlow Demo Pipeline...")
     
     # Create pipeline with context
     pipeline = Pipeline("churn_prediction_demo", context=ctx)
     
-    # Add steps (order doesn't matter, Flowy builds the DAG based on inputs/outputs)
+    # Add steps (order doesn't matter, UniFlow builds the DAG based on inputs/outputs)
     pipeline.add_step(load_data)
     pipeline.add_step(preprocess)
     pipeline.add_step(train_model)

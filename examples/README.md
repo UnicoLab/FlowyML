@@ -1,11 +1,11 @@
-# Flowy Examples
+# UniFlow Examples
 
-This directory contains example pipelines demonstrating various Flowy features.
+This directory contains example pipelines demonstrating various UniFlow features.
 
 ## Quick Start
 
 ### 1. Simple Pipeline
-The most basic Flowy pipeline to get started:
+The most basic UniFlow pipeline to get started:
 
 ```bash
 python examples/simple_pipeline.py
@@ -22,7 +22,7 @@ A complete ML pipeline showcasing all major features:
 
 ```bash
 # Start the UI first (optional but recommended)
-flowy ui start
+uniflow ui start
 
 # Run the demo pipeline
 python examples/demo_pipeline.py
@@ -65,7 +65,7 @@ python examples/caching_pipeline.py
 
 1. **Start the UI server:**
    ```bash
-   flowy ui start
+   uniflow ui start
    ```
 
 2. **Run any example pipeline**
@@ -87,5 +87,5 @@ python examples/caching_pipeline.py
 ## Need Help?
 
 - 📖 [Documentation](../README.md)
-- 💬 [GitHub Discussions](https://github.com/flowy/flowy/discussions)
-- 🐛 [Report Issues](https://github.com/flowy/flowy/issues)
+- 💬 [GitHub Discussions](https://github.com/uniflow/uniflow/discussions)
+- 🐛 [Report Issues](https://github.com/uniflow/uniflow/issues)

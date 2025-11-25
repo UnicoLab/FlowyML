@@ -1,13 +1,13 @@
 """
 Conditional Execution Example.
 
-Demonstrates how to use conditional steps in Flowy pipelines.
+Demonstrates how to use conditional steps in UniFlow pipelines.
 
 Usage:
     $ python examples/conditional_pipeline.py
 """
 
-from flowy import Pipeline, step, context
+from uniflow import Pipeline, step, context
 
 # Define context with a flag for conditional execution
 ctx = context(

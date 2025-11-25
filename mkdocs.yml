@@ -1,0 +1,61 @@
+site_name: UniFlow
+site_description: A lightweight, unified ML pipeline framework.
+site_url: https://github.com/uniflow-ai/uniflow
+repo_url: https://github.com/uniflow-ai/uniflow
+repo_name: uniflow-ai/uniflow
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: purple
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: purple
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - content.code.copy
+    - content.tabs.link
+    - content.tooltips
+    - toc.integrate
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [.]
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - User Guide:
+    - Pipelines: user-guide/pipelines.md
+    - Steps: user-guide/steps.md
+    - Assets & Artifacts: user-guide/artifacts.md
+    - Context & Parameters: user-guide/context.md
+    - Caching: user-guide/caching.md
+    - Model Registry: user-guide/model-registry.md
+    - Monitoring & Alerts: user-guide/monitoring.md
+    - UI Guide: user-guide/ui.md
+    - CLI: user-guide/cli.md
+  - Advanced:
+    - Materializers: advanced/materializers.md
+  - API Reference:
+    - Core: api/core.md
+    - Assets: api/assets.md
+    - Storage: api/storage.md
+  - Reference:
+    - Cheatsheet: reference/cheatsheet.md
+    - Architecture: architecture.md
+    - Contributing: contributing.md
+  - Examples: examples.md

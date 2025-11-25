@@ -1,1 +1,1 @@
-"""Tests for Flowy package."""
+"""Tests for UniFlow package."""

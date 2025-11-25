@@ -19,6 +19,11 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+.uniflow/
+.claude/
+
+# docs
+site/
 
 # Flowy specific
 .flowy/

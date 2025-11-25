@@ -1,13 +1,13 @@
 """
 Caching Example.
 
-Demonstrates different caching strategies in Flowy.
+Demonstrates different caching strategies in UniFlow.
 
 Usage:
     $ python examples/caching_pipeline.py
 """
 
-from flowy import Pipeline, step, context
+from uniflow import Pipeline, step, context
 import time
 
 ctx = context(

@@ -1,19 +1,19 @@
 """
-Example: Using Flowy with Real-Time UI Monitoring
+Example: Using UniFlow with Real-Time UI Monitoring
 
 This example demonstrates how to run a pipeline that integrates
-with the Flowy UI for real-time monitoring of execution.
+with the UniFlow UI for real-time monitoring of execution.
 
 To use this example:
-1. Install Flowy with UI support: pip install "flowy[ui]"
-2. Build the frontend: cd flowy/ui/frontend && npm install && npm run build
-3. Start the UI server: flowy ui start --open-browser
+1. Install UniFlow with UI support: pip install "uniflow[ui]"
+2. Build the frontend: cd uniflow/ui/frontend && npm install && npm run build
+3. Start the UI server: uniflow ui start --open-browser
 4. Run this script: python examples/ui_integration_example.py
 5. Watch the pipeline execution in the UI at http://localhost:8080
 """
 
-from flowy import Pipeline, step, context
-from flowy.ui import is_ui_running, get_ui_url, get_run_url
+from uniflow import Pipeline, step, context
+from uniflow.ui import is_ui_running, get_ui_url, get_run_url
 import time
 import random
 
@@ -161,7 +161,7 @@ def main():
     """Main function to run the pipeline with UI integration."""
     
     print("=" * 70)
-    print("🌊 Flowy Pipeline with UI Integration Example")
+    print("🌊 UniFlow Pipeline with UI Integration Example")
     print("=" * 70)
     
     # Check if UI is running
@@ -172,7 +172,7 @@ def main():
         print(f"   You can monitor this pipeline in real-time!")
     else:
         print("⚠️  UI server is not running.")
-        print("   Start it with: flowy ui start --open-browser")
+        print("   Start it with: uniflow ui start --open-browser")
         print("   The pipeline will still run, but without UI monitoring.")
     
     print("\n" + "=" * 70)

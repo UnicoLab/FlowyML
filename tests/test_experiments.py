@@ -1,8 +1,8 @@
 """
 Test script to verify experiments tracking.
 """
-from flowy.tracking.experiment import Experiment
-from flowy.storage.metadata import SQLiteMetadataStore
+from uniflow.tracking.experiment import Experiment
+from uniflow.storage.metadata import SQLiteMetadataStore
 from datetime import datetime
 import json
 
@@ -15,7 +15,7 @@ print(f"📝 Creating experiment: {exp_name}")
 exp = Experiment(
     name=exp_name,
     description="Testing experiment tracking integration",
-    tags={"framework": "flowy", "test": "true"}
+    tags={"framework": "uniflow", "test": "true"}
 )
 
 # 2. Log Runs

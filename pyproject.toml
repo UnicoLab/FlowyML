@@ -3,12 +3,12 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "flowy"
+name = "uniflow"
 version = "0.1.0"
 description = "Next-Generation ML Pipeline Framework"
 readme = "README.md"
 authors = [
-    {name = "Flowy Team", email = "team@flowy.ai"}
+    {name = "UniFlow Team", email = "team@uniflow.ai"}
 ]
 license = {text = "Apache-2.0"}
 classifiers = [
@@ -56,19 +56,21 @@ dev = [
     "black>=22.0.0",
     "ruff>=0.1.0",
     "mypy>=0.990",
+    "mkdocs>=1.5.0",
+    "mkdocs-material>=9.0.0",
 ]
 
 [project.urls]
-Homepage = "https://github.com/flowy/flowy"
-Documentation = "https://docs.flowy.ai"
-Repository = "https://github.com/flowy/flowy"
-Changelog = "https://github.com/flowy/flowy/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/uniflow/uniflow"
+Documentation = "https://docs.uniflow.ai"
+Repository = "https://github.com/uniflow/uniflow"
+Changelog = "https://github.com/uniflow/uniflow/blob/main/CHANGELOG.md"
 
 [project.scripts]
-flowy = "flowy.cli.main:cli"
+uniflow = "uniflow.cli.main:cli"
 
 [tool.hatch.build.targets.wheel]
-packages = ["flowy"]
+packages = ["uniflow"]
 
 [tool.black]
 line-length = 100
@@ -92,4 +94,4 @@ disallow_untyped_defs = false
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_functions = ["test_*"]
-addopts = "-v --cov=flowy --cov-report=term-missing"
+addopts = "-v --cov=uniflow --cov-report=term-missing"
