@@ -20,7 +20,7 @@ try:
 except ImportError:
     HAS_SKLEARN = False
 
-from uniflow.storage.materializers.numpy import NumpyMaterializer
+from uniflow.storage.materializers.numpy import NumPyMaterializer
 from uniflow.storage.materializers.pandas import PandasMaterializer
 
 if HAS_TENSORFLOW:
@@ -37,15 +37,15 @@ class TestNumpyMaterializer(unittest.TestCase):
         """Set up test environment."""
         self.test_dir = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self.test_dir)
-        self.materializer = NumpyMaterializer()
+        self.materializer = NumPyMaterializer()
 
     def test_save_and_load_array(self):
         """Test saving and loading numpy array."""
         arr = np.array([[1, 2, 3], [4, 5, 6]])
         path = Path(self.test_dir) / "test_array.npy"
         
-        self.materializer.save(arr, str(path))
-        loaded = self.materializer.load(str(path))
+        self.materializer.save(arr, path)
+        loaded = self.materializer.load(path)
         
         np.testing.assert_array_equal(arr, loaded)
 
@@ -54,8 +54,8 @@ class TestNumpyMaterializer(unittest.TestCase):
         arr = np.array([1, 2, 3, 4, 5])
         path = Path(self.test_dir) / "1d_array.npy"
         
-        self.materializer.save(arr, str(path))
-        loaded = self.materializer.load(str(path))
+        self.materializer.save(arr, path)
+        loaded = self.materializer.load(path)
         
         np.testing.assert_array_equal(arr, loaded)
 
@@ -64,8 +64,8 @@ class TestNumpyMaterializer(unittest.TestCase):
         arr = np.array([1.1, 2.2, 3.3, 4.4])
         path = Path(self.test_dir) / "float_array.npy"
         
-        self.materializer.save(arr, str(path))
-        loaded = self.materializer.load(str(path))
+        self.materializer.save(arr, path)
+        loaded = self.materializer.load(path)
         
         np.testing.assert_array_almost_equal(arr, loaded)
 
@@ -88,8 +88,8 @@ class TestPandasMaterializer(unittest.TestCase):
         })
         path = Path(self.test_dir) / "test_df.parquet"
         
-        self.materializer.save(df, str(path))
-        loaded = self.materializer.load(str(path))
+        self.materializer.save(df, path)
+        loaded = self.materializer.load(path)
         
         pd.testing.assert_frame_equal(df, loaded)
 
@@ -98,8 +98,8 @@ class TestPandasMaterializer(unittest.TestCase):
         series = pd.Series([1, 2, 3, 4, 5], name="test_series")
         path = Path(self.test_dir) / "test_series.parquet"
         
-        self.materializer.save(series, str(path))
-        loaded = self.materializer.load(str(path))
+        self.materializer.save(series, path)
+        loaded = self.materializer.load(path)
         
         pd.testing.assert_series_equal(series, loaded)
 
@@ -125,8 +125,8 @@ class TestSklearnMaterializer(unittest.TestCase):
         
         path = Path(self.test_dir) / "model.pkl"
         
-        self.materializer.save(model, str(path))
-        loaded_model = self.materializer.load(str(path))
+        self.materializer.save(model, path)
+        loaded_model = self.materializer.load(path)
         
         # Verify predictions are the same
         original_pred = model.predict(X)
@@ -150,8 +150,8 @@ class TestTensorFlowMaterializer(unittest.TestCase):
         tensor = tf.constant([[1.0, 2.0], [3.0, 4.0]])
         path = Path(self.test_dir) / "tensor"
         
-        self.materializer.save(tensor, str(path))
-        loaded = self.materializer.load(str(path))
+        self.materializer.save(tensor, path)
+        loaded = self.materializer.load(path)
         
         tf.debugging.assert_equal(tensor, loaded)
 
