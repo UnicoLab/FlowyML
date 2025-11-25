@@ -1,0 +1,15 @@
+# GCP Stack Example Requirements
+
+# Core UniFlow with GCP support
+uniflow[gcp]
+
+# ML frameworks (choose what you need)
+tensorflow>=2.12.0
+# OR
+# torch>=2.0.0
+# OR
+# scikit-learn>=1.0.0
+
+# Additional dependencies for this example
+pandas>=2.0.0
+numpy>=1.24.0

@@ -1,0 +1,110 @@
+# UniFlow Configuration Example
+# Save this as uniflow.yaml in your project root
+
+# Define multiple stacks for different environments
+stacks:
+  # Local development stack
+  local:
+    type: local
+    artifact_store:
+      path: .uniflow/artifacts
+    metadata_store:
+      path: .uniflow/metadata.db
+  
+  # Staging environment on GCP
+  staging:
+    type: gcp
+    project_id: ${GCP_PROJECT_ID}  # From environment variable
+    region: us-central1
+    artifact_store:
+      type: gcs
+      bucket: ${GCP_STAGING_BUCKET}
+    container_registry:
+      type: gcr
+      uri: gcr.io/${GCP_PROJECT_ID}
+    orchestrator:
+      type: vertex_ai
+      service_account: ${GCP_SERVICE_ACCOUNT}
+  
+  # Production environment on GCP
+  production:
+    type: gcp
+    project_id: ${GCP_PROJECT_ID}
+    region: us-central1
+    artifact_store:
+      type: gcs
+      bucket: ${GCP_PROD_BUCKET}
+    container_registry:
+      type: gcr
+      uri: gcr.io/${GCP_PROJECT_ID}
+    orchestrator:
+      type: vertex_ai
+      service_account: ${GCP_SERVICE_ACCOUNT}
+      network: projects/${GCP_PROJECT_ID}/global/networks/prod-vpc
+
+# Default stack to use
+default_stack: local
+
+# Resource configurations
+resources:
+  # Default resources for most steps
+  default:
+    cpu: "2"
+    memory: "8Gi"
+    disk_size: "50Gi"
+  
+  # CPU-intensive workload
+  cpu_intensive:
+    cpu: "16"
+    memory: "64Gi"
+    disk_size: "100Gi"
+    machine_type: "n1-highcpu-16"
+  
+  # Memory-intensive workload
+  memory_intensive:
+    cpu: "8"
+    memory: "128Gi"
+    disk_size: "100Gi"
+    machine_type: "n1-highmem-8"
+  
+  # GPU training workload
+  gpu_training:
+    cpu: "8"
+    memory: "32Gi"
+    gpu: "nvidia-tesla-v100"
+    gpu_count: 2
+    machine_type: "n1-highmem-8"
+    disk_size: "200Gi"
+  
+  # Large-scale GPU training
+  gpu_large:
+    cpu: "96"
+    memory: "360Gi"
+    gpu: "nvidia-tesla-v100"
+    gpu_count: 8
+    machine_type: "n1-highmem-96"
+    disk_size: "500Gi"
+
+# Docker configuration
+docker:
+  # Automatically use existing Dockerfile
+  dockerfile: ./Dockerfile
+  build_context: .
+  
+  # Or use poetry for dependency management
+  use_poetry: true
+  
+  # Or specify requirements file
+  # requirements_file: requirements.txt
+  
+  # Base image if building dynamically
+  base_image: "python:3.11-slim"
+  
+  # Environment variables for container
+  env_vars:
+    PYTHONUNBUFFERED: "1"
+    TF_CPP_MIN_LOG_LEVEL: "2"
+  
+  # Build arguments
+  build_args:
+    PYTHON_VERSION: "3.11"

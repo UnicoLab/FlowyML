@@ -115,12 +115,14 @@ class Pipeline:
         context: Optional[Context] = None,
         executor: Optional[Executor] = None,
         enable_cache: bool = True,
-        cache_dir: Optional[str] = None
+        cache_dir: Optional[str] = None,
+        stack: Optional[Any] = None,  # Stack instance
     ):
         self.name = name
         self.context = context or Context()
         self.executor = executor or LocalExecutor()
         self.enable_cache = enable_cache
+        self.stack = stack  # Store stack instance
         
         self.steps: List[Step] = []
         self.dag = DAG()
@@ -188,7 +190,11 @@ class Pipeline:
     def run(
         self,
         inputs: Optional[Dict[str, Any]] = None,
-        debug: bool = False
+        debug: bool = False,
+        stack: Optional[Any] = None,  # Stack override
+        resources: Optional[Any] = None,  # ResourceConfig
+        docker_config: Optional[Any] = None,  # DockerConfig
+        context: Optional[Dict[str, Any]] = None,  # Context vars override
     ) -> PipelineResult:
         """
         Execute the pipeline.
@@ -196,10 +202,22 @@ class Pipeline:
         Args:
             inputs: Optional input data for the pipeline
             debug: Enable debug mode with detailed logging
+            stack: Stack override (uses self.stack if not provided)
+            resources: Resource configuration for execution
+            docker_config: Docker configuration for containerized execution
+            context: Context variables override
             
         Returns:
             PipelineResult with outputs and execution info
         """
+        # Use provided stack or instance stack
+        if stack is not None:
+            self.stack = stack
+        
+        # Update context with provided values
+        if context:
+            self.context.update(context)
+        
         # Build DAG if needed
         if not self._built:
             self.build()
