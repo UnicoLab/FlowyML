@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { CheckCircle, XCircle, Clock, Calendar, Package, ArrowRight, BarChart2, FileText, Database, Box, ChevronRight, Activity, Layers, Code2, Terminal, Info } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Calendar, Package, ArrowRight, BarChart2, FileText, Database, Box, ChevronRight, Activity, Layers, Code2, Terminal, Info, X, Maximize2, TrendingUp, Download } from 'lucide-react';
 import { Card } from './ui/Card';
 import { Badge } from './ui/Badge';
 import { Button } from './ui/Button';
 import { format } from 'date-fns';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { PipelineGraph } from './PipelineGraph';
 
 export function RunDetails() {
@@ -16,6 +16,7 @@ export function RunDetails() {
     const [loading, setLoading] = useState(true);
     const [selectedStep, setSelectedStep] = useState(null);
     const [activeTab, setActiveTab] = useState('overview');
+    const [selectedArtifact, setSelectedArtifact] = useState(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -194,7 +195,10 @@ export function RunDetails() {
                                     <CodeTab sourceCode={selectedStepData.source_code} />
                                 )}
                                 {activeTab === 'artifacts' && (
-                                    <ArtifactsTab artifacts={selectedStepArtifacts} />
+                                    <ArtifactsTab
+                                        artifacts={selectedStepArtifacts}
+                                        onArtifactClick={setSelectedArtifact}
+                                    />
                                 )}
                             </div>
                         </Card>
@@ -205,6 +209,12 @@ export function RunDetails() {
                     )}
                 </div>
             </div>
+
+            {/* Artifact Detail Modal */}
+            <ArtifactModal
+                artifact={selectedArtifact}
+                onClose={() => setSelectedArtifact(null)}
+            />
         </div>
     );
 }
@@ -304,18 +314,15 @@ function OverviewTab({ stepData, metrics }) {
                 </div>
             )}
 
-            {/* Metrics */}
+            {/* Metrics with Visualization */}
             {metrics?.length > 0 && (
                 <div>
-                    <h5 className="text-sm font-semibold text-slate-700 mb-2">Metrics</h5>
+                    <h5 className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
+                        <TrendingUp size={16} /> Metrics
+                    </h5>
                     <div className="grid grid-cols-2 gap-2">
                         {metrics.map((metric, idx) => (
-                            <div key={idx} className="p-2 bg-slate-50 rounded-lg border border-slate-100">
-                                <span className="text-xs text-slate-500 block truncate" title={metric.name}>{metric.name}</span>
-                                <span className="text-lg font-mono font-bold text-slate-900">
-                                    {typeof metric.value === 'number' ? metric.value.toFixed(4) : metric.value}
-                                </span>
-                            </div>
+                            <MetricCard key={idx} metric={metric} />
                         ))}
                     </div>
                 </div>
@@ -324,12 +331,41 @@ function OverviewTab({ stepData, metrics }) {
     );
 }
 
+function MetricCard({ metric }) {
+    const isNumeric = typeof metric.value === 'number';
+    const displayValue = isNumeric ? metric.value.toFixed(4) : metric.value;
+
+    return (
+        <div className="p-3 bg-gradient-to-br from-slate-50 to-white rounded-lg border border-slate-200 hover:border-primary-300 transition-all group">
+            <span className="text-xs text-slate-500 block truncate mb-1" title={metric.name}>
+                {metric.name}
+            </span>
+            <div className="flex items-baseline gap-2">
+                <span className="text-xl font-mono font-bold text-slate-900 group-hover:text-primary-600 transition-colors">
+                    {displayValue}
+                </span>
+                {isNumeric && metric.value > 0 && (
+                    <TrendingUp size={14} className="text-emerald-500" />
+                )}
+            </div>
+        </div>
+    );
+}
+
 function CodeTab({ sourceCode }) {
     return (
         <div>
-            <h5 className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
-                <Code2 size={16} /> Source Code
-            </h5>
+            <div className="flex items-center justify-between mb-2">
+                <h5 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                    <Code2 size={16} /> Source Code
+                </h5>
+                <button
+                    className="text-xs text-slate-500 hover:text-slate-700 flex items-center gap-1"
+                    onClick={() => navigator.clipboard.writeText(sourceCode || '')}
+                >
+                    <Download size={12} /> Copy
+                </button>
+            </div>
             <pre className="p-4 bg-slate-900 text-slate-100 rounded-lg text-xs font-mono overflow-x-auto leading-relaxed">
                 {sourceCode || '# Source code not available'}
             </pre>
@@ -337,30 +373,147 @@ function CodeTab({ sourceCode }) {
     );
 }
 
-function ArtifactsTab({ artifacts }) {
+function ArtifactsTab({ artifacts, onArtifactClick }) {
     return (
         <div>
             <h5 className="text-sm font-semibold text-slate-700 mb-3">Produced Artifacts</h5>
             {artifacts?.length > 0 ? (
                 <div className="space-y-2">
                     {artifacts.map(art => (
-                        <div key={art.artifact_id} className="group flex items-center gap-3 p-3 bg-slate-50 hover:bg-white rounded-lg border border-slate-100 hover:border-primary-200 transition-all cursor-pointer">
-                            <div className="p-2 bg-white rounded-md text-slate-500 shadow-sm group-hover:text-primary-600 transition-colors">
-                                {art.type === 'Dataset' ? <Database size={16} /> :
-                                    art.type === 'Model' ? <Box size={16} /> :
-                                        <FileText size={16} />}
+                        <motion.div
+                            key={art.artifact_id}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => onArtifactClick(art)}
+                            className="group flex items-center gap-3 p-3 bg-slate-50 hover:bg-white rounded-lg border border-slate-100 hover:border-primary-300 hover:shadow-md transition-all cursor-pointer"
+                        >
+                            <div className="p-2 bg-white rounded-md text-slate-500 shadow-sm group-hover:text-primary-600 group-hover:scale-110 transition-all">
+                                {art.type === 'Dataset' ? <Database size={18} /> :
+                                    art.type === 'Model' ? <Box size={18} /> :
+                                        art.type === 'Metrics' ? <BarChart2 size={18} /> :
+                                            <FileText size={18} />}
                             </div>
                             <div className="min-w-0 flex-1">
-                                <p className="text-sm font-medium text-slate-900 truncate">{art.name}</p>
+                                <p className="text-sm font-semibold text-slate-900 truncate group-hover:text-primary-600 transition-colors">
+                                    {art.name}
+                                </p>
                                 <p className="text-xs text-slate-500 truncate">{art.type}</p>
                             </div>
-                            <ArrowRight size={14} className="text-slate-300 group-hover:text-primary-400 opacity-0 group-hover:opacity-100 transition-all" />
-                        </div>
+                            <div className="flex items-center gap-2">
+                                <Maximize2 size={14} className="text-slate-300 group-hover:text-primary-400 transition-colors" />
+                                <ArrowRight size={14} className="text-slate-300 group-hover:text-primary-400 opacity-0 group-hover:opacity-100 transition-all" />
+                            </div>
+                        </motion.div>
                     ))}
                 </div>
             ) : (
                 <p className="text-sm text-slate-500 italic">No artifacts produced by this step</p>
             )}
         </div>
+    );
+}
+
+function ArtifactModal({ artifact, onClose }) {
+    if (!artifact) return null;
+
+    return (
+        <AnimatePresence>
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                onClick={onClose}
+            >
+                <motion.div
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.9, opacity: 0 }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[80vh] overflow-hidden"
+                >
+                    {/* Header */}
+                    <div className="flex items-center justify-between p-6 border-b border-slate-100 bg-gradient-to-r from-primary-50 to-purple-50">
+                        <div className="flex items-center gap-3">
+                            <div className="p-3 bg-white rounded-xl shadow-sm">
+                                {artifact.type === 'Dataset' ? <Database size={24} className="text-blue-600" /> :
+                                    artifact.type === 'Model' ? <Box size={24} className="text-purple-600" /> :
+                                        artifact.type === 'Metrics' ? <BarChart2 size={24} className="text-emerald-600" /> :
+                                            <FileText size={24} className="text-slate-600" />}
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-bold text-slate-900">{artifact.name}</h3>
+                                <p className="text-sm text-slate-500">{artifact.type}</p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={onClose}
+                            className="p-2 hover:bg-white rounded-lg transition-colors"
+                        >
+                            <X size={20} className="text-slate-400" />
+                        </button>
+                    </div>
+
+                    {/* Content */}
+                    <div className="p-6 overflow-y-auto max-h-[60vh]">
+                        <div className="space-y-4">
+                            {/* Properties */}
+                            {artifact.properties && Object.keys(artifact.properties).length > 0 && (
+                                <div>
+                                    <h4 className="text-sm font-semibold text-slate-700 mb-3">Properties</h4>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {Object.entries(artifact.properties).map(([key, value]) => (
+                                            <div key={key} className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                                                <span className="text-xs text-slate-500 block mb-1">{key}</span>
+                                                <span className="text-sm font-mono font-semibold text-slate-900">
+                                                    {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Value Preview */}
+                            {artifact.value && (
+                                <div>
+                                    <h4 className="text-sm font-semibold text-slate-700 mb-3">Value Preview</h4>
+                                    <pre className="p-4 bg-slate-900 text-slate-100 rounded-lg text-xs font-mono overflow-x-auto">
+                                        {artifact.value}
+                                    </pre>
+                                </div>
+                            )}
+
+                            {/* Metadata */}
+                            <div>
+                                <h4 className="text-sm font-semibold text-slate-700 mb-3">Metadata</h4>
+                                <div className="space-y-2 text-sm">
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-500">Artifact ID:</span>
+                                        <span className="font-mono text-xs text-slate-700">{artifact.artifact_id}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-500">Step:</span>
+                                        <span className="font-medium text-slate-700">{artifact.step}</span>
+                                    </div>
+                                    {artifact.created_at && (
+                                        <div className="flex justify-between">
+                                            <span className="text-slate-500">Created:</span>
+                                            <span className="text-slate-700">{format(new Date(artifact.created_at), 'MMM d, yyyy HH:mm:ss')}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-2">
+                        <Button variant="ghost" onClick={onClose}>Close</Button>
+                        <Button variant="primary">Download</Button>
+                    </div>
+                </motion.div>
+            </motion.div>
+        </AnimatePresence>
     );
 }

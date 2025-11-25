@@ -15,23 +15,7 @@ def get_store():
 async def list_pipelines():
     """List all unique pipelines."""
     store = get_store()
-    # We need to add a method to get unique pipelines or query manually
-    # Since we can't easily modify the store right now without potentially breaking things or reloading modules,
-    # we will use a direct query here or add a method to the store if possible.
-    # But wait, I can modify SQLiteMetadataStore.
-    # For now, let's just use what we have.
-    # We can fetch all runs and extract unique pipeline names, but that's inefficient.
-    # Let's add a method to SQLiteMetadataStore to list pipelines.
-    
-    # Actually, I'll just implement it here using raw SQL for now to avoid modifying core too much unless needed.
-    import sqlite3
-    conn = sqlite3.connect(store.db_path)
-    cursor = conn.cursor()
-    cursor.execute("SELECT DISTINCT pipeline_name FROM runs ORDER BY pipeline_name")
-    rows = cursor.fetchall()
-    conn.close()
-    
-    pipelines = [row[0] for row in rows if row[0]]
+    pipelines = store.list_pipelines()
     return {"pipelines": pipelines}
 
 @router.get("/{pipeline_name}/runs")
@@ -46,12 +30,7 @@ async def get_all_pipelines_stats():
     """Get statistics for all pipelines."""
     try:
         store = get_store()
-        import sqlite3
-        conn = sqlite3.connect(store.db_path)
-        cursor = conn.cursor()
-        cursor.execute("SELECT DISTINCT pipeline_name FROM runs")
-        pipelines = [row[0] for row in cursor.fetchall()]
-        conn.close()
+        pipelines = store.list_pipelines()
         
         if not pipelines:
             return {"total_pipelines": 0, "total_runs": 0, "pipelines": []}

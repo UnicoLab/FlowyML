@@ -38,17 +38,5 @@ async def get_run_metrics(run_id: str):
 async def get_run_artifacts(run_id: str):
     """Get artifacts for a specific run."""
     store = get_store()
-    # We need to query artifacts by run_id
-    # SQLiteMetadataStore doesn't have a direct method for this exposed nicely, 
-    # but we can add one or use raw SQL.
-    # Let's use raw SQL for now to be safe.
-    import sqlite3
-    import json
-    conn = sqlite3.connect(store.db_path)
-    cursor = conn.cursor()
-    cursor.execute("SELECT metadata FROM artifacts WHERE run_id = ?", (run_id,))
-    rows = cursor.fetchall()
-    conn.close()
-    
-    artifacts = [json.loads(row[0]) for row in rows]
+    artifacts = store.list_assets(run_id=run_id)
     return {"artifacts": artifacts}

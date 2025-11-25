@@ -2,7 +2,6 @@ import React, { useCallback, useMemo } from 'react';
 import ReactFlow, {
     Background,
     Controls,
-    MiniMap,
     useNodesState,
     useEdgesState,
     MarkerType,
@@ -169,9 +168,10 @@ export function PipelineGraph({ dag, steps, selectedStep, onStepSelect }) {
                 nodeTypes={nodeTypes}
                 fitView
                 attributionPosition="bottom-left"
-                minZoom={0.5}
+                minZoom={0.3}
                 maxZoom={1.5}
-                defaultViewport={{ x: 0, y: 0, zoom: 1 }}
+                defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
+                fitViewOptions={{ padding: 0.3 }}
             >
                 <Background
                     color="#cbd5e1"
@@ -182,17 +182,6 @@ export function PipelineGraph({ dag, steps, selectedStep, onStepSelect }) {
                 <Controls
                     className="bg-white border-2 border-slate-200 rounded-lg shadow-lg"
                     showInteractive={false}
-                />
-                <MiniMap
-                    className="bg-white border-2 border-slate-200 rounded-lg shadow-lg"
-                    nodeColor={(node) => {
-                        switch (node.data.status) {
-                            case 'success': return '#10b981';
-                            case 'failed': return '#ef4444';
-                            default: return '#94a3b8';
-                        }
-                    }}
-                    maskColor="rgba(0, 0, 0, 0.1)"
                 />
             </ReactFlow>
         </div>

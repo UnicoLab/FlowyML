@@ -27,6 +27,11 @@ class MetadataStore(ABC):
         pass
 
     @abstractmethod
+    def list_pipelines(self) -> list[str]:
+        """List all unique pipeline names."""
+        pass
+
+    @abstractmethod
     def save_artifact(self, artifact_id: str, metadata: dict) -> None:
         """Save artifact metadata."""
         pass
@@ -37,8 +42,13 @@ class MetadataStore(ABC):
         pass
 
     @abstractmethod
+    def list_assets(self, limit: Optional[int] = None, **filters) -> list[dict]:
+        """List assets with optional filters."""
+        pass
+
+    @abstractmethod
     def query(self, **filters) -> list[dict]:
-        """Query metadata with filters."""
+        """Query runs with filters."""
         pass
 
 
@@ -237,6 +247,22 @@ class SQLiteMetadataStore(MetadataStore):
 
         return [json.loads(row[0]) for row in rows]
 
+    def list_pipelines(self) -> list[str]:
+        """List all unique pipeline names.
+
+        Returns:
+            List of pipeline names
+        """
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT DISTINCT pipeline_name FROM runs ORDER BY pipeline_name")
+        rows = cursor.fetchall()
+
+        conn.close()
+
+        return [row[0] for row in rows if row[0]]
+
     def save_artifact(self, artifact_id: str, metadata: dict) -> None:
         """Save artifact metadata to database.
 
@@ -283,6 +309,43 @@ class SQLiteMetadataStore(MetadataStore):
         if row:
             return json.loads(row[0])
         return None
+
+    def list_assets(self, limit: Optional[int] = None, **filters) -> list[dict]:
+        """List assets from database with optional filters.
+
+        Args:
+            limit: Optional limit on number of results
+            **filters: Filter criteria (type, run_id, etc.)
+
+        Returns:
+            List of artifact metadata dictionaries
+        """
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        conditions = []
+        params = []
+
+        for key, value in filters.items():
+            if value is not None:
+                conditions.append(f"{key} = ?")
+                params.append(value)
+
+        query = "SELECT metadata FROM artifacts"
+        if conditions:
+            query += " WHERE " + " AND ".join(conditions)
+        
+        query += " ORDER BY created_at DESC"
+        
+        if limit:
+            query += f" LIMIT {limit}"
+
+        cursor.execute(query, params)
+        rows = cursor.fetchall()
+
+        conn.close()
+
+        return [json.loads(row[0]) for row in rows]
 
     def query(self, **filters) -> list[dict]:
         """Query runs with filters.

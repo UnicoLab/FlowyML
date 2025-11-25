@@ -40,38 +40,32 @@ async def get_stats():
         from flowy.storage.metadata import SQLiteMetadataStore
         store = SQLiteMetadataStore()
         
-        # Get all runs
-        all_runs = store.list_runs()
+        # Get base stats
+        stats = store.get_statistics()
         
-        # Calculate stats
-        total_runs = len(all_runs)
-        completed_runs = sum(1 for r in all_runs if r.get('status') == 'completed')
-        failed_runs = sum(1 for r in all_runs if r.get('status') == 'failed')
+        # Get run status counts (not in get_statistics yet)
+        # We can add this to get_statistics later, but for now let's query efficiently
+        import sqlite3
+        conn = sqlite3.connect(store.db_path)
+        cursor = conn.cursor()
         
-        # Get unique pipelines
-        try:
-            pipelines_list = store.list_pipelines()
-            num_pipelines = len(pipelines_list)
-        except:
-            num_pipelines = 0
+        cursor.execute("SELECT COUNT(*) FROM runs WHERE status = 'completed'")
+        completed_runs = cursor.fetchone()[0]
         
-        # Get artifacts count
-        try:
-            artifacts = store.list_assets()
-            num_artifacts = len(artifacts)
-        except:
-            num_artifacts = 0
+        cursor.execute("SELECT COUNT(*) FROM runs WHERE status = 'failed'")
+        failed_runs = cursor.fetchone()[0]
         
-        # Calculate average duration
-        durations = [r.get('duration', 0) for r in all_runs if r.get('duration')]
-        avg_duration = sum(durations) / len(durations) if durations else 0
+        cursor.execute("SELECT AVG(duration) FROM runs WHERE duration IS NOT NULL")
+        avg_duration = cursor.fetchone()[0] or 0
+        
+        conn.close()
         
         return {
-            "runs": total_runs,
+            "runs": stats.get('total_runs', 0),
             "completed_runs": completed_runs,
             "failed_runs": failed_runs,
-            "pipelines": num_pipelines,
-            "artifacts": num_artifacts,
+            "pipelines": stats.get('total_pipelines', 0),
+            "artifacts": stats.get('total_artifacts', 0),
             "avg_duration": avg_duration
         }
     except Exception as e:
@@ -82,7 +76,8 @@ async def get_stats():
             "failed_runs": 0,
             "pipelines": 0,
             "artifacts": 0,
-            "avg_duration": 0
+            "avg_duration": 0,
+            "error": str(e)
         }
 
 # Static file serving for frontend

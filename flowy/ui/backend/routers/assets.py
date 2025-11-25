@@ -13,39 +13,15 @@ async def list_assets(limit: int = 50, type: str = None, run_id: str = None):
     """List all assets."""
     try:
         store = get_store()
-        import sqlite3
-        import json
-        conn = sqlite3.connect(store.db_path)
-        cursor = conn.cursor()
         
-        conditions = []
-        params = []
-        
+        # Build filters
+        filters = {}
         if type:
-            conditions.append("type = ?")
-            params.append(type)
-            
+            filters['type'] = type
         if run_id:
-            conditions.append("run_id = ?")
-            params.append(run_id)
+            filters['run_id'] = run_id
             
-        if conditions:
-            query = "SELECT artifact_id, metadata FROM artifacts WHERE " + " AND ".join(conditions)
-        else:
-            query = "SELECT artifact_id, metadata FROM artifacts"
-            
-        query += " ORDER BY created_at DESC LIMIT ?"
-        params.append(limit)
-        
-        cursor.execute(query, params)
-        rows = cursor.fetchall()
-        conn.close()
-        
-        assets = []
-        for row in rows:
-            asset = json.loads(row[1])
-            asset['artifact_id'] = row[0]
-            assets.append(asset)
+        assets = store.list_assets(limit=limit, **filters)
             
         return {"assets": assets}
     except Exception as e:
