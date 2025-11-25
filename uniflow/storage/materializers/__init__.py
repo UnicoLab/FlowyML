@@ -6,6 +6,7 @@ from uniflow.storage.materializers.tensorflow import TensorFlowMaterializer
 from uniflow.storage.materializers.sklearn import SklearnMaterializer
 from uniflow.storage.materializers.pandas import PandasMaterializer
 from uniflow.storage.materializers.numpy import NumPyMaterializer
+from uniflow.storage.materializers.keras import KerasMaterializer
 
 __all__ = [
     "BaseMaterializer",
@@ -15,4 +16,5 @@ __all__ = [
     "SklearnMaterializer",
     "PandasMaterializer",
     "NumPyMaterializer",
+    "KerasMaterializer",
 ]
