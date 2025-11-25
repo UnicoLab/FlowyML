@@ -313,6 +313,44 @@ class Pipeline:
         with open(run_file, 'w') as f:
             json.dump(result.to_dict(), f, indent=2)
         
+        # Serialize DAG structure for UI
+        dag_data = {
+            'nodes': [
+                {
+                    'id': node.name,
+                    'name': node.name,
+                    'inputs': node.inputs,
+                    'outputs': node.outputs
+                }
+                for node in self.dag.nodes.values()
+            ],
+            'edges': [
+                {
+                    'source': dep,
+                    'target': node_name
+                }
+                for node_name, deps in self.dag.edges.items()
+                for dep in deps
+            ]
+        }
+        
+        # Collect step metadata including source code
+        steps_metadata = {}
+        for step in self.steps:
+            step_result = result.step_results.get(step.name)
+            steps_metadata[step.name] = {
+                'success': step_result.success if step_result else False,
+                'duration': step_result.duration_seconds if step_result else 0,
+                'cached': step_result.cached if step_result else False,
+                'retries': step_result.retries if step_result else 0,
+                'error': step_result.error if step_result else None,
+                'source_code': step.source_code,
+                'inputs': step.inputs,
+                'outputs': step.outputs,
+                'tags': step.tags,
+                'resources': step.resources
+            }
+        
         # Save to metadata database for UI
         metadata = {
             'run_id': result.run_id,
@@ -323,7 +361,8 @@ class Pipeline:
             'duration': result.duration_seconds,
             'success': result.success,
             'context': self.context._params if hasattr(self.context, '_params') else {},
-            'steps': result.to_dict()['steps']
+            'steps': steps_metadata,
+            'dag': dag_data
         }
         self.metadata_store.save_run(result.run_id, metadata)
         

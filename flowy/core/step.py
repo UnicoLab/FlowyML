@@ -58,6 +58,12 @@ class Step:
         self.tags = tags or {}
         self.condition = condition
         
+        # Capture source code for UI display
+        try:
+            self.source_code = inspect.getsource(func)
+        except (OSError, TypeError):
+            self.source_code = "# Source code not available"
+        
         self.config = StepConfig(
             name=self.name,
             func=func,

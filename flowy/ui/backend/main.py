@@ -32,6 +32,59 @@ app.include_router(runs.router, prefix="/api/runs", tags=["runs"])
 app.include_router(assets.router, prefix="/api/assets", tags=["assets"])
 app.include_router(experiments.router, prefix="/api/experiments", tags=["experiments"])
 
+# Stats endpoint for dashboard
+@app.get("/api/stats")
+async def get_stats():
+    """Get overall statistics for the dashboard."""
+    try:
+        from flowy.storage.metadata import SQLiteMetadataStore
+        store = SQLiteMetadataStore()
+        
+        # Get all runs
+        all_runs = store.list_runs()
+        
+        # Calculate stats
+        total_runs = len(all_runs)
+        completed_runs = sum(1 for r in all_runs if r.get('status') == 'completed')
+        failed_runs = sum(1 for r in all_runs if r.get('status') == 'failed')
+        
+        # Get unique pipelines
+        try:
+            pipelines_list = store.list_pipelines()
+            num_pipelines = len(pipelines_list)
+        except:
+            num_pipelines = 0
+        
+        # Get artifacts count
+        try:
+            artifacts = store.list_assets()
+            num_artifacts = len(artifacts)
+        except:
+            num_artifacts = 0
+        
+        # Calculate average duration
+        durations = [r.get('duration', 0) for r in all_runs if r.get('duration')]
+        avg_duration = sum(durations) / len(durations) if durations else 0
+        
+        return {
+            "runs": total_runs,
+            "completed_runs": completed_runs,
+            "failed_runs": failed_runs,
+            "pipelines": num_pipelines,
+            "artifacts": num_artifacts,
+            "avg_duration": avg_duration
+        }
+    except Exception as e:
+        # Return default stats if there's an error
+        return {
+            "runs": 0,
+            "completed_runs": 0,
+            "failed_runs": 0,
+            "pipelines": 0,
+            "artifacts": 0,
+            "avg_duration": 0
+        }
+
 # Static file serving for frontend
 # Path to frontend build
 frontend_dist = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", "dist")
