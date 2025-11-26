@@ -56,6 +56,11 @@ from uniflow.storage import (
     materializer_registry,
 )
 
+# Monitoring & Integrations
+from uniflow.monitoring.llm import trace_llm, tracer
+from uniflow.monitoring.data import detect_drift, compute_stats
+from uniflow.integrations.keras import UniFlowKerasCallback
+
 __all__ = [
     # Core
     "Context",
@@ -109,4 +114,10 @@ __all__ = [
     "MetadataStore",
     "SQLiteMetadataStore",
     "materializer_registry",
+    # Monitoring & Integrations
+    "trace_llm",
+    "tracer",
+    "detect_drift",
+    "compute_stats",
+    "UniFlowKerasCallback",
 ]

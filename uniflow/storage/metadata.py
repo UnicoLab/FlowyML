@@ -147,6 +147,31 @@ class SQLiteMetadataStore(MetadataStore):
             )
         """)
 
+        # Traces table for GenAI monitoring
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS traces (
+                event_id TEXT PRIMARY KEY,
+                trace_id TEXT,
+                parent_id TEXT,
+                event_type TEXT,
+                name TEXT,
+                inputs TEXT,
+                outputs TEXT,
+                start_time REAL,
+                end_time REAL,
+                duration REAL,
+                status TEXT,
+                error TEXT,
+                metadata TEXT,
+                prompt_tokens INTEGER,
+                completion_tokens INTEGER,
+                total_tokens INTEGER,
+                cost REAL,
+                model TEXT,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
         # Create indexes for better query performance
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_runs_pipeline ON runs(pipeline_name)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_runs_status ON runs(status)")
@@ -154,6 +179,8 @@ class SQLiteMetadataStore(MetadataStore):
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_metrics_run ON metrics(run_id)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_parameters_run ON parameters(run_id)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_experiments_name ON experiments(name)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_traces_trace_id ON traces(trace_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_traces_type ON traces(event_type)")
 
         conn.commit()
         conn.close()
@@ -594,3 +621,75 @@ class SQLiteMetadataStore(MetadataStore):
 
         return stats
 
+    def save_trace_event(self, event: dict) -> None:
+        """Save a trace event.
+        
+        Args:
+            event: Trace event dictionary
+        """
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            INSERT OR REPLACE INTO traces
+            (event_id, trace_id, parent_id, event_type, name, inputs, outputs, 
+             start_time, end_time, duration, status, error, metadata,
+             prompt_tokens, completion_tokens, total_tokens, cost, model)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            event['event_id'],
+            event['trace_id'],
+            event['parent_id'],
+            event['event_type'],
+            event['name'],
+            json.dumps(event.get('inputs', {})),
+            json.dumps(event.get('outputs', {})),
+            event.get('start_time'),
+            event.get('end_time'),
+            event.get('duration'),
+            event.get('status'),
+            event.get('error'),
+            json.dumps(event.get('metadata', {})),
+            event.get('prompt_tokens', 0),
+            event.get('completion_tokens', 0),
+            event.get('total_tokens', 0),
+            event.get('cost', 0.0),
+            event.get('model')
+        ))
+        
+        conn.commit()
+        conn.close()
+        
+    def get_trace(self, trace_id: str) -> list[dict]:
+        """Get all events for a trace.
+        
+        Args:
+            trace_id: Trace identifier
+            
+        Returns:
+            List of event dictionaries
+        """
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT * FROM traces WHERE trace_id = ? ORDER BY start_time
+        """, (trace_id,))
+        
+        columns = [description[0] for description in cursor.description]
+        rows = cursor.fetchall()
+        
+        events = []
+        for row in rows:
+            event = dict(zip(columns, row))
+            # Parse JSON fields
+            for field in ['inputs', 'outputs', 'metadata']:
+                if event[field]:
+                    try:
+                        event[field] = json.loads(event[field])
+                    except:
+                        pass
+            events.append(event)
+            
+        conn.close()
+        return events
