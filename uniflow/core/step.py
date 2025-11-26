@@ -90,9 +90,13 @@ class Step:
         return self.func(*args, **kwargs)
     
     def get_code_hash(self) -> str:
-        """Generate hash of function code for caching."""
-        source = inspect.getsource(self.func)
-        return hashlib.sha256(source.encode()).hexdigest()[:16]
+        """Compute hash of the step's source code."""
+        try:
+            source = inspect.getsource(self.func)
+            return hashlib.md5(source.encode()).hexdigest()
+        except (OSError, TypeError):
+            # Fallback for dynamically defined functions or when source is unavailable
+            return hashlib.md5(self.name.encode()).hexdigest()[:16]
     
     def get_input_hash(self, inputs: Dict[str, Any]) -> str:
         """Generate hash of inputs for caching."""

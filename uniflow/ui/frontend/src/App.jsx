@@ -13,7 +13,10 @@ import { Assets } from './components/Assets'
 import { Experiments } from './components/Experiments'
 import { ExperimentDetails } from './components/ExperimentDetails'
 import { Settings as SettingsPage } from './components/Settings'
-import Traces from './components/Traces'
+import Traces from './components/Traces';
+import Projects from './components/Projects';
+import Schedules from './components/Schedules';
+import Leaderboard from './components/Leaderboard';
 import { format } from 'date-fns'
 
 function App() {
@@ -28,6 +31,9 @@ function App() {
                 <Route path="/experiments" element={<Experiments />} />
                 <Route path="/experiments/:experimentId" element={<ExperimentDetails />} />
                 <Route path="/traces" element={<Traces />} />
+                <Route path="/projects" element={<Projects />} />
+                <Route path="/schedules" element={<Schedules />} />
+                <Route path="/leaderboard" element={<Leaderboard />} />
                 <Route path="/settings" element={<SettingsPage />} />
             </Routes>
         </Layout>

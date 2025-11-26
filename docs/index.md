@@ -33,8 +33,23 @@ Monitor your pipelines as they run. Visualize the DAG, inspect artifacts, and tr
 ### 📦 Asset Management
 Treat Datasets, Models, and Metrics as first-class citizens. UniFlow tracks their lineage, versioning, and metadata automatically.
 
-### 🏛️ Model Registry
+###  🏛️ Model Registry
 Manage your model lifecycle from development to production with a built-in registry.
+
+### 🔄 Pipeline Versioning
+Track, compare, and manage different versions of your pipelines with full change detection.
+
+### 📁 Project Management
+Organize pipelines into isolated projects for multi-tenant deployments and resource tracking.
+
+### ⏰ Automated Scheduling
+Schedule pipelines for daily, hourly, or interval-based execution with flexible control.
+
+### 🔧 Advanced Debugging
+Comprehensive debugging tools including breakpoints, tracing, profiling, and error analysis.
+
+### ⚡ Performance Optimization
+Lazy evaluation, parallel execution, incremental computation, and GPU management for optimal performance.
 
 ## Quick Example ⚡
 

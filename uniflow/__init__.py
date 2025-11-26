@@ -75,6 +75,32 @@ from uniflow.core.approval import approval, ApprovalStep
 from uniflow.core.checkpoint import PipelineCheckpoint, checkpoint_enabled_pipeline
 from uniflow.core.templates import create_from_template, list_templates, TEMPLATES
 from uniflow.tracking.leaderboard import ModelLeaderboard, compare_runs
+from uniflow.core.versioning import VersionedPipeline, PipelineVersion
+from uniflow.core.project import Project, ProjectManager
+from uniflow.core.advanced_cache import (
+    ContentBasedCache,
+    SharedCache,
+    SmartCache,
+    memoize,
+)
+from uniflow.utils.debug import (
+    StepDebugger,
+    PipelineDebugger,
+    debug_step,
+    trace_step,
+    profile_step,
+    inspect_step,
+)
+from uniflow.utils.performance import (
+    LazyValue,
+    lazy_property,
+    ParallelExecutor,
+    IncrementalComputation,
+    GPUResourceManager,
+    optimize_dataframe,
+    batch_iterator,
+)
+from uniflow.registry.pipeline_registry import pipeline_registry, register_pipeline
 
 __all__ = [
     # Core
@@ -152,4 +178,32 @@ __all__ = [
     "ConsoleNotifier",
     "SlackNotifier",
     "EmailNotifier",
+    # Versioning & Projects
+    "VersionedPipeline",
+    "PipelineVersion",
+    "Project",
+    "ProjectManager",
+    # Advanced Caching
+    "ContentBasedCache",
+    "SharedCache",
+    "SmartCache",
+    "memoize",
+    # Debugging
+    "StepDebugger",
+    "PipelineDebugger",
+    "debug_step",
+    "trace_step",
+    "profile_step",
+    "inspect_step",
+    # Performance
+    "LazyValue",
+    "lazy_property",
+    "ParallelExecutor",
+    "IncrementalComputation",
+    "GPUResourceManager",
+    "optimize_dataframe",
+    "batch_iterator",
+    # Registry
+    "pipeline_registry",
+    "register_pipeline",
 ]
