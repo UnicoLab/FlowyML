@@ -78,6 +78,15 @@ class Context:
         result.update(self._params)
         return result
     
+    def update(self, data: Dict[str, Any]) -> None:
+        """
+        Update context with new data.
+        
+        Args:
+            data: Dictionary of key-value pairs to add to context
+        """
+        self._params.update(data)
+    
     def inherit(self, **overrides) -> "Context":
         """Create child context with inheritance."""
         child = Context(**overrides)

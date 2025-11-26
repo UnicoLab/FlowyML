@@ -215,7 +215,7 @@ def get_component_registry() -> ComponentRegistry:
     return _global_component_registry
 
 
-def register_component(component_class: Type[StackComponent], name: Optional[str] = None):
+def register_component(component_class=None, name: Optional[str] = None):
     """
     Decorator to register a custom component.
     
@@ -229,6 +229,11 @@ def register_component(component_class: Type[StackComponent], name: Optional[str
             def run_pipeline(self, pipeline):
                 # Custom logic
                 pass
+        
+       # Or with custom name:
+        @register_component(name="my_custom_name")
+        class AnotherOrchestrator(Orchestrator):
+            pass
         ```
     """
     def wrapper(cls):

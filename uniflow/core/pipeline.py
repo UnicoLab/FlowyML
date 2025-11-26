@@ -118,9 +118,17 @@ class Pipeline:
         cache_dir: Optional[str] = None,
         stack: Optional[Any] = None,  # Stack instance
     ):
+        """
+        Args:
+        name: Name of the pipeline
+        context: Optional context for parameter injection
+        executor: Optional executor (defaults to LocalExecutor)
+        enable_cache: Whether to enable caching
+        cache_dir: Optional directory for cache
+        stack: Optional stack instance to run on
+        """
         self.name = name
         self.context = context or Context()
-        self.executor = executor or LocalExecutor()
         self.enable_cache = enable_cache
         self.stack = stack  # Store stack instance
         
@@ -138,9 +146,15 @@ class Pipeline:
         self.runs_dir = get_config().runs_dir
         self.runs_dir.mkdir(parents=True, exist_ok=True)
         
-        # Metadata store for UI integration
-        from uniflow.storage.metadata import SQLiteMetadataStore
-        self.metadata_store = SQLiteMetadataStore()
+        # Initialize components from stack or defaults
+        if self.stack:
+            self.executor = executor or self.stack.executor
+            self.metadata_store = self.stack.metadata_store
+        else:
+            self.executor = executor or LocalExecutor()
+            # Metadata store for UI integration
+            from uniflow.storage.metadata import SQLiteMetadataStore
+            self.metadata_store = SQLiteMetadataStore()
         
         # State
         self._built = False
@@ -213,6 +227,9 @@ class Pipeline:
         # Use provided stack or instance stack
         if stack is not None:
             self.stack = stack
+            # Update components from new stack
+            self.executor = self.stack.executor
+            self.metadata_store = self.stack.metadata_store
         
         # Update context with provided values
         if context:

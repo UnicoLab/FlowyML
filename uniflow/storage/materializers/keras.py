@@ -104,13 +104,13 @@ if KERAS_AVAILABLE:
                 except:
                     metadata["has_config"] = False
 
-                # Save weights separately for backup
-                try:
-                    weights_path = path / "weights.h5"
-                    obj.save_weights(weights_path)
-                    metadata["has_weights_backup"] = True
-                except:
-                    metadata["has_weights_backup"] = False
+                # Save weights separately for backup - REMOVED for Keras 3 compatibility
+                # try:
+                #     weights_path = path / "weights.h5"
+                #     obj.save_weights(weights_path)
+                #     metadata["has_weights_backup"] = True
+                # except:
+                #     metadata["has_weights_backup"] = False
 
                 # Save metadata
                 metadata_path = path / "metadata.json"

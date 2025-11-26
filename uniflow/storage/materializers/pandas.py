@@ -108,7 +108,7 @@ if PANDAS_AVAILABLE:
                     return df.iloc[:, 0]
                 else:
                     data_path = path / "data.csv"
-                    series = pd.read_csv(data_path, index_col=0, squeeze=True)
+                    series = pd.read_csv(data_path, index_col=0)
                     if isinstance(series, pd.DataFrame):
                         series = series.iloc[:, 0]
                     return series
