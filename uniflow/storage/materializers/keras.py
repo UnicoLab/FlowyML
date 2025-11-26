@@ -34,7 +34,15 @@ if KERAS_AVAILABLE:
             if isinstance(obj, keras.Model):
                 # Save model in Keras native format (.keras)
                 model_path = path / "model.keras"
-                obj.save(model_path)
+                try:
+                    obj.save(model_path)
+                except ValueError as e:
+                    if "save_format" in str(e):
+                        # Fallback for Keras 3 compatibility - try H5
+                        h5_path = path / "model.h5"
+                        obj.save(h5_path)
+                    else:
+                        raise e
 
                 # Save comprehensive metadata
                 metadata = {

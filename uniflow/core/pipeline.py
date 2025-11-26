@@ -224,12 +224,20 @@ class Pipeline:
         Returns:
             PipelineResult with outputs and execution info
         """
+        import uuid
+        run_id = str(uuid.uuid4())
+        
         # Use provided stack or instance stack
         if stack is not None:
             self.stack = stack
             # Update components from new stack
             self.executor = self.stack.executor
             self.metadata_store = self.stack.metadata_store
+        
+        # Determine artifact store
+        artifact_store = None
+        if self.stack:
+            artifact_store = self.stack.artifact_store
         
         # Update context with provided values
         if context:
@@ -238,14 +246,17 @@ class Pipeline:
         # Build DAG if needed
         if not self._built:
             self.build()
-        
-        # Generate run ID
-        run_id = f"{self.name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            
+        # Initialize result
         result = PipelineResult(run_id, self.name)
+        step_outputs = inputs or {}
         
         # Get execution order
         execution_order = self.dag.topological_sort()
         
+        # Map step names to step objects for easier lookup
+        self.steps_dict = {step.name: step for step in self.steps}
+
         if debug:
             print(f"\n🌊 Starting pipeline: {self.name}")
             print(f"Run ID: {run_id}")
@@ -257,12 +268,10 @@ class Pipeline:
             print(f"🌊 Pipeline '{self.name}' started. Run ID: {run_id}")
             print(f"👉 View run at: http://localhost:8080/runs/{run_id}")
         
-        # Track outputs from executed steps
-        step_outputs: Dict[str, Any] = inputs or {}
-        
         # Execute steps in order
         for node in execution_order:
             step = node.step
+            step_name = step.name
             
             if debug:
                 print(f"\n▶ Executing step: {step.name}")
@@ -280,6 +289,7 @@ class Pipeline:
                 )
                 result.add_step_result(step_result)
                 result.finalize(success=False)
+                self._save_run(result) # Save run before returning
                 return result
             
             # Prepare step inputs
@@ -300,7 +310,10 @@ class Pipeline:
                 step,
                 step_inputs,
                 context_params,
-                self.cache_store
+                self.cache_store,
+                artifact_store=artifact_store,
+                run_id=run_id,
+                project_name=self.name
             )
             
             result.add_step_result(step_result)

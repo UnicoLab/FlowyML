@@ -92,3 +92,13 @@ def train(clean_data):
 Assets are stored in the **Artifact Store**. By default, this is the `.uniflow/artifacts` directory in your project.
 
 UniFlow supports pluggable storage backends (S3, GCS, Azure) via `fsspec`. Configuration is handled in `uniflow.yaml`.
+
+## Automatic Materialization 📦
+
+When running a pipeline with a Stack that has an Artifact Store configured, UniFlow automatically materializes step outputs.
+
+The artifacts are stored in a structured path:
+`{project_name}/{date}/{run_id}/data/{step_name}/{artifact_name}`
+
+This ensures that every run is reproducible and all intermediate data is persisted. UniFlow uses **Materializers** to handle serialization for different data types (Pandas, NumPy, Keras, PyTorch, etc.).
+

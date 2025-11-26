@@ -12,6 +12,8 @@
 - **💾 Intelligent Caching** - Multi-level caching with code and input hashing
 - **📊 Asset-Centric** - First-class support for datasets, models, and metrics
 - **🔄 Lineage Tracking** - Full provenance tracking for all assets
+- **🧩 Extensible Stacks** - Pluggable architecture for local, cloud, and hybrid execution
+- **🔌 Plugin System** - Easily extend with custom orchestrators and artifact stores
 - **🏗️ Production Ready** - Built-in retries, versioning, and multi-cloud support
 - **🎨 Framework Agnostic** - Works with PyTorch, TensorFlow, scikit-learn, and more
 
@@ -58,6 +60,33 @@ Then visit **http://localhost:8080** to see:
 - 🔍 Experiment comparison tools
 
 **See the full [UI Guide](UI_GUIDE.md) for detailed instructions.**
+
+## 🧩 Stacks & Plugins
+
+UniFlow supports swappable execution environments called **Stacks**.
+
+```bash
+# List available stacks
+uniflow stack list
+
+# Switch to GCP stack
+uniflow stack set-default production
+
+# Run pipeline on specific stack
+uniflow run pipeline.py --stack production
+```
+
+Configure stacks in `uniflow.yaml`:
+
+```yaml
+stacks:
+  production:
+    type: gcp
+    project_id: my-project
+    artifact_store:
+      type: gcs
+      bucket: my-bucket
+```
 
 
 ## 🚀 Quick Start

@@ -19,6 +19,7 @@ class ExecutionResult:
     duration_seconds: float = 0.0
     cached: bool = False
     skipped: bool = False
+    artifact_uri: Optional[str] = None
     retries: int = 0
     timestamp: datetime = None
     
@@ -62,9 +63,12 @@ class LocalExecutor(Executor):
         step,
         inputs: Dict[str, Any],
         context_params: Dict[str, Any],
-        cache_store: Optional[Any] = None
+        cache_store: Optional[Any] = None,
+        artifact_store: Optional[Any] = None,
+        run_id: Optional[str] = None,
+        project_name: str = "default"
     ) -> ExecutionResult:
-        """Execute step locally with retry and caching."""
+        """Execute step locally with retry, caching, and materialization."""
         start_time = time.time()
         retries = 0
         
@@ -134,6 +138,20 @@ class LocalExecutor(Executor):
                 # Execute step
                 result = step.func(**kwargs)
                 
+                # Materialize output if artifact store is available
+                artifact_uri = None
+                if artifact_store and result is not None and run_id:
+                    try:
+                        artifact_uri = artifact_store.materialize(
+                            obj=result,
+                            name="output",  # Default name for single output
+                            run_id=run_id,
+                            step_name=step.name,
+                            project_name=project_name
+                        )
+                    except Exception as e:
+                        print(f"Warning: Failed to materialize output for step {step.name}: {e}")
+
                 # Cache result
                 if cache_store and step.cache:
                     cache_key = step.get_cache_key(inputs)
@@ -150,7 +168,8 @@ class LocalExecutor(Executor):
                     success=True,
                     output=result,
                     duration_seconds=duration,
-                    retries=retries
+                    retries=retries,
+                    artifact_uri=artifact_uri
                 )
                 
             except Exception as e:
