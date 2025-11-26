@@ -25,12 +25,13 @@ async def health_check():
     return {"status": "ok", "version": "0.1.0"}
 
 # Include API routers
-from uniflow.ui.backend.routers import pipelines, runs, assets, experiments
+from uniflow.ui.backend.routers import pipelines, runs, assets, experiments, traces
 
 app.include_router(pipelines.router, prefix="/api/pipelines", tags=["pipelines"])
 app.include_router(runs.router, prefix="/api/runs", tags=["runs"])
 app.include_router(assets.router, prefix="/api/assets", tags=["assets"])
 app.include_router(experiments.router, prefix="/api/experiments", tags=["experiments"])
+app.include_router(traces.router, prefix="/api/traces", tags=["traces"])
 
 # Stats endpoint for dashboard
 @app.get("/api/stats")

@@ -59,7 +59,22 @@ from uniflow.storage import (
 # Monitoring & Integrations
 from uniflow.monitoring.llm import trace_llm, tracer
 from uniflow.monitoring.data import detect_drift, compute_stats
+from uniflow.monitoring.notifications import (
+    NotificationManager,
+    configure_notifications,
+    get_notifier,
+    ConsoleNotifier,
+    SlackNotifier,
+    EmailNotifier,
+)
 from uniflow.integrations.keras import UniFlowKerasCallback
+
+# Advanced Features
+from uniflow.core.scheduler import PipelineScheduler
+from uniflow.core.approval import approval, ApprovalStep
+from uniflow.core.checkpoint import PipelineCheckpoint, checkpoint_enabled_pipeline
+from uniflow.core.templates import create_from_template, list_templates, TEMPLATES
+from uniflow.tracking.leaderboard import ModelLeaderboard, compare_runs
 
 __all__ = [
     # Core
@@ -120,4 +135,21 @@ __all__ = [
     "detect_drift",
     "compute_stats",
     "UniFlowKerasCallback",
+    # Advanced Features
+    "PipelineScheduler",
+    "approval",
+    "ApprovalStep",
+    "PipelineCheckpoint",
+    "checkpoint_enabled_pipeline",
+    "create_from_template",
+    "list_templates",
+    "TEMPLATES",
+    "ModelLeaderboard",
+    "compare_runs",
+    "NotificationManager",
+    "configure_notifications",
+    "get_notifier",
+    "ConsoleNotifier",
+    "SlackNotifier",
+    "EmailNotifier",
 ]

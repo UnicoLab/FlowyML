@@ -13,6 +13,7 @@ import { Assets } from './components/Assets'
 import { Experiments } from './components/Experiments'
 import { ExperimentDetails } from './components/ExperimentDetails'
 import { Settings as SettingsPage } from './components/Settings'
+import Traces from './components/Traces'
 import { format } from 'date-fns'
 
 function App() {
@@ -26,6 +27,7 @@ function App() {
                 <Route path="/assets" element={<Assets />} />
                 <Route path="/experiments" element={<Experiments />} />
                 <Route path="/experiments/:experimentId" element={<ExperimentDetails />} />
+                <Route path="/traces" element={<Traces />} />
                 <Route path="/settings" element={<SettingsPage />} />
             </Routes>
         </Layout>
