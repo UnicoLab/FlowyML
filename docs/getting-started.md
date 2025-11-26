@@ -45,37 +45,37 @@ my-first-project/
 Open `src/pipeline.py` and replace its content with this simple example:
 
 ```python
-from uniflow import pipeline, step, context
+from uniflow import Pipeline, step, context
 
-# 1. Define a Step
-@step
+# 1. Define Steps
+@step(outputs=["data"])
 def fetch_data():
     print("Fetching data...")
     return [1, 2, 3, 4, 5]
 
 # 2. Define another Step with inputs
-@step(inputs=["data"])
+@step(inputs=["data"], outputs=["processed"])
 def process_data(data):
     print(f"Processing {len(data)} items...")
     return [x * 2 for x in data]
 
-# 3. Define the Pipeline
-@pipeline
-def my_first_pipeline():
-    # Connect steps
-    data = fetch_data()
-    result = process_data(data)
-    return result
-
+# 3. Create and configure the Pipeline
 if __name__ == "__main__":
-    # 4. Run it!
-    run = my_first_pipeline()
+    # Create pipeline
+    pipeline = Pipeline("my_first_pipeline")
     
-    if run.success:
-        print(f"Pipeline finished successfully!")
-        print(f"Result: {run.result}")
+    # Add steps in order
+    pipeline.add_step(fetch_data)
+    pipeline.add_step(process_data)
+    
+    # 4. Run it!
+    result = pipeline.run()
+    
+    if result.success:
+        print(f"✓ Pipeline finished successfully!")
+        print(f"Result: {result.outputs}")
     else:
-        print(f"Pipeline failed: {run.error}")
+        print(f"✗ Pipeline failed")
 ```
 
 ## Running the Pipeline ▶️

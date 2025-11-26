@@ -48,20 +48,20 @@ Create `training_pipeline.py`:
 ```python
 """Clean ML training pipeline - infrastructure agnostic."""
 
-from uniflow import Pipeline, step, Dataset, Model, Metrics
+from uniflow import Pipeline, step, context, Dataset, Model, Metrics
 import tensorflow as tf
 import pandas as pd
 import numpy as np
 
 
-@step
+@step(outputs=["dataset"])
 def load_data(data_path: str):
     """Load and prepare training data."""
     # In production, load from data_path
     # For tutorial, generate synthetic data
     np.random.seed(42)
     X = np.random.randn(1000, 20)
-    y = (X[: 0] + X[:, 1] > 0).astype(int)
+    y = (X[:, 0] + X[:, 1] > 0).astype(int)
     
     df = pd.DataFrame(X)
     df['label'] = y
@@ -69,13 +69,15 @@ def load_data(data_path: str):
     return Dataset.create(
         data=df,
         name="training_data",
-        rows=len(df),
-        cols=len(df.columns),
-        source=data_path
+        properties={
+            "rows": len(df),
+            "cols": len(df.columns),
+            "source": data_path
+        }
     )
 
 
-@step
+@step(inputs=["dataset"], outputs=["train_data", "val_data"])
 def split_data(dataset: Dataset):
     """Split into train and validation sets."""
     df = dataset.data
@@ -85,30 +87,30 @@ def split_data(dataset: Dataset):
     train_df = df.iloc[:split_idx]
     val_df = df.iloc[split_idx:]
     
-    return {
-        "train": Dataset.create(
-            data=train_df,
-            name="train_data",
-            parent=dataset,
-            split="train"
-        ),
-        "val": Dataset.create(
-            data=val_df,
-            name="val_data",
-            parent=dataset,
-            split="validation"
-        )
-    }
+    train_dataset = Dataset.create(
+        data=train_df,
+        name="train_data",
+        parent=dataset,
+        properties={"split": "train"}
+    )
+    val_dataset = Dataset.create(
+        data=val_df,
+        name="val_data",
+        parent=dataset,
+        properties={"split": "validation"}
+    )
+    
+    return train_dataset, val_dataset
 
 
-@step
-def train_model(datasets: dict, epochs: int = 10):
+@step(inputs=["train_data"], outputs=["model"])
+def train_model(train_data: Dataset, epochs: int):
     """Train TensorFlow model."""
-    train_data = datasets["train"].data
+    df = train_data.data
     
     # Prepare data
-    X_train = train_data.drop('label', axis=1).values
-    y_train = train_data['label'].values
+    X_train = df.drop('label', axis=1).values
+    y_train = df['label'].values
     
     # Build model
     model = tf.keras.Sequential([
@@ -137,17 +139,17 @@ def train_model(datasets: dict, epochs: int = 10):
         data=model,
         name="binary_classifier",
         framework="tensorflow",
-        parent=datasets["train"]
+        parent=train_data
     )
 
 
-@step
-def evaluate_model(model: Model, datasets: dict):
+@step(inputs=["model", "val_data"], outputs=["metrics"])
+def evaluate_model(model: Model, val_data: Dataset):
     """Evaluate on validation set."""
-    val_data = datasets["val"].data
+    df = val_data.data
     
-    X_val = val_data.drop('label', axis=1).values
-    y_val = val_data['label'].values
+    X_val = df.drop('label', axis=1).values
+    y_val = df['label'].values
     
     # Evaluate
     tf_model = model.data
@@ -162,21 +164,25 @@ def evaluate_model(model: Model, datasets: dict):
 
 
 # Create pipeline - NO infrastructure code!
-pipeline = Pipeline("ml_training")
-pipeline.add_step(load_data)
-pipeline.add_step(split_data)
-pipeline.add_step(train_model)
-pipeline.add_step(evaluate_model)
-
-
 if __name__ == "__main__":
-    result = pipeline.run(
-        context={
-            "data_path": "data/train.csv",
-            "epochs": 10
-        }
+    ctx = context(
+        data_path="data/train.csv",
+        epochs=10
     )
-    print(f"✅ Training complete: {result}")
+    
+    pipeline = Pipeline("ml_training", context=ctx)
+    pipeline.add_step(load_data)
+    pipeline.add_step(split_data)
+    pipeline.add_step(train_model)
+    pipeline.add_step(evaluate_model)
+    
+    result = pipeline.run()
+    
+    if result.success:
+        print(f"✅ Training complete!")
+        print(f"Accuracy: {result.outputs['metrics'].accuracy:.2%}")
+    else:
+        print(f"❌ Training failed")
 ```
 
 ## Step 3: Test Locally

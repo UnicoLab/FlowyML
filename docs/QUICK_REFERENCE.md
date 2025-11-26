@@ -122,19 +122,21 @@ stacks:
 ## Pipeline Code (Clean & Simple)
 
 ```python
-from uniflow import Pipeline, step
+from uniflow import Pipeline, step, context
 
-@step
+@step(outputs=["result"])
 def my_step(input_data: str):
     # Your logic
-    return {"output": input_data.upper()}
+    return input_data.upper()
 
 # NO infrastructure code needed!
-pipeline = Pipeline("my_pipeline")
+ctx = context(input_data="hello")
+pipeline = Pipeline("my_pipeline", context=ctx)
 pipeline.add_step(my_step)
 
 if __name__ == "__main__":
-    result = pipeline.run(context={"input_data": "hello"})
+    result = pipeline.run()
+    print(f"Result: {result.outputs['result']}")  # "HELLO"
 ```
 
 ## Common Workflows

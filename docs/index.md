@@ -39,24 +39,28 @@ Manage your model lifecycle from development to production with a built-in regis
 ## Quick Example ⚡
 
 ```python
-from uniflow import pipeline, step, context
+from uniflow import Pipeline, step, context
 
-@step
+# Define steps using decorators
+@step(outputs=["data"])
 def load_data():
     return [1, 2, 3]
 
-@step
-def train(data, learning_rate=0.01):
+@step(inputs=["data"], outputs=["model"])
+def train(data, learning_rate: float):
     # learning_rate injected from context!
+    print(f"Training with lr={learning_rate}")
     return "model_v1"
 
-@pipeline
-def train_pipeline():
-    data = load_data()
-    return train(data)
+# Create pipeline and add steps
+ctx = context(learning_rate=0.05)
+pipeline = Pipeline("training_pipeline", context=ctx)
+pipeline.add_step(load_data)
+pipeline.add_step(train)
 
-# Run with context
-train_pipeline(context={"learning_rate": 0.05})
+# Run the pipeline
+result = pipeline.run()
+print(f"Success: {result.success}")
 ```
 
 ## Getting Started 📚
