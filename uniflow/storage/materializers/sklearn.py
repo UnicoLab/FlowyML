@@ -3,19 +3,22 @@
 import json
 import pickle
 from pathlib import Path
-from typing import Any, Type
+from typing import Any
 
 from uniflow.storage.materializers.base import BaseMaterializer, register_materializer
+import contextlib
+import builtins
 
 try:
-    import sklearn
     from sklearn.base import BaseEstimator
+
     SKLEARN_AVAILABLE = True
 except ImportError:
     SKLEARN_AVAILABLE = False
 
 
 if SKLEARN_AVAILABLE:
+
     class SklearnMaterializer(BaseMaterializer):
         """Materializer for scikit-learn models."""
 
@@ -30,7 +33,7 @@ if SKLEARN_AVAILABLE:
 
             # Save model using pickle
             model_path = path / "model.pkl"
-            with open(model_path, 'wb') as f:
+            with open(model_path, "wb") as f:
                 pickle.dump(obj, f)
 
             # Save metadata
@@ -41,37 +44,29 @@ if SKLEARN_AVAILABLE:
             }
 
             # Capture model parameters
-            try:
+            with contextlib.suppress(builtins.BaseException):
                 metadata["params"] = obj.get_params()
-            except:
-                pass
 
             # Capture feature importance if available
-            if hasattr(obj, 'feature_importances_'):
-                try:
+            if hasattr(obj, "feature_importances_"):
+                with contextlib.suppress(builtins.BaseException):
                     metadata["feature_importances"] = obj.feature_importances_.tolist()
-                except:
-                    pass
 
             # Capture number of features
-            if hasattr(obj, 'n_features_in_'):
+            if hasattr(obj, "n_features_in_"):
                 metadata["n_features"] = int(obj.n_features_in_)
 
             # Capture feature names if available
-            if hasattr(obj, 'feature_names_in_'):
-                try:
+            if hasattr(obj, "feature_names_in_"):
+                with contextlib.suppress(builtins.BaseException):
                     metadata["feature_names"] = obj.feature_names_in_.tolist()
-                except:
-                    pass
 
             # Capture classes if classifier
-            if hasattr(obj, 'classes_'):
-                try:
+            if hasattr(obj, "classes_"):
+                with contextlib.suppress(builtins.BaseException):
                     metadata["classes"] = obj.classes_.tolist()
-                except:
-                    pass
 
-            with open(path / "metadata.json", 'w') as f:
+            with open(path / "metadata.json", "w") as f:
                 json.dump(metadata, f, indent=2, default=str)
 
         def load(self, path: Path) -> Any:
@@ -88,11 +83,11 @@ if SKLEARN_AVAILABLE:
             if not model_path.exists():
                 raise FileNotFoundError(f"Model file not found at {model_path}")
 
-            with open(model_path, 'rb') as f:
+            with open(model_path, "rb") as f:
                 return pickle.load(f)
 
         @classmethod
-        def supported_types(cls) -> list[Type]:
+        def supported_types(cls) -> list[type]:
             """Return scikit-learn types supported by this materializer."""
             return [BaseEstimator]
 
@@ -111,5 +106,5 @@ else:
             raise ImportError("Scikit-learn is not installed. Install with: pip install scikit-learn")
 
         @classmethod
-        def supported_types(cls) -> list[Type]:
+        def supported_types(cls) -> list[type]:
             return []

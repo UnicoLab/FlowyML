@@ -2,13 +2,16 @@
 
 import json
 from pathlib import Path
-from typing import Any, Type
+from typing import Any
 
 from uniflow.storage.materializers.base import BaseMaterializer, register_materializer
+import contextlib
+import builtins
 
 try:
     import torch
     import torch.nn as nn
+
     # Verify PyTorch has expected attributes
     _ = nn.Module
     _ = torch.Tensor
@@ -20,6 +23,7 @@ except (ImportError, AttributeError):
 
 
 if PYTORCH_AVAILABLE:
+
     class PyTorchMaterializer(BaseMaterializer):
         """Materializer for PyTorch models and tensors."""
 
@@ -45,12 +49,10 @@ if PYTORCH_AVAILABLE:
                 }
 
                 # Try to capture model architecture
-                try:
+                with contextlib.suppress(builtins.BaseException):
                     metadata["architecture"] = str(obj)
-                except:
-                    pass
 
-                with open(path / "metadata.json", 'w') as f:
+                with open(path / "metadata.json", "w") as f:
                     json.dump(metadata, f, indent=2)
 
             elif isinstance(obj, torch.Tensor):
@@ -65,7 +67,7 @@ if PYTORCH_AVAILABLE:
                     "device": str(obj.device),
                 }
 
-                with open(path / "metadata.json", 'w') as f:
+                with open(path / "metadata.json", "w") as f:
                     json.dump(metadata, f, indent=2)
 
             else:
@@ -74,7 +76,7 @@ if PYTORCH_AVAILABLE:
                 torch.save(obj, obj_path)
 
                 metadata = {"type": "pytorch_object"}
-                with open(path / "metadata.json", 'w') as f:
+                with open(path / "metadata.json", "w") as f:
                     json.dump(metadata, f, indent=2)
 
         def load(self, path: Path) -> Any:
@@ -89,7 +91,7 @@ if PYTORCH_AVAILABLE:
             # Load metadata
             metadata_path = path / "metadata.json"
             if metadata_path.exists():
-                with open(metadata_path, 'r') as f:
+                with open(metadata_path) as f:
                     metadata = json.load(f)
             else:
                 metadata = {}
@@ -110,7 +112,7 @@ if PYTORCH_AVAILABLE:
                 return torch.load(obj_path, weights_only=False)
 
         @classmethod
-        def supported_types(cls) -> list[Type]:
+        def supported_types(cls) -> list[type]:
             """Return PyTorch types supported by this materializer."""
             return [nn.Module, torch.Tensor]
 
@@ -129,5 +131,5 @@ else:
             raise ImportError("PyTorch is not installed. Install with: pip install torch")
 
         @classmethod
-        def supported_types(cls) -> list[Type]:
+        def supported_types(cls) -> list[type]:
             return []

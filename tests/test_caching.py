@@ -56,16 +56,15 @@ class TestCaching(BaseTestCase):
         result2 = p.run()
         self.assertEqual(result2["counting_step"], 2)
 
-
     def test_cache_store_operations(self):
         """Test cache store get/set operations."""
         cache_dir = Path(self.test_dir) / "cache"
         cache_store = CacheStore(str(cache_dir))
 
         # Test set and get
-        cache_store.set("test_key", {"result": 42}, "test_step", "code123")
+        cache_store.set_value("test_key", {"result": 42}, "test_step", "code123")
         cached = cache_store.get("test_key")
-        
+
         self.assertIsNotNone(cached)
         self.assertEqual(cached["result"], 42)
 

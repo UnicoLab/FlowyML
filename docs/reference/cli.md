@@ -428,7 +428,7 @@ uniflow run pipeline.py
 # Development
 alias uf-dev='uniflow run --config dev.yaml'
 
-# Staging  
+# Staging
 alias uf-stage='uniflow run --config staging.yaml --stack staging'
 
 # Production
@@ -455,16 +455,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      
+
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
           python-version: '3.11'
-      
+
       - name: Install dependencies
         run: |
           pip install uniflow[gcp]
-      
+
       - name: Run pipeline
         env:
           GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}

@@ -143,7 +143,7 @@ print(dot)
 # After failed run
 if not result.success:
     analysis = debugger.analyze_errors(result)
-    
+
     print(f"Failed steps: {analysis['failed_steps']}")
     print(f"Error types: {analysis['error_types']}")
     print(f"Common patterns: {analysis['patterns']}")
@@ -193,7 +193,7 @@ from uniflow.utils.debug import trace_step
 def traced_step(data):
     return process(data)
 
-# Automatically prints: 
+# Automatically prints:
 # → Entering traced_step
 # ← Exiting traced_step (0.001s)
 ```
@@ -283,7 +283,7 @@ debugger.add_breakpoint(
 class DebugHandler:
     def __init__(self):
         self.errors = []
-    
+
     def handle_error(self, step, inputs, exception):
         self.errors.append({
             'step': step.name,

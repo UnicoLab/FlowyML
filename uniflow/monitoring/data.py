@@ -1,58 +1,55 @@
-"""
-Data monitoring and drift detection.
-"""
+"""Data monitoring and drift detection."""
 
-import json
-import math
-from typing import Any, Dict, List, Optional, Union, Tuple
+from typing import Any
 import numpy as np
 
-def compute_stats(data: Union[List, np.ndarray]) -> Dict[str, float]:
-    """
-    Compute basic statistics for a dataset.
-    
+
+def compute_stats(data: list | np.ndarray) -> dict[str, float]:
+    """Compute basic statistics for a dataset.
+
     Args:
         data: Input data (list or numpy array)
-        
+
     Returns:
         Dictionary of statistics
     """
     if isinstance(data, list):
         data = np.array(data)
-        
+
     if len(data) == 0:
         return {}
-        
+
     stats = {
-        'count': float(len(data)),
-        'mean': float(np.mean(data)),
-        'std': float(np.std(data)),
-        'min': float(np.min(data)),
-        'max': float(np.max(data)),
-        'median': float(np.median(data)),
-        'q25': float(np.percentile(data, 25)),
-        'q75': float(np.percentile(data, 75))
+        "count": float(len(data)),
+        "mean": float(np.mean(data)),
+        "std": float(np.std(data)),
+        "min": float(np.min(data)),
+        "max": float(np.max(data)),
+        "median": float(np.median(data)),
+        "q25": float(np.percentile(data, 25)),
+        "q75": float(np.percentile(data, 75)),
     }
-    
+
     return stats
 
+
 def calculate_psi(expected: np.ndarray, actual: np.ndarray, buckets: int = 10) -> float:
-    """
-    Calculate Population Stability Index (PSI) to detect drift.
-    
+    """Calculate Population Stability Index (PSI) to detect drift.
+
     Args:
         expected: Reference distribution
         actual: Current distribution
         buckets: Number of buckets for histogram
-        
+
     Returns:
         PSI value
     """
-    def scale_range(input, min, max):
-        input += -(np.min(input))
-        input /= np.max(input) / (max - min)
-        input += min
-        return input
+
+    def scale_range(input_array, min_val, max_val):
+        input_array += -(np.min(input_array))
+        input_array /= np.max(input_array) / (max_val - min_val)
+        input_array += min_val
+        return input_array
 
     breakpoints = np.arange(0, buckets + 1) / (buckets) * 100
     breakpoints = np.percentile(expected, breakpoints)
@@ -73,19 +70,19 @@ def calculate_psi(expected: np.ndarray, actual: np.ndarray, buckets: int = 10) -
 
     return psi_value
 
+
 def detect_drift(
-    reference_data: Union[List, np.ndarray],
-    current_data: Union[List, np.ndarray],
-    threshold: float = 0.1
-) -> Dict[str, Any]:
-    """
-    Detect data drift between reference and current data.
-    
+    reference_data: list | np.ndarray,
+    current_data: list | np.ndarray,
+    threshold: float = 0.1,
+) -> dict[str, Any]:
+    """Detect data drift between reference and current data.
+
     Args:
         reference_data: Reference dataset (e.g. training data)
         current_data: Current dataset (e.g. inference data)
         threshold: PSI threshold for drift warning
-        
+
     Returns:
         Drift detection result
     """
@@ -93,13 +90,13 @@ def detect_drift(
         reference_data = np.array(reference_data)
     if isinstance(current_data, list):
         current_data = np.array(current_data)
-        
+
     psi = calculate_psi(reference_data, current_data)
-    
+
     return {
-        'drift_detected': psi > threshold,
-        'psi': psi,
-        'threshold': threshold,
-        'reference_stats': compute_stats(reference_data),
-        'current_stats': compute_stats(current_data)
+        "drift_detected": psi > threshold,
+        "psi": psi,
+        "threshold": threshold,
+        "reference_stats": compute_stats(reference_data),
+        "current_stats": compute_stats(current_data),
     }

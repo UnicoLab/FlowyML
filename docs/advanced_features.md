@@ -220,10 +220,10 @@ leaderboard.display(n=10)
 ```
 🏆 Model Leaderboard - accuracy
 ================================================================================
-Rank   Model Name                     Score           Run ID              
+Rank   Model Name                     Score           Run ID
 --------------------------------------------------------------------------------
-1      bert-base-uncased              0.9200          run_123            
-2      distilbert-base                0.8900          run_124            
+1      bert-base-uncased              0.9200          run_123
+2      distilbert-base                0.8900          run_124
 ================================================================================
 ```
 
@@ -324,7 +324,7 @@ def expensive_preprocessing():
 if checkpoint.exists():
     resume_point = checkpoint.resume_point()
     print(f"Can resume from: {resume_point}")
-    
+
     # Load previous state
     state = checkpoint.load_step_state("preprocessing")
 ```
@@ -451,7 +451,7 @@ if drift_result['drift_detected']:
     print(f"PSI: {drift_result['psi']:.4f}")
     print(f"Reference stats: {drift_result['reference_stats']}")
     print(f"Current stats: {drift_result['current_stats']}")
-    
+
     # Send notification
     from uniflow import get_notifier
     notifier = get_notifier()
@@ -508,12 +508,12 @@ pipeline = Pipeline("production_training", context=ctx)
 def load_and_validate():
     train = load_training_data()
     val = load_validation_data()
-    
+
     # Check for drift
     drift = detect_drift(historical_data, train)
     if drift['drift_detected']:
         get_notifier().on_drift_detected('features', drift['psi'])
-    
+
     return train, val
 
 @step(inputs=["train_data"], outputs=["model"])

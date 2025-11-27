@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Type, Dict, Optional
+from typing import Any
 
 
 class BaseMaterializer(ABC):
@@ -35,7 +35,7 @@ class BaseMaterializer(ABC):
 
     @classmethod
     @abstractmethod
-    def supported_types(cls) -> list[Type]:
+    def supported_types(cls) -> list[type]:
         """Return list of types this materializer supports."""
         pass
 
@@ -54,9 +54,8 @@ class BaseMaterializer(ABC):
             if isinstance(obj, supported_type):
                 return True
             # Check module name for cross-import compatibility
-            if hasattr(supported_type, '__module__') and hasattr(obj_type, '__module__'):
-                if (obj_type.__name__ == supported_type.__name__ and
-                    obj_type.__module__ == supported_type.__module__):
+            if hasattr(supported_type, "__module__") and hasattr(obj_type, "__module__"):
+                if obj_type.__name__ == supported_type.__name__ and obj_type.__module__ == supported_type.__module__:
                     return True
         return False
 
@@ -65,9 +64,9 @@ class MaterializerRegistry:
     """Registry for materializers."""
 
     def __init__(self):
-        self._materializers: Dict[str, Type[BaseMaterializer]] = {}
+        self._materializers: dict[str, type[BaseMaterializer]] = {}
 
-    def register(self, materializer: Type[BaseMaterializer]) -> None:
+    def register(self, materializer: type[BaseMaterializer]) -> None:
         """Register a materializer.
 
         Args:
@@ -77,7 +76,7 @@ class MaterializerRegistry:
             key = f"{supported_type.__module__}.{supported_type.__name__}"
             self._materializers[key] = materializer
 
-    def get_materializer(self, obj: Any) -> Optional[BaseMaterializer]:
+    def get_materializer(self, obj: Any) -> BaseMaterializer | None:
         """Get materializer for object.
 
         Args:
@@ -100,7 +99,7 @@ class MaterializerRegistry:
 
         return None
 
-    def list_materializers(self) -> Dict[str, Type[BaseMaterializer]]:
+    def list_materializers(self) -> dict[str, type[BaseMaterializer]]:
         """List all registered materializers.
 
         Returns:
@@ -113,7 +112,7 @@ class MaterializerRegistry:
 materializer_registry = MaterializerRegistry()
 
 
-def register_materializer(materializer: Type[BaseMaterializer]) -> None:
+def register_materializer(materializer: type[BaseMaterializer]) -> None:
     """Register a materializer with the global registry.
 
     Args:
@@ -122,7 +121,7 @@ def register_materializer(materializer: Type[BaseMaterializer]) -> None:
     materializer_registry.register(materializer)
 
 
-def get_materializer(obj: Any) -> Optional[BaseMaterializer]:
+def get_materializer(obj: Any) -> BaseMaterializer | None:
     """Get materializer for object from global registry.
 
     Args:

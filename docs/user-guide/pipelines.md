@@ -75,7 +75,7 @@ UniFlow analyzes the `inputs` and `outputs` of each step to determine the execut
 def step_a():
     return [1, 2, 3]
 
-@step(inputs=["data"], outputs=["result"])  
+@step(inputs=["data"], outputs=["result"])
 def step_b(data):
     return sum(data)
 
@@ -141,7 +141,7 @@ result = pipeline.run()
 
 if result.success:
     print(result.summary())
-    
+
     # Access step results
     for step_name, step_result in result.step_results.items():
         print(f"Step: {step_name}")

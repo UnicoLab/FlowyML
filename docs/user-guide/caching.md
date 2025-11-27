@@ -171,7 +171,7 @@ def prepare_dataset(data_path: str, test_split: float):
     """Recompute if code or parameters change."""
     return load_and_split(data_path, test_split)
 
-@step(inputs=["dataset"], cache="input_hash", outputs=["model"]) 
+@step(inputs=["dataset"], cache="input_hash", outputs=["model"])
 def train_model(dataset, learning_rate: float, epochs: int):
     """Expensive training - cache based on inputs only."""
     # Training logic doesn't change often, but we try different hyperparameters

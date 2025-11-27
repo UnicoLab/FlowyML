@@ -2,13 +2,13 @@
 
 import json
 from pathlib import Path
-from typing import Any, Type
+from typing import Any
 
 from uniflow.storage.materializers.base import BaseMaterializer, register_materializer
 
 try:
-    import tensorflow as tf
-    from tensorflow import keras
+    import keras
+
     # Verify Keras has expected attributes
     _ = keras.Model
     _ = keras.Sequential
@@ -19,6 +19,7 @@ except (ImportError, AttributeError):
 
 
 if KERAS_AVAILABLE:
+
     class KerasMaterializer(BaseMaterializer):
         """Materializer for Keras models with full support for Sequential and Functional API."""
 
@@ -53,20 +54,21 @@ if KERAS_AVAILABLE:
 
                 # Get input/output shapes
                 try:
-                    if hasattr(obj, 'input_shape'):
+                    if hasattr(obj, "input_shape"):
                         metadata["input_shape"] = str(obj.input_shape)
-                    if hasattr(obj, 'output_shape'):
+                    if hasattr(obj, "output_shape"):
                         metadata["output_shape"] = str(obj.output_shape)
-                except:
+                except Exception:
                     pass
 
                 # Get model architecture summary
                 try:
                     import io
+
                     string_buffer = io.StringIO()
-                    obj.summary(print_fn=lambda x: string_buffer.write(x + '\n'))
+                    obj.summary(print_fn=lambda x: string_buffer.write(x + "\n"))
                     metadata["summary"] = string_buffer.getvalue()
-                except:
+                except Exception:
                     pass
 
                 # Get layer information
@@ -74,7 +76,7 @@ if KERAS_AVAILABLE:
                     metadata["num_layers"] = len(obj.layers)
                     metadata["layer_names"] = [layer.name for layer in obj.layers]
                     metadata["trainable_params"] = obj.count_params()
-                except:
+                except Exception:
                     pass
 
                 # Get optimizer info if compiled
@@ -82,34 +84,34 @@ if KERAS_AVAILABLE:
                     if obj.optimizer:
                         metadata["optimizer"] = obj.optimizer.__class__.__name__
                         metadata["learning_rate"] = float(keras.backend.get_value(obj.optimizer.learning_rate))
-                except:
+                except Exception:
                     pass
 
                 # Get loss function if compiled
                 try:
                     if obj.loss:
-                        if hasattr(obj.loss, '__name__'):
+                        if hasattr(obj.loss, "__name__"):
                             metadata["loss"] = obj.loss.__name__
                         else:
                             metadata["loss"] = str(obj.loss)
-                except:
+                except Exception:
                     pass
 
                 # Get metrics if compiled
                 try:
                     if obj.metrics:
                         metadata["metrics"] = [m.name for m in obj.metrics]
-                except:
+                except Exception:
                     pass
 
                 # Save model config
                 try:
                     config = obj.get_config()
                     config_path = path / "config.json"
-                    with open(config_path, 'w') as f:
+                    with open(config_path, "w") as f:
                         json.dump(config, f, indent=2, default=str)
                     metadata["has_config"] = True
-                except:
+                except Exception:
                     metadata["has_config"] = False
 
                 # Save weights separately for backup - REMOVED for Keras 3 compatibility
@@ -122,7 +124,7 @@ if KERAS_AVAILABLE:
 
                 # Save metadata
                 metadata_path = path / "metadata.json"
-                with open(metadata_path, 'w') as f:
+                with open(metadata_path, "w") as f:
                     json.dump(metadata, f, indent=2, default=str)
 
             else:
@@ -140,10 +142,10 @@ if KERAS_AVAILABLE:
             # Load metadata
             metadata_path = path / "metadata.json"
             if metadata_path.exists():
-                with open(metadata_path, 'r') as f:
-                    metadata = json.load(f)
+                with open(metadata_path) as f:
+                    json.load(f)
             else:
-                metadata = {}
+                pass
 
             # Load model from .keras file
             model_path = path / "model.keras"
@@ -160,7 +162,7 @@ if KERAS_AVAILABLE:
             raise FileNotFoundError(f"No Keras model found at {path}")
 
         @classmethod
-        def supported_types(cls) -> list[Type]:
+        def supported_types(cls) -> list[type]:
             """Return Keras types supported by this materializer."""
             return [keras.Model, keras.Sequential]
 
@@ -179,5 +181,5 @@ else:
             raise ImportError("Keras/TensorFlow is not installed. Install with: pip install tensorflow")
 
         @classmethod
-        def supported_types(cls) -> list[Type]:
+        def supported_types(cls) -> list[type]:
             return []

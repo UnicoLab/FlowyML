@@ -249,17 +249,17 @@ from uniflow import VersionedPipeline, PipelineScheduler
 def run_versioned_pipeline():
     vp = VersionedPipeline("production_model")
     vp.version = "v2.0.0"
-    
+
     # Add steps
     vp.add_step(load_data)
     vp.add_step(train)
-    
+
     # Save version before running
     vp.save_version(metadata={"scheduled_run": True})
-    
+
     # Run
     result = vp.run()
-    
+
     # Log result
     print(f"Version {vp.version}: {result.success}")
     return result
@@ -308,12 +308,12 @@ logger = logging.getLogger(__name__)
 def logged_pipeline():
     logger.info("Starting scheduled pipeline run")
     start = time.time()
-    
+
     result = pipeline.run()
-    
+
     duration = time.time() - start
     logger.info(f"Pipeline completed in {duration:.1f}s - Success: {result.success}")
-    
+
     return result
 
 scheduler.schedule_daily("logged_job", logged_pipeline, hour=2)
@@ -324,11 +324,11 @@ scheduler.schedule_daily("logged_job", logged_pipeline, hour=2)
 ```python
 def monitor_schedules():
     schedules = scheduler.list_schedules()
-    
+
     for schedule in schedules:
         if not schedule.enabled:
             alert(f"Schedule {schedule.pipeline_name} is disabled")
-        
+
         if schedule.last_run:
             time_since_run = datetime.now() - schedule.last_run
             if time_since_run > timedelta(days=2):
@@ -346,14 +346,14 @@ from uniflow import PipelineScheduler
 
 def main():
     scheduler = PipelineScheduler()
-    
+
     # Load all schedules
     scheduler.schedule_daily("etl", run_etl, hour=2)
     scheduler.schedule_hourly("sync", run_sync, minute=15)
-    
+
     # Start and keep running
     scheduler.start()
-    
+
     # Keep process alive
     try:
         while True:
@@ -482,17 +482,17 @@ spec:
 
 ## FAQ
 
-**Q: Can I schedule the same pipeline multiple times?**  
+**Q: Can I schedule the same pipeline multiple times?**
 A: Yes! Use different schedule names:
 ```python
 scheduler.schedule_daily("etl_morning", run_etl, hour=6)
 scheduler.schedule_daily("etl_evening", run_etl, hour=18)
 ```
 
-**Q: What happens if a run takes longer than the interval?**  
+**Q: What happens if a run takes longer than the interval?**
 A: The next run waits until the current one completes. Runs don't overlap.
 
-**Q: Can I see past execution history?**  
+**Q: Can I see past execution history?**
 A: Use the metadata store to query past runs:
 ```python
 from uniflow.storage.metadata import SQLiteMetadataStore
@@ -501,7 +501,7 @@ store = SQLiteMetadataStore()
 runs = store.list_runs(pipeline_name="etl", limit=100)
 ```
 
-**Q: How do I update a schedule?**  
+**Q: How do I update a schedule?**
 A: Unschedule and reschedule:
 ```python
 scheduler.unschedule("old_job")

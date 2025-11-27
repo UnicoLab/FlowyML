@@ -4,11 +4,11 @@ import sys
 import platform
 import os
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Any
 from datetime import datetime
 
 
-def get_python_info() -> Dict[str, str]:
+def get_python_info() -> dict[str, str]:
     """Get Python version and implementation info.
 
     Returns:
@@ -23,7 +23,7 @@ def get_python_info() -> Dict[str, str]:
     }
 
 
-def get_system_info() -> Dict[str, str]:
+def get_system_info() -> dict[str, str]:
     """Get system and hardware information.
 
     Returns:
@@ -43,7 +43,7 @@ def get_system_info() -> Dict[str, str]:
         import multiprocessing
 
         info["cpu_count"] = str(multiprocessing.cpu_count())
-    except:
+    except Exception:
         pass
 
     # Add GPU info if available
@@ -63,7 +63,7 @@ def get_system_info() -> Dict[str, str]:
     return info
 
 
-def get_installed_packages() -> Dict[str, str]:
+def get_installed_packages() -> dict[str, str]:
     """Get list of installed packages and versions.
 
     Returns:
@@ -76,7 +76,7 @@ def get_installed_packages() -> Dict[str, str]:
 
         for dist in pkg_resources.working_set:
             packages[dist.project_name] = dist.version
-    except:
+    except Exception:
         pass
 
     # Alternative method using importlib.metadata (Python 3.8+)
@@ -86,13 +86,13 @@ def get_installed_packages() -> Dict[str, str]:
 
             for dist in metadata.distributions():
                 packages[dist.name] = dist.version
-        except:
+        except Exception:
             pass
 
     return packages
 
 
-def get_key_packages() -> Dict[str, str]:
+def get_key_packages() -> dict[str, str]:
     """Get versions of key ML/data packages.
 
     Returns:
@@ -119,7 +119,7 @@ def get_key_packages() -> Dict[str, str]:
     return versions
 
 
-def get_environment_variables(include_all: bool = False) -> Dict[str, str]:
+def get_environment_variables(include_all: bool = False) -> dict[str, str]:
     """Get relevant environment variables.
 
     Args:
@@ -165,8 +165,8 @@ def capture_environment(
     include_packages: bool = True,
     include_git: bool = True,
     include_system: bool = True,
-    project_root: Optional[Path] = None,
-) -> Dict[str, Any]:
+    project_root: Path | None = None,
+) -> dict[str, Any]:
     """Capture complete environment information.
 
     Args:
@@ -210,7 +210,7 @@ def save_environment(
     include_packages: bool = True,
     include_git: bool = True,
     include_system: bool = True,
-    project_root: Optional[Path] = None,
+    project_root: Path | None = None,
 ) -> None:
     """Save environment information to file.
 
@@ -236,23 +236,23 @@ def save_environment(
         json.dump(env_info, f, indent=2)
 
 
-def export_requirements(output_path: Path, format: str = "pip") -> None:
+def export_requirements(output_path: Path, export_format: str = "pip") -> None:
     """Export installed packages to requirements file.
 
     Args:
         output_path: Path to save requirements
-        format: Format (pip, conda, poetry)
+        export_format: Format (pip, conda, poetry)
     """
     packages = get_installed_packages()
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    if format == "pip":
+    if export_format == "pip":
         with open(output_path, "w") as f:
             for name, version in sorted(packages.items()):
                 f.write(f"{name}=={version}\n")
 
-    elif format == "conda":
+    elif export_format == "conda":
         with open(output_path, "w") as f:
             f.write("name: uniflow-env\n")
             f.write("channels:\n")
@@ -262,7 +262,7 @@ def export_requirements(output_path: Path, format: str = "pip") -> None:
             for name, version in sorted(packages.items()):
                 f.write(f"  - {name}=={version}\n")
 
-    elif format == "poetry":
+    elif export_format == "poetry":
         with open(output_path, "w") as f:
             f.write("[tool.poetry.dependencies]\n")
             f.write(f'python = "^{sys.version_info.major}.{sys.version_info.minor}"\n')
@@ -271,7 +271,7 @@ def export_requirements(output_path: Path, format: str = "pip") -> None:
                     f.write(f'{name} = "^{version}"\n')
 
 
-def compare_environments(env1: Dict[str, Any], env2: Dict[str, Any]) -> Dict[str, Any]:
+def compare_environments(env1: dict[str, Any], env2: dict[str, Any]) -> dict[str, Any]:
     """Compare two environment captures.
 
     Args:

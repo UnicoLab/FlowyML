@@ -14,23 +14,23 @@ from uniflow.stacks.plugins import register_component
 @register_component
 class MyOrchestrator(Orchestrator):
     """My custom orchestrator."""
-    
+
     def __init__(self, name: str = "my_orchestrator", **kwargs):
         super().__init__(name)
         # Your initialization
-    
+
     def validate(self) -> bool:
         # Validation logic
         return True
-    
+
     def run_pipeline(self, pipeline, **kwargs):
         # Execution logic
         pass
-    
+
     def get_run_status(self, run_id: str) -> str:
         # Status checking
         return "SUCCESS"
-    
+
     def to_dict(self):
         return {"name": self.name, "type": "my_orchestrator"}
 ```
@@ -83,24 +83,24 @@ class AirflowOrchestrator(Orchestrator):
     def __init__(self, name="airflow", dag_folder="~/airflow/dags"):
         super().__init__(name)
         self.dag_folder = dag_folder
-    
+
     def validate(self) -> bool:
         try:
             import airflow
             return True
         except ImportError:
             raise ImportError("pip install apache-airflow")
-    
+
     def run_pipeline(self, pipeline, **kwargs):
         # Convert to Airflow DAG
         from airflow import DAG
         # ... implementation
         return "dag_run_id"
-    
+
     def get_run_status(self, run_id: str) -> str:
         # Check Airflow DAG run status
         return "RUNNING"
-    
+
     def to_dict(self):
         return {
             "type": "airflow",
@@ -125,24 +125,24 @@ class MinIOArtifactStore(ArtifactStore):
         super().__init__(name)
         self.endpoint = endpoint
         self.bucket = bucket
-    
+
     def validate(self) -> bool:
         from minio import Minio
         client = Minio(self.endpoint)
         return client.bucket_exists(self.bucket)
-    
+
     def save(self, artifact, path: str) -> str:
         # Save to MinIO
         return f"s3://{self.bucket}/{path}"
-    
+
     def load(self, path: str):
         # Load from MinIO
         pass
-    
+
     def exists(self, path: str) -> bool:
         # Check existence
         return True
-    
+
     def to_dict(self):
         return {
             "type": "minio",
@@ -341,18 +341,18 @@ from uniflow.stacks.plugins import get_component_registry
 # Import all ZenML components
 def import_zenml_stack(zenml_stack: ZenMLStack):
     registry = get_component_registry()
-    
+
     # Wrap each component
     registry.wrap_zenml_component(
         zenml_stack.orchestrator,
         "zenml_orchestrator"
     )
-    
+
     registry.wrap_zenml_component(
         zenml_stack.artifact_store,
         "zenml_artifact_store"
     )
-    
+
     # Now use in UniFlow!
 ```
 
@@ -404,7 +404,7 @@ class TestMyOrchestrator(unittest.TestCase):
     def test_validation(self):
         orch = MyOrchestrator()
         self.assertTrue(orch.validate())
-    
+
     def test_run_pipeline(self):
         # Test pipeline execution
         pass

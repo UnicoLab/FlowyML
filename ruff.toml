@@ -1,0 +1,150 @@
+line-length = 120
+indent-width = 4
+target-version = "py311"
+# extend-unsafe-fixes = ["D"]  # Moved to lint section
+
+[lint]
+# List of rules: https://docs.astral.sh/ruff/rules
+extend-unsafe-fixes = ["D"]
+select = [
+    # flake8-builtins
+    "A",
+    # flake8-commas
+    "COM812",
+    # flake8-comprehensions
+    "C4",
+    # pydocstyle
+    "D",
+    # pycodestyle
+    "E",
+    # Pyflakes
+    "F",
+    # pyupgrade
+    "UP",
+    # flake8-bugbear
+    "B",
+    # flake8-simplify
+    "SIM",
+    # flake8-implicit-str-concat
+    "ISC",
+    # pep8-naming
+    "N",
+    # flake8-annotations
+    "ANN",
+    # flake8-async
+    "ASYNC",
+    # flake8-bandid selected
+    "S",
+    # flake8-print
+    "T20",
+    # flake8-return
+    "RET",
+    # flake8-simplify
+    "SIM",
+    # flake8-unused-arguments
+    "ARG",
+    # flake8-use-pathlib
+    "PTH",
+    # eradicate
+    "ERA",
+    # pandas-vet
+    "PD",
+]
+ignore = [
+    # Documentation
+    "D100",  # Missing docstring in public module
+    "D101",  # Missing docstring in public class
+    "D102",  # Missing docstring in public method
+    "D103",  # Missing docstring in public function
+    "D104",  # Missing docstring in public package
+    "D105",  # Missing docstring in magic method
+    "D106",  # Missing docstring in public nested class
+    "D107",  # Missing docstring in __init__
+    "D200",  # One-line docstring should fit on one line
+    "D202",  # No blank lines allowed after function docstring
+    "D205",  # 1 blank line required between summary line and description
+    "D212",  # Multi-line docstring summary should start at the first line
+    "D213",  # Multi-line docstring summary should start at the second line
+    "ISC001", # Implicit string concatenation (conflicts with formatter)
+    "D415",  # First line should end with a period
+
+    # Type Annotations (Missing)
+    "ANN001", # Missing type annotation for function argument
+    "ANN002", # Missing type annotation for *args
+    "ANN003", # Missing type annotation for **kwargs
+    "ANN101", # Missing type annotation for self
+    "ANN102", # Missing type annotation for cls
+    "ANN201", # Missing return type annotation for public function
+    "ANN202", # Missing return type annotation for private function
+    "ANN204", # Missing return type annotation for __init__
+    "ANN401", # Dynamically typed expressions (Any)
+
+    # Style / Modernization
+    "UP007",  # Use X | Y for type annotations (Python 3.10+)
+    "UP009",  # UTF-8 encoding declaration is unnecessary
+    "UP038",  # Use isinstance(X, Y | Z) instead of isinstance(X, (Y, Z))
+    "PTH110", # os.path.exists() -> Path.exists()
+    "PTH118", # os.path.join() -> Path / ...
+    "PTH120", # os.path.dirname() -> Path.parent
+    "PTH123", # open() -> Path.open()
+    "RET504", # Unnecessary assignment before return
+    "RET505", # Unnecessary elif after return
+    "RET508", # Unnecessary elif after break
+    "SIM102", # Nested if statements -> single if
+    "SIM108", # Use ternary operator
+
+    # Naming
+    "N805",   # First argument of a method should be named self
+    "PD901",  # Avoid using 'df' for DataFrames
+
+    # Security (Audited/Acceptable in this context)
+    "S110",   # try-except-pass (often intentional)
+    "S112",   # try-except-continue (often intentional)
+    "S113",   # Requests call without timeout
+    "S301",   # Pickle usage (ML serialization)
+    "S307",   # Eval usage (debug tools)
+    "S311",   # Random usage (ML sampling)
+    "S324",   # Hash usage (non-crypto)
+    "S603",   # Subprocess call (audited)
+    "S607",   # Subprocess call without full path
+
+    # Other
+    "B008",   # Function call in default argument (FastAPI Depends)
+    "B026",   # Star-arg unpacking after keyword argument
+    "B027",   # Empty method in abstract base class
+    "B904",   # Raise without from inside except
+    "ERA001", # Commented out code
+    "T100",   # Traceback usage
+    "T201",   # Print usage (CLI tools)
+    "ARG001", # Unused function argument (often required by API)
+    "ARG002", # Unused method argument (often required by API)
+    "E501",   # Line too long (handled by formatter usually)
+]
+
+# Allow fix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
+unfixable = []
+
+[format]
+docstring-code-format = true
+quote-style = "double"
+# Like Black, indent with spaces, rather than tabs.
+indent-style = "space"
+# Like Black, respect magic trailing commas.
+skip-magic-trailing-comma = false
+# Like Black, automatically detect the appropriate line ending.
+line-ending = "auto"
+
+[lint.pydocstyle]
+convention = "google"
+
+[lint.per-file-ignores]
+"**/test*.py" = ["S101", "T201", "N999", "ANN201", "ANN202", "N806", "N803", "F841", "ARG002", "ARG005", "ARG001", "E402", "D212", "D417", "B007", "SIM114", "SIM117", "S603", "S607", "S110", "E722", "C408", "UP038", "UP007", "SIM108", "SIM118", "PTH110", "PTH108", "PTH107", "PTH123", "PTH118", "PTH120", "PTH100", "PTH103", "PD011", "PD003", "F401", "N807", "C416", "E501", "D200", "D202", "D410", "D411", "A001", "C4", "ISC", "RET", "ERA", "ASYNC", "UP", "SIM", "ARG", "PTH", "PD", "B", "S", "T20", "ANN", "N", "E", "F", "C", "A"]
+"**/tests/**/*.py" = ["S101", "T201", "N999", "ANN201", "ANN202", "N806", "N803", "F841", "ARG002", "ARG005", "ARG001", "E402", "D212", "D417", "B007", "SIM114", "SIM117", "S603", "S607", "S110", "E722", "C408", "UP038", "UP007", "SIM108", "SIM118", "PTH110", "PTH108", "PTH107", "PTH123", "PTH118", "PTH120", "PTH100", "PTH103", "PD011", "PD003", "F401", "N807", "C416", "E501", "D200", "D202", "D410", "D411", "A001", "C4", "ISC", "RET", "ERA", "ASYNC", "UP", "SIM", "ARG", "PTH", "PD", "B", "S", "T20", "ANN", "N", "E", "F", "C", "A"]
+"**/examples/**/*.py" = ["T201", "ANN201", "N806", "N803", "F841", "D212", "B007", "SIM114", "PTH110", "PTH108", "PTH107", "PTH123", "PD011", "PD003"]
+"**/scripts/**/*.py" = ["ANN201", "PTH120", "PTH100", "PTH118", "PTH123", "PTH110", "PTH107", "PTH103", "S603", "S607", "S110", "E722"]
+"**/experimental/**/*.py" = ["ALL"]
+"**/kerasfactory/layers/*.py" = ["N999", "ARG005"]
+"**/kerasfactory/models/*.py" = ["N999", "ANN002", "UP038", "UP007", "SIM118", "E501", "F841", "C416", "E722", "S110", "ARG002", "SIM108"]
+"**/kerasfactory/utils/*.py" = ["T201", "N806", "N803", "SIM118", "SIM108", "UP007", "N807", "C408", "UP038"]
+"**/kerasfactory/metrics/*.py" = ["SIM108"]

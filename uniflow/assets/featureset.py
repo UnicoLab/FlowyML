@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from uniflow.assets.base import Asset, AssetMetadata
 
@@ -11,13 +11,13 @@ from uniflow.assets.base import Asset, AssetMetadata
 class FeatureSetMetadata(AssetMetadata):
     """Metadata specific to FeatureSets."""
 
-    feature_names: List[str] = field(default_factory=list)
+    feature_names: list[str] = field(default_factory=list)
     num_features: int = 0
     num_samples: int = 0
-    feature_types: Dict[str, str] = field(default_factory=dict)
-    statistics: Dict[str, Dict[str, float]] = field(default_factory=dict)
-    transformations: List[str] = field(default_factory=list)
-    source_dataset: Optional[str] = None
+    feature_types: dict[str, str] = field(default_factory=dict)
+    statistics: dict[str, dict[str, float]] = field(default_factory=dict)
+    transformations: list[str] = field(default_factory=list)
+    source_dataset: str | None = None
 
 
 class FeatureSet(Asset):
@@ -36,7 +36,7 @@ class FeatureSet(Asset):
             feature_names=["age_scaled", "income_log", "category_encoded"],
             num_samples=10000,
             transformations=["StandardScaler", "LogTransform", "OneHotEncoder"],
-            source_dataset="customers_v1"
+            source_dataset="customers_v1",
         )
 
         # Access feature information
@@ -50,11 +50,11 @@ class FeatureSet(Asset):
         self,
         name: str,
         data: Any = None,
-        feature_names: Optional[List[str]] = None,
+        feature_names: list[str] | None = None,
         num_samples: int = 0,
-        transformations: Optional[List[str]] = None,
-        source_dataset: Optional[str] = None,
-        **kwargs
+        transformations: list[str] | None = None,
+        source_dataset: str | None = None,
+        **kwargs,
     ):
         """Initialize a FeatureSet.
 
@@ -76,7 +76,7 @@ class FeatureSet(Asset):
             num_samples=num_samples,
             transformations=transformations or [],
             source_dataset=source_dataset,
-            **kwargs
+            **kwargs,
         )
 
         super().__init__(name=name, type="featureset", metadata=metadata)
@@ -90,6 +90,7 @@ class FeatureSet(Asset):
         """Extract feature metadata from data."""
         try:
             import pandas as pd
+
             if isinstance(self._data, pd.DataFrame):
                 # Update feature names from DataFrame
                 if not self.metadata.feature_names:
@@ -97,23 +98,21 @@ class FeatureSet(Asset):
                     self.metadata.num_features = len(self._data.columns)
 
                 # Extract feature types
-                self.metadata.feature_types = {
-                    col: str(dtype) for col, dtype in self._data.dtypes.items()
-                }
+                self.metadata.feature_types = {col: str(dtype) for col, dtype in self._data.dtypes.items()}
 
                 # Update num_samples
                 if not self.metadata.num_samples:
                     self.metadata.num_samples = len(self._data)
 
                 # Calculate statistics for numerical columns
-                numerical_cols = self._data.select_dtypes(include=['number']).columns
+                numerical_cols = self._data.select_dtypes(include=["number"]).columns
                 for col in numerical_cols:
                     self.metadata.statistics[col] = {
-                        'min': float(self._data[col].min()),
-                        'max': float(self._data[col].max()),
-                        'mean': float(self._data[col].mean()),
-                        'std': float(self._data[col].std()),
-                        'missing': int(self._data[col].isna().sum()),
+                        "min": float(self._data[col].min()),
+                        "max": float(self._data[col].max()),
+                        "mean": float(self._data[col].mean()),
+                        "std": float(self._data[col].std()),
+                        "missing": int(self._data[col].isna().sum()),
                     }
 
         except ImportError:
@@ -121,6 +120,7 @@ class FeatureSet(Asset):
 
         try:
             import numpy as np
+
             if isinstance(self._data, np.ndarray):
                 # Update dimensions
                 if self._data.ndim >= 2:
@@ -131,15 +131,13 @@ class FeatureSet(Asset):
                 if np.issubdtype(self._data.dtype, np.number):
                     for i in range(min(self.metadata.num_features, 100)):  # Limit to 100 features
                         feature_name = (
-                            self.metadata.feature_names[i]
-                            if i < len(self.metadata.feature_names)
-                            else f"feature_{i}"
+                            self.metadata.feature_names[i] if i < len(self.metadata.feature_names) else f"feature_{i}"
                         )
                         self.metadata.statistics[feature_name] = {
-                            'min': float(np.min(self._data[:, i])),
-                            'max': float(np.max(self._data[:, i])),
-                            'mean': float(np.mean(self._data[:, i])),
-                            'std': float(np.std(self._data[:, i])),
+                            "min": float(np.min(self._data[:, i])),
+                            "max": float(np.max(self._data[:, i])),
+                            "mean": float(np.mean(self._data[:, i])),
+                            "std": float(np.std(self._data[:, i])),
                         }
         except ImportError:
             pass
@@ -150,7 +148,7 @@ class FeatureSet(Asset):
         return self._data
 
     @property
-    def feature_names(self) -> List[str]:
+    def feature_names(self) -> list[str]:
         """Get feature names."""
         return self.metadata.feature_names
 
@@ -165,22 +163,22 @@ class FeatureSet(Asset):
         return self.metadata.num_samples
 
     @property
-    def feature_types(self) -> Dict[str, str]:
+    def feature_types(self) -> dict[str, str]:
         """Get feature types."""
         return self.metadata.feature_types
 
     @property
-    def statistics(self) -> Dict[str, Dict[str, float]]:
+    def statistics(self) -> dict[str, dict[str, float]]:
         """Get feature statistics."""
         return self.metadata.statistics
 
     @property
-    def transformations(self) -> List[str]:
+    def transformations(self) -> list[str]:
         """Get list of transformations applied."""
         return self.metadata.transformations
 
     @property
-    def source_dataset(self) -> Optional[str]:
+    def source_dataset(self) -> str | None:
         """Get source dataset name."""
         return self.metadata.source_dataset
 
@@ -188,11 +186,11 @@ class FeatureSet(Asset):
     def create(
         cls,
         data: Any,
-        name: Optional[str] = None,
-        feature_names: Optional[List[str]] = None,
-        transformations: Optional[List[str]] = None,
-        source_dataset: Optional[str] = None,
-        **kwargs
+        name: str | None = None,
+        feature_names: list[str] | None = None,
+        transformations: list[str] | None = None,
+        source_dataset: str | None = None,
+        **kwargs,
     ) -> "FeatureSet":
         """Factory method to create a FeatureSet.
 
@@ -217,10 +215,10 @@ class FeatureSet(Asset):
             feature_names=feature_names,
             transformations=transformations,
             source_dataset=source_dataset,
-            **kwargs
+            **kwargs,
         )
 
-    def select_features(self, feature_names: List[str]) -> "FeatureSet":
+    def select_features(self, feature_names: list[str]) -> "FeatureSet":
         """Select a subset of features.
 
         Args:
@@ -234,6 +232,7 @@ class FeatureSet(Asset):
 
         try:
             import pandas as pd
+
             if isinstance(self._data, pd.DataFrame):
                 selected_data = self._data[feature_names]
                 return FeatureSet.create(
@@ -248,6 +247,7 @@ class FeatureSet(Asset):
 
         try:
             import numpy as np
+
             if isinstance(self._data, np.ndarray):
                 # Map feature names to indices
                 indices = [self.feature_names.index(fn) for fn in feature_names if fn in self.feature_names]
@@ -264,7 +264,7 @@ class FeatureSet(Asset):
 
         raise TypeError("Unsupported data type for feature selection")
 
-    def get_feature_statistics(self, feature_name: str) -> Optional[Dict[str, float]]:
+    def get_feature_statistics(self, feature_name: str) -> dict[str, float] | None:
         """Get statistics for a specific feature.
 
         Args:
@@ -275,31 +275,27 @@ class FeatureSet(Asset):
         """
         return self.statistics.get(feature_name)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert FeatureSet to dictionary.
 
         Returns:
             Dictionary representation (excluding data)
         """
         return {
-            'id': self.id,
-            'name': self.name,
-            'type': self.type,
-            'feature_names': self.feature_names,
-            'num_features': self.num_features,
-            'num_samples': self.num_samples,
-            'feature_types': self.feature_types,
-            'statistics': self.statistics,
-            'transformations': self.transformations,
-            'source_dataset': self.source_dataset,
-            'created_at': self.created_at.isoformat(),
-            'tags': self.tags,
-            'properties': self.properties,
+            "id": self.id,
+            "name": self.name,
+            "type": self.type,
+            "feature_names": self.feature_names,
+            "num_features": self.num_features,
+            "num_samples": self.num_samples,
+            "feature_types": self.feature_types,
+            "statistics": self.statistics,
+            "transformations": self.transformations,
+            "source_dataset": self.source_dataset,
+            "created_at": self.created_at.isoformat(),
+            "tags": self.tags,
+            "properties": self.properties,
         }
 
     def __repr__(self) -> str:
-        return (
-            f"FeatureSet(name='{self.name}', "
-            f"num_features={self.num_features}, "
-            f"num_samples={self.num_samples})"
-        )
+        return f"FeatureSet(name='{self.name}', num_features={self.num_features}, num_samples={self.num_samples})"

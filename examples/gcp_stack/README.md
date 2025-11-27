@@ -163,16 +163,16 @@ def train_ml_model(dataset: Dataset):
         tf.keras.layers.Dropout(0.2),
         tf.keras.layers.Dense(10, activation='softmax')
     ])
-    
+
     model.compile(
         optimizer='adam',
         loss='sparse_categorical_crossentropy',
         metrics=['accuracy']
     )
-    
+
     # Training logic
     history = model.fit(...)
-    
+
     return Model.create(
         data=model,
         name="trained_model",
@@ -185,7 +185,7 @@ def evaluate_model(model: Model, dataset: Dataset):
     """Evaluate model performance."""
     # Evaluation logic
     accuracy = ...
-    
+
     return Metrics.create(
         accuracy=accuracy,
         name="evaluation_metrics",

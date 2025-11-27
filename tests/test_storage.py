@@ -20,7 +20,7 @@ class TestStorage(unittest.TestCase):
         """Test creating an artifact store."""
         store_path = Path(self.test_dir) / "artifacts"
         store = LocalArtifactStore(str(store_path))
-        
+
         self.assertTrue(store_path.exists())
 
     def test_artifact_store_default_path(self):

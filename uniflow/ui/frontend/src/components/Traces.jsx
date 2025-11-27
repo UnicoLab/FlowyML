@@ -18,7 +18,7 @@ export default function Traces() {
       if (filterType !== 'all') {
         params.append('event_type', filterType);
       }
-      
+
       const response = await fetch(`/api/traces?${params}`);
       const data = await response.json();
       setTraces(data);
@@ -63,7 +63,7 @@ export default function Traces() {
 
   const TraceTree = ({ events, level = 0 }) => {
     if (!events) return null;
-    
+
     return (
       <div className={`pl-${level * 4}`}>
         {events.map((event, idx) => (
@@ -76,7 +76,7 @@ export default function Traces() {
                   {event.status}
                 </span>
               </div>
-              
+
               <div className="flex items-center gap-4 text-sm text-gray-400">
                 {event.duration && (
                   <div className="flex items-center gap-1">
@@ -84,14 +84,14 @@ export default function Traces() {
                     {formatDuration(event.duration)}
                   </div>
                 )}
-                
+
                 {event.total_tokens > 0 && (
                   <div className="flex items-center gap-1">
                     <Activity className="w-3 h-3" />
                     {event.total_tokens} tokens
                   </div>
                 )}
-                
+
                 {event.cost > 0 && (
                   <div className="flex items-center gap-1">
                     <DollarSign className="w-3 h-3" />
@@ -100,7 +100,7 @@ export default function Traces() {
                 )}
               </div>
             </div>
-            
+
             {event.children && event.children.length > 0 && (
               <div className="ml-6 mt-2 border-l-2 border-gray-700/50 pl-2">
                 <TraceTree events={event.children} level={level + 1} />
@@ -116,7 +116,7 @@ export default function Traces() {
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">🔍 LLM Traces</h1>
-        
+
         <div className="flex gap-2">
           <select
             value={filterType}
@@ -129,7 +129,7 @@ export default function Traces() {
             <option value="chain">Chains</option>
             <option value="agent">Agents</option>
           </select>
-          
+
           <button
             onClick={fetchTraces}
             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
@@ -157,7 +157,7 @@ export default function Traces() {
           {traces.map((trace) => {
             // Group by trace_id
             const traceId = trace.trace_id;
-            
+
             return (
               <div
                 key={trace.event_id}
@@ -174,25 +174,25 @@ export default function Traces() {
                       </p>
                     </div>
                   </div>
-                  
+
                   <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor(trace.status)}`}>
                     {trace.status}
                   </span>
                 </div>
-                
+
                 <div className="grid grid-cols-4 gap-4 text-sm">
                   <div>
                     <span className="text-gray-500">Duration:</span>
                     <span className="ml-2 text-gray-300">{formatDuration(trace.duration)}</span>
                   </div>
-                  
+
                   {trace.model && (
                     <div>
                       <span className="text-gray-500">Model:</span>
                       <span className="ml-2 text-gray-300">{trace.model}</span>
                     </div>
                   )}
-                  
+
                   {trace.total_tokens > 0 && (
                     <div>
                       <span className="text-gray-500">Tokens:</span>
@@ -201,7 +201,7 @@ export default function Traces() {
                       </span>
                     </div>
                   )}
-                  
+
                   {trace.cost > 0 && (
                     <div>
                       <span className="text-gray-500">Cost:</span>
@@ -228,7 +228,7 @@ export default function Traces() {
                 Close
               </button>
             </div>
-            
+
             <div className="p-6">
               <TraceTree events={selectedTrace} />
             </div>

@@ -2,12 +2,15 @@
 
 import json
 from pathlib import Path
-from typing import Any, Type
+from typing import Any
 
 from uniflow.storage.materializers.base import BaseMaterializer, register_materializer
+import contextlib
+import builtins
 
 try:
     import tensorflow as tf
+
     # Verify TensorFlow has expected attributes
     _ = tf.keras.Model
     _ = tf.Tensor
@@ -19,6 +22,7 @@ except (ImportError, AttributeError):
 
 
 if TENSORFLOW_AVAILABLE:
+
     class TensorFlowMaterializer(BaseMaterializer):
         """Materializer for TensorFlow/Keras models."""
 
@@ -34,28 +38,27 @@ if TENSORFLOW_AVAILABLE:
             if isinstance(obj, tf.keras.Model):
                 # Save Keras model in SavedModel format
                 model_path = path / "saved_model"
-                obj.save(model_path, save_format='tf')
+                obj.save(model_path, save_format="tf")
 
                 # Save metadata
                 metadata = {
                     "type": "tensorflow_keras_model",
                     "class_name": obj.__class__.__name__,
-                    "input_shape": str(obj.input_shape) if hasattr(obj, 'input_shape') else None,
-                    "output_shape": str(obj.output_shape) if hasattr(obj, 'output_shape') else None,
+                    "input_shape": str(obj.input_shape) if hasattr(obj, "input_shape") else None,
+                    "output_shape": str(obj.output_shape) if hasattr(obj, "output_shape") else None,
                 }
 
                 # Try to get model config
-                try:
+                with contextlib.suppress(builtins.BaseException):
                     metadata["config"] = obj.get_config()
-                except:
-                    pass
 
-                with open(path / "metadata.json", 'w') as f:
+                with open(path / "metadata.json", "w") as f:
                     json.dump(metadata, f, indent=2, default=str)
 
             elif isinstance(obj, tf.Tensor):
                 # Save tensor as numpy array
                 import numpy as np
+
                 tensor_path = path / "tensor.npy"
                 np.save(tensor_path, obj.numpy())
 
@@ -65,12 +68,13 @@ if TENSORFLOW_AVAILABLE:
                     "dtype": str(obj.dtype),
                 }
 
-                with open(path / "metadata.json", 'w') as f:
+                with open(path / "metadata.json", "w") as f:
                     json.dump(metadata, f, indent=2)
 
             elif isinstance(obj, tf.Variable):
                 # Save variable
                 import numpy as np
+
                 var_path = path / "variable.npy"
                 np.save(var_path, obj.numpy())
 
@@ -81,7 +85,7 @@ if TENSORFLOW_AVAILABLE:
                     "name": obj.name,
                 }
 
-                with open(path / "metadata.json", 'w') as f:
+                with open(path / "metadata.json", "w") as f:
                     json.dump(metadata, f, indent=2)
 
         def load(self, path: Path) -> Any:
@@ -96,7 +100,7 @@ if TENSORFLOW_AVAILABLE:
             # Load metadata
             metadata_path = path / "metadata.json"
             if metadata_path.exists():
-                with open(metadata_path, 'r') as f:
+                with open(metadata_path) as f:
                     metadata = json.load(f)
             else:
                 metadata = {}
@@ -109,12 +113,14 @@ if TENSORFLOW_AVAILABLE:
 
             elif obj_type == "tensorflow_tensor":
                 import numpy as np
+
                 tensor_path = path / "tensor.npy"
                 array = np.load(tensor_path)
                 return tf.convert_to_tensor(array)
 
             elif obj_type == "tensorflow_variable":
                 import numpy as np
+
                 var_path = path / "variable.npy"
                 array = np.load(var_path)
                 return tf.Variable(array, name=metadata.get("name"))
@@ -123,7 +129,7 @@ if TENSORFLOW_AVAILABLE:
                 raise ValueError(f"Unknown TensorFlow object type: {obj_type}")
 
         @classmethod
-        def supported_types(cls) -> list[Type]:
+        def supported_types(cls) -> list[type]:
             """Return TensorFlow types supported by this materializer."""
             return [tf.keras.Model, tf.Tensor, tf.Variable]
 
@@ -142,5 +148,5 @@ else:
             raise ImportError("TensorFlow is not installed. Install with: pip install tensorflow")
 
         @classmethod
-        def supported_types(cls) -> list[Type]:
+        def supported_types(cls) -> list[type]:
             return []

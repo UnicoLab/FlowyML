@@ -5,7 +5,7 @@ from dataclasses import dataclass, field, asdict
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 import shutil
 
 
@@ -29,20 +29,20 @@ class ModelVersion:
     updated_at: str
     model_path: str
     framework: str
-    metrics: Dict[str, float] = field(default_factory=dict)
-    tags: Dict[str, str] = field(default_factory=dict)
+    metrics: dict[str, float] = field(default_factory=dict)
+    tags: dict[str, str] = field(default_factory=dict)
     description: str = ""
-    author: Optional[str] = None
-    parent_version: Optional[str] = None
+    author: str | None = None
+    parent_version: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         data = asdict(self)
         data["stage"] = self.stage.value
         return data
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "ModelVersion":
+    def from_dict(cls, data: dict[str, Any]) -> "ModelVersion":
         """Create from dictionary."""
         data["stage"] = ModelStage(data["stage"])
         return cls(**data)
@@ -64,7 +64,7 @@ class ModelRegistry:
             version="v1.0.0",
             framework="pytorch",
             metrics={"accuracy": 0.95, "f1": 0.94},
-            tags={"task": "classification", "lang": "en"}
+            tags={"task": "classification", "lang": "en"},
         )
 
         # Promote to production
@@ -87,13 +87,13 @@ class ModelRegistry:
         self.registry_path = Path(registry_path)
         self.registry_path.mkdir(parents=True, exist_ok=True)
         self.metadata_file = self.registry_path / "registry.json"
-        self._metadata: Dict[str, List[Dict]] = {}
+        self._metadata: dict[str, list[dict]] = {}
         self._load_metadata()
 
     def _load_metadata(self) -> None:
         """Load registry metadata from disk."""
         if self.metadata_file.exists():
-            with open(self.metadata_file, "r") as f:
+            with open(self.metadata_file) as f:
                 self._metadata = json.load(f)
         else:
             self._metadata = {}
@@ -110,11 +110,11 @@ class ModelRegistry:
         version: str,
         framework: str,
         stage: ModelStage = ModelStage.DEVELOPMENT,
-        metrics: Optional[Dict[str, float]] = None,
-        tags: Optional[Dict[str, str]] = None,
+        metrics: dict[str, float] | None = None,
+        tags: dict[str, str] | None = None,
         description: str = "",
-        author: Optional[str] = None,
-        parent_version: Optional[str] = None,
+        author: str | None = None,
+        parent_version: str | None = None,
     ) -> ModelVersion:
         """Register a new model version.
 
@@ -194,6 +194,7 @@ class ModelRegistry:
         else:
             # Fallback to pickle
             import pickle
+
             with open(path, "wb") as f:
                 pickle.dump(model, f)
 
@@ -207,25 +208,27 @@ class ModelRegistry:
         Returns:
             Loaded model
         """
-        from uniflow.storage.materializers import materializer_registry
-
         # Try framework-specific loading
         if framework == "pytorch":
             from uniflow.storage.materializers.pytorch import PyTorchMaterializer
+
             return PyTorchMaterializer().load(path)
         elif framework == "tensorflow":
             from uniflow.storage.materializers.tensorflow import TensorFlowMaterializer
+
             return TensorFlowMaterializer().load(path)
         elif framework == "sklearn":
             from uniflow.storage.materializers.sklearn import SklearnMaterializer
+
             return SklearnMaterializer().load(path)
         else:
             # Fallback to pickle
             import pickle
+
             with open(path, "rb") as f:
                 return pickle.load(f)
 
-    def get_version(self, name: str, version: str) -> Optional[ModelVersion]:
+    def get_version(self, name: str, version: str) -> ModelVersion | None:
         """Get specific model version.
 
         Args:
@@ -244,7 +247,7 @@ class ModelRegistry:
 
         return None
 
-    def list_versions(self, name: str) -> List[ModelVersion]:
+    def list_versions(self, name: str) -> list[ModelVersion]:
         """List all versions of a model.
 
         Args:
@@ -258,7 +261,7 @@ class ModelRegistry:
 
         return [ModelVersion.from_dict(v) for v in self._metadata[name]]
 
-    def list_models(self) -> List[str]:
+    def list_models(self) -> list[str]:
         """List all registered models.
 
         Returns:
@@ -266,7 +269,7 @@ class ModelRegistry:
         """
         return list(self._metadata.keys())
 
-    def get_latest_version(self, name: str, stage: Optional[ModelStage] = None) -> Optional[ModelVersion]:
+    def get_latest_version(self, name: str, stage: ModelStage | None = None) -> ModelVersion | None:
         """Get latest version of a model.
 
         Args:
@@ -291,8 +294,8 @@ class ModelRegistry:
     def load(
         self,
         name: str,
-        version: Optional[str] = None,
-        stage: Optional[ModelStage] = None
+        version: str | None = None,
+        stage: ModelStage | None = None,
     ) -> Any:
         """Load a model from registry.
 
@@ -307,10 +310,7 @@ class ModelRegistry:
         Raises:
             ValueError: If model not found
         """
-        if version:
-            model_version = self.get_version(name, version)
-        else:
-            model_version = self.get_latest_version(name, stage)
+        model_version = self.get_version(name, version) if version else self.get_latest_version(name, stage)
 
         if not model_version:
             raise ValueError(f"Model {name} not found")
@@ -321,7 +321,7 @@ class ModelRegistry:
         self,
         name: str,
         version: str,
-        to_stage: ModelStage
+        to_stage: ModelStage,
     ) -> ModelVersion:
         """Promote model to a different stage.
 
@@ -356,7 +356,7 @@ class ModelRegistry:
         self,
         name: str,
         to_version: str,
-        stage: ModelStage = ModelStage.PRODUCTION
+        stage: ModelStage = ModelStage.PRODUCTION,
     ) -> ModelVersion:
         """Rollback to a previous version.
 
@@ -393,9 +393,7 @@ class ModelRegistry:
             raise ValueError("Cannot delete production model. Demote first.")
 
         # Remove from metadata
-        self._metadata[name] = [
-            v for v in self._metadata[name] if v["version"] != version
-        ]
+        self._metadata[name] = [v for v in self._metadata[name] if v["version"] != version]
 
         # Delete model files
         model_dir = Path(model_version.model_path).parent
@@ -407,8 +405,8 @@ class ModelRegistry:
     def compare_versions(
         self,
         name: str,
-        versions: List[str]
-    ) -> Dict[str, Dict[str, Any]]:
+        versions: list[str],
+    ) -> dict[str, dict[str, Any]]:
         """Compare multiple versions of a model.
 
         Args:
@@ -435,10 +433,10 @@ class ModelRegistry:
 
     def search(
         self,
-        tags: Optional[Dict[str, str]] = None,
-        stage: Optional[ModelStage] = None,
-        min_metrics: Optional[Dict[str, float]] = None,
-    ) -> List[ModelVersion]:
+        tags: dict[str, str] | None = None,
+        stage: ModelStage | None = None,
+        min_metrics: dict[str, float] | None = None,
+    ) -> list[ModelVersion]:
         """Search for models by criteria.
 
         Args:
@@ -460,23 +458,19 @@ class ModelRegistry:
                     continue
 
                 # Check tags
-                if tags:
-                    if not all(version.tags.get(k) == v for k, v in tags.items()):
-                        continue
+                if tags and not all(version.tags.get(k) == v for k, v in tags.items()):
+                    continue
 
                 # Check metrics
                 if min_metrics:
-                    if not all(
-                        version.metrics.get(k, float("-inf")) >= v
-                        for k, v in min_metrics.items()
-                    ):
+                    if not all(version.metrics.get(k, float("-inf")) >= v for k, v in min_metrics.items()):
                         continue
 
                 results.append(version)
 
         return results
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get registry statistics.
 
         Returns:

@@ -23,19 +23,20 @@ class TestPipelineExtended(BaseTestCase):
         """Test context is properly injected into pipeline."""
         ctx = Context(param1="value1", param2=42)
         p = Pipeline("ctx_pipeline", context=ctx)
-        
+
         self.assertEqual(p.context.get("param1"), "value1")
         self.assertEqual(p.context.get("param2"), 42)
 
     def test_pipeline_with_single_step(self):
         """Test pipeline with single step execution."""
+
         @step
         def single():
             return "single_result"
 
         p = Pipeline("single_step_pipeline")
         p.add_step(single)
-        
+
         result = p.run()
         self.assertTrue(result.success)
         self.assertEqual(result["single"], "single_result")
@@ -63,25 +64,27 @@ class TestPipelineExtended(BaseTestCase):
         p.add_step(first)
         p.add_step(second)
         p.add_step(third)
-        
+
         p.run()
         self.assertEqual(execution_order, [1, 2, 3])
 
     def test_pipeline_result_outputs(self):
         """Test accessing pipeline result outputs."""
+
         @step
         def produce_data():
             return {"key": "value", "number": 42}
 
         p = Pipeline("output_test")
         p.add_step(produce_data)
-        
+
         result = p.run()
         self.assertIn("produce_data", result.outputs)
         self.assertEqual(result.outputs["produce_data"]["key"], "value")
 
     def test_pipeline_with_context_parameters(self):
         """Test pipeline using context parameters."""
+
         @step
         def use_context(multiplier: int, base: int):
             return base * multiplier
@@ -89,7 +92,7 @@ class TestPipelineExtended(BaseTestCase):
         ctx = Context(multiplier=5, base=10)
         p = Pipeline("context_params", context=ctx)
         p.add_step(use_context)
-        
+
         result = p.run()
         self.assertEqual(result["use_context"], 50)
 

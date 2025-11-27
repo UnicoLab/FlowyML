@@ -156,7 +156,7 @@ If you need access to the entire context object:
 def inspect_context(context):
     # Access all parameters
     print(f"All params: {context.to_dict()}")
-    
+
     # Check if parameter exists
     if "optional_param" in context:
         use_param(context["optional_param"])
@@ -246,7 +246,7 @@ import os
 
 def get_context():
     env = os.getenv("ENV", "development")
-    
+
     if env == "production":
         return context(
             data_path="s3://prod-bucket/data",
@@ -361,11 +361,11 @@ ctx = context(
     # Data parameters
     data_path="./data",
     validation_split=0.2,
-    
+
     # Model parameters
     model_type="resnet50",
     pretrained=True,
-    
+
     # Training parameters
     learning_rate=0.001,
     batch_size=32,
@@ -378,12 +378,12 @@ ctx = context(
 ```python
 def create_training_pipeline(context):
     """Create a training pipeline.
-    
+
     Required context parameters:
         - data_path (str): Path to training data
         - learning_rate (float): Learning rate for optimizer
         - epochs (int): Number of training epochs
-    
+
     Optional context parameters:
         - batch_size (int): Batch size, default 32
         - random_seed (int): Random seed, default 42

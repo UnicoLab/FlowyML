@@ -103,10 +103,10 @@ from typing import Any
 class AirflowOrchestrator(Orchestrator):
     """
     Apache Airflow orchestrator for UniFlow.
-    
+
     Converts UniFlow pipelines to Airflow DAGs and manages execution.
     """
-    
+
     def __init__(
         self,
         name: str = "airflow",
@@ -117,25 +117,25 @@ class AirflowOrchestrator(Orchestrator):
         super().__init__(name)
         self.airflow_home = airflow_home
         self.dag_folder = dag_folder
-    
+
     def validate(self) -> bool:
         """Validate Airflow is installed and configured."""
         try:
             import airflow
             from pathlib import Path
-            
+
             # Check DAG folder exists
             dag_path = Path(self.dag_folder).expanduser()
             if not dag_path.exists():
                 dag_path.mkdir(parents=True)
-            
+
             return True
         except ImportError:
             raise ImportError(
                 "Apache Airflow not installed. "
                 "Install with: pip install apache-airflow"
             )
-    
+
     def run_pipeline(
         self,
         pipeline: Any,
@@ -145,20 +145,20 @@ class AirflowOrchestrator(Orchestrator):
     ) -> str:
         """
         Convert pipeline to Airflow DAG and execute.
-        
+
         Args:
             pipeline: UniFlow pipeline to execute
             resources: Resource configuration (optional)
             docker_config: Docker configuration (optional)
             **kwargs: Additional arguments
-            
+
         Returns:
             DAG run ID
         """
         from airflow import DAG
         from airflow.operators.python import PythonOperator
         from datetime import datetime
-        
+
         # Create Airflow DAG
         dag = DAG(
             dag_id=pipeline.name,
@@ -166,7 +166,7 @@ class AirflowOrchestrator(Orchestrator):
             start_date=datetime.now(),
             schedule_interval=None,
         )
-        
+
         # Convert steps to tasks
         tasks = {}
         for step in pipeline.steps:
@@ -176,24 +176,24 @@ class AirflowOrchestrator(Orchestrator):
                 dag=dag,
             )
             tasks[step.name] = task
-        
+
         # Set dependencies
         for i in range(len(pipeline.steps) - 1):
             tasks[pipeline.steps[i].name] >> tasks[pipeline.steps[i+1].name]
-        
+
         # Trigger DAG run
         run_id = f"uniflow_{pipeline.run_id}"
         dag.create_dagrun(run_id=run_id, state='running')
-        
+
         return run_id
-    
+
     def get_run_status(self, run_id: str) -> str:
         """Get DAG run status."""
         from airflow.models import DagRun
-        
+
         dagrun = DagRun.find(run_id=run_id)
         return dagrun[0].state if dagrun else "UNKNOWN"
-    
+
     def to_dict(self):
         """Serialize configuration."""
         return {
@@ -214,11 +214,11 @@ from typing import Any
 class MinIOArtifactStore(ArtifactStore):
     """
     MinIO object storage integration.
-    
+
     MinIO is an S3-compatible object storage system that can run
     on-premises or in the cloud.
     """
-    
+
     def __init__(
         self,
         name: str = "minio",
@@ -236,26 +236,26 @@ class MinIOArtifactStore(ArtifactStore):
         self.secret_key = secret_key
         self.secure = secure
         self._client = None
-    
+
     @property
     def client(self):
         """Lazy-load MinIO client."""
         if self._client is None:
             from minio import Minio
-            
+
             self._client = Minio(
                 self.endpoint,
                 access_key=self.access_key,
                 secret_key=self.secret_key,
                 secure=self.secure,
             )
-            
+
             # Ensure bucket exists
             if not self._client.bucket_exists(self.bucket):
                 self._client.make_bucket(self.bucket)
-        
+
         return self._client
-    
+
     def validate(self) -> bool:
         """Validate MinIO connection."""
         try:
@@ -270,16 +270,16 @@ class MinIOArtifactStore(ArtifactStore):
             )
         except Exception as e:
             raise ConnectionError(f"Cannot connect to MinIO: {e}")
-    
+
     def save(self, artifact: Any, path: str) -> str:
         """Save artifact to MinIO."""
         import pickle
         import io
-        
+
         # Serialize artifact
         data = pickle.dumps(artifact)
         data_stream = io.BytesIO(data)
-        
+
         # Upload
         self.client.put_object(
             self.bucket,
@@ -287,23 +287,23 @@ class MinIOArtifactStore(ArtifactStore):
             data_stream,
             length=len(data),
         )
-        
+
         return f"s3://{self.bucket}/{path}"
-    
+
     def load(self, path: str) -> Any:
         """Load artifact from MinIO."""
         import pickle
-        
+
         # Handle s3:// URIs
         if path.startswith("s3://"):
             path = path.replace(f"s3://{self.bucket}/", "")
-        
+
         # Download
         response = self.client.get_object(self.bucket, path)
         data = response.read()
-        
+
         return pickle.loads(data)
-    
+
     def exists(self, path: str) -> bool:
         """Check if artifact exists."""
         try:
@@ -311,7 +311,7 @@ class MinIOArtifactStore(ArtifactStore):
             return True
         except:
             return False
-    
+
     def to_dict(self):
         """Serialize configuration."""
         return {
@@ -441,7 +441,7 @@ stacks:
     orchestrator:
       type: airflow  # Your custom orchestrator
       dag_folder: ~/airflow/dags
-    
+
     artifact_store:
       type: minio  # Your custom artifact store
       endpoint: localhost:9000
@@ -643,7 +643,7 @@ registry.wrap_zenml_component(
 components:
   - zenml: zenml.integrations.kubernetes.orchestrators.KubernetesOrchestrator
     name: k8s
-  
+
   - zenml: zenml.integrations.aws.artifact_stores.S3ArtifactStore
     name: s3
 

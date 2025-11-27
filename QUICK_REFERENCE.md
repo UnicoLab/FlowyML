@@ -75,7 +75,7 @@ drift_result = detect_drift(
 
 if drift_result['drift_detected']:
     print(f"⚠️ Drift detected! PSI: {drift_result['psi']:.4f}")
-    
+
 # Compute stats
 stats = compute_stats(data)
 print(f"Mean: {stats['mean']}, Std: {stats['std']}")

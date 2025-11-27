@@ -64,7 +64,7 @@ stacks:
       path: .uniflow/artifacts
     metadata_store:
       path: .uniflow/metadata.db
-  
+
   production:
     type: gcp
     project_id: ${GCP_PROJECT_ID}
@@ -86,7 +86,7 @@ resources:
   default:
     cpu: "2"
     memory: "8Gi"
-  
+
   gpu_training:
     cpu: "8"
     memory: "32Gi"
@@ -162,7 +162,7 @@ stacks:
   us-prod:
     type: gcp
     region: us-central1
-  
+
   eu-prod:
     type: gcp
     region: europe-west1
@@ -184,7 +184,7 @@ resources:
   cpu_only:
     cpu: "4"
     memory: "16Gi"
-  
+
   gpu_large:
     cpu: "16"
     memory: "64Gi"

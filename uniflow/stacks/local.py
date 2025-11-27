@@ -20,11 +20,7 @@ class LocalStack(Stack):
         from uniflow import LocalStack, Pipeline
 
         # Create local stack
-        stack = LocalStack(
-            name="local",
-            artifact_path=".uniflow/artifacts",
-            metadata_path=".uniflow/metadata.db"
-        )
+        stack = LocalStack(name="local", artifact_path=".uniflow/artifacts", metadata_path=".uniflow/metadata.db")
 
         # Use with pipeline
         pipeline = Pipeline("my_pipeline", stack=stack)
@@ -97,9 +93,7 @@ class LocalStack(Stack):
         metadata_path = Path(self.metadata_store.db_path)
 
         # Calculate artifact storage size
-        artifact_size = sum(
-            f.stat().st_size for f in artifact_path.rglob("*") if f.is_file()
-        )
+        artifact_size = sum(f.stat().st_size for f in artifact_path.rglob("*") if f.is_file())
 
         # Get metadata size
         metadata_size = metadata_path.stat().st_size if metadata_path.exists() else 0

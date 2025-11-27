@@ -12,9 +12,9 @@ class TestTracking(unittest.TestCase):
         """Test creating a run."""
         run = Run(
             run_id="test_run_123",
-            pipeline_name="test_pipeline"
+            pipeline_name="test_pipeline",
         )
-        
+
         self.assertEqual(run.run_id, "test_run_123")
         self.assertEqual(run.pipeline_name, "test_pipeline")
         self.assertIsNotNone(run.metadata)
@@ -23,9 +23,9 @@ class TestTracking(unittest.TestCase):
         """Test logging metrics to a run."""
         run = Run(
             run_id="metric_test",
-            pipeline_name="test"
+            pipeline_name="test",
         )
-        
+
         run.log_metric("accuracy", 0.95)
         self.assertEqual(run.metadata.metrics["accuracy"], 0.95)
 
@@ -33,9 +33,9 @@ class TestTracking(unittest.TestCase):
         """Test logging multiple metrics."""
         run = Run(
             run_id="multi_metric_test",
-            pipeline_name="test"
+            pipeline_name="test",
         )
-        
+
         run.log_metrics({"accuracy": 0.95, "loss": 0.05})
         self.assertEqual(run.metadata.metrics["accuracy"], 0.95)
         self.assertEqual(run.metadata.metrics["loss"], 0.05)
@@ -44,9 +44,9 @@ class TestTracking(unittest.TestCase):
         """Test marking run as complete."""
         run = Run(
             run_id="complete_test",
-            pipeline_name="test"
+            pipeline_name="test",
         )
-        
+
         run.complete(status="success")
         self.assertEqual(run.metadata.status, "success")
         self.assertIsNotNone(run.metadata.ended_at)
@@ -56,9 +56,9 @@ class TestTracking(unittest.TestCase):
         metadata = RunMetadata(
             run_id="test_123",
             pipeline_name="test_pipeline",
-            started_at=datetime.now()
+            started_at=datetime.now(),
         )
-        
+
         self.assertEqual(metadata.run_id, "test_123")
         self.assertEqual(metadata.pipeline_name, "test_pipeline")
         self.assertEqual(metadata.status, "running")

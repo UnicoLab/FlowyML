@@ -135,12 +135,12 @@ for client in clients:
         client,
         description=f"ML pipelines for {client}"
     )
-    
+
     # Create client-specific pipelines
     pipeline = project.create_pipeline("recommendation_engine")
     pipeline.add_step(load_client_data)  # Client-specific data
     pipeline.add_step(train_model)
-    
+
     # Run in isolation
     result = pipeline.run()
 ```
@@ -151,7 +151,7 @@ for client in clients:
 def get_client_usage(client_name):
     project = manager.get_project(client_name)
     stats = project.get_stats()
-    
+
     return {
         "client": client_name,
         "pipelines": stats['total_pipelines'],
@@ -277,14 +277,14 @@ Project(
 
 ## FAQ
 
-**Q: Can I move a pipeline from one project to another?**  
+**Q: Can I move a pipeline from one project to another?**
 A: Currently, pipelines are tied to their project's metadata store. You would need to export/import the pipeline definition manually.
 
-**Q: How do I backup a project?**  
+**Q: How do I backup a project?**
 A: Use `project.export_metadata()` and copy the entire project directory from `.uniflow/projects/{project_name}/`.
 
-**Q: What happens when I delete a project?**  
+**Q: What happens when I delete a project?**
 A: All pipelines, runs, and artifacts associated with the project are removed. Always export metadata first!
 
-**Q: Can projects share artifacts?**  
+**Q: Can projects share artifacts?**
 A: No, projects are fully isolated by design. This ensures multi-tenant security and resource tracking.

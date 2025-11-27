@@ -1,51 +1,48 @@
-"""
-Step Decorator - Define pipeline steps with automatic context injection.
-"""
+"""Step Decorator - Define pipeline steps with automatic context injection."""
 
 import hashlib
 import inspect
 import json
-from typing import Any, Callable, Dict, List, Optional, Union
-from functools import wraps
+from typing import Any
+from collections.abc import Callable
 from dataclasses import dataclass, field
 
 
 @dataclass
 class StepConfig:
     """Configuration for a pipeline step."""
+
     name: str
     func: Callable
-    inputs: List[str] = field(default_factory=list)
-    outputs: List[str] = field(default_factory=list)
-    cache: Union[bool, str, Callable] = "code_hash"
+    inputs: list[str] = field(default_factory=list)
+    outputs: list[str] = field(default_factory=list)
+    cache: bool | str | Callable = "code_hash"
     retry: int = 0
-    timeout: Optional[int] = None
-    resources: Dict[str, Any] = field(default_factory=dict)
-    tags: Dict[str, str] = field(default_factory=dict)
-    condition: Optional[Callable] = None
-    
+    timeout: int | None = None
+    resources: dict[str, Any] = field(default_factory=dict)
+    tags: dict[str, str] = field(default_factory=dict)
+    condition: Callable | None = None
+
     def __hash__(self):
         """Make StepConfig hashable."""
         return hash(self.name)
 
 
 class Step:
-    """
-    A pipeline step that can be executed with automatic context injection.
-    """
-    
+    """A pipeline step that can be executed with automatic context injection."""
+
     def __init__(
         self,
         func: Callable,
-        name: Optional[str] = None,
-        inputs: Optional[List[str]] = None,
-        outputs: Optional[List[str]] = None,
-        cache: Union[bool, str, Callable] = "code_hash",
+        name: str | None = None,
+        inputs: list[str] | None = None,
+        outputs: list[str] | None = None,
+        cache: bool | str | Callable = "code_hash",
         retry: int = 0,
-        timeout: Optional[int] = None,
-        resources: Optional[Dict[str, Any]] = None,
-        tags: Optional[Dict[str, str]] = None,
-        condition: Optional[Callable] = None
+        timeout: int | None = None,
+        resources: dict[str, Any] | None = None,
+        tags: dict[str, str] | None = None,
+        condition: Callable | None = None,
     ):
         self.func = func
         self.name = name or func.__name__
@@ -57,13 +54,13 @@ class Step:
         self.resources = resources or {}
         self.tags = tags or {}
         self.condition = condition
-        
+
         # Capture source code for UI display
         try:
             self.source_code = inspect.getsource(func)
         except (OSError, TypeError):
             self.source_code = "# Source code not available"
-        
+
         self.config = StepConfig(
             name=self.name,
             func=func,
@@ -74,21 +71,21 @@ class Step:
             timeout=self.timeout,
             resources=self.resources,
             tags=self.tags,
-            condition=self.condition
+            condition=self.condition,
         )
-    
+
     def __call__(self, *args, **kwargs):
         """Execute the step function."""
         # Check condition if present
         if self.condition:
-            # We might need to inject context into condition too, 
+            # We might need to inject context into condition too,
             # but for now assume it takes no args or same args as step?
             # This is tricky without context injection logic here.
             # The executor handles execution, so maybe we just store it here.
             pass
-            
+
         return self.func(*args, **kwargs)
-    
+
     def get_code_hash(self) -> str:
         """Compute hash of the step's source code."""
         try:
@@ -97,19 +94,18 @@ class Step:
         except (OSError, TypeError):
             # Fallback for dynamically defined functions or when source is unavailable
             return hashlib.md5(self.name.encode()).hexdigest()[:16]
-    
-    def get_input_hash(self, inputs: Dict[str, Any]) -> str:
+
+    def get_input_hash(self, inputs: dict[str, Any]) -> str:
         """Generate hash of inputs for caching."""
         input_str = json.dumps(inputs, sort_keys=True, default=str)
         return hashlib.sha256(input_str.encode()).hexdigest()[:16]
-    
-    def get_cache_key(self, inputs: Optional[Dict[str, Any]] = None) -> str:
-        """
-        Generate cache key based on caching strategy.
-        
+
+    def get_cache_key(self, inputs: dict[str, Any] | None = None) -> str:
+        """Generate cache key based on caching strategy.
+
         Args:
             inputs: Input data for the step
-            
+
         Returns:
             Cache key string
         """
@@ -121,29 +117,28 @@ class Step:
             return self.cache(inputs, {})
         else:
             return f"{self.name}:no-cache"
-    
+
     def __repr__(self) -> str:
         return f"Step(name='{self.name}', inputs={self.inputs}, outputs={self.outputs})"
 
 
 def step(
-    _func: Optional[Callable] = None,
+    _func: Callable | None = None,
     *,
-    inputs: Optional[List[str]] = None,
-    outputs: Optional[List[str]] = None,
-    cache: Union[bool, str, Callable] = "code_hash",
+    inputs: list[str] | None = None,
+    outputs: list[str] | None = None,
+    cache: bool | str | Callable = "code_hash",
     retry: int = 0,
-    timeout: Optional[int] = None,
-    resources: Optional[Dict[str, Any]] = None,
-    tags: Optional[Dict[str, str]] = None,
-    name: Optional[str] = None,
-    condition: Optional[Callable] = None
+    timeout: int | None = None,
+    resources: dict[str, Any] | None = None,
+    tags: dict[str, str] | None = None,
+    name: str | None = None,
+    condition: Callable | None = None,
 ):
-    """
-    Decorator to define a pipeline step with automatic context injection.
-    
+    """Decorator to define a pipeline step with automatic context injection.
+
     Can be used as @step or @step(inputs=...)
-    
+
     Args:
         _func: Function being decorated (when used as @step)
         inputs: List of input asset names
@@ -155,14 +150,16 @@ def step(
         tags: Metadata tags for the step
         name: Optional custom name for the step
         condition: Optional callable that returns True if step should run
-    
+
     Example:
         >>> @step
-        ... def simple_step(): ...
-        >>> 
+        ... def simple_step():
+        ...     ...
         >>> @step(inputs=["data/train"], outputs=["model/trained"])
-        ... def train_model(train_data): ...
+        ... def train_model(train_data):
+        ...     ...
     """
+
     def decorator(func: Callable) -> Step:
         return Step(
             func=func,
@@ -174,9 +171,9 @@ def step(
             timeout=timeout,
             resources=resources,
             tags=tags,
-            condition=condition
+            condition=condition,
         )
-    
+
     if _func is None:
         return decorator
     else:

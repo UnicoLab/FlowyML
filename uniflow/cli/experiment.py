@@ -1,11 +1,11 @@
 """Experiment tracking CLI commands."""
 
-from typing import List, Dict, Any, Optional
+from typing import Any
 from pathlib import Path
 import json
 
 
-def list_experiments_cmd(limit: int = 10, pipeline: Optional[str] = None) -> List[Dict[str, Any]]:
+def list_experiments_cmd(limit: int = 10, pipeline: str | None = None) -> list[dict[str, Any]]:
     """List experiments.
 
     Args:
@@ -15,8 +15,6 @@ def list_experiments_cmd(limit: int = 10, pipeline: Optional[str] = None) -> Lis
     Returns:
         List of experiment dictionaries
     """
-    from uniflow.tracking.experiment import Experiment
-
     experiments_dir = Path(".uniflow/experiments")
 
     if not experiments_dir.exists():
@@ -26,24 +24,24 @@ def list_experiments_cmd(limit: int = 10, pipeline: Optional[str] = None) -> Lis
 
     for exp_file in experiments_dir.glob("*.json"):
         try:
-            with open(exp_file, 'r') as f:
+            with open(exp_file) as f:
                 exp_data = json.load(f)
 
             # Filter by pipeline if specified
-            if pipeline and exp_data.get('pipeline_name') != pipeline:
+            if pipeline and exp_data.get("pipeline_name") != pipeline:
                 continue
 
             experiments.append(exp_data)
-        except:
+        except Exception:
             continue
 
     # Sort by created_at
-    experiments.sort(key=lambda x: x.get('created_at', ''), reverse=True)
+    experiments.sort(key=lambda x: x.get("created_at", ""), reverse=True)
 
     return experiments[:limit]
 
 
-def compare_runs(run_ids: List[str]) -> str:
+def compare_runs(run_ids: list[str]) -> str:
     """Compare multiple experiment runs.
 
     Args:
@@ -82,7 +80,7 @@ def compare_runs(run_ids: List[str]) -> str:
     for metric in sorted(all_metrics):
         values = []
         for run in runs:
-            value = run.metadata.metrics.get(metric, '-')
+            value = run.metadata.metrics.get(metric, "-")
             if isinstance(value, float):
                 values.append(f"{value:>12.4f}")
             else:
@@ -104,7 +102,7 @@ def compare_runs(run_ids: List[str]) -> str:
         for param in sorted(all_params):
             values = []
             for run in runs:
-                value = run.metadata.parameters.get(param, '-')
+                value = run.metadata.parameters.get(param, "-")
                 values.append(f"{str(value):>12}")
 
             lines.append(f"{param:<30} " + " ".join(values))
@@ -113,8 +111,7 @@ def compare_runs(run_ids: List[str]) -> str:
 
     # Duration
     lines.append("\nDuration:")
-    durations = [f"{r.metadata.duration:>12.2f}s" if r.metadata.duration else f"{'N/A':>12}"
-                 for r in runs]
+    durations = [f"{r.metadata.duration:>12.2f}s" if r.metadata.duration else f"{'N/A':>12}" for r in runs]
     lines.append(f"{'Time':<30} " + " ".join(durations))
 
     lines.append("-" * 80)
@@ -122,12 +119,12 @@ def compare_runs(run_ids: List[str]) -> str:
     return "\n".join(lines)
 
 
-def export_experiment(run_id: str, format: str = "html") -> str:
+def export_experiment(run_id: str, export_format: str = "html") -> str:
     """Export experiment run.
 
     Args:
         run_id: Run ID to export
-        format: Export format (html, json, markdown)
+        export_format: Export format (html, json, markdown)
 
     Returns:
         Path to exported file
@@ -140,27 +137,27 @@ def export_experiment(run_id: str, format: str = "html") -> str:
 
     run = Run.load(run_path)
 
-    output_dir = Path(f".uniflow/exports")
+    output_dir = Path(".uniflow/exports")
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    if format == "json":
+    if export_format == "json":
         output_file = output_dir / f"{run_id}.json"
         run.save(output_file)
 
-    elif format == "markdown":
+    elif export_format == "markdown":
         output_file = output_dir / f"{run_id}.md"
         markdown = generate_markdown_report(run)
-        with open(output_file, 'w') as f:
+        with open(output_file, "w") as f:
             f.write(markdown)
 
-    elif format == "html":
+    elif export_format == "html":
         output_file = output_dir / f"{run_id}.html"
         html = generate_html_report(run)
-        with open(output_file, 'w') as f:
+        with open(output_file, "w") as f:
             f.write(html)
 
     else:
-        raise ValueError(f"Unknown format: {format}")
+        raise ValueError(f"Unknown format: {export_format}")
 
     return str(output_file)
 

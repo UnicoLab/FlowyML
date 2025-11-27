@@ -12,43 +12,43 @@ run_id = f"test_artifacts_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
 # 1. Save Run
 metadata = {
-    'run_id': run_id,
-    'pipeline_name': 'artifact_test_pipeline',
-    'status': 'completed',
-    'start_time': datetime.now().isoformat(),
-    'end_time': datetime.now().isoformat(),
-    'duration': 5.0,
-    'success': True,
-    'steps': {}
+    "run_id": run_id,
+    "pipeline_name": "artifact_test_pipeline",
+    "status": "completed",
+    "start_time": datetime.now().isoformat(),
+    "end_time": datetime.now().isoformat(),
+    "duration": 5.0,
+    "success": True,
+    "steps": {},
 }
 store.save_run(run_id, metadata)
 print(f"✅ Saved run: {run_id}")
 
 # 2. Save Artifacts
 artifacts = [
-    {'name': 'dataset', 'type': 'DataFrame', 'value': 'rows: 1000, cols: 20'},
-    {'name': 'model', 'type': 'RandomForest', 'value': 'n_estimators=100'},
-    {'name': 'confusion_matrix', 'type': 'dict', 'value': '{"TP": 90, "FP": 10}'}
+    {"name": "dataset", "type": "DataFrame", "value": "rows: 1000, cols: 20"},
+    {"name": "model", "type": "RandomForest", "value": "n_estimators=100"},
+    {"name": "confusion_matrix", "type": "dict", "value": '{"TP": 90, "FP": 10}'},
 ]
 
 for i, art in enumerate(artifacts):
     art_id = f"{run_id}_step_{i}_{art['name']}"
     art_meta = {
-        'name': art['name'],
-        'type': art['type'],
-        'run_id': run_id,
-        'step': f"step_{i}",
-        'value': art['value'],
-        'created_at': datetime.now().isoformat()
+        "name": art["name"],
+        "type": art["type"],
+        "run_id": run_id,
+        "step": f"step_{i}",
+        "value": art["value"],
+        "created_at": datetime.now().isoformat(),
     }
     store.save_artifact(art_id, art_meta)
     print(f"✅ Saved artifact: {art['name']}")
 
 # 3. Save Metrics
 metrics = {
-    'accuracy': 0.95,
-    'loss': 0.05,
-    'f1_score': 0.94
+    "accuracy": 0.95,
+    "loss": 0.05,
+    "f1_score": 0.94,
 }
 
 for name, value in metrics.items():

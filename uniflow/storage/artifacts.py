@@ -3,7 +3,7 @@
 import shutil
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 import pickle
 
 
@@ -11,7 +11,7 @@ class ArtifactStore(ABC):
     """Base class for artifact storage backends."""
 
     @abstractmethod
-    def save(self, artifact: Any, path: str, metadata: Optional[dict] = None) -> str:
+    def save(self, artifact: Any, path: str, metadata: dict | None = None) -> str:
         """Save an artifact to storage.
 
         Args:
@@ -47,20 +47,20 @@ class ArtifactStore(ABC):
         pass
 
     @abstractmethod
-    def list(self, prefix: str = "") -> list[str]:
+    def list_artifacts(self, prefix: str = "") -> list[str]:
         """List all artifacts with optional prefix filter."""
         pass
 
     def materialize(self, obj: Any, name: str, run_id: str, step_name: str, project_name: str = "default") -> str:
         """Materialize artifact to structured storage.
-        
+
         Args:
             obj: Object to materialize
             name: Name of the artifact
             run_id: ID of the current run
             step_name: Name of the step producing the artifact
             project_name: Name of the project
-            
+
         Returns:
             Path where artifact was saved
         """
@@ -79,7 +79,7 @@ class LocalArtifactStore(ArtifactStore):
         self.base_path = Path(base_path)
         self.base_path.mkdir(parents=True, exist_ok=True)
 
-    def save(self, artifact: Any, path: str, metadata: Optional[dict] = None) -> str:
+    def save(self, artifact: Any, path: str, metadata: dict | None = None) -> str:
         """Save artifact to local filesystem.
 
         Args:
@@ -94,14 +94,15 @@ class LocalArtifactStore(ArtifactStore):
         full_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Save artifact using pickle by default
-        with open(full_path, 'wb') as f:
+        with open(full_path, "wb") as f:
             pickle.dump(artifact, f)
 
         # Save metadata if provided
         if metadata:
-            metadata_path = full_path.with_suffix('.meta.json')
+            metadata_path = full_path.with_suffix(".meta.json")
             import json
-            with open(metadata_path, 'w') as f:
+
+            with open(metadata_path, "w") as f:
                 json.dump(metadata, f, indent=2)
 
         return str(full_path)
@@ -120,7 +121,7 @@ class LocalArtifactStore(ArtifactStore):
         if not full_path.exists():
             raise FileNotFoundError(f"Artifact not found at {full_path}")
 
-        with open(full_path, 'rb') as f:
+        with open(full_path, "rb") as f:
             return pickle.load(f)
 
     def exists(self, path: str) -> bool:
@@ -149,11 +150,11 @@ class LocalArtifactStore(ArtifactStore):
                 full_path.unlink()
 
             # Also delete metadata if exists
-            metadata_path = full_path.with_suffix('.meta.json')
+            metadata_path = full_path.with_suffix(".meta.json")
             if metadata_path.exists():
                 metadata_path.unlink()
 
-    def list(self, prefix: str = "") -> list[str]:
+    def list_artifacts(self, prefix: str = "") -> list[str]:
         """List all artifacts with optional prefix.
 
         Args:
@@ -168,14 +169,14 @@ class LocalArtifactStore(ArtifactStore):
             return []
 
         artifacts = []
-        for item in search_path.rglob('*'):
-            if item.is_file() and not item.name.endswith('.meta.json'):
+        for item in search_path.rglob("*"):
+            if item.is_file() and not item.name.endswith(".meta.json"):
                 rel_path = item.relative_to(self.base_path)
                 artifacts.append(str(rel_path))
 
         return sorted(artifacts)
 
-    def get_metadata(self, path: str) -> Optional[dict]:
+    def get_metadata(self, path: str) -> dict | None:
         """Get metadata for an artifact.
 
         Args:
@@ -185,13 +186,14 @@ class LocalArtifactStore(ArtifactStore):
             Metadata dictionary or None if no metadata exists
         """
         full_path = self.base_path / path
-        metadata_path = full_path.with_suffix('.meta.json')
+        metadata_path = full_path.with_suffix(".meta.json")
 
         if not metadata_path.exists():
             return None
 
         import json
-        with open(metadata_path, 'r') as f:
+
+        with open(metadata_path) as f:
             return json.load(f)
 
     def size(self, path: str) -> int:
@@ -215,21 +217,21 @@ class LocalArtifactStore(ArtifactStore):
         import shutil
         import pickle
         import json
-        
+
         date_str = datetime.now().strftime("%Y-%m-%d")
         # Structure: project / date / run_id / data / step / name
         rel_path = Path(project_name) / date_str / run_id / "data" / step_name / name
         full_path = self.base_path / rel_path
-        
+
         # Clean up if exists
         if full_path.exists():
             if full_path.is_dir():
                 shutil.rmtree(full_path)
             else:
                 full_path.unlink()
-            
+
         full_path.mkdir(parents=True, exist_ok=True)
-        
+
         materializer = get_materializer(obj)
         if materializer:
             materializer.save(obj, full_path)
@@ -240,5 +242,5 @@ class LocalArtifactStore(ArtifactStore):
             # Save metadata
             with open(full_path / "metadata.json", "w") as f:
                 json.dump({"type": "pickle", "format": "pickle"}, f, indent=2)
-                
+
         return str(full_path)

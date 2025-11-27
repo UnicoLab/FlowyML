@@ -2,8 +2,7 @@
 
 import subprocess
 from pathlib import Path
-from typing import Optional, Dict, Any
-from datetime import datetime
+from typing import Any
 
 
 class GitInfo:
@@ -11,13 +10,13 @@ class GitInfo:
 
     def __init__(
         self,
-        commit_hash: Optional[str] = None,
-        branch: Optional[str] = None,
+        commit_hash: str | None = None,
+        branch: str | None = None,
         is_dirty: bool = False,
-        remote_url: Optional[str] = None,
-        author: Optional[str] = None,
-        commit_message: Optional[str] = None,
-        commit_time: Optional[str] = None,
+        remote_url: str | None = None,
+        author: str | None = None,
+        commit_message: str | None = None,
+        commit_time: str | None = None,
     ):
         self.commit_hash = commit_hash
         self.branch = branch
@@ -27,7 +26,7 @@ class GitInfo:
         self.commit_message = commit_message
         self.commit_time = commit_time
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "commit_hash": self.commit_hash,
@@ -45,7 +44,7 @@ class GitInfo:
         return self.commit_hash is not None
 
 
-def run_git_command(command: list, cwd: Optional[Path] = None) -> Optional[str]:
+def run_git_command(command: list, cwd: Path | None = None) -> str | None:
     """Run a git command and return output.
 
     Args:
@@ -70,7 +69,7 @@ def run_git_command(command: list, cwd: Optional[Path] = None) -> Optional[str]:
         return None
 
 
-def is_git_repo(path: Optional[Path] = None) -> bool:
+def is_git_repo(path: Path | None = None) -> bool:
     """Check if directory is a git repository.
 
     Args:
@@ -83,7 +82,7 @@ def is_git_repo(path: Optional[Path] = None) -> bool:
     return result is not None
 
 
-def get_commit_hash(path: Optional[Path] = None) -> Optional[str]:
+def get_commit_hash(path: Path | None = None) -> str | None:
     """Get current commit hash.
 
     Args:
@@ -95,7 +94,7 @@ def get_commit_hash(path: Optional[Path] = None) -> Optional[str]:
     return run_git_command(["rev-parse", "HEAD"], cwd=path)
 
 
-def get_short_commit_hash(path: Optional[Path] = None) -> Optional[str]:
+def get_short_commit_hash(path: Path | None = None) -> str | None:
     """Get short commit hash.
 
     Args:
@@ -107,7 +106,7 @@ def get_short_commit_hash(path: Optional[Path] = None) -> Optional[str]:
     return run_git_command(["rev-parse", "--short", "HEAD"], cwd=path)
 
 
-def get_branch_name(path: Optional[Path] = None) -> Optional[str]:
+def get_branch_name(path: Path | None = None) -> str | None:
     """Get current branch name.
 
     Args:
@@ -119,7 +118,7 @@ def get_branch_name(path: Optional[Path] = None) -> Optional[str]:
     return run_git_command(["rev-parse", "--abbrev-ref", "HEAD"], cwd=path)
 
 
-def is_dirty(path: Optional[Path] = None) -> bool:
+def is_dirty(path: Path | None = None) -> bool:
     """Check if repository has uncommitted changes.
 
     Args:
@@ -132,7 +131,7 @@ def is_dirty(path: Optional[Path] = None) -> bool:
     return bool(result)
 
 
-def get_remote_url(path: Optional[Path] = None, remote: str = "origin") -> Optional[str]:
+def get_remote_url(path: Path | None = None, remote: str = "origin") -> str | None:
     """Get remote repository URL.
 
     Args:
@@ -145,7 +144,7 @@ def get_remote_url(path: Optional[Path] = None, remote: str = "origin") -> Optio
     return run_git_command(["config", "--get", f"remote.{remote}.url"], cwd=path)
 
 
-def get_commit_author(path: Optional[Path] = None) -> Optional[str]:
+def get_commit_author(path: Path | None = None) -> str | None:
     """Get author of current commit.
 
     Args:
@@ -157,7 +156,7 @@ def get_commit_author(path: Optional[Path] = None) -> Optional[str]:
     return run_git_command(["log", "-1", "--format=%an <%ae>"], cwd=path)
 
 
-def get_commit_message(path: Optional[Path] = None) -> Optional[str]:
+def get_commit_message(path: Path | None = None) -> str | None:
     """Get message of current commit.
 
     Args:
@@ -169,7 +168,7 @@ def get_commit_message(path: Optional[Path] = None) -> Optional[str]:
     return run_git_command(["log", "-1", "--format=%s"], cwd=path)
 
 
-def get_commit_time(path: Optional[Path] = None) -> Optional[str]:
+def get_commit_time(path: Path | None = None) -> str | None:
     """Get timestamp of current commit.
 
     Args:
@@ -181,7 +180,7 @@ def get_commit_time(path: Optional[Path] = None) -> Optional[str]:
     return run_git_command(["log", "-1", "--format=%ci"], cwd=path)
 
 
-def get_diff(path: Optional[Path] = None, staged: bool = False) -> Optional[str]:
+def get_diff(path: Path | None = None, staged: bool = False) -> str | None:
     """Get diff of uncommitted changes.
 
     Args:
@@ -198,7 +197,7 @@ def get_diff(path: Optional[Path] = None, staged: bool = False) -> Optional[str]
     return run_git_command(command, cwd=path)
 
 
-def get_git_info(path: Optional[Path] = None) -> GitInfo:
+def get_git_info(path: Path | None = None) -> GitInfo:
     """Get comprehensive git information.
 
     Args:
@@ -221,7 +220,7 @@ def get_git_info(path: Optional[Path] = None) -> GitInfo:
     )
 
 
-def save_git_snapshot(output_dir: Path, path: Optional[Path] = None) -> None:
+def save_git_snapshot(output_dir: Path, path: Path | None = None) -> None:
     """Save git repository snapshot.
 
     Args:
@@ -247,8 +246,10 @@ def save_git_snapshot(output_dir: Path, path: Optional[Path] = None) -> None:
 
 
 def get_file_commit_history(
-    file_path: str, max_count: int = 10, path: Optional[Path] = None
-) -> list[Dict[str, str]]:
+    file_path: str,
+    max_count: int = 10,
+    path: Path | None = None,
+) -> list[dict[str, str]]:
     """Get commit history for a specific file.
 
     Args:
@@ -285,13 +286,13 @@ def get_file_commit_history(
                     "author_email": parts[2],
                     "timestamp": parts[3],
                     "message": parts[4],
-                }
+                },
             )
 
     return commits
 
 
-def get_tags(path: Optional[Path] = None) -> list[str]:
+def get_tags(path: Path | None = None) -> list[str]:
     """Get list of git tags.
 
     Args:
@@ -306,7 +307,7 @@ def get_tags(path: Optional[Path] = None) -> list[str]:
     return []
 
 
-def get_current_tag(path: Optional[Path] = None) -> Optional[str]:
+def get_current_tag(path: Path | None = None) -> str | None:
     """Get tag pointing to current commit.
 
     Args:

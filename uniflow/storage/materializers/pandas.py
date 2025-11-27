@@ -2,18 +2,20 @@
 
 import json
 from pathlib import Path
-from typing import Any, Type
+from typing import Any
 
 from uniflow.storage.materializers.base import BaseMaterializer, register_materializer
 
 try:
     import pandas as pd
+
     PANDAS_AVAILABLE = True
 except ImportError:
     PANDAS_AVAILABLE = False
 
 
 if PANDAS_AVAILABLE:
+
     class PandasMaterializer(BaseMaterializer):
         """Materializer for Pandas DataFrames and Series."""
 
@@ -32,7 +34,7 @@ if PANDAS_AVAILABLE:
                     data_path = path / "data.parquet"
                     obj.to_parquet(data_path, index=True)
                     format_used = "parquet"
-                except:
+                except Exception:
                     data_path = path / "data.csv"
                     obj.to_csv(data_path, index=True)
                     format_used = "csv"
@@ -47,7 +49,7 @@ if PANDAS_AVAILABLE:
                     "index_name": obj.index.name,
                 }
 
-                with open(path / "metadata.json", 'w') as f:
+                with open(path / "metadata.json", "w") as f:
                     json.dump(metadata, f, indent=2)
 
             elif isinstance(obj, pd.Series):
@@ -56,7 +58,7 @@ if PANDAS_AVAILABLE:
                     data_path = path / "data.parquet"
                     obj.to_frame().to_parquet(data_path, index=True)
                     format_used = "parquet"
-                except:
+                except Exception:
                     data_path = path / "data.csv"
                     obj.to_csv(data_path, index=True, header=True)
                     format_used = "csv"
@@ -70,7 +72,7 @@ if PANDAS_AVAILABLE:
                     "index_name": obj.index.name,
                 }
 
-                with open(path / "metadata.json", 'w') as f:
+                with open(path / "metadata.json", "w") as f:
                     json.dump(metadata, f, indent=2)
 
         def load(self, path: Path) -> Any:
@@ -85,7 +87,7 @@ if PANDAS_AVAILABLE:
             # Load metadata
             metadata_path = path / "metadata.json"
             if metadata_path.exists():
-                with open(metadata_path, 'r') as f:
+                with open(metadata_path) as f:
                     metadata = json.load(f)
             else:
                 metadata = {}
@@ -117,7 +119,7 @@ if PANDAS_AVAILABLE:
                 raise ValueError(f"Unknown Pandas object type: {obj_type}")
 
         @classmethod
-        def supported_types(cls) -> list[Type]:
+        def supported_types(cls) -> list[type]:
             """Return Pandas types supported by this materializer."""
             return [pd.DataFrame, pd.Series]
 
@@ -136,5 +138,5 @@ else:
             raise ImportError("Pandas is not installed. Install with: pip install pandas")
 
         @classmethod
-        def supported_types(cls) -> list[Type]:
+        def supported_types(cls) -> list[type]:
             return []

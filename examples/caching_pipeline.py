@@ -12,8 +12,9 @@ import time
 
 ctx = context(
     data_version="v1.0",
-    model_type="random_forest"
+    model_type="random_forest",
 )
+
 
 # Code hash caching (default): cached until function code changes
 @step(outputs=["data/raw"], cache="code_hash")
@@ -23,6 +24,7 @@ def load_data():
     time.sleep(2)  # Simulate expensive I/O
     return {"rows": 10000, "version": "v1.0"}
 
+
 # Input hash caching: cached based on input values
 @step(inputs=["data/raw"], outputs=["data/processed"], cache="input_hash")
 def preprocess(data, data_version: str):
@@ -31,6 +33,7 @@ def preprocess(data, data_version: str):
     time.sleep(1.5)
     return {"rows": data["rows"], "processed": True}
 
+
 # No caching: always runs
 @step(inputs=["data/processed"], outputs=["model/trained"], cache=False)
 def train_model(data, model_type: str):
@@ -38,6 +41,7 @@ def train_model(data, model_type: str):
     print(f"Training {model_type} model (always runs)...")
     time.sleep(1)
     return {"accuracy": 0.92, "type": model_type}
+
 
 # Create pipeline
 pipeline = Pipeline("caching_example", context=ctx)

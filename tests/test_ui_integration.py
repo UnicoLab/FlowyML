@@ -3,12 +3,9 @@ Test pipeline to verify UI integration works.
 This should populate the database and show in the UI.
 """
 
-# Force reload to get latest code
+# Note: Module reloading removed as it causes test pollution and isinstance failures
+
 import sys
-if 'uniflow.core.pipeline' in sys.modules:
-    del sys.modules['uniflow.core.pipeline']
-if 'uniflow' in sys.modules:
-    del sys.modules['uniflow']
 
 from uniflow import Pipeline, step, context
 import time
@@ -17,8 +14,9 @@ import time
 ctx = context(
     learning_rate=0.001,
     epochs=5,
-    batch_size=32
+    batch_size=32,
 )
+
 
 # Define steps
 @step(outputs=["data/processed"])
@@ -28,6 +26,7 @@ def load_and_preprocess():
     time.sleep(0.5)
     return {"samples": 1000, "features": 20}
 
+
 @step(inputs=["data/processed"], outputs=["model/trained"])
 def train_model(data, learning_rate: float, epochs: int):
     """Train a model with auto-injected parameters."""
@@ -36,10 +35,11 @@ def train_model(data, learning_rate: float, epochs: int):
     time.sleep(0.5)
     return {"accuracy": 0.95, "loss": 0.05}
 
+
 # Create and run pipeline
-print("\n" + "="*70)
+print("\n" + "=" * 70)
 print("🧪 Testing UniFlow UI Integration")
-print("="*70)
+print("=" * 70)
 
 pipeline = Pipeline("ui_test_pipeline", context=ctx)
 pipeline.add_step(load_and_preprocess)
@@ -57,4 +57,4 @@ if result.success:
 else:
     print(f"\n❌ Pipeline failed")
 
-print("="*70)
+print("=" * 70)

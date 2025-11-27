@@ -22,14 +22,14 @@ class TestAssets(unittest.TestCase):
     def test_dataset_creation_with_dataframe(self):
         """Test dataset creation with pandas DataFrame."""
         df = pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
-        
+
         dataset = Dataset.create(
             data=df,
             name="test_dataset",
             rows=3,
-            cols=2
+            cols=2,
         )
-        
+
         self.assertEqual(dataset.name, "test_dataset")
         self.assertEqual(dataset.metadata.properties["rows"], 3)
         self.assertEqual(dataset.metadata.properties["cols"], 2)
@@ -39,24 +39,24 @@ class TestAssets(unittest.TestCase):
         dataset = Dataset.create(
             data="/path/to/data.csv",
             name="path_dataset",
-            format="csv"
+            format="csv",
         )
-        
+
         self.assertEqual(dataset.name, "path_dataset")
         self.assertEqual(dataset.metadata.properties["format"], "csv")
 
     def test_model_creation(self):
         """Test model asset creation."""
         model_obj = {"weights": [1, 2, 3]}
-        
+
         model = Model.create(
             data=model_obj,
             name="test_model",
             framework="pytorch",
             lr=0.01,
-            epochs=10
+            epochs=10,
         )
-        
+
         self.assertEqual(model.name, "test_model")
         # Framework is stored in properties
         self.assertEqual(model.metadata.properties.get("framework"), "pytorch")
@@ -67,9 +67,9 @@ class TestAssets(unittest.TestCase):
             accuracy=0.95,
             precision=0.93,
             recall=0.94,
-            f1_score=0.935
+            f1_score=0.935,
         )
-        
+
         # Metrics are stored in metadata properties
         self.assertAlmostEqual(metrics.metadata.properties["accuracy"], 0.95)
         self.assertAlmostEqual(metrics.metadata.properties["precision"], 0.93)
@@ -78,11 +78,11 @@ class TestAssets(unittest.TestCase):
         """Test metrics creation with dictionary."""
         metrics_dict = {
             "accuracy": 0.96,
-            "loss": 0.04
+            "loss": 0.04,
         }
-        
+
         metrics = Metrics.create(**metrics_dict)
-        
+
         self.assertAlmostEqual(metrics.metadata.properties["accuracy"], 0.96)
         self.assertAlmostEqual(metrics.metadata.properties["loss"], 0.04)
 
@@ -91,9 +91,9 @@ class TestAssets(unittest.TestCase):
         dataset = Dataset.create(
             data=[1, 2, 3],
             name="tagged_dataset",
-            tags={"env": "test", "version": "v1"}
+            tags={"env": "test", "version": "v1"},
         )
-        
+
         # Tags should be in metadata
         self.assertIn("env", dataset.metadata.tags)
         self.assertEqual(dataset.metadata.tags["env"], "test")
@@ -102,7 +102,7 @@ class TestAssets(unittest.TestCase):
         """Test asset lineage tracking."""
         parent = Dataset.create(data=[1, 2, 3], name="parent")
         child = Dataset.create(data=[2, 4, 6], name="child", parent=parent)
-        
+
         self.assertIn(parent, child.parents)
         self.assertIn(child, parent.children)
 

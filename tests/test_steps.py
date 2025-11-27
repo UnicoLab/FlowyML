@@ -12,6 +12,7 @@ class TestSteps(BaseTestCase):
 
     def test_step_decorator_basic(self):
         """Test basic step decorator."""
+
         @step
         def simple_step():
             return "result"
@@ -21,6 +22,7 @@ class TestSteps(BaseTestCase):
 
     def test_step_with_inputs_outputs(self):
         """Test step with explicit inputs and outputs."""
+
         @step(inputs=["data"], outputs=["processed"])
         def processing_step(data):
             return data.upper()
@@ -30,6 +32,7 @@ class TestSteps(BaseTestCase):
 
     def test_step_with_retry(self):
         """Test step with retry configuration."""
+
         @step(retry=3)
         def retryable_step():
             return "success"
@@ -38,6 +41,7 @@ class TestSteps(BaseTestCase):
 
     def test_step_with_timeout(self):
         """Test step with timeout configuration."""
+
         @step(timeout=60)
         def timed_step():
             return "done"
@@ -46,6 +50,7 @@ class TestSteps(BaseTestCase):
 
     def test_step_with_resources(self):
         """Test step with resource requirements."""
+
         @step(resources={"gpu": 1, "memory": "4GB"})
         def gpu_step():
             return "computed"
@@ -55,6 +60,7 @@ class TestSteps(BaseTestCase):
 
     def test_step_with_cache_disabled(self):
         """Test step with caching disabled."""
+
         @step(cache=False)
         def no_cache_step():
             return "fresh"
@@ -63,6 +69,7 @@ class TestSteps(BaseTestCase):
 
     def test_step_with_cache_strategy(self):
         """Test step with specific cache strategy."""
+
         @step(cache="input_hash")
         def cached_step():
             return "cached"
@@ -71,6 +78,7 @@ class TestSteps(BaseTestCase):
 
     def test_step_execution_in_pipeline(self):
         """Test step execution within pipeline."""
+
         @step
         def add_ten(value: int):
             return value + 10
@@ -83,6 +91,7 @@ class TestSteps(BaseTestCase):
 
     def test_step_with_default_parameters(self):
         """Test step with default parameter values."""
+
         @step
         def with_defaults(required, optional="default"):
             return f"{required}_{optional}"
@@ -95,6 +104,7 @@ class TestSteps(BaseTestCase):
 
     def test_step_name_inference(self):
         """Test that step name is inferred from function name."""
+
         @step
         def my_custom_step():
             return "result"

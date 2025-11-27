@@ -101,4 +101,3 @@ The artifacts are stored in a structured path:
 `{project_name}/{date}/{run_id}/data/{step_name}/{artifact_name}`
 
 This ensures that every run is reproducible and all intermediate data is persisted. UniFlow uses **Materializers** to handle serialization for different data types (Pandas, NumPy, Keras, PyTorch, etc.).
-

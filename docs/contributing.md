@@ -21,7 +21,7 @@ We welcome contributions to UniFlow! Whether it's reporting a bug, improving doc
     ```bash
     # Using pip
     pip install -e ".[dev,ui]"
-    
+
     # Using poetry
     poetry install --with dev,ui
     ```

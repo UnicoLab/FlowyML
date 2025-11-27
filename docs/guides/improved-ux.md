@@ -14,7 +14,7 @@ All infrastructure is defined in `uniflow.yaml`:
 stacks:
   local:
     type: local
-  
+
   production:
     type: gcp
     project_id: ${GCP_PROJECT_ID}
@@ -96,12 +96,12 @@ Edit `uniflow.yaml`:
 stacks:
   local:
     type: local
-  
+
   staging:
     type: gcp
     project_id: my-project-staging
     region: us-central1
-  
+
   production:
     type: gcp
     project_id: my-project-prod
@@ -292,12 +292,12 @@ resources:
   preprocessing:
     cpu: "2"
     memory: "8Gi"
-  
+
   training:
     cpu: "16"
     memory: "64Gi"
     gpu: "nvidia-tesla-v100"
-  
+
   inference:
     cpu: "4"
     memory: "16Gi"
@@ -311,7 +311,7 @@ stacks:
     type: gcp
     region: us-central1
     bucket_name: us-artifacts
-  
+
   eu-prod:
     type: gcp
     region: europe-west1
@@ -326,7 +326,7 @@ stacks:
   dev:
     type: local
 
-# prod.yaml  
+# prod.yaml
 stacks:
   prod:
     type: gcp

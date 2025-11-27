@@ -6,7 +6,7 @@ Tools and techniques for optimizing pipeline performance.
 
 UniFlow provides several performance optimization utilities:
 - **Lazy Evaluation**: Defer computations until needed
-- **Parallel Execution**: Run steps concurrently  
+- **Parallel Execution**: Run steps concurrently
 - **Incremental Computation**: Recompute only what changed
 - **GPU Management**: Efficient GPU resource allocation
 - **DataFrame Optimization**: Reduce memory usage
@@ -37,13 +37,13 @@ data2 = expensive_data.value  # Instant!
 class DataProcessor:
     def __init__(self, path):
         self.path = path
-    
+
     @lazy_property
     def data(self):
         """Loaded only when first accessed."""
         print("Loading data...")
         return pd.read_csv(self.path)
-    
+
     @lazy_property
     def statistics(self):
         """Computed only when needed."""
@@ -96,7 +96,7 @@ def process_chunk1(data):
 def process_chunk2(data):
     return process(data[1000:2000])
 
-@step(outputs=["chunk3"])  
+@step(outputs=["chunk3"])
 def process_chunk3(data):
     return process(data[2000:])
 
@@ -167,7 +167,7 @@ gpu = GPUResourceManager()
 # Check availability
 if gpu.is_available():
     print(f"GPUs available: {gpu.get_device_count()}")
-    
+
     #Get current usage
     usage = gpu.get_memory_usage(device=0)
     print(f"GPU 0: {usage['used_mb']}/{usage['total_mb']} MB")
@@ -191,7 +191,7 @@ gpu.print_memory_summary()
 def train_on_best_gpu(data):
     gpu = GPUResourceManager()
     device = gpu.get_best_device()  # Least loaded GPU
-    
+
     model = Model().to(device)
     model.fit(data)
     return model
@@ -234,7 +234,7 @@ from uniflow.utils.performance import batch_iterator
 # Process in batches
 for batch in batch_iterator(large_dataset, batch_size=1000):
     process_batch(batch)
-    
+
 # With progress tracking
 from tqdm import tqdm
 
@@ -266,7 +266,7 @@ class Pipeline:
     def __init__(self):
         # Don't load immediately
         self.data = LazyValue(lambda: load_huge_dataset())
-    
+
     def process(self):
         # Load only when needed
         return process(self.data.value)
@@ -366,7 +366,7 @@ def cached_compute(key):
     cached = cache.get(key)
     if cached:
         return cached
-    
+
     result = expensive_computation()
     cache.set(key, result)
     return result
@@ -443,7 +443,7 @@ batch_iterator(iterable, batch_size: int)
 # Without lazy
 start = time.time()
 data1 = load_data()  # 5s
-data2 = load_data()  # 5s  
+data2 = load_data()  # 5s
 # Might not use data2!
 print(f"Time: {time.time()-start}s")  # 10s
 

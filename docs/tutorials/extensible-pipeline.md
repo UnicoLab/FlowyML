@@ -62,10 +62,10 @@ def load_data(data_path: str):
     np.random.seed(42)
     X = np.random.randn(1000, 20)
     y = (X[:, 0] + X[:, 1] > 0).astype(int)
-    
+
     df = pd.DataFrame(X)
     df['label'] = y
-    
+
     return Dataset.create(
         data=df,
         name="training_data",
@@ -81,12 +81,12 @@ def load_data(data_path: str):
 def split_data(dataset: Dataset):
     """Split into train and validation sets."""
     df = dataset.data
-    
+
     # 80-20 split
     split_idx = int(len(df) * 0.8)
     train_df = df.iloc[:split_idx]
     val_df = df.iloc[split_idx:]
-    
+
     train_dataset = Dataset.create(
         data=train_df,
         name="train_data",
@@ -99,7 +99,7 @@ def split_data(dataset: Dataset):
         parent=dataset,
         properties={"split": "validation"}
     )
-    
+
     return train_dataset, val_dataset
 
 
@@ -107,11 +107,11 @@ def split_data(dataset: Dataset):
 def train_model(train_data: Dataset, epochs: int):
     """Train TensorFlow model."""
     df = train_data.data
-    
+
     # Prepare data
     X_train = df.drop('label', axis=1).values
     y_train = df['label'].values
-    
+
     # Build model
     model = tf.keras.Sequential([
         tf.keras.layers.Dense(64, activation='relu', input_shape=(20,)),
@@ -119,13 +119,13 @@ def train_model(train_data: Dataset, epochs: int):
         tf.keras.layers.Dense(32, activation='relu'),
         tf.keras.layers.Dense(1, activation='sigmoid')
     ])
-    
+
     model.compile(
         optimizer='adam',
         loss='binary_crossentropy',
         metrics=['accuracy']
     )
-    
+
     # Train
     history = model.fit(
         X_train, y_train,
@@ -134,7 +134,7 @@ def train_model(train_data: Dataset, epochs: int):
         validation_split=0.2,
         verbose=1
     )
-    
+
     return Model.create(
         data=model,
         name="binary_classifier",
@@ -147,14 +147,14 @@ def train_model(train_data: Dataset, epochs: int):
 def evaluate_model(model: Model, val_data: Dataset):
     """Evaluate on validation set."""
     df = val_data.data
-    
+
     X_val = df.drop('label', axis=1).values
     y_val = df['label'].values
-    
+
     # Evaluate
     tf_model = model.data
     loss, accuracy = tf_model.evaluate(X_val, y_val, verbose=0)
-    
+
     return Metrics.create(
         loss=float(loss),
         accuracy=float(accuracy),
@@ -169,15 +169,15 @@ if __name__ == "__main__":
         data_path="data/train.csv",
         epochs=10
     )
-    
+
     pipeline = Pipeline("ml_training", context=ctx)
     pipeline.add_step(load_data)
     pipeline.add_step(split_data)
     pipeline.add_step(train_model)
     pipeline.add_step(evaluate_model)
-    
+
     result = pipeline.run()
-    
+
     if result.success:
         print(f"✅ Training complete!")
         print(f"Accuracy: {result.outputs['metrics'].accuracy:.2%}")
@@ -234,7 +234,7 @@ import io
 @register_component
 class MinIOArtifactStore(ArtifactStore):
     """MinIO object storage integration."""
-    
+
     def __init__(
         self,
         name: str = "minio",
@@ -251,25 +251,25 @@ class MinIOArtifactStore(ArtifactStore):
         self.secret_key = secret_key
         self.secure = secure
         self._client = None
-    
+
     @property
     def client(self):
         if self._client is None:
             from minio import Minio
-            
+
             self._client = Minio(
                 self.endpoint,
                 access_key=self.access_key,
                 secret_key=self.secret_key,
                 secure=self.secure,
             )
-            
+
             # Create bucket if needed
             if not self._client.bucket_exists(self.bucket):
                 self._client.make_bucket(self.bucket)
-        
+
         return self._client
-    
+
     def validate(self) -> bool:
         try:
             from minio import Minio
@@ -279,34 +279,34 @@ class MinIOArtifactStore(ArtifactStore):
             raise ImportError("pip install minio")
         except Exception as e:
             raise ConnectionError(f"Cannot connect to MinIO: {e}")
-    
+
     def save(self, artifact: Any, path: str) -> str:
         data = pickle.dumps(artifact)
         stream = io.BytesIO(data)
-        
+
         self.client.put_object(
             self.bucket,
             path,
             stream,
             length=len(data)
         )
-        
+
         return f"s3://{self.bucket}/{path}"
-    
+
     def load(self, path: str) -> Any:
         if path.startswith("s3://"):
             path = path.replace(f"s3://{self.bucket}/", "")
-        
+
         response = self.client.get_object(self.bucket, path)
         return pickle.loads(response.read())
-    
+
     def exists(self, path: str) -> bool:
         try:
             self.client.stat_object(self.bucket, path)
             return True
         except:
             return False
-    
+
     def to_dict(self):
         return {
             "type": "minio",
@@ -350,7 +350,7 @@ stacks:
       path: .uniflow/artifacts
     metadata_store:
       path: .uniflow/metadata.db
-  
+
   # Development with MinIO
   dev_minio:
     type: local
@@ -360,7 +360,7 @@ stacks:
       bucket: ml-dev
     metadata_store:
       path: .uniflow/metadata.db
-  
+
   # Staging on GCP
   staging:
     type: gcp
@@ -371,7 +371,7 @@ stacks:
       bucket: ${GCP_STAGING_BUCKET}
     orchestrator:
       type: vertex_ai
-  
+
   # Production on GCP
   production:
     type: gcp
@@ -390,7 +390,7 @@ resources:
   default:
     cpu: "2"
     memory: "8Gi"
-  
+
   training:
     cpu: "8"
     memory: "32Gi"
@@ -501,43 +501,43 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-      
+
       - name: Install dependencies
         run: |
           pip install uniflow[tensorflow]
           pip install minio  # For custom component
-      
+
       - name: Run tests
         run: |
           uniflow run training_pipeline.py --dry-run
-  
+
   deploy:
     needs: test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
-    
+
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-      
+
       - name: Install UniFlow
         run: |
           pip install uniflow[tensorflow,gcp]
-      
+
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v1
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
-      
+
       - name: Run pipeline on GCP
         env:
           GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
@@ -546,7 +546,7 @@ jobs:
           GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
         run: |
           ENV=${{ github.event.inputs.environment || 'staging' }}
-          
+
           uniflow run training_pipeline.py \
             --stack $ENV \
             --resources training \
@@ -581,12 +581,12 @@ uniflow run training_pipeline.py \
 
 ## What You've Learned
 
-✅ **Clean pipeline code** - no infrastructure coupling  
-✅ **Custom components** - MinIO artifact store  
-✅ **Multi-environment setup** - dev, staging, production  
-✅ **Configuration-driven** - same code, different infra  
-✅ **Docker integration** - containerized execution  
-✅ **CI/CD automation** - GitHub Actions deployment  
+✅ **Clean pipeline code** - no infrastructure coupling
+✅ **Custom components** - MinIO artifact store
+✅ **Multi-environment setup** - dev, staging, production
+✅ **Configuration-driven** - same code, different infra
+✅ **Docker integration** - containerized execution
+✅ **CI/CD automation** - GitHub Actions deployment
 
 ## Next Steps
 

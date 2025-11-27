@@ -1,16 +1,15 @@
 """UI utility functions for checking UI server status and getting URLs."""
 
 import http.client
-from typing import Optional
 
 
 def is_ui_running(host: str = "localhost", port: int = 8080) -> bool:
     """Check if the UniFlow UI server is running.
-    
+
     Args:
         host: Host to check (default: localhost)
         port: Port to check (default: 8080)
-        
+
     Returns:
         True if UI server is running and responding, False otherwise
     """
@@ -19,23 +18,23 @@ def is_ui_running(host: str = "localhost", port: int = 8080) -> bool:
         conn.request("GET", "/api/health")
         response = conn.getresponse()
         conn.close()
-        
+
         # Check if response is successful and from UniFlow
         if response.status == 200:
-            data = response.read().decode('utf-8')
-            return 'uniflow' in data.lower() or 'ok' in data.lower()
+            data = response.read().decode("utf-8")
+            return "uniflow" in data.lower() or "ok" in data.lower()
         return False
     except Exception:
         return False
 
 
-def get_ui_url(host: str = "localhost", port: int = 8080) -> Optional[str]:
+def get_ui_url(host: str = "localhost", port: int = 8080) -> str | None:
     """Get the URL of the running UniFlow UI server.
-    
+
     Args:
         host: Host of the UI server (default: localhost)
         port: Port of the UI server (default: 8080)
-        
+
     Returns:
         URL string if server is running, None otherwise
     """
@@ -44,14 +43,14 @@ def get_ui_url(host: str = "localhost", port: int = 8080) -> Optional[str]:
     return None
 
 
-def get_run_url(run_id: str, host: str = "localhost", port: int = 8080) -> Optional[str]:
+def get_run_url(run_id: str, host: str = "localhost", port: int = 8080) -> str | None:
     """Get the URL to view a specific pipeline run.
-    
+
     Args:
         run_id: ID of the pipeline run
         host: Host of the UI server (default: localhost)
         port: Port of the UI server (default: 8080)
-        
+
     Returns:
         URL string to the run view if server is running, None otherwise
     """
@@ -61,14 +60,14 @@ def get_run_url(run_id: str, host: str = "localhost", port: int = 8080) -> Optio
     return None
 
 
-def get_pipeline_url(pipeline_name: str, host: str = "localhost", port: int = 8080) -> Optional[str]:
+def get_pipeline_url(pipeline_name: str, host: str = "localhost", port: int = 8080) -> str | None:
     """Get the URL to view a specific pipeline.
-    
+
     Args:
         pipeline_name: Name of the pipeline
         host: Host of the UI server (default: localhost)
         port: Port of the UI server (default: 8080)
-        
+
     Returns:
         URL string to the pipeline view if server is running, None otherwise
     """

@@ -1,0 +1,162 @@
+name: "Unit-tests"
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+    paths:
+      - "**.py"
+      - "pyproject.toml"
+      - "tests/**"
+  pull_request:
+    branches:
+      - dev
+      - main
+    types:
+      - opened
+      - edited
+      - synchronize
+    paths:
+      - "**.py"
+      - "pyproject.toml"
+      - "tests/**"
+  workflow_dispatch:
+    inputs:
+      PYTHON_VERSION:
+        required: false
+        default: "3.11"
+      TEST_TYPE:
+        description: 'Type of tests to run'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - frameworks
+          - integrations
+          - unit
+
+concurrency:
+  group: "${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}"
+  cancel-in-progress: true
+
+jobs:
+  # Fast smoke test job for quick feedback
+  smoke-test:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: 'poetry'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install poetry
+          poetry install --no-interaction --with dev --all-extras
+      - name: Run smoke tests
+        run: |
+          # Run a quick subset of tests for fast feedback
+          poetry run pytest tests/unit/ -v --maxfail=3 --tb=short || poetry run pytest --co -q | head -20
+        timeout-minutes: 3
+
+  # Main test matrix
+  test-matrix:
+    runs-on: ubuntu-latest
+    needs: [smoke-test]
+    if: always() && (needs.smoke-test.result == 'success' || github.event_name != 'pull_request')
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11"]
+        test-group: ["unit", "integration"]
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'poetry'
+
+      - name: Cache Poetry dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pypoetry
+            ~/.cache/pip
+          key: ${{ runner.os }}-poetry-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-poetry-${{ matrix.python-version }}-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install poetry
+          poetry install --no-interaction --with dev --all-extras
+
+      - name: Run tests - ${{ matrix.test-group }}
+        run: |
+          case "${{ matrix.test-group }}" in
+            "unit")
+              poetry run pytest tests/test_*.py -v --maxfail=10
+              ;;
+            "integration")
+              poetry run pytest tests/test_*_integration.py -v --maxfail=5
+              ;;
+          esac
+        timeout-minutes: 15
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ matrix.python-version }}-${{ matrix.test-group }}
+          path: |
+            pytest.xml
+            htmlcov/
+          retention-days: 7
+
+  # Coverage job (only on main Python version)
+  coverage:
+    runs-on: ubuntu-latest
+    needs: [test-matrix]
+    if: always() && needs.test-matrix.result == 'success'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: 'poetry'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install poetry
+          poetry install --no-interaction --with dev --all-extras
+
+      - name: Run tests with coverage
+        run: |
+          poetry run pytest --cov=uniflow --cov-report=xml --cov-report=html --cov-report=term-missing -v
+        timeout-minutes: 20
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+        continue-on-error: true
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: htmlcov/
+          retention-days: 30

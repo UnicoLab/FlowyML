@@ -2,8 +2,9 @@
 
 import time
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
-from typing import Any, Callable, List, Optional, Type
+from datetime import datetime
+from typing import Any
+from collections.abc import Callable
 from enum import Enum
 
 
@@ -28,7 +29,7 @@ class CircuitBreakerConfig:
     recovery_timeout: float = 300
     """Time to wait before fully closing circuit (seconds)"""
 
-    expected_exceptions: List[Type[Exception]] = field(default_factory=lambda: [Exception])
+    expected_exceptions: list[type[Exception]] = field(default_factory=lambda: [Exception])
     """Exceptions that trigger circuit breaker"""
 
 
@@ -50,7 +51,7 @@ class CircuitBreaker:
         failure_threshold: int = 5,
         timeout: float = 60,
         recovery_timeout: float = 300,
-        expected_exceptions: Optional[List[Type[Exception]]] = None,
+        expected_exceptions: list[type[Exception]] | None = None,
     ):
         """Initialize circuit breaker.
 
@@ -69,7 +70,7 @@ class CircuitBreaker:
 
         self.state = CircuitState.CLOSED
         self.failure_count = 0
-        self.last_failure_time: Optional[datetime] = None
+        self.last_failure_time: datetime | None = None
         self.success_count = 0
 
     def call(self, func: Callable, *args, **kwargs) -> Any:
@@ -91,7 +92,7 @@ class CircuitBreaker:
                 self.state = CircuitState.HALF_OPEN
             else:
                 raise CircuitOpenError(
-                    f"Circuit breaker is open. Wait {self.config.timeout}s before retry."
+                    f"Circuit breaker is open. Wait {self.config.timeout}s before retry.",
                 )
 
         try:
@@ -125,8 +126,7 @@ class CircuitBreaker:
             # Fully close circuit after successful recovery period
             if (
                 self.last_failure_time
-                and (datetime.now() - self.last_failure_time).total_seconds()
-                >= self.config.recovery_timeout
+                and (datetime.now() - self.last_failure_time).total_seconds() >= self.config.recovery_timeout
             ):
                 self.state = CircuitState.CLOSED
                 self.success_count = 0
@@ -160,7 +160,7 @@ class FallbackConfig:
     fallback_func: Callable
     """Fallback function to call on error"""
 
-    fallback_on: List[Type[Exception]] = field(default_factory=lambda: [Exception])
+    fallback_on: list[type[Exception]] = field(default_factory=lambda: [Exception])
     """Exceptions that trigger fallback"""
 
     max_fallback_attempts: int = 1
@@ -181,7 +181,7 @@ class FallbackHandler:
     def __init__(
         self,
         fallback_func: Callable,
-        fallback_on: Optional[List[Type[Exception]]] = None,
+        fallback_on: list[type[Exception]] | None = None,
         max_attempts: int = 1,
     ):
         """Initialize fallback handler.
@@ -213,10 +213,9 @@ class FallbackHandler:
             return func(*args, **kwargs)
 
         except Exception as e:
-            if self._should_fallback(e):
-                if self.fallback_attempts < self.config.max_fallback_attempts:
-                    self.fallback_attempts += 1
-                    return self.config.fallback_func()
+            if self._should_fallback(e) and self.fallback_attempts < self.config.max_fallback_attempts:
+                self.fallback_attempts += 1
+                return self.config.fallback_func()
             raise
 
     def _should_fallback(self, exception: Exception) -> bool:
@@ -235,11 +234,10 @@ class ExponentialBackoff:
         ```python
         from uniflow import step, retry, ExponentialBackoff
 
+
         @step(
             retry=retry(
-                max_attempts=5,
-                backoff=ExponentialBackoff(initial=1, max=60, multiplier=2),
-                on=[NetworkError, TimeoutError]
+                max_attempts=5, backoff=ExponentialBackoff(initial=1, max=60, multiplier=2), on=[NetworkError, TimeoutError]
             )
         )
         def fetch_data():
@@ -250,7 +248,7 @@ class ExponentialBackoff:
     def __init__(
         self,
         initial: float = 1.0,
-        max: float = 60.0,
+        max_delay: float = 60.0,
         multiplier: float = 2.0,
         jitter: bool = True,
     ):
@@ -258,12 +256,12 @@ class ExponentialBackoff:
 
         Args:
             initial: Initial delay in seconds
-            max: Maximum delay in seconds
+            max_delay: Maximum delay in seconds
             multiplier: Backoff multiplier
             jitter: Add random jitter to delays
         """
         self.initial = initial
-        self.max = max
+        self.max_delay = max_delay
         self.multiplier = multiplier
         self.jitter = jitter
         self.attempt = 0
@@ -274,7 +272,7 @@ class ExponentialBackoff:
         Returns:
             Delay in seconds
         """
-        delay = min(self.initial * (self.multiplier ** self.attempt), self.max)
+        delay = min(self.initial * (self.multiplier**self.attempt), self.max_delay)
 
         if self.jitter:
             import random
@@ -296,21 +294,21 @@ class RetryConfig:
     max_attempts: int = 3
     """Maximum number of retry attempts"""
 
-    backoff: Optional[ExponentialBackoff] = None
+    backoff: ExponentialBackoff | None = None
     """Backoff strategy"""
 
-    retry_on: List[Type[Exception]] = field(default_factory=lambda: [Exception])
+    retry_on: list[type[Exception]] = field(default_factory=lambda: [Exception])
     """Exceptions to retry on"""
 
-    not_retry_on: List[Type[Exception]] = field(default_factory=list)
+    not_retry_on: list[type[Exception]] = field(default_factory=list)
     """Exceptions NOT to retry on"""
 
 
 def retry(
     max_attempts: int = 3,
-    backoff: Optional[ExponentialBackoff] = None,
-    on: Optional[List[Type[Exception]]] = None,
-    not_on: Optional[List[Type[Exception]]] = None,
+    backoff: ExponentialBackoff | None = None,
+    on: list[type[Exception]] | None = None,
+    not_on: list[type[Exception]] | None = None,
 ) -> RetryConfig:
     """Create retry configuration.
 
@@ -332,7 +330,10 @@ def retry(
 
 
 def execute_with_retry(
-    func: Callable, retry_config: RetryConfig, *args, **kwargs
+    func: Callable,
+    retry_config: RetryConfig,
+    *args,
+    **kwargs,
 ) -> Any:
     """Execute function with retry logic.
 
@@ -366,16 +367,14 @@ def execute_with_retry(
             last_exception = e
 
             # Don't sleep on last attempt
-            if attempt < retry_config.max_attempts - 1:
-                if retry_config.backoff:
-                    delay = retry_config.backoff.get_delay()
-                    time.sleep(delay)
+            if attempt < retry_config.max_attempts - 1 and retry_config.backoff:
+                delay = retry_config.backoff.get_delay()
+                time.sleep(delay)
 
     # All retries failed
     if last_exception:
         raise last_exception
-    else:
-        raise RuntimeError("Retry failed with no exception captured")
+    raise RuntimeError("Retry failed with no exception captured")
 
 
 @dataclass
@@ -385,7 +384,7 @@ class OnFailureConfig:
     action: str = "log"
     """Action to take (log, email, slack, webhook)"""
 
-    recipients: List[str] = field(default_factory=list)
+    recipients: list[str] = field(default_factory=list)
     """Recipients for notifications"""
 
     include_logs: bool = True
@@ -397,7 +396,7 @@ class OnFailureConfig:
 
 def on_failure(
     action: str = "log",
-    recipients: Optional[List[str]] = None,
+    recipients: list[str] | None = None,
     include_logs: bool = True,
     include_traceback: bool = True,
 ) -> OnFailureConfig:

@@ -313,4 +313,3 @@ When contributing to the frontend:
 - In production, there's no separate frontend server
 - All state is fetched from the backend API
 - WebSocket support is planned for future releases
-

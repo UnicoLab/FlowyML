@@ -48,21 +48,21 @@ from uniflow.stacks.plugins import register_component
 @register_component
 class MyOrchestrator(Orchestrator):
     """My custom orchestrator."""
-    
+
     def __init__(self, name="my_orch", **kwargs):
         super().__init__(name)
         # Your init
-    
+
     def validate(self) -> bool:
         return True
-    
+
     def run_pipeline(self, pipeline, **kwargs):
         # Your logic
         return "run_id"
-    
+
     def get_run_status(self, run_id: str) -> str:
         return "SUCCESS"
-    
+
     def to_dict(self):
         return {"type": "my_orchestrator"}
 ```

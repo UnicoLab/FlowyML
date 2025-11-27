@@ -2,9 +2,8 @@
 
 import os
 import yaml
-import json
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 from dataclasses import dataclass, field
 
 
@@ -74,7 +73,7 @@ class UniFlowConfig:
         # Create metadata db parent dir
         self.metadata_db.parent.mkdir(parents=True, exist_ok=True)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert config to dictionary."""
         return {
             "uniflow_home": str(self.uniflow_home),
@@ -105,11 +104,11 @@ class UniFlowConfig:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "UniFlowConfig":
+    def from_dict(cls, data: dict[str, Any]) -> "UniFlowConfig":
         """Create config from dictionary."""
         return cls(**data)
 
-    def save(self, path: Optional[Path] = None) -> None:
+    def save(self, path: Path | None = None) -> None:
         """Save config to file.
 
         Args:
@@ -120,11 +119,11 @@ class UniFlowConfig:
 
         path.parent.mkdir(parents=True, exist_ok=True)
 
-        with open(path, 'w') as f:
+        with open(path, "w") as f:
             yaml.dump(self.to_dict(), f, default_flow_style=False)
 
     @classmethod
-    def load(cls, path: Optional[Path] = None) -> "UniFlowConfig":
+    def load(cls, path: Path | None = None) -> "UniFlowConfig":
         """Load config from file.
 
         Args:
@@ -140,14 +139,14 @@ class UniFlowConfig:
             # Return default config
             return cls()
 
-        with open(path, 'r') as f:
+        with open(path) as f:
             data = yaml.safe_load(f)
 
         return cls.from_dict(data)
 
 
 # Global config instance
-_global_config: Optional[UniFlowConfig] = None
+_global_config: UniFlowConfig | None = None
 
 
 def get_config() -> UniFlowConfig:
@@ -203,7 +202,7 @@ def update_config(**kwargs) -> None:
             setattr(config, key, value)
 
 
-def load_project_config(project_dir: Optional[Path] = None) -> Dict[str, Any]:
+def load_project_config(project_dir: Path | None = None) -> dict[str, Any]:
     """Load project-specific configuration.
 
     Args:
@@ -222,11 +221,11 @@ def load_project_config(project_dir: Optional[Path] = None) -> Dict[str, Any]:
     if not config_path.exists():
         return {}
 
-    with open(config_path, 'r') as f:
+    with open(config_path) as f:
         return yaml.safe_load(f) or {}
 
 
-def save_project_config(config: Dict[str, Any], project_dir: Optional[Path] = None) -> None:
+def save_project_config(config: dict[str, Any], project_dir: Path | None = None) -> None:
     """Save project-specific configuration.
 
     Args:
@@ -238,13 +237,14 @@ def save_project_config(config: Dict[str, Any], project_dir: Optional[Path] = No
 
     config_path = project_dir / "uniflow.yaml"
 
-    with open(config_path, 'w') as f:
+    with open(config_path, "w") as f:
         yaml.dump(config, f, default_flow_style=False)
 
 
 # Environment variable helpers
 
-def get_env_config() -> Dict[str, Any]:
+
+def get_env_config() -> dict[str, Any]:
     """Get configuration from environment variables.
 
     Returns:

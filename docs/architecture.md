@@ -9,14 +9,14 @@ graph TD
     User[User Code] --> API[Core API]
     API --> Compiler[DAG Compiler]
     Compiler --> Executor[Executor Engine]
-    
+
     Executor --> Local[Local Runner]
     Executor --> Dist[Distributed Runner]
-    
+
     Local --> Cache[Cache Store]
     Local --> Artifacts[Artifact Store]
     Local --> Metadata[Metadata Store]
-    
+
     Metadata --> UI[UI Backend]
     UI --> Frontend[React Dashboard]
 ```

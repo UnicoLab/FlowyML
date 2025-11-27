@@ -3,10 +3,10 @@
 import importlib.util
 import sys
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 
-def run_pipeline(pipeline_name: str, stack: str, context_params: Dict[str, Any], debug: bool) -> Dict[str, Any]:
+def run_pipeline(pipeline_name: str, stack: str, context_params: dict[str, Any], debug: bool) -> dict[str, Any]:
     """Run a pipeline by name.
 
     Args:
@@ -33,8 +33,7 @@ def run_pipeline(pipeline_name: str, stack: str, context_params: Dict[str, Any],
 
     if pipeline_file is None:
         raise FileNotFoundError(
-            f"Pipeline '{pipeline_name}' not found. Looked in:\n"
-            + "\n".join(f"  - {p}" for p in pipeline_paths)
+            f"Pipeline '{pipeline_name}' not found. Looked in:\n" + "\n".join(f"  - {p}" for p in pipeline_paths),
         )
 
     # Load pipeline module
@@ -47,13 +46,13 @@ def run_pipeline(pipeline_name: str, stack: str, context_params: Dict[str, Any],
     spec.loader.exec_module(module)
 
     # Get pipeline
-    if hasattr(module, 'create_pipeline'):
+    if hasattr(module, "create_pipeline"):
         pipeline = module.create_pipeline()
-    elif hasattr(module, 'pipeline'):
+    elif hasattr(module, "pipeline"):
         pipeline = module.pipeline
     else:
         raise AttributeError(
-            f"Pipeline module must define 'create_pipeline()' function or 'pipeline' variable"
+            "Pipeline module must define 'create_pipeline()' function or 'pipeline' variable",
         )
 
     # Override context parameters
@@ -62,15 +61,15 @@ def run_pipeline(pipeline_name: str, stack: str, context_params: Dict[str, Any],
             setattr(pipeline.context, key, value)
 
     # Set stack if not default
-    if stack != 'local':
+    if stack != "local":
         pipeline.set_stack(stack)
 
     # Run pipeline
     result = pipeline.run(debug=debug)
 
     return {
-        'run_id': result.run_id,
-        'status': result.status,
-        'duration': result.duration,
-        'outputs': result.outputs,
+        "run_id": result.run_id,
+        "status": result.status,
+        "duration": result.duration,
+        "outputs": result.outputs,
     }

@@ -1,41 +1,38 @@
-"""
-LLM Monitoring and Observability module.
-"""
+"""LLM Monitoring and Observability module."""
 
 import time
 import uuid
 from dataclasses import dataclass, field, asdict
-from typing import Any, Dict, List, Optional, Union
-from datetime import datetime
+from typing import Any
 import functools
 
-from uniflow.core.context import Context
 
 @dataclass
 class LLMEvent:
     """Event representing an LLM interaction."""
+
     event_id: str
     trace_id: str
-    parent_id: Optional[str]
+    parent_id: str | None
     event_type: str  # 'llm', 'tool', 'chain', 'agent'
     name: str
-    inputs: Dict[str, Any]
-    outputs: Optional[Dict[str, Any]] = None
+    inputs: dict[str, Any]
+    outputs: dict[str, Any] | None = None
     start_time: float = field(default_factory=time.time)
-    end_time: Optional[float] = None
-    duration: Optional[float] = None
+    end_time: float | None = None
+    duration: float | None = None
     status: str = "running"  # 'running', 'success', 'error'
-    error: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    
+    error: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
+
     # Token usage and cost
     prompt_tokens: int = 0
     completion_tokens: int = 0
     total_tokens: int = 0
     cost: float = 0.0
-    model: Optional[str] = None
+    model: str | None = None
 
-    def end(self, outputs: Optional[Dict[str, Any]] = None, error: Optional[str] = None):
+    def end(self, outputs: dict[str, Any] | None = None, error: str | None = None) -> None:
         """End the event."""
         self.end_time = time.time()
         self.duration = self.end_time - self.start_time
@@ -46,23 +43,24 @@ class LLMEvent:
         else:
             self.status = "success"
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return asdict(self)
 
 
 class LLMTracer:
     """Tracer for LLM calls."""
-    
+
     def __init__(self):
-        self.current_trace_id: Optional[str] = None
-        self.event_stack: List[LLMEvent] = []
+        self.current_trace_id: str | None = None
+        self.event_stack: list[LLMEvent] = []
         self._metadata_store = None
-        
+
     @property
     def metadata_store(self):
         if self._metadata_store is None:
             from uniflow.storage.metadata import SQLiteMetadataStore
+
             self._metadata_store = SQLiteMetadataStore()
         return self._metadata_store
 
@@ -75,14 +73,14 @@ class LLMTracer:
         self,
         name: str,
         event_type: str,
-        inputs: Dict[str, Any],
-        metadata: Optional[Dict[str, Any]] = None,
-        parent_id: Optional[str] = None
+        inputs: dict[str, Any],
+        metadata: dict[str, Any] | None = None,
+        parent_id: str | None = None,
     ) -> LLMEvent:
         """Start a new event."""
         if not self.current_trace_id:
             self.start_trace()
-            
+
         event = LLMEvent(
             event_id=str(uuid.uuid4()),
             trace_id=self.current_trace_id,
@@ -90,68 +88,73 @@ class LLMTracer:
             event_type=event_type,
             name=name,
             inputs=inputs,
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
         self.event_stack.append(event)
         return event
 
     def end_event(
         self,
-        outputs: Optional[Dict[str, Any]] = None,
-        error: Optional[str] = None,
-        metrics: Optional[Dict[str, Any]] = None
+        outputs: dict[str, Any] | None = None,
+        error: str | None = None,
+        metrics: dict[str, Any] | None = None,
     ):
         """End the current event."""
         if not self.event_stack:
-            return
-            
+            return None
+
         event = self.event_stack.pop()
         event.end(outputs, error)
-        
+
         if metrics:
-            event.prompt_tokens = metrics.get('prompt_tokens', 0)
-            event.completion_tokens = metrics.get('completion_tokens', 0)
-            event.total_tokens = metrics.get('total_tokens', 0)
-            event.cost = metrics.get('cost', 0.0)
-            event.model = metrics.get('model')
-            
+            event.prompt_tokens = metrics.get("prompt_tokens", 0)
+            event.completion_tokens = metrics.get("completion_tokens", 0)
+            event.total_tokens = metrics.get("total_tokens", 0)
+            event.cost = metrics.get("cost", 0.0)
+            event.model = metrics.get("model")
+
         # Save to storage
         self.metadata_store.save_trace_event(event.to_dict())
-        
+
         return event
+
 
 # Global tracer instance
 tracer = LLMTracer()
 
+
 def trace_llm(name: str = None, event_type: str = "llm"):
     """Decorator to trace LLM calls."""
+
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             event_name = name or func.__name__
-            
+
             # Capture inputs
             inputs = {
-                'args': [str(a) for a in args],
-                'kwargs': {k: str(v) for k, v in kwargs.items()}
+                "args": [str(a) for a in args],
+                "kwargs": {k: str(v) for k, v in kwargs.items()},
             }
-            
+
             tracer.start_event(event_name, event_type, inputs)
-            
+
             try:
                 result = func(*args, **kwargs)
-                
+
                 # Try to extract metrics if result has them (e.g. OpenAI response)
                 metrics = {}
-                if hasattr(result, 'usage'): # OpenAI style
-                    metrics['prompt_tokens'] = getattr(result.usage, 'prompt_tokens', 0)
-                    metrics['completion_tokens'] = getattr(result.usage, 'completion_tokens', 0)
-                    metrics['total_tokens'] = getattr(result.usage, 'total_tokens', 0)
-                
-                tracer.end_event(outputs={'result': str(result)}, metrics=metrics)
+                if hasattr(result, "usage"):  # OpenAI style
+                    metrics["prompt_tokens"] = getattr(result.usage, "prompt_tokens", 0)
+                    metrics["completion_tokens"] = getattr(result.usage, "completion_tokens", 0)
+                    metrics["total_tokens"] = getattr(result.usage, "total_tokens", 0)
+
+                tracer.end_event(outputs={"result": str(result)}, metrics=metrics)
                 return result
             except Exception as e:
                 tracer.end_event(error=str(e))
                 raise e
+
         return wrapper
+
     return decorator

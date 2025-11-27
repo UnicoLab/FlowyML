@@ -1,13 +1,4 @@
 {
-  "name": "flowy-ui",
-  "private": true,
-  "version": "0.1.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
-  },
   "dependencies": {
     "clsx": "^2.1.1",
     "dagre": "^0.8.5",
@@ -29,5 +20,14 @@
     "postcss": "^8.4.35",
     "tailwindcss": "^3.4.1",
     "vite": "^5.1.6"
-  }
+  },
+  "name": "flowy-ui",
+  "private": true,
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite",
+    "preview": "vite preview"
+  },
+  "type": "module",
+  "version": "0.1.0"
 }

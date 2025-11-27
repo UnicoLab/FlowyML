@@ -63,14 +63,14 @@ def process_data(data):
 if __name__ == "__main__":
     # Create pipeline
     pipeline = Pipeline("my_first_pipeline")
-    
+
     # Add steps in order
     pipeline.add_step(fetch_data)
     pipeline.add_step(process_data)
-    
+
     # 4. Run it!
     result = pipeline.run()
-    
+
     if result.success:
         print(f"✓ Pipeline finished successfully!")
         print(f"Result: {result.outputs}")

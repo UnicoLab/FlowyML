@@ -2,13 +2,13 @@
 
 import click
 from pathlib import Path
-from uniflow.utils.config import get_config, UniFlowConfig
+from uniflow.utils.config import get_config
 
 
 @click.group()
 @click.version_option(version="0.1.0", prog_name="uniflow")
-def cli():
-    """UniFlow - Next-Generation ML Pipeline Framework
+def cli() -> None:
+    """UniFlow - Next-Generation ML Pipeline Framework.
 
     A developer-first ML pipeline orchestration framework that makes
     ML pipelines feel effortless while providing production-grade capabilities.
@@ -17,11 +17,15 @@ def cli():
 
 
 @cli.command()
-@click.option('--name', prompt='Project name', help='Name of the project')
-@click.option('--template', default='basic', type=click.Choice(['basic', 'pytorch', 'tensorflow', 'sklearn']),
-              help='Project template')
-@click.option('--dir', 'directory', default='.', help='Directory to create project in')
-def init(name: str, template: str, directory: str):
+@click.option("--name", prompt="Project name", help="Name of the project")
+@click.option(
+    "--template",
+    default="basic",
+    type=click.Choice(["basic", "pytorch", "tensorflow", "sklearn"]),
+    help="Project template",
+)
+@click.option("--dir", "directory", default=".", help="Directory to create project in")
+def init(name: str, template: str, directory: str) -> None:
     """Initialize a new UniFlow project."""
     from uniflow.cli.init import init_project
 
@@ -40,25 +44,25 @@ def init(name: str, template: str, directory: str):
 
 
 @cli.command()
-@click.argument('pipeline_name')
-@click.option('--stack', default='local', help='Stack to use for execution')
-@click.option('--context', '-c', multiple=True, help='Context parameters (key=value)')
-@click.option('--debug', is_flag=True, help='Enable debug mode')
-def run(pipeline_name: str, stack: str, context: tuple, debug: bool):
+@click.argument("pipeline_name")
+@click.option("--stack", default="local", help="Stack to use for execution")
+@click.option("--context", "-c", multiple=True, help="Context parameters (key=value)")
+@click.option("--debug", is_flag=True, help="Enable debug mode")
+def run(pipeline_name: str, stack: str, context: tuple, debug: bool) -> None:
     """Run a pipeline."""
     from uniflow.cli.run import run_pipeline
 
     # Parse context parameters
     ctx_params = {}
     for param in context:
-        key, value = param.split('=', 1)
+        key, value = param.split("=", 1)
         ctx_params[key] = value
 
     click.echo(f"Running pipeline '{pipeline_name}' on stack '{stack}'...")
 
     try:
         result = run_pipeline(pipeline_name, stack, ctx_params, debug)
-        click.echo(f"✓ Pipeline completed successfully")
+        click.echo("✓ Pipeline completed successfully")
         click.echo(f"  Run ID: {result.get('run_id', 'N/A')}")
         click.echo(f"  Duration: {result.get('duration', 'N/A')}")
     except Exception as e:
@@ -67,45 +71,49 @@ def run(pipeline_name: str, stack: str, context: tuple, debug: bool):
 
 
 @cli.group()
-def ui():
+def ui() -> None:
     """UI server commands."""
     pass
 
 
 @ui.command()
-@click.option('--host', default='localhost', help='Host to bind to')
-@click.option('--port', default=8080, help='Port to bind to')
-@click.option('--dev', is_flag=True, help='Run in development mode')
-@click.option('--open-browser', '-o', is_flag=True, help='Open browser automatically')
-def start(host: str, port: int, dev: bool, open_browser: bool):
+@click.option("--host", default="localhost", help="Host to bind to")
+@click.option("--port", default=8080, help="Port to bind to")
+@click.option("--dev", is_flag=True, help="Run in development mode")
+@click.option("--open-browser", "-o", is_flag=True, help="Open browser automatically")
+def start(host: str, port: int, dev: bool, open_browser: bool) -> None:
     """Start the UniFlow UI server."""
     from uniflow.ui.utils import is_ui_running
-    
+
     # Check if already running
     if is_ui_running(host, port):
         click.echo(f"ℹ️  UI server is already running at http://{host}:{port}")
         if open_browser:
             import webbrowser
+
             webbrowser.open(f"http://{host}:{port}")
         return
-    
+
     click.echo(f"🚀 Starting UniFlow UI on http://{host}:{port}...")
     if dev:
         click.echo("   Development mode: Auto-reload enabled")
 
     try:
         from uniflow.cli.ui import start_ui_server
-        
+
         # Open browser if requested
         if open_browser:
             import webbrowser
             import threading
-            def open_browser_delayed():
+
+            def open_browser_delayed() -> None:
                 import time
+
                 time.sleep(1.5)  # Wait for server to start
                 webbrowser.open(f"http://{host}:{port}")
+
             threading.Thread(target=open_browser_delayed, daemon=True).start()
-        
+
         start_ui_server(host, port, dev)
     except ImportError:
         click.echo("✗ UI server not available. Install with: pip install uniflow[ui]", err=True)
@@ -116,7 +124,7 @@ def start(host: str, port: int, dev: bool, open_browser: bool):
 
 
 @ui.command()
-def stop():
+def stop() -> None:
     """Stop the UniFlow UI server."""
     click.echo("Stopping UniFlow UI server...")
     click.echo("ℹ️  To stop the UI server:")
@@ -125,33 +133,32 @@ def stop():
 
 
 @ui.command()
-@click.option('--host', default='localhost', help='Host to check')
-@click.option('--port', default=8080, help='Port to check')
-def status(host: str, port: int):
+@click.option("--host", default="localhost", help="Host to check")
+@click.option("--port", default=8080, help="Port to check")
+def status(host: str, port: int) -> None:
     """Check if the UI server is running."""
     from uniflow.ui.utils import is_ui_running, get_ui_url
-    
+
     if is_ui_running(host, port):
         url = get_ui_url(host, port)
         click.echo(f"✅ UI server is running at {url}")
-        click.echo(f"   Status: Healthy")
+        click.echo("   Status: Healthy")
         click.echo(f"   Health endpoint: {url}/api/health")
     else:
         click.echo(f"❌ UI server is not running on {host}:{port}")
         click.echo(f"   Start with: uniflow ui start --host {host} --port {port}")
 
 
-
 @cli.group()
-def experiment():
+def experiment() -> None:
     """Experiment tracking commands."""
     pass
 
 
-@experiment.command('list')
-@click.option('--limit', default=10, help='Number of experiments to show')
-@click.option('--pipeline', help='Filter by pipeline name')
-def list_experiments(limit: int, pipeline: str):
+@experiment.command("list")
+@click.option("--limit", default=10, help="Number of experiments to show")
+@click.option("--pipeline", help="Filter by pipeline name")
+def list_experiments(limit: int, pipeline: str) -> None:
     """List experiments."""
     from uniflow.cli.experiment import list_experiments_cmd
 
@@ -169,8 +176,8 @@ def list_experiments(limit: int, pipeline: str):
 
 
 @experiment.command()
-@click.argument('run_ids', nargs=-1, required=True)
-def compare(run_ids: tuple):
+@click.argument("run_ids", nargs=-1, required=True)
+def compare(run_ids: tuple) -> None:
     """Compare multiple experiment runs."""
     from uniflow.cli.experiment import compare_runs
 
@@ -185,13 +192,13 @@ def compare(run_ids: tuple):
 
 
 @cli.group()
-def stack():
+def stack() -> None:
     """Stack management commands."""
     pass
 
 
-@stack.command('list')
-def list_stacks():
+@stack.command("list")
+def list_stacks() -> None:
     """List available stacks."""
     click.echo("Available stacks:\n")
     click.echo("  local (default) - Local execution")
@@ -201,8 +208,8 @@ def list_stacks():
 
 
 @stack.command()
-@click.argument('stack_name')
-def switch(stack_name: str):
+@click.argument("stack_name")
+def switch(stack_name: str) -> None:
     """Switch active stack."""
     config = get_config()
     config.default_stack = stack_name
@@ -211,13 +218,13 @@ def switch(stack_name: str):
 
 
 @cli.group()
-def cache():
+def cache() -> None:
     """Cache management commands."""
     pass
 
 
 @cache.command()
-def stats():
+def stats() -> None:
     """Show cache statistics."""
     from uniflow.core.cache import CacheStore
 
@@ -236,8 +243,8 @@ def stats():
 
 
 @cache.command()
-@click.confirmation_option(prompt='Are you sure you want to clear the cache?')
-def clear():
+@click.confirmation_option(prompt="Are you sure you want to clear the cache?")
+def clear() -> None:
     """Clear all cache."""
     from uniflow.core.cache import CacheStore
 
@@ -250,7 +257,7 @@ def clear():
 
 
 @cli.command()
-def config():
+def config() -> None:
     """Show current configuration."""
     cfg = get_config()
 
@@ -266,10 +273,10 @@ def config():
 
 
 @cli.command()
-@click.argument('run_id')
-@click.option('--step', help='Filter by step name')
-@click.option('--tail', default=100, help='Number of lines to show')
-def logs(run_id: str, step: str, tail: int):
+@click.argument("run_id")
+@click.option("--step", help="Filter by step name")
+@click.option("--tail", default=100, help="Number of lines to show")
+def logs(run_id: str, step: str, tail: int) -> None:
     """View logs for a pipeline run."""
     click.echo(f"Logs for run '{run_id}':")
 
@@ -277,8 +284,9 @@ def logs(run_id: str, step: str, tail: int):
         click.echo(f"  Step: {step}")
 
     click.echo("\nLog entries:")
+    click.echo(f"  (Showing last {tail} lines)")
     click.echo("  [Log output would appear here]")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     cli()

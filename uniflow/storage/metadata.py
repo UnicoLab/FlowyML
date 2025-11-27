@@ -3,9 +3,9 @@
 import json
 import sqlite3
 from abc import ABC, abstractmethod
-from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
+import contextlib
+import builtins
 
 
 class MetadataStore(ABC):
@@ -17,12 +17,12 @@ class MetadataStore(ABC):
         pass
 
     @abstractmethod
-    def load_run(self, run_id: str) -> Optional[dict]:
+    def load_run(self, run_id: str) -> dict | None:
         """Load run metadata."""
         pass
 
     @abstractmethod
-    def list_runs(self, limit: Optional[int] = None) -> list[dict]:
+    def list_runs(self, limit: int | None = None) -> list[dict]:
         """List all runs."""
         pass
 
@@ -37,12 +37,12 @@ class MetadataStore(ABC):
         pass
 
     @abstractmethod
-    def load_artifact(self, artifact_id: str) -> Optional[dict]:
+    def load_artifact(self, artifact_id: str) -> dict | None:
         """Load artifact metadata."""
         pass
 
     @abstractmethod
-    def list_assets(self, limit: Optional[int] = None, **filters) -> list[dict]:
+    def list_assets(self, limit: int | None = None, **filters) -> list[dict]:
         """List assets with optional filters."""
         pass
 
@@ -71,7 +71,8 @@ class SQLiteMetadataStore(MetadataStore):
         cursor = conn.cursor()
 
         # Runs table
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS runs (
                 run_id TEXT PRIMARY KEY,
                 pipeline_name TEXT,
@@ -82,10 +83,12 @@ class SQLiteMetadataStore(MetadataStore):
                 metadata TEXT,
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP
             )
-        """)
+        """,
+        )
 
         # Artifacts table
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS artifacts (
                 artifact_id TEXT PRIMARY KEY,
                 name TEXT,
@@ -96,10 +99,12 @@ class SQLiteMetadataStore(MetadataStore):
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (run_id) REFERENCES runs(run_id)
             )
-        """)
+        """,
+        )
 
         # Metrics table
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS metrics (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 run_id TEXT,
@@ -109,10 +114,12 @@ class SQLiteMetadataStore(MetadataStore):
                 timestamp TEXT DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (run_id) REFERENCES runs(run_id)
             )
-        """)
+        """,
+        )
 
         # Parameters table
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS parameters (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 run_id TEXT,
@@ -120,10 +127,12 @@ class SQLiteMetadataStore(MetadataStore):
                 value TEXT,
                 FOREIGN KEY (run_id) REFERENCES runs(run_id)
             )
-        """)
+        """,
+        )
 
         # Experiments table
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS experiments (
                 experiment_id TEXT PRIMARY KEY,
                 name TEXT,
@@ -131,10 +140,12 @@ class SQLiteMetadataStore(MetadataStore):
                 tags TEXT,
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP
             )
-        """)
-        
+        """,
+        )
+
         # Experiment Runs link table
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS experiment_runs (
                 experiment_id TEXT,
                 run_id TEXT,
@@ -145,10 +156,12 @@ class SQLiteMetadataStore(MetadataStore):
                 FOREIGN KEY (experiment_id) REFERENCES experiments(experiment_id),
                 FOREIGN KEY (run_id) REFERENCES runs(run_id)
             )
-        """)
+        """,
+        )
 
         # Traces table for GenAI monitoring
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS traces (
                 event_id TEXT PRIMARY KEY,
                 trace_id TEXT,
@@ -170,7 +183,8 @@ class SQLiteMetadataStore(MetadataStore):
                 model TEXT,
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP
             )
-        """)
+        """,
+        )
 
         # Create indexes for better query performance
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_runs_pipeline ON runs(pipeline_name)")
@@ -195,42 +209,45 @@ class SQLiteMetadataStore(MetadataStore):
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
 
-        cursor.execute("""
+        cursor.execute(
+            """
             INSERT OR REPLACE INTO runs
             (run_id, pipeline_name, status, start_time, end_time, duration, metadata)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (
-            run_id,
-            metadata.get('pipeline_name'),
-            metadata.get('status'),
-            metadata.get('start_time'),
-            metadata.get('end_time'),
-            metadata.get('duration'),
-            json.dumps(metadata)
-        ))
+        """,
+            (
+                run_id,
+                metadata.get("pipeline_name"),
+                metadata.get("status"),
+                metadata.get("start_time"),
+                metadata.get("end_time"),
+                metadata.get("duration"),
+                json.dumps(metadata),
+            ),
+        )
 
         # Save parameters
-        if 'parameters' in metadata:
+        if "parameters" in metadata:
             cursor.execute("DELETE FROM parameters WHERE run_id = ?", (run_id,))
-            for name, value in metadata['parameters'].items():
+            for name, value in metadata["parameters"].items():
                 cursor.execute(
                     "INSERT INTO parameters (run_id, name, value) VALUES (?, ?, ?)",
-                    (run_id, name, json.dumps(value))
+                    (run_id, name, json.dumps(value)),
                 )
 
         # Save metrics
-        if 'metrics' in metadata:
+        if "metrics" in metadata:
             cursor.execute("DELETE FROM metrics WHERE run_id = ?", (run_id,))
-            for name, value in metadata['metrics'].items():
+            for name, value in metadata["metrics"].items():
                 cursor.execute(
                     "INSERT INTO metrics (run_id, name, value, step) VALUES (?, ?, ?, ?)",
-                    (run_id, name, value, 0)
+                    (run_id, name, value, 0),
                 )
 
         conn.commit()
         conn.close()
 
-    def load_run(self, run_id: str) -> Optional[dict]:
+    def load_run(self, run_id: str) -> dict | None:
         """Load run metadata from database.
 
         Args:
@@ -251,7 +268,7 @@ class SQLiteMetadataStore(MetadataStore):
             return json.loads(row[0])
         return None
 
-    def list_runs(self, limit: Optional[int] = None) -> list[dict]:
+    def list_runs(self, limit: int | None = None) -> list[dict]:
         """List all runs from database.
 
         Args:
@@ -300,23 +317,26 @@ class SQLiteMetadataStore(MetadataStore):
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
 
-        cursor.execute("""
+        cursor.execute(
+            """
             INSERT OR REPLACE INTO artifacts
             (artifact_id, name, type, run_id, path, metadata)
             VALUES (?, ?, ?, ?, ?, ?)
-        """, (
-            artifact_id,
-            metadata.get('name'),
-            metadata.get('type'),
-            metadata.get('run_id'),
-            metadata.get('path'),
-            json.dumps(metadata)
-        ))
+        """,
+            (
+                artifact_id,
+                metadata.get("name"),
+                metadata.get("type"),
+                metadata.get("run_id"),
+                metadata.get("path"),
+                json.dumps(metadata),
+            ),
+        )
 
         conn.commit()
         conn.close()
 
-    def load_artifact(self, artifact_id: str) -> Optional[dict]:
+    def load_artifact(self, artifact_id: str) -> dict | None:
         """Load artifact metadata from database.
 
         Args:
@@ -337,7 +357,7 @@ class SQLiteMetadataStore(MetadataStore):
             return json.loads(row[0])
         return None
 
-    def list_assets(self, limit: Optional[int] = None, **filters) -> list[dict]:
+    def list_assets(self, limit: int | None = None, **filters) -> list[dict]:
         """List assets from database with optional filters.
 
         Args:
@@ -361,9 +381,9 @@ class SQLiteMetadataStore(MetadataStore):
         query = "SELECT metadata FROM artifacts"
         if conditions:
             query += " WHERE " + " AND ".join(conditions)
-        
+
         query += " ORDER BY created_at DESC"
-        
+
         if limit:
             query += f" LIMIT {limit}"
 
@@ -419,13 +439,13 @@ class SQLiteMetadataStore(MetadataStore):
 
         cursor.execute(
             "INSERT INTO metrics (run_id, name, value, step) VALUES (?, ?, ?, ?)",
-            (run_id, name, value, step)
+            (run_id, name, value, step),
         )
 
         conn.commit()
         conn.close()
 
-    def get_metrics(self, run_id: str, name: Optional[str] = None) -> list[dict]:
+    def get_metrics(self, run_id: str, name: str | None = None) -> list[dict]:
         """Get metrics for a run.
 
         Args:
@@ -441,25 +461,22 @@ class SQLiteMetadataStore(MetadataStore):
         if name:
             cursor.execute(
                 "SELECT name, value, step, timestamp FROM metrics WHERE run_id = ? AND name = ? ORDER BY step",
-                (run_id, name)
+                (run_id, name),
             )
         else:
             cursor.execute(
                 "SELECT name, value, step, timestamp FROM metrics WHERE run_id = ? ORDER BY step",
-                (run_id,)
+                (run_id,),
             )
 
         rows = cursor.fetchall()
         conn.close()
 
-        return [
-            {'name': row[0], 'value': row[1], 'step': row[2], 'timestamp': row[3]}
-            for row in rows
-        ]
-        
+        return [{"name": row[0], "value": row[1], "step": row[2], "timestamp": row[3]} for row in rows]
+
     def save_experiment(self, experiment_id: str, name: str, description: str = "", tags: dict = None) -> None:
         """Save experiment metadata.
-        
+
         Args:
             experiment_id: Unique experiment identifier
             name: Experiment name
@@ -468,24 +485,33 @@ class SQLiteMetadataStore(MetadataStore):
         """
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
-        
-        cursor.execute("""
+
+        cursor.execute(
+            """
             INSERT OR REPLACE INTO experiments
             (experiment_id, name, description, tags)
             VALUES (?, ?, ?, ?)
-        """, (
-            experiment_id,
-            name,
-            description,
-            json.dumps(tags or {})
-        ))
-        
+        """,
+            (
+                experiment_id,
+                name,
+                description,
+                json.dumps(tags or {}),
+            ),
+        )
+
         conn.commit()
         conn.close()
-        
-    def log_experiment_run(self, experiment_id: str, run_id: str, metrics: dict = None, parameters: dict = None) -> None:
+
+    def log_experiment_run(
+        self,
+        experiment_id: str,
+        run_id: str,
+        metrics: dict = None,
+        parameters: dict = None,
+    ) -> None:
         """Log a run to an experiment.
-        
+
         Args:
             experiment_id: Experiment identifier
             run_id: Run identifier
@@ -494,100 +520,115 @@ class SQLiteMetadataStore(MetadataStore):
         """
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
-        
-        cursor.execute("""
+
+        cursor.execute(
+            """
             INSERT OR REPLACE INTO experiment_runs
             (experiment_id, run_id, metrics, parameters)
             VALUES (?, ?, ?, ?)
-        """, (
-            experiment_id,
-            run_id,
-            json.dumps(metrics or {}),
-            json.dumps(parameters or {})
-        ))
-        
+        """,
+            (
+                experiment_id,
+                run_id,
+                json.dumps(metrics or {}),
+                json.dumps(parameters or {}),
+            ),
+        )
+
         conn.commit()
         conn.close()
-        
+
     def list_experiments(self) -> list[dict]:
         """List all experiments.
-        
+
         Returns:
             List of experiment dictionaries
         """
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
-        
-        cursor.execute("SELECT experiment_id, name, description, tags, created_at FROM experiments ORDER BY created_at DESC")
+
+        cursor.execute(
+            "SELECT experiment_id, name, description, tags, created_at FROM experiments ORDER BY created_at DESC",
+        )
         rows = cursor.fetchall()
-        
+
         experiments = []
         for row in rows:
             # Count runs for each experiment
             cursor.execute("SELECT COUNT(*) FROM experiment_runs WHERE experiment_id = ?", (row[0],))
             run_count = cursor.fetchone()[0]
-            
-            experiments.append({
-                'experiment_id': row[0],
-                'name': row[1],
-                'description': row[2],
-                'tags': json.loads(row[3]),
-                'created_at': row[4],
-                'run_count': run_count
-            })
-            
+
+            experiments.append(
+                {
+                    "experiment_id": row[0],
+                    "name": row[1],
+                    "description": row[2],
+                    "tags": json.loads(row[3]),
+                    "created_at": row[4],
+                    "run_count": run_count,
+                },
+            )
+
         conn.close()
         return experiments
-        
-    def get_experiment(self, experiment_id: str) -> Optional[dict]:
+
+    def get_experiment(self, experiment_id: str) -> dict | None:
         """Get experiment details.
-        
+
         Args:
             experiment_id: Experiment identifier
-            
+
         Returns:
             Experiment dictionary or None
         """
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
-        
-        cursor.execute("SELECT experiment_id, name, description, tags, created_at FROM experiments WHERE experiment_id = ?", (experiment_id,))
+
+        cursor.execute(
+            "SELECT experiment_id, name, description, tags, created_at FROM experiments WHERE experiment_id = ?",
+            (experiment_id,),
+        )
         row = cursor.fetchone()
-        
+
         if not row:
             conn.close()
             return None
-            
+
         experiment = {
-            'experiment_id': row[0],
-            'name': row[1],
-            'description': row[2],
-            'tags': json.loads(row[3]),
-            'created_at': row[4]
+            "experiment_id": row[0],
+            "name": row[1],
+            "description": row[2],
+            "tags": json.loads(row[3]),
+            "created_at": row[4],
         }
-        
+
         # Get runs
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT er.run_id, er.metrics, er.parameters, er.timestamp, r.status, r.duration
             FROM experiment_runs er
             LEFT JOIN runs r ON er.run_id = r.run_id
             WHERE er.experiment_id = ?
             ORDER BY er.timestamp DESC
-        """, (experiment_id,))
-        
+        """,
+            (experiment_id,),
+        )
+
         runs = []
         for r in cursor.fetchall():
-            runs.append({
-                'run_id': r[0],
-                'metrics': json.loads(r[1]),
-                'parameters': json.loads(r[2]),
-                'timestamp': r[3],
-                'status': r[4],
-                'duration': r[5]
-            })
-            
-        experiment['runs'] = runs
-        
+            runs.append(
+                {
+                    "run_id": r[0],
+                    "metrics": json.loads(r[1]),
+                    "parameters": json.loads(r[2]),
+                    "timestamp": r[3],
+                    "status": r[4],
+                    "duration": r[5],
+                },
+            )
+
+        experiment["runs"] = runs
+
         conn.close()
         return experiment
 
@@ -603,19 +644,19 @@ class SQLiteMetadataStore(MetadataStore):
         stats = {}
 
         cursor.execute("SELECT COUNT(*) FROM runs")
-        stats['total_runs'] = cursor.fetchone()[0]
+        stats["total_runs"] = cursor.fetchone()[0]
 
         cursor.execute("SELECT COUNT(*) FROM artifacts")
-        stats['total_artifacts'] = cursor.fetchone()[0]
+        stats["total_artifacts"] = cursor.fetchone()[0]
 
         cursor.execute("SELECT COUNT(*) FROM metrics")
-        stats['total_metrics'] = cursor.fetchone()[0]
+        stats["total_metrics"] = cursor.fetchone()[0]
 
         cursor.execute("SELECT COUNT(DISTINCT pipeline_name) FROM runs")
-        stats['total_pipelines'] = cursor.fetchone()[0]
-        
+        stats["total_pipelines"] = cursor.fetchone()[0]
+
         cursor.execute("SELECT COUNT(*) FROM experiments")
-        stats['total_experiments'] = cursor.fetchone()[0]
+        stats["total_experiments"] = cursor.fetchone()[0]
 
         conn.close()
 
@@ -623,73 +664,77 @@ class SQLiteMetadataStore(MetadataStore):
 
     def save_trace_event(self, event: dict) -> None:
         """Save a trace event.
-        
+
         Args:
             event: Trace event dictionary
         """
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
-        
-        cursor.execute("""
+
+        cursor.execute(
+            """
             INSERT OR REPLACE INTO traces
-            (event_id, trace_id, parent_id, event_type, name, inputs, outputs, 
+            (event_id, trace_id, parent_id, event_type, name, inputs, outputs,
              start_time, end_time, duration, status, error, metadata,
              prompt_tokens, completion_tokens, total_tokens, cost, model)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            event['event_id'],
-            event['trace_id'],
-            event['parent_id'],
-            event['event_type'],
-            event['name'],
-            json.dumps(event.get('inputs', {})),
-            json.dumps(event.get('outputs', {})),
-            event.get('start_time'),
-            event.get('end_time'),
-            event.get('duration'),
-            event.get('status'),
-            event.get('error'),
-            json.dumps(event.get('metadata', {})),
-            event.get('prompt_tokens', 0),
-            event.get('completion_tokens', 0),
-            event.get('total_tokens', 0),
-            event.get('cost', 0.0),
-            event.get('model')
-        ))
-        
+        """,
+            (
+                event["event_id"],
+                event["trace_id"],
+                event["parent_id"],
+                event["event_type"],
+                event["name"],
+                json.dumps(event.get("inputs", {})),
+                json.dumps(event.get("outputs", {})),
+                event.get("start_time"),
+                event.get("end_time"),
+                event.get("duration"),
+                event.get("status"),
+                event.get("error"),
+                json.dumps(event.get("metadata", {})),
+                event.get("prompt_tokens", 0),
+                event.get("completion_tokens", 0),
+                event.get("total_tokens", 0),
+                event.get("cost", 0.0),
+                event.get("model"),
+            ),
+        )
+
         conn.commit()
         conn.close()
-        
+
     def get_trace(self, trace_id: str) -> list[dict]:
         """Get all events for a trace.
-        
+
         Args:
             trace_id: Trace identifier
-            
+
         Returns:
             List of event dictionaries
         """
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
-        
-        cursor.execute("""
+
+        cursor.execute(
+            """
             SELECT * FROM traces WHERE trace_id = ? ORDER BY start_time
-        """, (trace_id,))
-        
+        """,
+            (trace_id,),
+        )
+
         columns = [description[0] for description in cursor.description]
         rows = cursor.fetchall()
-        
+
         events = []
         for row in rows:
-            event = dict(zip(columns, row))
+            event = dict(zip(columns, row, strict=False))
             # Parse JSON fields
-            for field in ['inputs', 'outputs', 'metadata']:
+            for field in ["inputs", "outputs", "metadata"]:
                 if event[field]:
-                    try:
+                    with contextlib.suppress(builtins.BaseException):
                         event[field] = json.loads(event[field])
-                    except:
-                        pass
             events.append(event)
-            
+
         conn.close()
         return events

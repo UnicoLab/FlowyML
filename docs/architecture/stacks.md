@@ -295,7 +295,7 @@ stacks:
   local:
     type: local
     artifact_path: .uniflow/artifacts
-  
+
   production:
     type: gcp
     project_id: ${GCP_PROJECT_ID}

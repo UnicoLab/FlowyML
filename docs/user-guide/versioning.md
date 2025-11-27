@@ -162,21 +162,21 @@ diff = pipeline.compare_with(previous_version)
 # In your CI pipeline
 def verify_version_changes():
     pipeline = VersionedPipeline.load("production_pipeline")
-    
+
     # Get current production version
     prod_version = get_production_version()
-    
+
     # Compare
     diff = pipeline.compare_with(prod_version)
-    
+
     # Enforce policies
     if diff['removed_steps']:
         raise ValueError("Cannot remove steps in minor version update")
-    
+
     if diff['modified_steps']:
         # Require integration tests
         run_integration_tests()
-    
+
     return diff
 ```
 

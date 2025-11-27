@@ -2,18 +2,20 @@
 
 import json
 from pathlib import Path
-from typing import Any, Type
+from typing import Any
 
 from uniflow.storage.materializers.base import BaseMaterializer, register_materializer
 
 try:
     import numpy as np
+
     NUMPY_AVAILABLE = True
 except ImportError:
     NUMPY_AVAILABLE = False
 
 
 if NUMPY_AVAILABLE:
+
     class NumPyMaterializer(BaseMaterializer):
         """Materializer for NumPy arrays."""
 
@@ -46,10 +48,10 @@ if NUMPY_AVAILABLE:
                     metadata["max"] = float(np.max(obj))
                     metadata["mean"] = float(np.mean(obj))
                     metadata["std"] = float(np.std(obj))
-                except:
+                except Exception:
                     pass
 
-            with open(path / "metadata.json", 'w') as f:
+            with open(path / "metadata.json", "w") as f:
                 json.dump(metadata, f, indent=2)
 
         def load(self, path: Path) -> Any:
@@ -69,7 +71,7 @@ if NUMPY_AVAILABLE:
             return np.load(array_path)
 
         @classmethod
-        def supported_types(cls) -> list[Type]:
+        def supported_types(cls) -> list[type]:
             """Return NumPy types supported by this materializer."""
             return [np.ndarray]
 
@@ -88,5 +90,5 @@ else:
             raise ImportError("NumPy is not installed. Install with: pip install numpy")
 
         @classmethod
-        def supported_types(cls) -> list[Type]:
+        def supported_types(cls) -> list[type]:
             return []

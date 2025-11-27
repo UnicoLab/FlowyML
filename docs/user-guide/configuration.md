@@ -60,16 +60,16 @@ stacks:
     type: gcp
     project_id: ${GCP_PROJECT_ID}
     region: us-central1
-    
+
     artifact_store:
       type: gcs
       bucket: ${GCP_BUCKET}
       prefix: uniflow  # Optional prefix for all artifacts
-    
+
     container_registry:
       type: gcr
       uri: gcr.io/${GCP_PROJECT_ID}
-    
+
     orchestrator:
       type: vertex_ai
       service_account: ${GCP_SERVICE_ACCOUNT}
@@ -83,14 +83,14 @@ stacks:
 stacks:
   airflow_stack:
     type: local
-    
+
     orchestrator:
       type: airflow
       dag_folder: ~/airflow/dags
       default_args:
         owner: uniflow
         retries: 2
-    
+
     artifact_store:
       type: minio
       endpoint: localhost:9000
@@ -111,13 +111,13 @@ resources:
     cpu: "1"
     memory: "4Gi"
     disk_size: "20Gi"
-  
+
   # Standard processing
   medium:
     cpu: "4"
     memory: "16Gi"
     disk_size: "50Gi"
-  
+
   # Heavy processing
   large:
     cpu: "16"
@@ -136,7 +136,7 @@ resources:
     gpu: "nvidia-tesla-t4"
     gpu_count: 1
     disk_size: "100Gi"
-  
+
   # Multi-GPU training
   gpu_large:
     cpu: "16"
@@ -145,7 +145,7 @@ resources:
     gpu_count: 4
     disk_size: "500Gi"
     machine_type: "n1-highmem-16"
-  
+
   # A100 for large-scale
   gpu_xlarge:
     cpu: "96"
@@ -166,7 +166,7 @@ resources:
     memory: "256Gi"
     disk_size: "100Gi"
     machine_type: "n1-megamem-96"
-  
+
   # CPU-intensive
   high_cpu:
     cpu: "96"
@@ -267,7 +267,7 @@ components:
 components:
   - zenml: zenml.integrations.kubernetes.orchestrators.KubernetesOrchestrator
     name: k8s
-  
+
   - zenml: zenml.integrations.aws.artifact_stores.S3ArtifactStore
     name: s3
 ```
@@ -322,7 +322,7 @@ stacks:
   dev:
     type: local
 
-# staging.yaml  
+# staging.yaml
 stacks:
   staging:
     type: gcp
@@ -364,7 +364,7 @@ stacks:
       path: .uniflow/artifacts
     metadata_store:
       path: .uniflow/metadata.db
-  
+
   # Staging GCP stack
   staging:
     type: gcp
@@ -378,7 +378,7 @@ stacks:
       uri: gcr.io/${GCP_PROJECT_ID_STAGING}
     orchestrator:
       type: vertex_ai
-  
+
   # Production GCP stack
   production:
     type: gcp
@@ -394,7 +394,7 @@ stacks:
       type: vertex_ai
       service_account: ${GCP_SERVICE_ACCOUNT}
       network: projects/${GCP_PROJECT_ID_PROD}/global/networks/prod-vpc
-  
+
   # Custom Airflow stack
   airflow:
     type: local
@@ -415,13 +415,13 @@ resources:
     cpu: "2"
     memory: "8Gi"
     disk_size: "50Gi"
-  
+
   # Data preprocessing
   preprocessing:
     cpu: "8"
     memory: "32Gi"
     disk_size: "100Gi"
-  
+
   # Model training
   training:
     cpu: "16"
@@ -429,7 +429,7 @@ resources:
     gpu: "nvidia-tesla-v100"
     gpu_count: 2
     disk_size: "200Gi"
-  
+
   # Large-scale training
   training_large:
     cpu: "96"
@@ -438,7 +438,7 @@ resources:
     gpu_count: 8
     disk_size: "1000Gi"
     machine_type: "a2-highgpu-8g"
-  
+
   # Inference
   inference:
     cpu: "4"
@@ -452,15 +452,15 @@ docker:
   # Use existing Dockerfile
   dockerfile: ./Dockerfile
   build_context: .
-  
+
   # Or use Poetry (comment out dockerfile above)
   # use_poetry: true
   # base_image: python:3.11-slim
-  
+
   # Build arguments
   build_args:
     PYTHON_VERSION: "3.11"
-  
+
   # Environment variables
   env_vars:
     PYTHONUNBUFFERED: "1"
@@ -473,7 +473,7 @@ docker:
 components:
   # Load custom components
   - module: company_ml.uniflow_plugins
-  
+
   # Load ZenML components
   - zenml: zenml.integrations.kubernetes.orchestrators.KubernetesOrchestrator
     name: k8s

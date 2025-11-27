@@ -346,11 +346,11 @@ def load_data(path: str) -> pd.DataFrame:
 @step(inputs=["features"], outputs=["predictions"])
 def predict(features: pd.DataFrame, threshold: float = 0.5) -> pd.Series:
     """Generate predictions from features.
-    
+
     Args:
         features: Input feature matrix
         threshold: Classification threshold
-    
+
     Returns:
         Binary predictions
     """

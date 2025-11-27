@@ -1,6 +1,7 @@
 """Conditional execution for dynamic pipelines."""
 
-from typing import Callable, Any, Optional
+from typing import Any
+from collections.abc import Callable
 from functools import wraps
 
 
@@ -11,9 +12,11 @@ class Condition:
         ```python
         from uniflow import step, Condition
 
+
         @step
         def check_quality(data):
             return {"score": 0.95, "needs_cleaning": False}
+
 
         @step
         @Condition(lambda result: result["needs_cleaning"])
@@ -61,6 +64,7 @@ class Condition:
         Returns:
             Wrapped function
         """
+
         @wraps(func)
         def wrapper(*args, **kwargs):
             if self.should_execute(*args, **kwargs):
@@ -119,9 +123,11 @@ class ConditionalBranch:
 
         branch = ConditionalBranch()
 
+
         @branch.if_condition(lambda x: x > 10)
         def process_large(data):
             return process_with_large_model(data)
+
 
         @branch.else_condition()
         def process_small(data):
@@ -130,9 +136,9 @@ class ConditionalBranch:
     """
 
     def __init__(self):
-        self.if_func: Optional[Callable] = None
-        self.if_condition_func: Optional[Callable] = None
-        self.else_func: Optional[Callable] = None
+        self.if_func: Callable | None = None
+        self.if_condition_func: Callable | None = None
+        self.else_func: Callable | None = None
         self.elif_branches: list[tuple[Callable, Callable]] = []
 
     def if_condition(self, condition_func: Callable[[Any], bool]) -> Callable:
@@ -144,10 +150,12 @@ class ConditionalBranch:
         Returns:
             Decorator
         """
+
         def decorator(func: Callable) -> Callable:
             self.if_func = func
             self.if_condition_func = condition_func
             return func
+
         return decorator
 
     def elif_condition(self, condition_func: Callable[[Any], bool]) -> Callable:
@@ -159,9 +167,11 @@ class ConditionalBranch:
         Returns:
             Decorator
         """
+
         def decorator(func: Callable) -> Callable:
             self.elif_branches.append((condition_func, func))
             return func
+
         return decorator
 
     def else_condition(self) -> Callable:
@@ -170,9 +180,11 @@ class ConditionalBranch:
         Returns:
             Decorator
         """
+
         def decorator(func: Callable) -> Callable:
             self.else_func = func
             return func
+
         return decorator
 
     def execute(self, *args, **kwargs) -> Any:
@@ -218,13 +230,16 @@ class Switch:
 
         switch = Switch(lambda x: x["type"])
 
+
         @switch.case("image")
         def process_image(data):
             return process_image_data(data)
 
+
         @switch.case("text")
         def process_text(data):
             return process_text_data(data)
+
 
         @switch.default()
         def process_other(data):
@@ -240,7 +255,7 @@ class Switch:
         """
         self.selector_func = selector_func
         self.cases: dict[Any, Callable] = {}
-        self.default_func: Optional[Callable] = None
+        self.default_func: Callable | None = None
 
     def case(self, value: Any) -> Callable:
         """Define a case branch.
@@ -251,9 +266,11 @@ class Switch:
         Returns:
             Decorator
         """
+
         def decorator(func: Callable) -> Callable:
             self.cases[value] = func
             return func
+
         return decorator
 
     def default(self) -> Callable:
@@ -262,9 +279,11 @@ class Switch:
         Returns:
             Decorator
         """
+
         def decorator(func: Callable) -> Callable:
             self.default_func = func
             return func
+
         return decorator
 
     def execute(self, *args, **kwargs) -> Any:
@@ -311,13 +330,16 @@ def when(condition_func: Callable[[Any], bool]) -> Callable:
             return expensive_processing(data)
         ```
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         def wrapper(*args, **kwargs):
             if condition_func(*args, **kwargs):
                 return func(*args, **kwargs)
             return SkippedExecution(func.__name__)
+
         return wrapper
+
     return decorator
 
 
@@ -338,11 +360,14 @@ def unless(condition_func: Callable[[Any], bool]) -> Callable:
             return expensive_computation(data)
         ```
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         def wrapper(*args, **kwargs):
             if not condition_func(*args, **kwargs):
                 return func(*args, **kwargs)
             return SkippedExecution(func.__name__)
+
         return wrapper
+
     return decorator

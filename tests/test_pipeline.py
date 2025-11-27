@@ -19,22 +19,24 @@ class TestPipeline(BaseTestCase):
         """Test pipeline creation with context."""
         ctx = Context(param1="value1")
         p = Pipeline("ctx_pipeline", context=ctx)
-        
+
         self.assertEqual(p.context.get("param1"), "value1")
 
     def test_pipeline_add_step(self):
         """Test adding steps to pipeline."""
+
         @step
         def step1():
             return "result1"
 
         p = Pipeline("add_step_test")
         p.add_step(step1)
-        
+
         self.assertEqual(len(p.steps), 1)
 
     def test_pipeline_add_multiple_steps(self):
         """Test adding multiple steps."""
+
         @step
         def step1():
             return "r1"
@@ -51,11 +53,12 @@ class TestPipeline(BaseTestCase):
         p.add_step(step1)
         p.add_step(step2)
         p.add_step(step3)
-        
+
         self.assertEqual(len(p.steps), 3)
 
     def test_pipeline_execution_success(self):
         """Test successful pipeline execution."""
+
         @step
         def double(value: int):
             return value * 2
@@ -64,7 +67,7 @@ class TestPipeline(BaseTestCase):
         p.add_step(double)
 
         result = p.run()
-        
+
         self.assertTrue(result.success)
         self.assertEqual(result["double"], 42)
 
@@ -82,20 +85,22 @@ class TestPipeline(BaseTestCase):
 
     def test_pipeline_run_creates_run_directory(self):
         """Test that pipeline run creates run directory."""
+
         @step
         def simple():
             return "done"
 
         p = Pipeline("run_dir_test")
         p.add_step(simple)
-        
+
         result = p.run()
-        
+
         # Check that runs directory exists
         self.assertTrue(p.runs_dir.exists())
 
     def test_pipeline_result_access(self):
         """Test accessing pipeline results."""
+
         @step
         def return_value():
             return {"key": "value"}
@@ -104,12 +109,13 @@ class TestPipeline(BaseTestCase):
         p.add_step(return_value)
 
         result = p.run()
-        
+
         self.assertIn("return_value", result.outputs)
         self.assertEqual(result["return_value"]["key"], "value")
 
     def test_pipeline_with_failing_step(self):
         """Test pipeline with a failing step."""
+
         @step
         def failing_step():
             raise ValueError("Intentional failure")
@@ -118,7 +124,7 @@ class TestPipeline(BaseTestCase):
         p.add_step(failing_step)
 
         result = p.run()
-        
+
         self.assertFalse(result.success)
         # Check that there's an error in the step results
         self.assertIsNotNone(result.step_results.get("failing_step"))

@@ -10,7 +10,7 @@ stacks:
       path: .uniflow/artifacts
     metadata_store:
       path: .uniflow/metadata.db
-  
+
   # Staging environment on GCP
   staging:
     type: gcp
@@ -25,7 +25,7 @@ stacks:
     orchestrator:
       type: vertex_ai
       service_account: ${GCP_SERVICE_ACCOUNT}
-  
+
   # Production environment on GCP
   production:
     type: gcp
@@ -52,21 +52,21 @@ resources:
     cpu: "2"
     memory: "8Gi"
     disk_size: "50Gi"
-  
+
   # CPU-intensive workload
   cpu_intensive:
     cpu: "16"
     memory: "64Gi"
     disk_size: "100Gi"
     machine_type: "n1-highcpu-16"
-  
+
   # Memory-intensive workload
   memory_intensive:
     cpu: "8"
     memory: "128Gi"
     disk_size: "100Gi"
     machine_type: "n1-highmem-8"
-  
+
   # GPU training workload
   gpu_training:
     cpu: "8"
@@ -75,7 +75,7 @@ resources:
     gpu_count: 2
     machine_type: "n1-highmem-8"
     disk_size: "200Gi"
-  
+
   # Large-scale GPU training
   gpu_large:
     cpu: "96"
@@ -90,21 +90,21 @@ docker:
   # Automatically use existing Dockerfile
   dockerfile: ./Dockerfile
   build_context: .
-  
+
   # Or use poetry for dependency management
   use_poetry: true
-  
+
   # Or specify requirements file
   # requirements_file: requirements.txt
-  
+
   # Base image if building dynamically
   base_image: "python:3.11-slim"
-  
+
   # Environment variables for container
   env_vars:
     PYTHONUNBUFFERED: "1"
     TF_CPP_MIN_LOG_LEVEL: "2"
-  
+
   # Build arguments
   build_args:
     PYTHON_VERSION: "3.11"

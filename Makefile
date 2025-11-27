@@ -49,7 +49,7 @@ backend-start: ## Start backend production server
 	cd $(BACKEND_DIR) && $(POETRY) run uvicorn main:app --host 0.0.0.0 --port 8000
 
 # UniFlow CLI Commands
-ui-start: ## Start UniFlow UI server 
+ui-start: ## Start UniFlow UI server
 	$(UNIFLOW) ui start --open-browser
 
 ui-dev: ## Start UI in development mode

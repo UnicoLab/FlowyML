@@ -1,7 +1,6 @@
 """Project initialization CLI commands."""
 
 from pathlib import Path
-from typing import Optional
 
 
 TEMPLATES = {
@@ -238,7 +237,7 @@ def init_project(name: str, template: str, directory: Path) -> None:
         formatted_content = content.replace("{project_name}", name)
 
         # Write file
-        with open(full_path, 'w') as f:
+        with open(full_path, "w") as f:
             f.write(formatted_content)
 
     # Create .uniflow directory

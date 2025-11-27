@@ -9,7 +9,7 @@
 airflow = "uniflow_airflow:AirflowOrchestrator"
 kubeflow = "uniflow_kubeflow:KubeflowOrchestrator"
 
-# Example artifact stores  
+# Example artifact stores
 minio = "uniflow_minio:MinIOArtifactStore"
 azure_blob = "uniflow_azure:AzureBlobStore"
 

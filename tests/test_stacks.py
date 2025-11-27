@@ -16,7 +16,7 @@ class TestStacks(unittest.TestCase):
     def test_stack_has_name(self):
         """Test that stack has a name attribute."""
         stack = LocalStack(name="my_stack")
-        self.assertTrue(hasattr(stack, 'name'))
+        self.assertTrue(hasattr(stack, "name"))
         self.assertEqual(stack.name, "my_stack")
 
 

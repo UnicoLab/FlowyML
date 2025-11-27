@@ -62,7 +62,7 @@ Compare metrics and metadata across different versions.
 
 ```python
 comparison = registry.compare_versions(
-    "sentiment_classifier", 
+    "sentiment_classifier",
     ["v1.0.0", "v1.1.0"]
 )
 

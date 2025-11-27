@@ -1,3 +1,1 @@
-"""
-UniFlow Integrations.
-"""
+"""UniFlow Integrations."""

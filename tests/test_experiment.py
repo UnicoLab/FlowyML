@@ -11,7 +11,7 @@ class TestExperiment(BaseTestCase):
     def test_experiment_creation(self):
         """Test creating an experiment."""
         exp = Experiment(name="test_experiment")
-        
+
         self.assertEqual(exp.name, "test_experiment")
         self.assertIsNotNone(exp.experiment_dir)
 
@@ -19,9 +19,9 @@ class TestExperiment(BaseTestCase):
         """Test experiment with description."""
         exp = Experiment(
             name="described_experiment",
-            description="This is a test experiment"
+            description="This is a test experiment",
         )
-        
+
         self.assertEqual(exp.description, "This is a test experiment")
 
     def test_experiment_log_run(self):
@@ -30,9 +30,9 @@ class TestExperiment(BaseTestCase):
         exp.log_run(
             run_id="run_001",
             metrics={"accuracy": 0.95},
-            parameters={"lr": 0.01}
+            parameters={"lr": 0.01},
         )
-        
+
         self.assertIn("run_001", exp.runs)
         metrics = exp.get_run_metrics("run_001")
         self.assertEqual(metrics["metrics"]["accuracy"], 0.95)
@@ -42,7 +42,7 @@ class TestExperiment(BaseTestCase):
         exp = Experiment(name="list_test")
         exp.log_run("run_001", metrics={"acc": 0.9})
         exp.log_run("run_002", metrics={"acc": 0.95})
-        
+
         runs = exp.list_runs()
         self.assertEqual(len(runs), 2)
         self.assertIn("run_001", runs)
@@ -54,7 +54,7 @@ class TestExperiment(BaseTestCase):
         exp.log_run("run_001", metrics={"accuracy": 0.9})
         exp.log_run("run_002", metrics={"accuracy": 0.95})
         exp.log_run("run_003", metrics={"accuracy": 0.92})
-        
+
         best = exp.get_best_run("accuracy", maximize=True)
         self.assertEqual(best, "run_002")
 

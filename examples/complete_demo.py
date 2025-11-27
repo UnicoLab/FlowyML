@@ -1,46 +1,50 @@
-"""
-Comprehensive example demonstrating all UniFlow features.
-"""
-
-from uniflow import (
-    # Core
-    Pipeline, step, context,
-    # Versioning & Projects
-    VersionedPipeline, Project,
-    # Scheduling & Automation
-    PipelineScheduler,
-    # Notifications
-    configure_notifications, get_notifier,
-    # Leaderboard
-    ModelLeaderboard,
-    # Templates
-    create_from_template,
-    # Caching
-    ContentBasedCache, memoize,
-    # Keras
-    UniFlowKerasCallback,
-    # Data Monitoring
-    detect_drift,
-)
+"""Comprehensive example demonstrating all UniFlow features."""
 
 import numpy as np
 import time
+import sys
+from pathlib import Path
+
+# Add project root to path
+sys.path.append(str(Path(__file__).parent.parent))
+
+from uniflow import (  # noqa: E402
+    Pipeline,
+    step,
+    context,
+    PipelineScheduler,
+    configure_notifications,
+    get_notifier,
+    ModelLeaderboard,
+    # Templates
+    create_from_template,
+    list_templates,
+    # Caching
+    ContentBasedCache,
+    memoize,
+    # Keras
+    detect_drift,
+    # Versioning & Projects
+    VersionedPipeline,
+    Project,
+)
 
 # ============================================================================
 # PART 1: Basic Pipeline with Context
 # ============================================================================
 
-print("="*80)
+print("=" * 80)
 print("PART 1: Basic Pipeline with Context")
-print("="*80)
+print("=" * 80)
 
 ctx = context(
     learning_rate=0.001,
     epochs=5,
-    batch_size=32
+    batch_size=32,
 )
 
 pipeline = Pipeline("basic_ml_pipeline", context=ctx)
+
 
 @step(outputs=["training_data", "test_data"])
 def load_data():
@@ -51,6 +55,7 @@ def load_data():
     X_test = np.random.rand(200, 10)
     y_test = np.random.randint(0, 2, 200)
     return (X_train, y_train), (X_test, y_test)
+
 
 @step(inputs=["training_data"], outputs=["model", "history"])
 def train_model(training_data, learning_rate: float, epochs: int):
@@ -63,6 +68,7 @@ def train_model(training_data, learning_rate: float, epochs: int):
     history = {"loss": [0.5, 0.4, 0.3, 0.2, 0.1]}
     return model, history
 
+
 @step(inputs=["model", "test_data"], outputs=["metrics"])
 def evaluate_model(model, test_data):
     """Evaluate the model."""
@@ -70,6 +76,7 @@ def evaluate_model(model, test_data):
     X_test, y_test = test_data
     accuracy = np.random.rand()  # Simulate accuracy
     return {"accuracy": accuracy, "loss": 0.15}
+
 
 pipeline.add_step(load_data)
 pipeline.add_step(train_model)
@@ -83,9 +90,9 @@ print(f"   Metrics: {result.outputs.get('metrics')}")
 # PART 2: Pipeline Versioning
 # ============================================================================
 
-print("\n" + "="*80)
+print("\n" + "=" * 80)
 print("PART 2: Pipeline Versioning")
-print("="*80)
+print("=" * 80)
 
 versioned_pipeline = VersionedPipeline("ml_training")
 versioned_pipeline.version = "v1.0.0"
@@ -108,13 +115,13 @@ versioned_pipeline.display_comparison("v1.0.0")
 # PART 3: Projects & Multi-Tenancy
 # ============================================================================
 
-print("\n" + "="*80)
+print("\n" + "=" * 80)
 print("PART 3: Projects & Multi-Tenancy")
-print("="*80)
+print("=" * 80)
 
 project = Project(
     name="recommendation_system",
-    description="Movie recommendation ML system"
+    description="Movie recommendation ML system",
 )
 
 # Create pipeline within project
@@ -128,7 +135,7 @@ result = project_pipeline.run()
 
 # Get project stats
 stats = project.get_stats()
-print(f"\n📊 Project Stats:")
+print("\n📊 Project Stats:")
 print(f"   Total runs: {stats['total_runs']}")
 print(f"   Total artifacts: {stats['total_artifacts']}")
 
@@ -136,9 +143,9 @@ print(f"   Total artifacts: {stats['total_artifacts']}")
 # PART 4: Notifications
 # ============================================================================
 
-print("\n" + "="*80)
+print("\n" + "=" * 80)
 print("PART 4: Notifications")
-print("="*80)
+print("=" * 80)
 
 configure_notifications(console=True)
 notifier = get_notifier()
@@ -146,16 +153,16 @@ notifier = get_notifier()
 notifier.notify(
     title="Training Complete",
     message=f"Model trained successfully with accuracy: {result.outputs.get('metrics', {}).get('accuracy', 0):.2%}",
-    level="success"
+    level="success",
 )
 
 # ============================================================================
 # PART 5: Model Leaderboard
 # ============================================================================
 
-print("\n" + "="*80)
+print("\n" + "=" * 80)
 print("PART 5: Model Leaderboard")
-print("="*80)
+print("=" * 80)
 
 leaderboard = ModelLeaderboard(metric="accuracy", higher_is_better=True)
 
@@ -164,12 +171,12 @@ for i in range(5):
     model_name = f"model_v{i+1}"
     run_id = f"run_{i+1}"
     score = 0.7 + np.random.rand() * 0.25  # Random accuracy between 0.7-0.95
-    
+
     leaderboard.add_score(
         model_name=model_name,
         run_id=run_id,
         score=score,
-        metadata={"version": f"v{i+1}"}
+        metadata={"version": f"v{i+1}"},
     )
 
 # Display leaderboard
@@ -179,19 +186,20 @@ leaderboard.display(n=5)
 # PART 6: Templates
 # ============================================================================
 
-print("\n" + "="*80)
+print("\n" + "=" * 80)
 print("PART 6: Pipeline Templates")
-print("="*80)
+print("=" * 80)
 
-from uniflow import list_templates
+# from uniflow import list_templates  # Moved to top
+
 print(f"Available templates: {list_templates()}")
 
 template_pipeline = create_from_template(
-    'ml_training',
-    name='template_based_training',
+    "ml_training",
+    name="template_based_training",
     data_loader=load_data,
     trainer=lambda data: train_model(data, 0.001, 5),
-    evaluator=lambda model, data: evaluate_model(model, data)
+    evaluator=lambda model, data: evaluate_model(model, data),
 )
 
 print(f"✨ Created pipeline from template: {template_pipeline.name}")
@@ -201,18 +209,20 @@ print(f"   Steps: {[s.name for s in template_pipeline.steps]}")
 # PART 7: Advanced Caching
 # ============================================================================
 
-print("\n" + "="*80)
+print("\n" + "=" * 80)
 print("PART 7: Advanced Caching")
-print("="*80)
+print("=" * 80)
 
 cache = ContentBasedCache()
+
 
 # Use memoization decorator
 @memoize(ttl_seconds=3600)
 def expensive_computation(n):
     print(f"  🔄 Computing expensive operation for n={n}...")
     time.sleep(0.1)
-    return n ** 2
+    return n**2
+
 
 # First call - computes
 result1 = expensive_computation(5)
@@ -226,9 +236,9 @@ print(f"Result (cached): {result2}")
 # PART 8: Data Drift Detection
 # ============================================================================
 
-print("\n" + "="*80)
+print("\n" + "=" * 80)
 print("PART 8: Data Drift Detection")
-print("="*80)
+print("=" * 80)
 
 # Training data distribution
 train_feature = np.random.normal(0, 1, 1000)
@@ -242,10 +252,10 @@ prod_feature_with_drift = np.random.normal(2, 1, 1000)
 # Check for drift
 drift_result = detect_drift(train_feature, prod_feature_with_drift)
 
-if drift_result['drift_detected']:
-    print(f"⚠️  Data drift detected!")
+if drift_result["drift_detected"]:
+    print("⚠️  Data drift detected!")
     print(f"   PSI: {drift_result['psi']:.4f}")
-    notifier.on_drift_detected("feature_x", drift_result['psi'])
+    notifier.on_drift_detected("feature_x", drift_result["psi"])
 else:
     print(f"✅ No drift detected (PSI: {drift_result['psi']:.4f})")
 
@@ -253,9 +263,9 @@ else:
 # PART 9: Pipeline Scheduling (Demo - not started)
 # ============================================================================
 
-print("\n" + "="*80)
+print("\n" + "=" * 80)
 print("PART 9: Pipeline Scheduling")
-print("="*80)
+print("=" * 80)
 
 scheduler = PipelineScheduler()
 
@@ -264,14 +274,14 @@ scheduler.schedule_daily(
     name="daily_retrain",
     pipeline_func=lambda: pipeline.run(),
     hour=2,
-    minute=0
+    minute=0,
 )
 
 # Schedule hourly data refresh
 scheduler.schedule_interval(
     name="data_refresh",
     pipeline_func=lambda: print("Refreshing data..."),
-    hours=1
+    hours=1,
 )
 
 # List schedules (don't start for demo)
@@ -282,9 +292,9 @@ print("\n💡 Note: Scheduler configured but not started (use scheduler.start() 
 # Summary
 # ============================================================================
 
-print("\n" + "="*80)
+print("\n" + "=" * 80)
 print("🎉 COMPLETE DEMO FINISHED")
-print("="*80)
+print("=" * 80)
 print("\n✨ Features demonstrated:")
 print("   ✓ Basic pipelines with context")
 print("   ✓ Pipeline versioning & comparison")

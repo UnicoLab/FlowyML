@@ -15,7 +15,7 @@
 - **📊 Asset-Centric Design** - First-class datasets, models, and metrics
 - **🔄 Full Lineage Tracking** - Complete provenance for all artifacts
 
-### Production Features  
+### Production Features
 - **📁 Project Management** - Multi-tenant isolation and resource tracking
 - **🔄 Pipeline Versioning** - Track, compare, and manage pipeline versions
 - **⏰ Automated Scheduling** - Daily, hourly, and interval-based execution
@@ -195,7 +195,7 @@ make ui-status
 
 Visit **http://localhost:8080** to see:
 - 📊 Live pipeline execution status
-- 📈 Real-time metrics and visualizations  
+- 📈 Real-time metrics and visualizations
 - 🌳 Interactive DAG visualization
 - 📦 Asset and artifact explorer
 - 🔍 Experiment tracking and comparison
@@ -305,7 +305,7 @@ def preprocess():
 @step(inputs=["processed_data"], outputs=["trained_model", "metrics"])
 def train(processed_data: Dataset):
     model = train_neural_network(processed_data)
-    
+
     return (
         Model.create(model, trained_on=processed_data),
         Metrics.create(accuracy=0.95, loss=0.05)

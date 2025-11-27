@@ -22,7 +22,7 @@ class TestContextExtended(BaseTestCase):
     def test_context_with_numeric_values(self):
         """Test context with numeric values."""
         ctx = Context(int_val=42, float_val=3.14, bool_val=True)
-        
+
         self.assertEqual(ctx.get("int_val"), 42)
         self.assertAlmostEqual(ctx.get("float_val"), 3.14)
         self.assertTrue(ctx.get("bool_val"))
@@ -56,6 +56,7 @@ class TestContextExtended(BaseTestCase):
 
     def test_context_injection_with_missing_param(self):
         """Test context injection when parameter is missing."""
+
         @step
         def needs_param(required_param: str = "default"):
             return required_param
@@ -63,7 +64,7 @@ class TestContextExtended(BaseTestCase):
         p = Pipeline("missing_param_test", context=Context())
         p.add_step(needs_param)
         result = p.run()
-        
+
         self.assertEqual(result["needs_param"], "default")
 
     def test_context_with_complex_types(self):
@@ -73,15 +74,15 @@ class TestContextExtended(BaseTestCase):
                 "model": {
                     "type": "neural_network",
                     "layers": [128, 64, 32],
-                    "activation": "relu"
+                    "activation": "relu",
                 },
                 "training": {
                     "epochs": 100,
-                    "batch_size": 32
-                }
-            }
+                    "batch_size": 32,
+                },
+            },
         )
-        
+
         self.assertEqual(ctx.get("config")["model"]["type"], "neural_network")
         self.assertEqual(ctx.get("config")["training"]["epochs"], 100)
 

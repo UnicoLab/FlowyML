@@ -14,7 +14,7 @@ class TestContext(BaseTestCase):
         ctx = Context(
             learning_rate=0.01,
             batch_size=32,
-            epochs=10
+            epochs=10,
         )
 
         self.assertEqual(ctx["learning_rate"], 0.01)
@@ -69,17 +69,16 @@ class TestContext(BaseTestCase):
         ctx = Context(
             model_config={
                 "layers": 5,
-                "units": 128
+                "units": 128,
             },
             training_config={
                 "lr": 0.001,
-                "epochs": 20
-            }
+                "epochs": 20,
+            },
         )
 
         self.assertEqual(ctx.get("model_config")["layers"], 5)
         self.assertEqual(ctx.get("training_config")["lr"], 0.001)
-
 
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
 """
-Example: Complete ML Training Pipeline on GCP
+Example: Complete ML Training Pipeline on GCP.
 
 This example demonstrates running a full machine learning training
 pipeline on Google Cloud Platform using Vertex AI.
@@ -17,7 +17,7 @@ gcp_stack = GCPStack(
     project_id="your-gcp-project",
     region="us-central1",
     bucket_name="your-artifacts-bucket",
-    registry_uri="gcr.io/your-gcp-project"
+    registry_uri="gcr.io/your-gcp-project",
 )
 
 # Register stack
@@ -30,7 +30,7 @@ train_resources = ResourceConfig(
     memory="32Gi",
     gpu="nvidia-tesla-v100",
     gpu_count=2,
-    machine_type="n1-highmem-8"
+    machine_type="n1-highmem-8",
 )
 
 # Define Docker configuration
@@ -43,101 +43,108 @@ train_docker = DockerConfig(
     ],
     env_vars={
         "TF_FORCE_GPU_ALLOW_GROWTH": "true",
-        "PYTHONUNBUFFERED": "1"
-    }
+        "PYTHONUNBUFFERED": "1",
+    },
 )
+
 
 # Pipeline steps
 @step
 def load_data(data_path: str):
     """Load training data from GCS."""
     print(f"Loading data from {data_path}")
-    
+
     # In real scenario, load from GCS
     # df = pd.read_csv(data_path)
-    
+
     # Simulated data
-    df = pd.DataFrame({
-        'feature1': range(1000),
-        'feature2': range(1000),
-        'label': [i % 2 for i in range(1000)]
-    })
-    
+    df = pd.DataFrame(
+        {
+            "feature1": range(1000),
+            "feature2": range(1000),
+            "label": [i % 2 for i in range(1000)],
+        },
+    )
+
     return Dataset.create(
         data=df,
         name="training_data",
         rows=len(df),
         cols=len(df.columns),
-        source=data_path
+        source=data_path,
     )
+
 
 @step
 def preprocess_data(dataset: Dataset):
     """Preprocess and split data."""
     df = dataset.data
-    
+
     # Preprocessing logic
     # ... feature engineering, scaling, etc.
-    
+
     train_df = df.iloc[:800]
     val_df = df.iloc[800:]
-    
+
     train_dataset = Dataset.create(
         data=train_df,
         name="train_dataset",
         parent=dataset,
-        split="train"
+        split="train",
     )
-    
+
     val_dataset = Dataset.create(
         data=val_df,
         name="val_dataset",
         parent=dataset,
-        split="validation"
+        split="validation",
     )
-    
+
     return {"train": train_dataset, "val": val_dataset}
+
 
 @step
 def train_model(datasets: dict):
     """Train machine learning model."""
     train_data = datasets["train"].data
     val_data = datasets["val"].data
-    
+
     print(f"Training on {len(train_data)} samples")
-    
+
     # Simulated training
     # In real scenario, train TensorFlow/PyTorch model
     model_weights = {"layer1": [1, 2, 3], "layer2": [4, 5, 6]}
-    
+
     return Model.create(
         data=model_weights,
         name="trained_model",
         framework="tensorflow",
         accuracy=0.95,
-        parent=datasets["train"]
+        parent=datasets["train"],
     )
+
 
 @step
 def evaluate_model(model: Model, datasets: dict):
     """Evaluate model on validation set."""
     val_data = datasets["val"].data
-    
+
     print("Evaluating model...")
-    
+
     # Simulated evaluation
     accuracy = 0.94
     precision = 0.93
     recall = 0.95
-    
+
     return Metrics.create(
         accuracy=accuracy,
         precision=precision,
         recall=recall,
         f1_score=2 * (precision * recall) / (precision + recall),
         name="validation_metrics",
-        parent=model
+        parent=model,
     )
+
 
 @step
 def save_model(model: Model):
@@ -146,10 +153,11 @@ def save_model(model: Model):
     # Model saving logic
     return {"model_uri": f"gs://models/{model.name}/v1"}
 
+
 # Create pipeline
 pipeline = Pipeline(
     "ml_training_pipeline",
-    stack=gcp_stack
+    stack=gcp_stack,
 )
 
 # Add steps
@@ -164,12 +172,12 @@ if __name__ == "__main__":
     print("Running ML training pipeline on GCP...")
     print(f"Stack: {gcp_stack.name}")
     print(f"Region: {gcp_stack.region}")
-    
+
     result = pipeline.run(
         context={"data_path": "gs://your-bucket/train_data.csv"},
         resources=train_resources,
-        docker_config=train_docker
+        docker_config=train_docker,
     )
-    
+
     print("\nPipeline completed successfully!")
     print(f"Results: {result}")

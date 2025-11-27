@@ -85,8 +85,8 @@ ctx = context(
 def split_data(data, labels, test_size: float, random_state: int):
     """Split data into train/test sets."""
     return train_test_split(
-        data, labels, 
-        test_size=test_size, 
+        data, labels,
+        test_size=test_size,
         random_state=random_state
     )
 
@@ -288,7 +288,7 @@ from uniflow import Executor, ExecutionResult
 
 class BatchExecutor(Executor):
     """Custom executor that batches operations."""
-    
+
     def execute_step(self, step, inputs, context_params, cache_store=None):
         # Custom execution logic
         result = step.func(**inputs, **context_params)

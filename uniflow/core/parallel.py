@@ -1,7 +1,8 @@
 """Parallel and distributed execution utilities."""
 
 import concurrent.futures
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
+from collections.abc import Callable
 from dataclasses import dataclass
 import multiprocessing
 
@@ -12,7 +13,7 @@ class ParallelConfig:
 
     max_workers: int = None  # None = CPU count
     backend: str = "thread"  # "thread" or "process"
-    timeout: Optional[float] = None
+    timeout: float | None = None
     chunk_size: int = 1
 
 
@@ -25,9 +26,11 @@ class ParallelExecutor:
 
         executor = ParallelExecutor(max_workers=4)
 
+
         @step(parallel=True)
         def process_shard(shard):
             return expensive_processing(shard)
+
 
         results = executor.map(process_shard, shards)
         ```
@@ -35,9 +38,9 @@ class ParallelExecutor:
 
     def __init__(
         self,
-        max_workers: Optional[int] = None,
+        max_workers: int | None = None,
         backend: str = "thread",
-        timeout: Optional[float] = None,
+        timeout: float | None = None,
     ):
         """Initialize parallel executor.
 
@@ -52,12 +55,12 @@ class ParallelExecutor:
             timeout=timeout,
         )
 
-    def map(
+    def map_items(
         self,
         func: Callable,
-        items: List[Any],
-        **kwargs
-    ) -> List[Any]:
+        items: list[Any],
+        **kwargs,
+    ) -> list[Any]:
         """Execute function in parallel over items.
 
         Args:
@@ -77,17 +80,14 @@ class ParallelExecutor:
             # Submit all tasks
             futures = []
             for item in items:
-                if kwargs:
-                    future = executor.submit(func, item, **kwargs)
-                else:
-                    future = executor.submit(func, item)
+                future = executor.submit(func, item, **kwargs) if kwargs else executor.submit(func, item)
                 futures.append(future)
 
             # Collect results
             results = []
             for future in concurrent.futures.as_completed(
                 futures,
-                timeout=self.config.timeout
+                timeout=self.config.timeout,
             ):
                 try:
                     result = future.result()
@@ -100,8 +100,8 @@ class ParallelExecutor:
     def starmap(
         self,
         func: Callable,
-        items: List[tuple],
-    ) -> List[Any]:
+        items: list[tuple],
+    ) -> list[Any]:
         """Execute function with multiple arguments in parallel.
 
         Args:
@@ -122,7 +122,7 @@ class ParallelExecutor:
             results = []
             for future in concurrent.futures.as_completed(
                 futures,
-                timeout=self.config.timeout
+                timeout=self.config.timeout,
             ):
                 try:
                     result = future.result()
@@ -134,9 +134,9 @@ class ParallelExecutor:
 
     def execute_parallel_steps(
         self,
-        steps: List[Callable],
-        inputs: Optional[Dict[str, Any]] = None,
-    ) -> List[Any]:
+        steps: list[Callable],
+        inputs: dict[str, Any] | None = None,
+    ) -> list[Any]:
         """Execute multiple independent steps in parallel.
 
         Args:
@@ -159,7 +159,7 @@ class ParallelExecutor:
             results = []
             for future in concurrent.futures.as_completed(
                 futures,
-                timeout=self.config.timeout
+                timeout=self.config.timeout,
             ):
                 try:
                     result = future.result()
@@ -186,10 +186,10 @@ class ParallelExecutionError:
 
 def parallel_map(
     func: Callable,
-    items: List[Any],
-    max_workers: Optional[int] = None,
+    items: list[Any],
+    max_workers: int | None = None,
     backend: str = "thread",
-) -> List[Any]:
+) -> list[Any]:
     """Quick parallel map function.
 
     Args:
@@ -209,7 +209,7 @@ def parallel_map(
         ```
     """
     executor = ParallelExecutor(max_workers=max_workers, backend=backend)
-    return executor.map(func, items)
+    return executor.map_items(func, items)
 
 
 class DataParallelExecutor:
@@ -221,9 +221,11 @@ class DataParallelExecutor:
 
         executor = DataParallelExecutor(num_partitions=4)
 
+
         @step
         def process_partition(data_partition):
             return train_on_partition(data_partition)
+
 
         results = executor.execute_data_parallel(process_partition, large_dataset)
         ```
@@ -238,7 +240,7 @@ class DataParallelExecutor:
         self.num_partitions = num_partitions
         self.executor = ParallelExecutor(max_workers=num_partitions)
 
-    def partition_data(self, data: Any) -> List[Any]:
+    def partition_data(self, data: Any) -> list[Any]:
         """Partition data for parallel processing.
 
         Args:
@@ -260,7 +262,7 @@ class DataParallelExecutor:
                     partitions.append(data[start:end])
 
                 return partitions
-        except:
+        except Exception:
             pass
 
         # If partitioning fails, return single partition
@@ -270,7 +272,7 @@ class DataParallelExecutor:
         self,
         func: Callable,
         data: Any,
-    ) -> List[Any]:
+    ) -> list[Any]:
         """Execute function on data partitions in parallel.
 
         Args:
@@ -281,12 +283,12 @@ class DataParallelExecutor:
             List of results from each partition
         """
         partitions = self.partition_data(data)
-        return self.executor.map(func, partitions)
+        return self.executor.map_items(func, partitions)
 
     def reduce_results(
         self,
-        results: List[Any],
-        reduce_func: Optional[Callable] = None,
+        results: list[Any],
+        reduce_func: Callable | None = None,
     ) -> Any:
         """Reduce parallel results to single output.
 
@@ -319,15 +321,15 @@ class DataParallelExecutor:
             # Return as-is
             return results
 
-        except:
+        except Exception:
             return results
 
 
 def distribute_across_gpus(
     func: Callable,
-    items: List[Any],
-    gpu_ids: Optional[List[int]] = None,
-) -> List[Any]:
+    items: list[Any],
+    gpu_ids: list[int] | None = None,
+) -> list[Any]:
     """Distribute work across multiple GPUs.
 
     Args:
@@ -342,11 +344,7 @@ def distribute_across_gpus(
         ```python
         from uniflow.core.parallel import distribute_across_gpus
 
-        results = distribute_across_gpus(
-            train_on_gpu,
-            data_shards,
-            gpu_ids=[0, 1, 2, 3]
-        )
+        results = distribute_across_gpus(train_on_gpu, data_shards, gpu_ids=[0, 1, 2, 3])
         ```
     """
     try:
@@ -363,7 +361,6 @@ def distribute_across_gpus(
 
     # Distribute items across GPUs
     num_gpus = len(gpu_ids)
-    results = []
 
     def execute_on_gpu(item_and_gpu):
         item, gpu_id = item_and_gpu
@@ -371,8 +368,9 @@ def distribute_across_gpus(
         if gpu_id >= 0:
             try:
                 import torch
+
                 torch.cuda.set_device(gpu_id)
-            except:
+            except Exception:
                 pass
         return func(item)
 
@@ -381,7 +379,7 @@ def distribute_across_gpus(
 
     # Execute in parallel
     executor = ParallelExecutor(max_workers=num_gpus, backend="process")
-    return executor.map(execute_on_gpu, items_with_gpus)
+    return executor.map_items(execute_on_gpu, items_with_gpus)
 
 
 class BatchExecutor:
@@ -393,17 +391,14 @@ class BatchExecutor:
 
         executor = BatchExecutor(batch_size=32, max_workers=4)
 
-        results = executor.execute_batches(
-            inference_func,
-            large_dataset
-        )
+        results = executor.execute_batches(inference_func, large_dataset)
         ```
     """
 
     def __init__(
         self,
         batch_size: int = 32,
-        max_workers: Optional[int] = None,
+        max_workers: int | None = None,
     ):
         """Initialize batch executor.
 
@@ -414,7 +409,7 @@ class BatchExecutor:
         self.batch_size = batch_size
         self.executor = ParallelExecutor(max_workers=max_workers)
 
-    def create_batches(self, items: List[Any]) -> List[List[Any]]:
+    def create_batches(self, items: list[Any]) -> list[list[Any]]:
         """Create batches from items.
 
         Args:
@@ -425,15 +420,15 @@ class BatchExecutor:
         """
         batches = []
         for i in range(0, len(items), self.batch_size):
-            batch = items[i:i + self.batch_size]
+            batch = items[i : i + self.batch_size]
             batches.append(batch)
         return batches
 
     def execute_batches(
         self,
         func: Callable,
-        items: List[Any],
-    ) -> List[Any]:
+        items: list[Any],
+    ) -> list[Any]:
         """Execute function on batches in parallel.
 
         Args:
@@ -444,7 +439,7 @@ class BatchExecutor:
             List of all results (flattened)
         """
         batches = self.create_batches(items)
-        batch_results = self.executor.map(func, batches)
+        batch_results = self.executor.map_items(func, batches)
 
         # Flatten results
         results = []

@@ -20,7 +20,7 @@ Install support for specific ML frameworks:
 # TensorFlow/Keras support
 pip install uniflow[tensorflow]
 
-# PyTorch support  
+# PyTorch support
 pip install uniflow[pytorch]
 
 # Scikit-learn support
