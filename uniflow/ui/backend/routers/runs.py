@@ -9,11 +9,16 @@ def get_store():
 
 
 @router.get("/")
-async def list_runs(limit: int = 20):
-    """List all runs."""
+async def list_runs(limit: int = 20, project: str = None):
+    """List all runs, optionally filtered by project."""
     try:
         store = get_store()
         runs = store.list_runs(limit=limit)
+
+        # Filter by project if specified
+        if project:
+            runs = [r for r in runs if r.get("project") == project]
+
         return {"runs": runs}
     except Exception as e:
         return {"runs": [], "error": str(e)}

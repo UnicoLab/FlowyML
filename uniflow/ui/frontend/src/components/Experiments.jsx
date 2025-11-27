@@ -7,23 +7,31 @@ import { Button } from './ui/Button';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import { DataView } from './ui/DataView';
+import { useProject } from '../contexts/ProjectContext';
 
 export function Experiments() {
     const [experiments, setExperiments] = useState([]);
     const [loading, setLoading] = useState(true);
+    const { selectedProject } = useProject();
 
     useEffect(() => {
-        fetch('/api/experiments')
-            .then(res => res.json())
-            .then(data => {
+        const fetchExperiments = async () => {
+            setLoading(true);
+            try {
+                const url = selectedProject
+                    ? `/api/experiments?project=${encodeURIComponent(selectedProject)}`
+                    : '/api/experiments';
+                const res = await fetch(url);
+                const data = await res.json();
                 setExperiments(data.experiments || []);
-                setLoading(false);
-            })
-            .catch(err => {
+            } catch (err) {
                 console.error(err);
+            } finally {
                 setLoading(false);
-            });
-    }, []);
+            }
+        };
+        fetchExperiments();
+    }, [selectedProject]);
 
     const columns = [
         {

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, PlayCircle, FolderKanban, FlaskConical, Database, Settings, Trophy, Calendar, MessageSquare, Moon, Sun } from 'lucide-react';
+import { LayoutDashboard, PlayCircle, FolderKanban, FlaskConical, Database, Settings, Trophy, Calendar, MessageSquare, Moon, Sun, Key } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { ProjectSelector } from './ui/ProjectSelector';
 

@@ -5,27 +5,40 @@ import { Card } from './ui/Card';
 import { Badge } from './ui/Badge';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
+import { useProject } from '../contexts/ProjectContext';
 
 export function Dashboard() {
     const [stats, setStats] = useState(null);
     const [recentRuns, setRecentRuns] = useState([]);
     const [loading, setLoading] = useState(true);
+    const { selectedProject } = useProject();
 
     useEffect(() => {
-        Promise.all([
-            fetch('/api/stats').then(res => res.json()),
-            fetch('/api/runs?limit=5').then(res => res.json())
-        ])
-            .then(([statsData, runsData]) => {
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                const statsUrl = selectedProject
+                    ? `/api/stats?project=${encodeURIComponent(selectedProject)}`
+                    : '/api/stats';
+                const runsUrl = selectedProject
+                    ? `/api/runs?limit=5&project=${encodeURIComponent(selectedProject)}`
+                    : '/api/runs?limit=5';
+
+                const [statsData, runsData] = await Promise.all([
+                    fetch(statsUrl).then(res => res.json()),
+                    fetch(runsUrl).then(res => res.json())
+                ]);
+
                 setStats(statsData);
                 setRecentRuns(runsData.runs || []);
-                setLoading(false);
-            })
-            .catch(err => {
+            } catch (err) {
                 console.error(err);
+            } finally {
                 setLoading(false);
-            });
-    }, []);
+            }
+        };
+        fetchData();
+    }, [selectedProject]);
 
     if (loading) {
         return (

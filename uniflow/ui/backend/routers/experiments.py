@@ -9,11 +9,16 @@ def get_store():
 
 
 @router.get("/")
-async def list_experiments():
-    """List all experiments."""
+async def list_experiments(project: str = None):
+    """List all experiments, optionally filtered by project."""
     try:
         store = get_store()
         experiments = store.list_experiments()
+
+        # Filter by project if specified
+        if project:
+            experiments = [e for e in experiments if e.get("project") == project]
+
         return {"experiments": experiments}
     except Exception as e:
         return {"experiments": [], "error": str(e)}

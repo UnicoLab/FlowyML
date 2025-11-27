@@ -1,8 +1,19 @@
 # 🌊 UniFlow - Next-Generation ML Pipeline Framework
 
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+<p align="center">
+  <img src="docs/logo.png" width="350" alt="UniFlow Logo"/>
+  <br>
+  <em> Next-Generation ML Pipeline Framework </em>
+  <br>
+  <br>
+  <p align="center"><strong>Provided and maintained by <a href="https://unicolab.ai">🦄 UnicoLab</a></strong></p>
+</p>
+
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-passing-success.svg)]()
+[![UnicoLab](https://img.shields.io/badge/UnicoLab-ai-red.svg)](https://unicolab.ai)
+---
+
 
 **UniFlow** is a production-ready ML pipeline orchestration framework that combines developer-friendly design with enterprise-grade features. Build, version, schedule, and monitor ML workflows with minimal boilerplate.
 
@@ -35,7 +46,7 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/uniflow/uniflow.git
+git clone https://github.com/UnicoLab/UniFlow.git
 cd uniflow
 
 # Install with Poetry
@@ -536,7 +547,7 @@ uniflow cache clear
 
 - Check [Documentation](docs/)
 - View [Examples](examples/)
-- Report [Issues](https://github.com/uniflow/uniflow/issues)
+- Report [Issues](https://github.com/UnicoLab/UniFlow/issues)
 
 ## 🤝 Contributing
 
@@ -552,13 +563,15 @@ UniFlow is released under the Apache 2.0 License. See [LICENSE](LICENSE) for det
 
 ## 🌟 Community
 
-- [GitHub](https://github.com/uniflow/uniflow)
+- [GitHub](https://github.com/UnicoLab/UniFlow)
 - [Documentation](https://docs.uniflow.ai)
-- [Issues](https://github.com/uniflow/uniflow/issues)
-- [Discussions](https://github.com/uniflow/uniflow/discussions)
+- [Issues](https://github.com/UnicoLab/UniFlow/issues)
+- [Discussions](https://github.com/UnicoLab/UniFlow/discussions)
 
 ---
 
-**Built with ❤️ for the ML community**
 
-*UniFlow - Making ML Pipelines Effortless*
+<p align="center">
+  <strong>Making ML Pipelines Effortless 🧪✨</strong><br>
+  <em>Built with ❤️ for the ML community by <a href="https://unicolab.ai">🦄 UnicoLab</a></em>
+</p>

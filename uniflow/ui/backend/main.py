@@ -54,8 +54,8 @@ app.include_router(execution.router, prefix="/api/execution", tags=["execution"]
 
 # Stats endpoint for dashboard
 @app.get("/api/stats")
-async def get_stats():
-    """Get overall statistics for the dashboard."""
+async def get_stats(project: str = None):
+    """Get overall statistics for the dashboard, optionally filtered by project."""
     try:
         from uniflow.storage.metadata import SQLiteMetadataStore
 
@@ -71,23 +71,51 @@ async def get_stats():
         conn = sqlite3.connect(store.db_path)
         cursor = conn.cursor()
 
-        cursor.execute("SELECT COUNT(*) FROM runs WHERE status = 'completed'")
-        completed_runs = cursor.fetchone()[0]
+        if project:
+            cursor.execute(
+                "SELECT COUNT(*) FROM runs WHERE project = ? AND status = 'completed'",
+                [project],
+            )
+            completed_runs = cursor.fetchone()[0]
 
-        cursor.execute("SELECT COUNT(*) FROM runs WHERE status = 'failed'")
-        failed_runs = cursor.fetchone()[0]
+            cursor.execute(
+                "SELECT COUNT(*) FROM runs WHERE project = ? AND status = 'failed'",
+                [project],
+            )
+            failed_runs = cursor.fetchone()[0]
 
-        cursor.execute("SELECT AVG(duration) FROM runs WHERE duration IS NOT NULL")
-        avg_duration = cursor.fetchone()[0] or 0
+            cursor.execute(
+                "SELECT AVG(duration) FROM runs WHERE project = ? AND duration IS NOT NULL",
+                [project],
+            )
+            avg_duration = cursor.fetchone()[0] or 0
+
+            cursor.execute(
+                "SELECT COUNT(*) FROM runs WHERE project = ?",
+                [project],
+            )
+            total_runs = cursor.fetchone()[0]
+        else:
+            cursor.execute("SELECT COUNT(*) FROM runs WHERE status = 'completed'")
+            completed_runs = cursor.fetchone()[0]
+
+            cursor.execute("SELECT COUNT(*) FROM runs WHERE status = 'failed'")
+            failed_runs = cursor.fetchone()[0]
+
+            cursor.execute("SELECT AVG(duration) FROM runs WHERE duration IS NOT NULL")
+            avg_duration = cursor.fetchone()[0] or 0
+
+            cursor.execute("SELECT COUNT(*) FROM runs")
+            total_runs = cursor.fetchone()[0]
 
         conn.close()
 
         return {
-            "runs": stats.get("total_runs", 0),
+            "runs": total_runs if project else stats.get("total_runs", 0),
             "completed_runs": completed_runs,
             "failed_runs": failed_runs,
-            "pipelines": stats.get("total_pipelines", 0),
-            "artifacts": stats.get("total_artifacts", 0),
+            "pipelines": stats.get("total_pipelines", 0),  # TODO: filter by project
+            "artifacts": stats.get("total_artifacts", 0),  # TODO: filter by project
             "avg_duration": avg_duration,
         }
     except Exception as e:

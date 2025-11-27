@@ -6,13 +6,22 @@ export function ThemeProvider({ children }) {
     const [theme, setTheme] = useState(() => {
         // Check localStorage first
         const savedTheme = localStorage.getItem('uniflow-theme');
-        if (savedTheme) return savedTheme;
+        if (savedTheme) {
+            // Apply immediately before React renders
+            document.documentElement.classList.remove('light', 'dark');
+            document.documentElement.classList.add(savedTheme);
+            return savedTheme;
+        }
 
         // Check system preference
         if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.remove('light');
+            document.documentElement.classList.add('dark');
             return 'dark';
         }
 
+        document.documentElement.classList.remove('dark');
+        document.documentElement.classList.add('light');
         return 'light';
     });
 

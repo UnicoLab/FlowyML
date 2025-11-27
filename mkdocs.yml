@@ -1,23 +1,27 @@
 site_name: UniFlow
 site_description: A lightweight, unified ML pipeline framework.
-site_url: https://github.com/uniflow-ai/uniflow
-repo_url: https://github.com/uniflow-ai/uniflow
-repo_name: uniflow-ai/uniflow
+site_url: https://github.com/UnicoLab/UniFlow
+repo_url: https://github.com/UnicoLab/UniFlow
+repo_name: UniFlow
 
 theme:
   name: material
   palette:
-    - scheme: default
-      primary: indigo
-      accent: purple
+    # Light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: black
+      accent: black
       toggle:
-        icon: material/brightness-7
+        icon: material/toggle-switch-off-outline
         name: Switch to dark mode
-    - scheme: slate
-      primary: indigo
-      accent: purple
+    # Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: teal
       toggle:
-        icon: material/brightness-4
+        icon: material/toggle-switch
         name: Switch to light mode
   features:
     - navigation.tabs
@@ -30,32 +34,76 @@ theme:
 
 plugins:
   - search
+  - autorefs:
+      link_titles: true
   - mkdocstrings:
       handlers:
         python:
-          paths: [.]
+          options:
+            show_root_heading: true
+            show_source: true
+            show_signature_annotations: true
+            # separate_signature: true
+            docstring_style: google
+            merge_init_into_class: true
+            show_category_heading: true
+  - mike:
+      canonical_version: null
+      version_selector: true
+      css_dir: css
+      javascript_dir: js
+      # Copy files instead of creating symlinks (GitHub Pages doesn't follow symlinks)
+      alias_type: copy
+
+  - include-markdown:
+      encoding: ascii
+      preserve_includer_indent: false
+      dedent: false
+      trailing_newlines: true
+      comments: true
+      rewrite_relative_urls: true
+      heading_offset: 0
+      start: <!--start-->
+      end: <!--end-->
+      recursive: true
+
+
+# Disable directory URLs to make relative paths work better
+use_directory_urls: false
+
+extra:
+  version:
+    provider: mike
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/UnicoLab/UniFlow
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/UniFlow/
+
+extra_javascript:
+  - assets/js/fix-image-paths.js
 
 nav:
-  - Home: index.md
-  - Getting Started: getting-started.md
-  - User Guide:
-    - Pipelines: user-guide/pipelines.md
-    - Steps: user-guide/steps.md
-    - Assets & Artifacts: user-guide/artifacts.md
-    - Context & Parameters: user-guide/context.md
-    - Caching: user-guide/caching.md
-    - Model Registry: user-guide/model-registry.md
-    - Monitoring & Alerts: user-guide/monitoring.md
-    - UI Guide: user-guide/ui.md
-    - CLI: user-guide/cli.md
-  - Advanced:
-    - Materializers: advanced/materializers.md
-  - API Reference:
-    - Core: api/core.md
-    - Assets: api/assets.md
-    - Storage: api/storage.md
-  - Reference:
-    - Cheatsheet: reference/cheatsheet.md
-    - Architecture: architecture.md
-    - Contributing: contributing.md
-  - Examples: examples.md
+  - 🏠 Home: index.md
+  - 🚀 Getting Started: getting-started.md
+  - 📚 User Guide:
+    - 🎢 Pipelines: user-guide/pipelines.md
+    - ☊ Steps: user-guide/steps.md
+    - 📦 Assets & Artifacts: user-guide/artifacts.md
+    - 📜 Context & Parameters: user-guide/context.md
+    - 🏪 Caching: user-guide/caching.md
+    - 🤖 Model Registry: user-guide/model-registry.md
+    - 🚨 Monitoring & Alerts: user-guide/monitoring.md
+    - 💻 UI Guide: user-guide/ui.md
+    - 🛠 CLI: user-guide/cli.md
+  - 📚 Advanced:
+    - 📦 Materializers: advanced/materializers.md
+  - 📚 API Reference:
+    - 🤩 Core: api/core.md
+    - 📦 Assets: api/assets.md
+    - 🗂️ Storage: api/storage.md
+  - 📚 Reference:
+    - 📚 Cheatsheet: reference/cheatsheet.md
+    - 🏗️ Architecture: architecture.md
+    - 🤝 Contributing: contributing.md
+  - 📚 Examples: examples.md

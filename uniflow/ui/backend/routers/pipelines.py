@@ -13,11 +13,19 @@ def get_store():
 
 
 @router.get("/")
-async def list_pipelines():
-    """List all unique pipelines."""
+async def list_pipelines(project: str = None):
+    """List all unique pipelines, optionally filtered by project."""
     try:
         store = get_store()
         pipelines = store.list_pipelines()
+
+        # Filter by project if specified
+        if project:
+            # Get all runs and filter pipelines that have runs in this project
+            all_runs = store.list_runs(limit=1000)
+            project_pipeline_names = {r.get("pipeline_name") for r in all_runs if r.get("project") == project}
+            pipelines = [p for p in pipelines if p in project_pipeline_names]
+
         return {"pipelines": pipelines}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

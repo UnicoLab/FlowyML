@@ -1,9 +1,23 @@
-# Welcome to UniFlow 🌊
+# 🌊 Welcome to UniFlow
+
+<p align="center">
+  <img src="logo.png" width="350" alt="UniFlow Logo"/>
+  <br>
+  <em> Next-Generation ML Pipeline Framework </em>
+  <br>
+  <br>
+  <p align="center"><strong>Provided and maintained by <a href="https://unicolab.ai">🦄 UnicoLab</a></strong></p>
+</p>
+
+<p align="center">
+  [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+  [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/UnicoLab/UniFlow/blob/main/LICENSE)
+  [![UnicoLab](https://img.shields.io/badge/UnicoLab-ai-red.svg)](https://unicolab.ai)
+</p>
+
+---
 
 **UniFlow** is a modern, lightweight framework for building, running, and monitoring machine learning pipelines. It combines the simplicity of a library with the power of a full-fledged MLOps platform.
-
-[![PyPI version](https://badge.fury.io/py/uniflow.svg)](https://badge.fury.io/py/uniflow)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 ## Why UniFlow? 🚀
 
@@ -88,5 +102,12 @@ Ready to dive in?
 ## Community 🤝
 
 Join the UniFlow community!
-- [GitHub Repository](https://github.com/uniflow-ai/uniflow)
-- [Issue Tracker](https://github.com/uniflow-ai/uniflow/issues)
+- [GitHub Repository](https://github.com/UnicoLab/UniFlow)
+- [Issue Tracker](https://github.com/UnicoLab/UniFlow/issues)
+
+---
+
+<p align="center">
+  <strong>Making ML Pipelines Effortless 🧪✨</strong><br>
+  <em>Built with ❤️ for the ML community by <a href="https://unicolab.ai">🦄 UnicoLab</a></em>
+</p>
