@@ -8,16 +8,26 @@ manager = ProjectManager()
 @router.get("/")
 async def list_projects():
     """List all projects."""
-    projects = manager.list_projects()
-    return projects
+    try:
+        projects = manager.list_projects()
+        return projects
+    except Exception as e:
+        print(f"Error listing projects: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+from pydantic import BaseModel
+
+class ProjectCreate(BaseModel):
+    name: str
+    description: str = ""
 
 @router.post("/")
-async def create_project(name: str, description: str = ""):
+async def create_project(project: ProjectCreate):
     """Create a new project."""
-    project = manager.create_project(name, description)
+    created_project = manager.create_project(project.name, project.description)
     return {
-        "name": project.name,
-        "description": project.description,
+        "name": created_project.name,
+        "description": created_project.description,
         "created": True
     }
 

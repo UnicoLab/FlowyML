@@ -14,9 +14,13 @@ def get_store():
 @router.get("/")
 async def list_pipelines():
     """List all unique pipelines."""
-    store = get_store()
-    pipelines = store.list_pipelines()
-    return {"pipelines": pipelines}
+    try:
+        store = get_store()
+        pipelines = store.list_pipelines()
+        return {"pipelines": pipelines}
+    except Exception as e:
+        print(f"Error listing pipelines: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/{pipeline_name}/runs")
 async def list_pipeline_runs(pipeline_name: str, limit: int = 10):

@@ -223,7 +223,8 @@ class ProjectManager:
         
     def create_project(self, name: str, description: str = "") -> Project:
         """Create a new project."""
-        project = Project(name, description, str(self.projects_dir.parent))
+        # Fix: Pass the projects directory itself, not the parent
+        project = Project(name, description, str(self.projects_dir))
         print(f"✨ Created project: {name}")
         return project
         
@@ -232,18 +233,25 @@ class ProjectManager:
         project_dir = self.projects_dir / name
         if not project_dir.exists():
             return None
-        return Project(name, projects_dir=str(self.projects_dir.parent))
+        # Fix: Pass the projects directory itself
+        return Project(name, projects_dir=str(self.projects_dir))
         
     def list_projects(self) -> List[Dict[str, Any]]:
         """List all projects."""
         projects = []
+        if not self.projects_dir.exists():
+            return projects
+            
         for project_dir in self.projects_dir.iterdir():
             if project_dir.is_dir():
                 metadata_file = project_dir / "project.json"
                 if metadata_file.exists():
-                    with open(metadata_file, 'r') as f:
-                        metadata = json.load(f)
-                        projects.append(metadata)
+                    try:
+                        with open(metadata_file, 'r') as f:
+                            metadata = json.load(f)
+                            projects.append(metadata)
+                    except Exception as e:
+                        print(f"⚠️  Failed to load project metadata for {project_dir.name}: {e}")
         return projects
         
     def delete_project(self, name: str, confirm: bool = False):

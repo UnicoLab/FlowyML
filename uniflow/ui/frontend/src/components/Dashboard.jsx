@@ -65,7 +65,7 @@ export function Dashboard() {
                 <div className="relative z-10">
                     <div className="flex items-center gap-3 mb-3">
                         <Zap size={32} className="text-yellow-300" />
-                        <h1 className="text-4xl font-bold">Welcome to Flowy</h1>
+                        <h1 className="text-4xl font-bold">Welcome to UniFlow</h1>
                     </div>
                     <p className="text-primary-100 text-lg max-w-2xl">
                         Your lightweight, artifact-centric ML orchestration platform. Build, run, and track your ML pipelines with ease.

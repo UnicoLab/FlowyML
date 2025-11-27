@@ -4,11 +4,10 @@ import { Layers, Play, Clock, CheckCircle, XCircle, TrendingUp, Calendar, Activi
 import { Card } from './ui/Card';
 import { Badge } from './ui/Badge';
 import { format } from 'date-fns';
-import { motion } from 'framer-motion';
+import { DataView } from './ui/DataView';
 
 export function Pipelines() {
     const [pipelines, setPipelines] = useState([]);
-    const [pipelineStats, setPipelineStats] = useState({});
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -22,8 +21,7 @@ export function Pipelines() {
                 const runsData = await runsRes.json();
 
                 // Calculate stats for each pipeline
-                const stats = {};
-                pipelinesData.pipelines.forEach(pipeline => {
+                const pipelinesWithStats = pipelinesData.pipelines.map(pipeline => {
                     const pipelineRuns = runsData.runs.filter(r => r.pipeline_name === pipeline);
                     const completedRuns = pipelineRuns.filter(r => r.status === 'completed');
                     const failedRuns = pipelineRuns.filter(r => r.status === 'failed');
@@ -35,7 +33,8 @@ export function Pipelines() {
                         ? pipelineRuns.sort((a, b) => new Date(b.start_time) - new Date(a.start_time))[0]
                         : null;
 
-                    stats[pipeline] = {
+                    return {
+                        name: pipeline,
                         totalRuns: pipelineRuns.length,
                         completedRuns: completedRuns.length,
                         failedRuns: failedRuns.length,
@@ -45,8 +44,7 @@ export function Pipelines() {
                     };
                 });
 
-                setPipelines(pipelinesData.pipelines);
-                setPipelineStats(stats);
+                setPipelines(pipelinesWithStats);
                 setLoading(false);
             } catch (err) {
                 console.error(err);
@@ -57,119 +55,100 @@ export function Pipelines() {
         fetchData();
     }, []);
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-96">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-            </div>
-        );
-    }
-
-    const container = {
-        hidden: { opacity: 0 },
-        show: {
-            opacity: 1,
-            transition: {
-                staggerChildren: 0.1
-            }
-        }
-    };
-
-    const item = {
-        hidden: { opacity: 0, y: 20 },
-        show: { opacity: 1, y: 0 }
-    };
-
-    return (
-        <motion.div
-            initial="hidden"
-            animate="show"
-            variants={container}
-            className="space-y-6"
-        >
-            {/* Header */}
-            <motion.div variants={item}>
-                <div className="flex items-center gap-3 mb-2">
-                    <div className="p-2 bg-gradient-to-br from-primary-500 to-purple-500 rounded-lg">
-                        <Layers className="text-white" size={24} />
+    const columns = [
+        {
+            header: 'Pipeline',
+            key: 'name',
+            sortable: true,
+            render: (item) => (
+                <div className="flex items-center gap-3">
+                    <div className="p-2 bg-gradient-to-br from-primary-500 to-purple-500 rounded-lg text-white">
+                        <Layers size={16} />
                     </div>
-                    <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Pipelines</h2>
+                    <span className="font-medium text-slate-900 dark:text-white">{item.name}</span>
                 </div>
-                <p className="text-slate-500 mt-2">Manage and monitor your ML pipeline definitions</p>
-            </motion.div>
-
-            {/* Pipelines Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {pipelines.length > 0 ? (
-                    pipelines.map((pipeline, index) => (
-                        <PipelineCard
-                            key={pipeline}
-                            pipeline={pipeline}
-                            stats={pipelineStats[pipeline]}
-                            index={index}
-                        />
-                    ))
-                ) : (
-                    <motion.div variants={item} className="col-span-full">
-                        <Card className="p-16 text-center border-dashed border-2">
-                            <div className="mx-auto w-20 h-20 bg-slate-100 rounded-2xl flex items-center justify-center mb-6">
-                                <Layers className="text-slate-400" size={32} />
-                            </div>
-                            <h3 className="text-xl font-bold text-slate-900 mb-2">No pipelines found</h3>
-                            <p className="text-slate-500 max-w-md mx-auto">
-                                Create your first pipeline by defining steps and running them with Flowy
-                            </p>
-                        </Card>
-                    </motion.div>
-                )}
-            </div>
-        </motion.div>
-    );
-}
-
-function PipelineCard({ pipeline, stats, index }) {
-    const successRate = stats?.successRate || 0;
-    const statusColor = successRate >= 80 ? 'emerald' : successRate >= 50 ? 'amber' : 'rose';
-
-    const colorClasses = {
-        emerald: {
-            bg: 'bg-emerald-50',
-            text: 'text-emerald-600',
-            border: 'border-emerald-200',
-            ring: 'ring-emerald-400'
+            )
         },
-        amber: {
-            bg: 'bg-amber-50',
-            text: 'text-amber-600',
-            border: 'border-amber-200',
-            ring: 'ring-amber-400'
+        {
+            header: 'Success Rate',
+            key: 'successRate',
+            sortable: true,
+            render: (item) => {
+                const rate = item.successRate;
+                const color = rate >= 80 ? 'text-emerald-600 bg-emerald-50' : rate >= 50 ? 'text-amber-600 bg-amber-50' : 'text-rose-600 bg-rose-50';
+                return (
+                    <span className={`px-2 py-1 rounded text-xs font-semibold ${color}`}>
+                        {rate.toFixed(0)}%
+                    </span>
+                );
+            }
         },
-        rose: {
-            bg: 'bg-rose-50',
-            text: 'text-rose-600',
-            border: 'border-rose-200',
-            ring: 'ring-rose-400'
+        {
+            header: 'Total Runs',
+            key: 'totalRuns',
+            sortable: true,
+            render: (item) => (
+                <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+                    <Activity size={14} />
+                    {item.totalRuns}
+                </div>
+            )
+        },
+        {
+            header: 'Avg Duration',
+            key: 'avgDuration',
+            sortable: true,
+            render: (item) => (
+                <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+                    <Clock size={14} />
+                    {item.avgDuration > 0 ? `${item.avgDuration.toFixed(1)}s` : '-'}
+                </div>
+            )
+        },
+        {
+            header: 'Last Run',
+            key: 'lastRun',
+            render: (item) => item.lastRun ? (
+                <div className="text-sm text-slate-500">
+                    {format(new Date(item.lastRun.start_time), 'MMM d, HH:mm')}
+                </div>
+            ) : '-'
+        },
+        {
+            header: 'Actions',
+            key: 'actions',
+            render: (item) => (
+                <Link
+                    to={`/runs?pipeline=${encodeURIComponent(item.name)}`}
+                    className="text-primary-600 hover:text-primary-700 font-medium text-sm flex items-center gap-1"
+                >
+                    View Runs <ArrowRight size={14} />
+                </Link>
+            )
         }
-    };
+    ];
 
-    const colors = colorClasses[statusColor];
+    const renderGrid = (item) => {
+        const successRate = item.successRate || 0;
+        const statusColor = successRate >= 80 ? 'emerald' : successRate >= 50 ? 'amber' : 'rose';
 
-    return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-        >
-            <Card className="group cursor-pointer hover:shadow-xl hover:border-primary-300 transition-all duration-200 overflow-hidden">
-                {/* Header */}
+        const colorClasses = {
+            emerald: { bg: 'bg-emerald-50', text: 'text-emerald-600' },
+            amber: { bg: 'bg-amber-50', text: 'text-amber-600' },
+            rose: { bg: 'bg-rose-50', text: 'text-rose-600' }
+        };
+        const colors = colorClasses[statusColor];
+
+        return (
+            <Card className="group cursor-pointer hover:shadow-xl hover:border-primary-300 transition-all duration-200 overflow-hidden h-full">
                 <div className="flex items-start justify-between mb-4">
                     <div className="p-3 bg-gradient-to-br from-primary-500 to-purple-500 rounded-xl text-white group-hover:scale-110 transition-transform shadow-lg">
                         <Layers size={24} />
                     </div>
                     <div className="flex flex-col items-end gap-1">
-                        {stats?.totalRuns > 0 && (
+                        {item.totalRuns > 0 && (
                             <Badge variant="secondary" className="text-xs bg-slate-100 text-slate-600">
-                                {stats.totalRuns} runs
+                                {item.totalRuns} runs
                             </Badge>
                         )}
                         {successRate > 0 && (
@@ -180,66 +159,64 @@ function PipelineCard({ pipeline, stats, index }) {
                     </div>
                 </div>
 
-                {/* Pipeline Name */}
-                <h3 className="text-lg font-bold text-slate-900 mb-3 group-hover:text-primary-600 transition-colors">
-                    {pipeline}
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-3 group-hover:text-primary-600 transition-colors">
+                    {item.name}
                 </h3>
 
-                {/* Stats Grid */}
-                {stats && (
-                    <div className="grid grid-cols-2 gap-3 mb-4">
-                        <StatItem
-                            icon={<Activity size={14} />}
-                            label="Total"
-                            value={stats.totalRuns}
-                            color="blue"
-                        />
-                        <StatItem
-                            icon={<CheckCircle size={14} />}
-                            label="Success"
-                            value={stats.completedRuns}
-                            color="emerald"
-                        />
-                        <StatItem
-                            icon={<Clock size={14} />}
-                            label="Avg Time"
-                            value={stats.avgDuration > 0 ? `${stats.avgDuration.toFixed(1)}s` : '-'}
-                            color="purple"
-                        />
-                        <StatItem
-                            icon={<XCircle size={14} />}
-                            label="Failed"
-                            value={stats.failedRuns}
-                            color="rose"
-                        />
-                    </div>
-                )}
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                    <StatItem icon={<Activity size={14} />} label="Total" value={item.totalRuns} color="blue" />
+                    <StatItem icon={<CheckCircle size={14} />} label="Success" value={item.completedRuns} color="emerald" />
+                    <StatItem icon={<Clock size={14} />} label="Avg Time" value={item.avgDuration > 0 ? `${item.avgDuration.toFixed(1)}s` : '-'} color="purple" />
+                    <StatItem icon={<XCircle size={14} />} label="Failed" value={item.failedRuns} color="rose" />
+                </div>
 
-                {/* Last Run */}
-                {stats?.lastRun && (
-                    <div className="pt-4 border-t border-slate-100">
+                {item.lastRun && (
+                    <div className="pt-4 border-t border-slate-100 dark:border-slate-700">
                         <div className="flex items-center justify-between text-xs">
                             <span className="text-slate-500 flex items-center gap-1">
                                 <Calendar size={12} />
                                 Last run
                             </span>
-                            <span className="text-slate-700 font-medium">
-                                {format(new Date(stats.lastRun.start_time), 'MMM d, HH:mm')}
+                            <span className="text-slate-700 dark:text-slate-300 font-medium">
+                                {format(new Date(item.lastRun.start_time), 'MMM d, HH:mm')}
                             </span>
                         </div>
                     </div>
                 )}
 
-                {/* View Runs Link */}
                 <Link
-                    to={`/runs?pipeline=${encodeURIComponent(pipeline)}`}
-                    className="mt-4 flex items-center justify-center gap-2 py-2 px-4 bg-slate-50 hover:bg-primary-50 text-slate-700 hover:text-primary-600 rounded-lg transition-all group-hover:bg-primary-50"
+                    to={`/runs?pipeline=${encodeURIComponent(item.name)}`}
+                    className="mt-4 flex items-center justify-center gap-2 py-2 px-4 bg-slate-50 dark:bg-slate-700 hover:bg-primary-50 dark:hover:bg-primary-900/20 text-slate-700 dark:text-slate-200 hover:text-primary-600 rounded-lg transition-all group-hover:bg-primary-50"
                 >
                     <span className="text-sm font-semibold">View Runs</span>
                     <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
                 </Link>
             </Card>
-        </motion.div>
+        );
+    };
+
+    return (
+        <div className="p-6 max-w-7xl mx-auto">
+            <DataView
+                title="Pipelines"
+                subtitle="Manage and monitor your ML pipeline definitions"
+                items={pipelines}
+                loading={loading}
+                columns={columns}
+                renderGrid={renderGrid}
+                emptyState={
+                    <div className="text-center py-16 bg-slate-50 dark:bg-slate-800/30 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700">
+                        <div className="mx-auto w-20 h-20 bg-slate-100 dark:bg-slate-700 rounded-2xl flex items-center justify-center mb-6">
+                            <Layers className="text-slate-400" size={32} />
+                        </div>
+                        <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">No pipelines found</h3>
+                        <p className="text-slate-500 max-w-md mx-auto">
+                            Create your first pipeline by defining steps and running them with UniFlow
+                        </p>
+                    </div>
+                }
+            />
+        </div>
     );
 }
 
@@ -258,7 +235,7 @@ function StatItem({ icon, label, value, color }) {
             </div>
             <div>
                 <p className="text-xs text-slate-500">{label}</p>
-                <p className="text-sm font-bold text-slate-900">{value}</p>
+                <p className="text-sm font-bold text-slate-900 dark:text-white">{value}</p>
             </div>
         </div>
     );

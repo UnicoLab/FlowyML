@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Play, Clock, CheckCircle, XCircle, Loader, Calendar, TrendingUp, Activity } from 'lucide-react';
+import { Play, Clock, CheckCircle, XCircle, Loader, Calendar, TrendingUp, Activity, ArrowRight } from 'lucide-react';
 import { Card } from './ui/Card';
 import { Badge } from './ui/Badge';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
+import { DataView } from './ui/DataView';
 
 export function Runs() {
     const [runs, setRuns] = useState([]);
@@ -36,19 +37,161 @@ export function Runs() {
         running: runs.filter(r => r.status === 'running').length,
     };
 
-    const container = {
-        hidden: { opacity: 0 },
-        show: {
-            opacity: 1,
-            transition: {
-                staggerChildren: 0.05
+    const columns = [
+        {
+            header: 'Status',
+            key: 'status',
+            sortable: true,
+            render: (run) => {
+                const statusConfig = {
+                    completed: { icon: <CheckCircle size={16} />, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+                    failed: { icon: <XCircle size={16} />, color: 'text-rose-500', bg: 'bg-rose-50' },
+                    running: { icon: <Loader size={16} className="animate-spin" />, color: 'text-amber-500', bg: 'bg-amber-50' }
+                };
+                const config = statusConfig[run.status] || statusConfig.completed;
+                return (
+                    <div className={`flex items-center gap-2 px-2 py-1 rounded-md w-fit ${config.bg} ${config.color}`}>
+                        {config.icon}
+                        <span className="capitalize text-xs font-medium">{run.status}</span>
+                    </div>
+                );
             }
+        },
+        {
+            header: 'Pipeline',
+            key: 'pipeline_name',
+            sortable: true,
+            render: (run) => (
+                <span className="font-medium text-slate-900 dark:text-white">{run.pipeline_name}</span>
+            )
+        },
+        {
+            header: 'Run ID',
+            key: 'run_id',
+            render: (run) => (
+                <span className="font-mono text-xs bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded text-slate-600 dark:text-slate-300">
+                    {run.run_id.substring(0, 8)}...
+                </span>
+            )
+        },
+        {
+            header: 'Start Time',
+            key: 'start_time',
+            sortable: true,
+            render: (run) => (
+                <div className="flex items-center gap-2 text-slate-500">
+                    <Calendar size={14} />
+                    {run.start_time ? format(new Date(run.start_time), 'MMM d, HH:mm:ss') : '-'}
+                </div>
+            )
+        },
+        {
+            header: 'Duration',
+            key: 'duration',
+            sortable: true,
+            render: (run) => (
+                <div className="flex items-center gap-2 text-slate-500">
+                    <Clock size={14} />
+                    {run.duration ? `${run.duration.toFixed(2)}s` : '-'}
+                </div>
+            )
+        },
+        {
+            header: 'Actions',
+            key: 'actions',
+            render: (run) => (
+                <Link
+                    to={`/runs/${run.run_id}`}
+                    className="text-primary-600 hover:text-primary-700 font-medium text-sm flex items-center gap-1"
+                >
+                    Details <ArrowRight size={14} />
+                </Link>
+            )
         }
-    };
+    ];
 
-    const item = {
-        hidden: { opacity: 0, y: 20 },
-        show: { opacity: 1, y: 0 }
+    const renderGrid = (run) => {
+        const statusConfig = {
+            completed: {
+                icon: <CheckCircle size={20} />,
+                color: 'text-emerald-500',
+                bg: 'bg-emerald-50',
+                border: 'border-emerald-200',
+                badge: 'success'
+            },
+            failed: {
+                icon: <XCircle size={20} />,
+                color: 'text-rose-500',
+                bg: 'bg-rose-50',
+                border: 'border-rose-200',
+                badge: 'danger'
+            },
+            running: {
+                icon: <Loader size={20} className="animate-spin" />,
+                color: 'text-amber-500',
+                bg: 'bg-amber-50',
+                border: 'border-amber-200',
+                badge: 'warning'
+            }
+        };
+
+        const config = statusConfig[run.status] || statusConfig.completed;
+
+        return (
+            <Link to={`/runs/${run.run_id}`}>
+                <Card className={`group hover:shadow-lg transition-all duration-200 border-l-4 ${config.border} hover:border-l-primary-400 h-full`}>
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                            <div className={`p-2 rounded-lg ${config.bg} ${config.color}`}>
+                                {config.icon}
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-slate-900 dark:text-white truncate max-w-[150px]" title={run.pipeline_name}>
+                                    {run.pipeline_name}
+                                </h3>
+                                <div className="text-xs text-slate-500 font-mono">
+                                    {run.run_id.substring(0, 8)}
+                                </div>
+                            </div>
+                        </div>
+                        <Badge variant={config.badge} className="text-xs uppercase tracking-wide">
+                            {run.status}
+                        </Badge>
+                    </div>
+
+                    <div className="space-y-2 text-sm text-slate-500 dark:text-slate-400">
+                        <div className="flex items-center justify-between">
+                            <span className="flex items-center gap-2"><Calendar size={14} /> Started</span>
+                            <span>{run.start_time ? format(new Date(run.start_time), 'MMM d, HH:mm') : '-'}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span className="flex items-center gap-2"><Clock size={14} /> Duration</span>
+                            <span>{run.duration ? `${run.duration.toFixed(2)}s` : '-'}</span>
+                        </div>
+                    </div>
+
+                    {/* Steps Progress */}
+                    {run.steps && (
+                        <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+                            <div className="flex justify-between text-xs mb-1">
+                                <span className="text-slate-500">Progress</span>
+                                <span className="font-medium text-slate-900 dark:text-white">
+                                    {Object.values(run.steps).filter(s => s.success).length} / {Object.keys(run.steps).length}
+                                </span>
+                            </div>
+                            <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                                <div
+                                    className={`h-full ${config.color.replace('text-', 'bg-')} transition-all duration-300`}
+                                    style={{
+                                        width: `${(Object.values(run.steps).filter(s => s.success).length / Object.keys(run.steps).length) * 100}%`
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    )}
+                </Card>
+            </Link>
+        );
     };
 
     if (loading) {
@@ -60,25 +203,9 @@ export function Runs() {
     }
 
     return (
-        <motion.div
-            initial="hidden"
-            animate="show"
-            variants={container}
-            className="space-y-8"
-        >
-            {/* Header */}
-            <motion.div variants={item}>
-                <div className="flex items-center gap-3 mb-2">
-                    <div className="p-2 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg">
-                        <Activity className="text-white" size={24} />
-                    </div>
-                    <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Pipeline Runs</h2>
-                </div>
-                <p className="text-slate-500 mt-2">Monitor and track all your pipeline executions</p>
-            </motion.div>
-
+        <div className="p-6 max-w-7xl mx-auto space-y-8">
             {/* Stats Cards */}
-            <motion.div variants={item} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <StatsCard
                     label="Total Runs"
                     value={stats.total}
@@ -111,30 +238,32 @@ export function Runs() {
                     active={filter === 'running'}
                     onClick={() => setFilter('running')}
                 />
-            </motion.div>
+            </div>
 
-            {/* Runs List */}
-            <motion.div variants={item} className="space-y-3">
-                {filteredRuns.length > 0 ? (
-                    filteredRuns.map((run, index) => (
-                        <RunCard key={run.run_id} run={run} index={index} />
-                    ))
-                ) : (
-                    <Card className="p-16 text-center border-dashed border-2">
-                        <div className="mx-auto w-20 h-20 bg-slate-100 rounded-2xl flex items-center justify-center mb-6">
+            <DataView
+                title="Pipeline Runs"
+                subtitle="Monitor and track all your pipeline executions"
+                items={filteredRuns}
+                loading={loading}
+                columns={columns}
+                renderGrid={renderGrid}
+                initialView="table" // Default to table for runs as it's usually more useful
+                emptyState={
+                    <div className="text-center py-16 bg-slate-50 dark:bg-slate-800/30 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700">
+                        <div className="mx-auto w-20 h-20 bg-slate-100 dark:bg-slate-700 rounded-2xl flex items-center justify-center mb-6">
                             <Activity className="text-slate-400" size={32} />
                         </div>
-                        <h3 className="text-xl font-bold text-slate-900 mb-2">No runs found</h3>
+                        <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">No runs found</h3>
                         <p className="text-slate-500 max-w-md mx-auto">
                             {filter === 'all'
                                 ? 'Run a pipeline to see it here'
                                 : `No ${filter} runs found. Try a different filter.`
                             }
                         </p>
-                    </Card>
-                )}
-            </motion.div>
-        </motion.div>
+                    </div>
+                }
+            />
+        </div>
     );
 }
 
@@ -181,115 +310,12 @@ function StatsCard({ label, value, icon, color, active, onClick }) {
             <div className="flex items-center justify-between">
                 <div>
                     <p className="text-sm text-slate-500 font-medium mb-1">{label}</p>
-                    <p className="text-3xl font-bold text-slate-900">{value}</p>
+                    <p className="text-3xl font-bold text-slate-900 dark:text-white">{value}</p>
                 </div>
                 <div className={`p-3 rounded-xl ${active ? colors.activeBg : colors.bg} ${colors.text}`}>
                     {icon}
                 </div>
             </div>
         </Card>
-    );
-}
-
-function RunCard({ run, index }) {
-    const statusConfig = {
-        completed: {
-            icon: <CheckCircle size={20} />,
-            color: 'text-emerald-500',
-            bg: 'bg-emerald-50',
-            border: 'border-emerald-200',
-            badge: 'success'
-        },
-        failed: {
-            icon: <XCircle size={20} />,
-            color: 'text-rose-500',
-            bg: 'bg-rose-50',
-            border: 'border-rose-200',
-            badge: 'danger'
-        },
-        running: {
-            icon: <Loader size={20} className="animate-spin" />,
-            color: 'text-amber-500',
-            bg: 'bg-amber-50',
-            border: 'border-amber-200',
-            badge: 'warning'
-        }
-    };
-
-    const config = statusConfig[run.status] || statusConfig.completed;
-
-    return (
-        <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: index * 0.05 }}
-        >
-            <Link to={`/runs/${run.run_id}`}>
-                <Card className={`group hover:shadow-lg transition-all duration-200 border-l-4 ${config.border} hover:border-l-primary-400`}>
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4 flex-1 min-w-0">
-                            {/* Status Icon */}
-                            <div className={`p-3 rounded-xl ${config.bg} ${config.color} group-hover:scale-110 transition-transform`}>
-                                {config.icon}
-                            </div>
-
-                            {/* Run Info */}
-                            <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-3 mb-1">
-                                    <h3 className="text-lg font-bold text-slate-900 truncate">
-                                        {run.pipeline_name}
-                                    </h3>
-                                    <Badge variant={config.badge} className="text-xs uppercase tracking-wide">
-                                        {run.status}
-                                    </Badge>
-                                </div>
-                                <div className="flex items-center gap-4 text-sm text-slate-500">
-                                    <span className="font-mono text-xs bg-slate-100 px-2 py-0.5 rounded">
-                                        {run.run_id.substring(0, 12)}
-                                    </span>
-                                    {run.start_time && (
-                                        <span className="flex items-center gap-1">
-                                            <Calendar size={14} />
-                                            {format(new Date(run.start_time), 'MMM d, HH:mm:ss')}
-                                        </span>
-                                    )}
-                                    {run.duration && (
-                                        <span className="flex items-center gap-1">
-                                            <Clock size={14} />
-                                            {run.duration.toFixed(2)}s
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Steps Progress */}
-                        {run.steps && (
-                            <div className="hidden md:flex items-center gap-2 px-4">
-                                <div className="text-right">
-                                    <p className="text-xs text-slate-500 font-medium">Steps</p>
-                                    <p className="text-sm font-bold text-slate-900">
-                                        {Object.values(run.steps).filter(s => s.success).length} / {Object.keys(run.steps).length}
-                                    </p>
-                                </div>
-                                <div className="w-16 h-2 bg-slate-100 rounded-full overflow-hidden">
-                                    <div
-                                        className={`h-full ${config.color.replace('text-', 'bg-')} transition-all duration-300`}
-                                        style={{
-                                            width: `${(Object.values(run.steps).filter(s => s.success).length / Object.keys(run.steps).length) * 100}%`
-                                        }}
-                                    />
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Arrow */}
-                        <div className="ml-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Play size={20} className="text-primary-400" />
-                        </div>
-                    </div>
-                </Card>
-            </Link>
-        </motion.div>
     );
 }

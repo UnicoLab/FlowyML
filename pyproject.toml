@@ -46,6 +46,7 @@ ui = [
     "fastapi>=0.100.0",
     "uvicorn[standard]>=0.23.0",
     "websockets>=11.0",
+    "python-multipart>=0.0.6",
 ]
 all = [
     "torch>=2.0.0",
@@ -56,6 +57,7 @@ all = [
     "fastapi>=0.100.0",
     "uvicorn[standard]>=0.23.0",
     "websockets>=11.0",
+    "python-multipart>=0.0.6",
 ]
 dev = [
     "pytest>=7.0.0",
@@ -104,3 +106,7 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_functions = ["test_*"]
 addopts = "-v --cov=uniflow --cov-report=term-missing"
+
+[tool.poetry.group.ui.dependencies]
+python-multipart = "^0.0.20"
+

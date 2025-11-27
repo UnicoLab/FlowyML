@@ -117,6 +117,7 @@ class Pipeline:
         enable_cache: bool = True,
         cache_dir: Optional[str] = None,
         stack: Optional[Any] = None,  # Stack instance
+        project: Optional[str] = None, # Project name to attach to
     ):
         """
         Args:
@@ -126,6 +127,7 @@ class Pipeline:
         enable_cache: Whether to enable caching
         cache_dir: Optional directory for cache
         stack: Optional stack instance to run on
+        project: Optional project name to attach this pipeline to
         """
         self.name = name
         self.context = context or Context()
@@ -155,6 +157,27 @@ class Pipeline:
             # Metadata store for UI integration
             from uniflow.storage.metadata import SQLiteMetadataStore
             self.metadata_store = SQLiteMetadataStore()
+            
+        # Handle Project Attachment
+        if project:
+            from uniflow.core.project import ProjectManager
+            manager = ProjectManager()
+            # Get or create project
+            proj = manager.get_project(project)
+            if not proj:
+                proj = manager.create_project(project)
+                print(f"✨ Created new project: {project}")
+            
+            # Configure pipeline with project settings
+            self.runs_dir = proj.runs_dir
+            self.metadata_store = proj.metadata_store
+            
+            # Register pipeline with project
+            if name not in proj.metadata['pipelines']:
+                proj.metadata['pipelines'].append(name)
+                proj._save_metadata()
+                
+            print(f"🔗 Attached pipeline '{name}' to project '{project}'")
         
         # State
         self._built = False

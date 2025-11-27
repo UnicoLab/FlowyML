@@ -54,7 +54,22 @@ export default function Leaderboard() {
             ) : !data || data.models.length === 0 ? (
                 <div className="text-center py-12 bg-gray-800/30 rounded-lg border-2 border-dashed border-gray-700">
                     <Trophy className="w-12 h-12 mx-auto text-gray-600 mb-4" />
-                    <p className="text-gray-400">No models found for metric: {metric}</p>
+                    <p className="text-gray-400 mb-4">No models found for metric: {metric}</p>
+                    <button
+                        onClick={async () => {
+                            setLoading(true);
+                            try {
+                                await fetch('/api/leaderboard/generate_sample_data', { method: 'POST' });
+                                fetchLeaderboard();
+                            } catch (error) {
+                                console.error('Failed to generate sample data:', error);
+                                setLoading(false);
+                            }
+                        }}
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white transition-colors text-sm"
+                    >
+                        Generate Sample Data
+                    </button>
                 </div>
             ) : (
                 <div className="bg-gray-800/50 rounded-lg border border-gray-700 overflow-hidden">
@@ -98,7 +113,7 @@ export default function Leaderboard() {
                                         {model.run_id.substring(0, 8)}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
-                                        {format(new Date(model.timestamp), 'MMM d, HH:mm')}
+                                        {model.timestamp ? format(new Date(model.timestamp), 'MMM d, HH:mm') : '-'}
                                     </td>
                                 </tr>
                             ))}
