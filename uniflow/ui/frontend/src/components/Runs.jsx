@@ -6,24 +6,32 @@ import { Badge } from './ui/Badge';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import { DataView } from './ui/DataView';
+import { useProject } from '../contexts/ProjectContext';
 
 export function Runs() {
     const [runs, setRuns] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all'); // all, completed, failed, running
+    const { selectedProject } = useProject();
 
     useEffect(() => {
-        fetch('/api/runs')
-            .then(res => res.json())
-            .then(data => {
+        const fetchRuns = async () => {
+            setLoading(true);
+            try {
+                const url = selectedProject
+                    ? `/api/runs?project=${encodeURIComponent(selectedProject)}`
+                    : '/api/runs';
+                const res = await fetch(url);
+                const data = await res.json();
                 setRuns(data.runs || []);
-                setLoading(false);
-            })
-            .catch(err => {
+            } catch (err) {
                 console.error(err);
+            } finally {
                 setLoading(false);
-            });
-    }, []);
+            }
+        };
+        fetchRuns();
+    }, [selectedProject]);
 
     const filteredRuns = runs.filter(run => {
         if (filter === 'all') return true;

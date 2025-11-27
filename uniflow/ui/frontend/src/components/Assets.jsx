@@ -6,25 +6,33 @@ import { Button } from './ui/Button';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DataView } from './ui/DataView';
+import { useProject } from '../contexts/ProjectContext';
 
 export function Assets() {
     const [assets, setAssets] = useState([]);
     const [loading, setLoading] = useState(true);
     const [typeFilter, setTypeFilter] = useState('all');
     const [selectedAsset, setSelectedAsset] = useState(null);
+    const { selectedProject } = useProject();
 
     useEffect(() => {
-        fetch('/api/assets?limit=50')
-            .then(res => res.json())
-            .then(data => {
+        const fetchAssets = async () => {
+            setLoading(true);
+            try {
+                const url = selectedProject
+                    ? `/api/assets?limit=50&project=${encodeURIComponent(selectedProject)}`
+                    : '/api/assets?limit=50';
+                const res = await fetch(url);
+                const data = await res.json();
                 setAssets(data.assets || []);
-                setLoading(false);
-            })
-            .catch(err => {
+            } catch (err) {
                 console.error(err);
+            } finally {
                 setLoading(false);
-            });
-    }, []);
+            }
+        };
+        fetchAssets();
+    }, [selectedProject]);
 
     // Get unique types
     const types = ['all', ...new Set(assets.map(a => a.type))];

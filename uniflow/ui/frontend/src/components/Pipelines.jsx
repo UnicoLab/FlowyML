@@ -5,19 +5,29 @@ import { Card } from './ui/Card';
 import { Badge } from './ui/Badge';
 import { format } from 'date-fns';
 import { DataView } from './ui/DataView';
+import { useProject } from '../contexts/ProjectContext';
 
 export function Pipelines() {
     const [pipelines, setPipelines] = useState([]);
     const [loading, setLoading] = useState(true);
+    const { selectedProject } = useProject();
 
     useEffect(() => {
         const fetchData = async () => {
+            setLoading(true);
             try {
-                const pipelinesRes = await fetch('/api/pipelines');
+                const pipelinesUrl = selectedProject
+                    ? `/api/pipelines?project=${encodeURIComponent(selectedProject)}`
+                    : '/api/pipelines';
+                const runsUrl = selectedProject
+                    ? `/api/runs?project=${encodeURIComponent(selectedProject)}`
+                    : '/api/runs';
+
+                const pipelinesRes = await fetch(pipelinesUrl);
                 const pipelinesData = await pipelinesRes.json();
 
                 // Fetch runs to calculate stats per pipeline
-                const runsRes = await fetch('/api/runs');
+                const runsRes = await fetch(runsUrl);
                 const runsData = await runsRes.json();
 
                 // Calculate stats for each pipeline
@@ -45,15 +55,15 @@ export function Pipelines() {
                 });
 
                 setPipelines(pipelinesWithStats);
-                setLoading(false);
             } catch (err) {
                 console.error(err);
+            } finally {
                 setLoading(false);
             }
         };
 
         fetchData();
-    }, []);
+    }, [selectedProject]);
 
     const columns = [
         {

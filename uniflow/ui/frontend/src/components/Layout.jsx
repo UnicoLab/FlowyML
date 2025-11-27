@@ -12,8 +12,8 @@ function NavLink({ to, icon, label }) {
         <Link
             to={to}
             className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 group ${isActive
-                    ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 font-medium shadow-sm'
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white'
+                ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 font-medium shadow-sm'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white'
                 }`}
         >
             <span className={`transition-colors ${isActive ? 'text-primary-600 dark:text-primary-400' : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300'
@@ -66,6 +66,7 @@ export function Layout({ children }) {
                     <div className="px-4 py-2 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mt-4">
                         Settings
                     </div>
+                    <NavLink to="/tokens" icon={<Key size={18} />} label="API Tokens" />
                     <NavLink to="/settings" icon={<Settings size={18} />} label="Settings" />
                 </nav>
 

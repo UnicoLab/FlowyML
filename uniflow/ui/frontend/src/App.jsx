@@ -15,6 +15,7 @@ import { Assets } from './components/Assets'
 import { Experiments } from './components/Experiments'
 import { ExperimentDetails } from './components/ExperimentDetails'
 import { Settings as SettingsPage } from './components/Settings'
+import { TokenManagement } from './components/TokenManagement'
 import Traces from './components/Traces';
 import Projects from './components/Projects';
 import Schedules from './components/Schedules';
@@ -39,6 +40,7 @@ function App() {
                         <Route path="/schedules" element={<Schedules />} />
                         <Route path="/leaderboard" element={<Leaderboard />} />
                         <Route path="/settings" element={<SettingsPage />} />
+                        <Route path="/tokens" element={<TokenManagement />} />
                     </Routes>
                 </Layout>
             </ProjectProvider>
