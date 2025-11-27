@@ -615,7 +615,7 @@ uniflow run training_pipeline.py \
 - [Components Guide](../user-guide/components.md)
 - [Configuration Guide](../user-guide/configuration.md)
 - [CLI Reference](../reference/cli.md)
-- [Example Code](../../examples/)
+- [Example Code](https://github.com/UnicoLab/UniFlow/tree/main/examples/)
 
 ## Troubleshooting
 

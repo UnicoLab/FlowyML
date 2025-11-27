@@ -1,4 +1,4 @@
-# 🌊 Welcome to UniFlow
+# Welcome to UniFlow 🌊
 
 <p align="center">
   <img src="logo.png" width="350" alt="UniFlow Logo"/>
@@ -10,100 +10,104 @@
 </p>
 
 <p align="center">
-  [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-  [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/UnicoLab/UniFlow/blob/main/LICENSE)
-  [![UnicoLab](https://img.shields.io/badge/UnicoLab-ai-red.svg)](https://unicolab.ai)
+  <a href="https://badge.fury.io/py/uniflow"><img src="https://badge.fury.io/py/uniflow.svg" alt="PyPI version"></a>
+  <a href="https://github.com/UnicoLab/UniFlow/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License"></a>
+  <a href="https://unicolab.ai"><img src="https://img.shields.io/badge/UnicoLab-ai-red.svg" alt="UnicoLab"></a>
 </p>
 
 ---
 
-**UniFlow** is a modern, lightweight framework for building, running, and monitoring machine learning pipelines. It combines the simplicity of a library with the power of a full-fledged MLOps platform.
+## 🚀 Stop Wrestling with Infrastructure. Start Building Models.
 
-## Why UniFlow? 🚀
+**UniFlow** is the ML pipeline framework you've been waiting for. It combines the **simplicity of a Python script** with the **power of an enterprise MLOps platform**.
 
-Machine learning workflows are complex. You need to manage data, code, configuration, and infrastructure. Existing tools are often either too simple (just scripts) or too complex (heavy K8s-based platforms).
+No more YAML hell. No more complex Kubernetes configurations just to run a script. Just pure Python.
 
-**UniFlow hits the sweet spot:**
+<div class="grid cards" markdown>
 
-*   **Simple**: Just Python decorators. No YAML hell.
-*   **Powerful**: Automatic caching, lineage tracking, and context injection.
-*   **Beautiful**: A stunning, real-time UI included out of the box.
-*   **Production-Ready**: Built for reliability and scalability.
+-   :rocket: **5-Minute Setup**
+    ---
+    Go from `pip install` to a running pipeline in minutes. No complex infrastructure required.
 
-## Key Features ✨
+-   :brain: **Intelligent Context**
+    ---
+    Forget passing arguments through 10 layers of functions. Parameters are automatically injected where they are needed.
 
-### 🌊 Unified Pipelines
-Define pipelines using standard Python functions. UniFlow handles the execution graph, dependencies, and data flow automatically.
+-   :zap: **Smart Caching**
+    ---
+    Never re-run the same work twice. UniFlow intelligently caches results based on code and data hashes.
 
-### 🧠 Intelligent Context
-Forget about passing arguments manually through 10 layers of functions. UniFlow's **Context Injection** automatically delivers parameters to the steps that need them.
+-   :eye: **Real-Time UI**
+    ---
+    Watch your pipelines execute in real-time with a stunning, dark-mode dashboard included out of the box.
 
-### ⚡ Smart Caching
-Don't re-run expensive training jobs if nothing changed. UniFlow hashes your code and inputs to intelligently cache and reuse results.
+</div>
 
-### 👁️ Real-Time UI
-Monitor your pipelines as they run. Visualize the DAG, inspect artifacts, and track metrics in a modern, dark-mode dashboard.
+## ⚡️ See It in Action
 
-### 📦 Asset Management
-Treat Datasets, Models, and Metrics as first-class citizens. UniFlow tracks their lineage, versioning, and metadata automatically.
-
-###  🏛️ Model Registry
-Manage your model lifecycle from development to production with a built-in registry.
-
-### 🔄 Pipeline Versioning
-Track, compare, and manage different versions of your pipelines with full change detection.
-
-### 📁 Project Management
-Organize pipelines into isolated projects for multi-tenant deployments and resource tracking.
-
-### ⏰ Automated Scheduling
-Schedule pipelines for daily, hourly, or interval-based execution with flexible control.
-
-### 🔧 Advanced Debugging
-Comprehensive debugging tools including breakpoints, tracing, profiling, and error analysis.
-
-### ⚡ Performance Optimization
-Lazy evaluation, parallel execution, incremental computation, and GPU management for optimal performance.
-
-## Quick Example ⚡
+Define your pipeline with simple decorators. UniFlow handles the rest.
 
 ```python
 from uniflow import Pipeline, step, context
 
-# Define steps using decorators
-@step(outputs=["data"])
+@step(outputs=["dataset"])
 def load_data():
-    return [1, 2, 3]
+    return [1, 2, 3, 4, 5]
 
-@step(inputs=["data"], outputs=["model"])
-def train(data, learning_rate: float):
-    # learning_rate injected from context!
-    print(f"Training with lr={learning_rate}")
-    return "model_v1"
+@step(inputs=["dataset"], outputs=["model"])
+def train_model(dataset, learning_rate: float = 0.01):
+    # 'learning_rate' is automatically injected from context!
+    print(f"Training on {len(dataset)} items with lr={learning_rate}")
+    return "my_trained_model"
 
-# Create pipeline and add steps
+# Run it!
 ctx = context(learning_rate=0.05)
-pipeline = Pipeline("training_pipeline", context=ctx)
+pipeline = Pipeline("quickstart", context=ctx)
 pipeline.add_step(load_data)
-pipeline.add_step(train)
+pipeline.add_step(train_model)
 
-# Run the pipeline
-result = pipeline.run()
-print(f"Success: {result.success}")
+pipeline.run()
 ```
 
-## Getting Started 📚
+## 🌟 Why Developers Love UniFlow
 
-Ready to dive in?
+| Feature | UniFlow | The Others |
+| :--- | :---: | :---: |
+| **Setup Time** | **< 5 min** | Hours |
+| **Configuration** | **Python** | YAML / DSL |
+| **Learning Curve** | **Low** | Steep |
+| **UI** | **Included** | Separate / Paid |
+| **Caching** | **Automatic** | Manual |
 
-[Get Started](getting-started.md){ .md-button .md-button--primary }
-[View Examples](examples.md){ .md-button }
+## 🛠️ Powerful Features
 
-## Community 🤝
+*   **🌊 Unified Pipelines**: Define DAGs using standard Python functions.
+*   **📦 Asset Management**: First-class support for Datasets, Models, and Metrics.
+*   **🏛️ Model Registry**: Manage your model lifecycle from dev to prod.
+*   **🔄 Versioning**: Track every change in code, data, and configuration.
+*   **⏰ Scheduling**: Built-in scheduler for recurring jobs.
+*   **🔧 Debugging**: Breakpoints, tracing, and profiling tools.
 
-Join the UniFlow community!
-- [GitHub Repository](https://github.com/UnicoLab/UniFlow)
-- [Issue Tracker](https://github.com/UnicoLab/UniFlow/issues)
+## 🏁 Ready to Dive In?
+
+<div class="grid cards" markdown>
+
+-   :rocket: **Getting Started**
+    ---
+    Build your first pipeline in 5 minutes.
+    [:arrow_right: Go to Guide](getting-started.md)
+
+-   :books: **User Guide**
+    ---
+    Master all the features of UniFlow.
+    [:arrow_right: Read Docs](user-guide/pipelines.md)
+
+-   :computer: **Examples**
+    ---
+    See real-world usage patterns.
+    [:arrow_right: View Examples](examples.md)
+
+</div>
 
 ---
 

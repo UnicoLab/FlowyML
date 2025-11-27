@@ -62,7 +62,7 @@ class Dataset(Asset):
         # Schema validation would go here
         return True
 
-    def split(self, train_ratio: float = 0.8, name_prefix: str | None = None):
+    def split(self, train_ratio: float = 0.8, name_prefix: str | None = None) -> tuple["Dataset", "Dataset"]:
         """Split dataset into train/test.
 
         Args:

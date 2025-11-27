@@ -772,12 +772,11 @@ except Exception as e:
 ## Examples
 
 See:
-- [`examples/custom_components/my_components.py`](../../examples/custom_components/my_components.py)
-- [`examples/custom_components/zenml_integration.py`](../../examples/custom_components/zenml_integration.py)
-- [`examples/custom_components/PACKAGE_TEMPLATE.md`](../../examples/custom_components/PACKAGE_TEMPLATE.md)
+- [`examples/custom_components/my_components.py`](https://github.com/UnicoLab/UniFlow/blob/main/examples/custom_components/my_components.py)
+- [`examples/custom_components/zenml_integration.py`](https://github.com/UnicoLab/UniFlow/blob/main/examples/custom_components/zenml_integration.py)
+- [`examples/custom_components/PACKAGE_TEMPLATE.md`](https://github.com/UnicoLab/UniFlow/blob/main/examples/custom_components/PACKAGE_TEMPLATE.md)
 
 ## Next Steps
 
 - [Configuration Guide](./configuration.md)
 - [CLI Reference](../reference/cli.md)
-- [Publishing Guide](./publishing-components.md)

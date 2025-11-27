@@ -26,7 +26,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-          cache: 'poetry'
       - name: Check Pull Request Title
         uses: Slashgear/action-check-pr-title@main
         with:

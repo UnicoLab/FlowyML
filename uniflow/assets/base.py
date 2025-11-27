@@ -84,7 +84,7 @@ class Asset:
         name: str | None = None,
         version: str | None = None,
         parent: Optional["Asset"] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> "Asset":
         """Factory method to create an asset.
 

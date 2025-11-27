@@ -232,7 +232,7 @@ def fetch_data():
     return external_api.get_data()
 ```
 
-See [Error Handling](../advanced/error-handling.md) for comprehensive guide.
+See [Error Handling](../user-guide/debugging.md) for comprehensive guide.
 
 ## Resource Requirements 💪
 

@@ -387,6 +387,6 @@ def evaluate():
 
 ## Next Steps
 
-- [GCP Stack Guide](../examples/gcp_stack/README.md)
-- [Resource Optimization](./resource-optimization.md)
-- [CI/CD Integration](./cicd.md)
+- [GCP Stack Guide](https://github.com/UnicoLab/UniFlow/tree/main/examples/gcp_stack/README.md)
+- [Resource Optimization](https://github.com/UnicoLab/UniFlow/tree/main/docs/architecture/resource-optimization.md)
+- [CI/CD Integration](https://github.com/UnicoLab/UniFlow/tree/main/docs/architecture/cicd.md)

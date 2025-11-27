@@ -352,6 +352,6 @@ uniflow run pipeline.py --config prod.yaml
 
 ## Next Steps
 
-- See [examples/clean_pipeline.py](../examples/clean_pipeline.py) for a complete example
-- Read [Stack Architecture](./stacks.md) for deep dive
-- Check [GCP Stack Guide](../examples/gcp_stack/README.md) for cloud deployment
+- See [examples/clean_pipeline.py](https://github.com/UnicoLab/UniFlow/blob/main/examples/clean_pipeline.py) for a complete example
+- Read [Stack Architecture](../architecture/stacks.md) for deep dive
+- Check [GCP Stack Guide](https://github.com/UnicoLab/UniFlow/tree/main/examples/gcp_stack/README.md) for cloud deployment

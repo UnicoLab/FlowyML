@@ -113,14 +113,16 @@ class Pipeline:
         stack: Any | None = None,  # Stack instance
         project: str | None = None,  # Project name to attach to
     ):
-        """Args:
-        name: Name of the pipeline
-        context: Optional context for parameter injection
-        executor: Optional executor (defaults to LocalExecutor)
-        enable_cache: Whether to enable caching
-        cache_dir: Optional directory for cache
-        stack: Optional stack instance to run on
-        project: Optional project name to attach this pipeline to.
+        """Initialize pipeline.
+
+        Args:
+            name: Name of the pipeline
+            context: Optional context for parameter injection
+            executor: Optional executor (defaults to LocalExecutor)
+            enable_cache: Whether to enable caching
+            cache_dir: Optional directory for cache
+            stack: Optional stack instance to run on
+            project: Optional project name to attach this pipeline to.
         """
         self.name = name
         self.context = context or Context()
