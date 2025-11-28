@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { fetchApi } from '../../utils/api';
 import { Link } from 'react-router-dom';
-import { Play, Clock, CheckCircle, XCircle, Loader, Calendar, TrendingUp, Activity, ArrowRight } from 'lucide-react';
+import { Play, Clock, Calendar, TrendingUp, Activity, ArrowRight, Search, CheckCircle, XCircle, Loader } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import { DataView } from '../../components/ui/DataView';
 import { useProject } from '../../contexts/ProjectContext';
+import { ExecutionStatus, StatusBadge } from '../../components/ui/ExecutionStatus';
+import { EmptyState } from '../../components/ui/EmptyState';
 
 export function Runs() {
     const [runs, setRuns] = useState([]);
@@ -51,20 +53,7 @@ export function Runs() {
             header: 'Status',
             key: 'status',
             sortable: true,
-            render: (run) => {
-                const statusConfig = {
-                    completed: { icon: <CheckCircle size={16} />, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-                    failed: { icon: <XCircle size={16} />, color: 'text-rose-500', bg: 'bg-rose-50' },
-                    running: { icon: <Loader size={16} className="animate-spin" />, color: 'text-amber-500', bg: 'bg-amber-50' }
-                };
-                const config = statusConfig[run.status] || statusConfig.completed;
-                return (
-                    <div className={`flex items-center gap-2 px-2 py-1 rounded-md w-fit ${config.bg} ${config.color}`}>
-                        {config.icon}
-                        <span className="capitalize text-xs font-medium">{run.status}</span>
-                    </div>
-                );
-            }
+            render: (run) => <StatusBadge status={run.status} />
         },
         {
             header: 'Pipeline',
@@ -258,18 +247,14 @@ export function Runs() {
                 renderGrid={renderGrid}
                 initialView="table" // Default to table for runs as it's usually more useful
                 emptyState={
-                    <div className="text-center py-16 bg-slate-50 dark:bg-slate-800/30 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700">
-                        <div className="mx-auto w-20 h-20 bg-slate-100 dark:bg-slate-700 rounded-2xl flex items-center justify-center mb-6">
-                            <Activity className="text-slate-400" size={32} />
-                        </div>
-                        <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">No runs found</h3>
-                        <p className="text-slate-500 max-w-md mx-auto">
-                            {filter === 'all'
-                                ? 'Run a pipeline to see it here'
-                                : `No ${filter} runs found. Try a different filter.`
-                            }
-                        </p>
-                    </div>
+                    <EmptyState
+                        icon={Activity}
+                        title="No runs found"
+                        description={filter === 'all'
+                            ? 'Run a pipeline to see it here'
+                            : `No ${filter} runs found. Try a different filter.`
+                        }
+                    />
                 }
             />
         </div>
