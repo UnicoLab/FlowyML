@@ -3,49 +3,70 @@
 <p align="center">
   <img src="logo.png" width="350" alt="UniFlow Logo"/>
   <br>
-  <em> Next-Generation ML Pipeline Framework </em>
-  <br>
-  <br>
-  <p align="center"><strong>Provided and maintained by <a href="https://unicolab.ai">🦄 UnicoLab</a></strong></p>
-</p>
-
-<p align="center">
-  <a href="https://badge.fury.io/py/uniflow"><img src="https://badge.fury.io/py/uniflow.svg" alt="PyPI version"></a>
-  <a href="https://github.com/UnicoLab/UniFlow/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License"></a>
-  <a href="https://unicolab.ai"><img src="https://img.shields.io/badge/UnicoLab-ai-red.svg" alt="UnicoLab"></a>
+  <em>The Enterprise-Grade ML Pipeline Framework for Humans</em>
 </p>
 
 ---
 
-## 🚀 Stop Wrestling with Infrastructure. Start Building Models.
-
-**UniFlow** is the ML pipeline framework you've been waiting for. It combines the **simplicity of a Python script** with the **power of an enterprise MLOps platform**.
-
-No more YAML hell. No more complex Kubernetes configurations just to run a script. Just pure Python.
+**UniFlow** is a production-ready ML pipeline orchestration framework designed to bridge the gap between rapid experimentation and enterprise deployment. It combines the simplicity of a Python script with the power of a full-fledged MLOps platform.
 
 <div class="grid cards" markdown>
 
--   :rocket: **5-Minute Setup**
+-   :rocket: **Zero Boilerplate**
     ---
-    Go from `pip install` to a running pipeline in minutes. No complex infrastructure required.
+    Define steps as pure Python functions. No YAML, no DSLs, no complex wiring. Just code.
 
--   :brain: **Intelligent Context**
+-   :brain: **Auto-Context Injection**
     ---
-    Forget passing arguments through 10 layers of functions. Parameters are automatically injected where they are needed.
+    Parameters are automatically injected into steps based on type hints and names.
 
 -   :zap: **Smart Caching**
     ---
-    Never re-run the same work twice. UniFlow intelligently caches results based on code and data hashes.
+    Intelligent caching strategies (code hash, input hash) to skip redundant computations.
 
 -   :eye: **Real-Time UI**
     ---
-    Watch your pipelines execute in real-time with a stunning, dark-mode dashboard included out of the box.
+    Beautiful, dark-mode dashboard to monitor pipelines, visualize DAGs, and inspect artifacts.
 
 </div>
 
-## ⚡️ See It in Action
+## 🌟 Everything You Can Do
 
-Define your pipeline with simple decorators. UniFlow handles the rest.
+UniFlow is packed with features to handle every aspect of the ML lifecycle.
+
+### 🏗️ Core Orchestration
+- **Unified Pipelines**: Define DAGs using standard Python functions.
+- **Conditional Execution**: Dynamic branching logic (`If`, `Switch`) based on runtime data.
+- **Parallel Execution**: Run independent steps concurrently on threads or processes.
+- **Pipeline Templates**: Reusable workflow patterns for standardizing team practices.
+- **Human-in-the-Loop**: Pause pipelines for manual approval steps.
+
+### 📦 Asset Management
+- **First-Class Assets**: Specialized classes for `Dataset`, `Model`, `Metrics`, and `FeatureSet`.
+- **Lineage Tracking**: Automatically track the provenance of every artifact.
+- **Model Registry**: Version and manage models from development to production.
+- **Artifact Store**: Pluggable storage backends (Local, S3, GCS, Azure).
+
+### 🏭 Production Features
+- **Project Isolation**: Multi-tenant support with isolated workspaces.
+- **Pipeline Versioning**: Git-like versioning for pipelines. Compare and rollback.
+- **Automated Scheduling**: Cron-style scheduling for recurring jobs.
+- **Notifications**: Alerts via Slack, Email, or custom webhooks on success/failure.
+- **Error Handling**: Automatic retries, circuit breakers, and fallback logic.
+
+### 🔍 Observability & Debugging
+- **Interactive Debugging**: Breakpoints (`StepDebugger`) and execution tracing.
+- **LLM Tracing**: Trace GenAI calls (tokens, latency, cost) with `@trace_llm`.
+- **Data Drift Detection**: Monitor distribution shifts with Population Stability Index (PSI).
+- **Model Leaderboard**: Track and compare model performance across runs.
+- **System Monitoring**: Built-in CPU/Memory and pipeline health monitoring.
+
+### 🔌 Integrations
+- **Framework Agnostic**: Works with PyTorch, TensorFlow, Keras, Scikit-learn, HuggingFace.
+- **Cloud Native**: Deploy execution to Vertex AI, AWS SageMaker (coming soon).
+- **Keras Callback**: Automatic experiment tracking for Keras models.
+
+## ⚡️ Quick Start
 
 ```python
 from uniflow import Pipeline, step, context
@@ -69,49 +90,24 @@ pipeline.add_step(train_model)
 pipeline.run()
 ```
 
-## 🌟 Why Developers Love UniFlow
-
-| Feature | UniFlow | The Others |
-| :--- | :---: | :---: |
-| **Setup Time** | **< 5 min** | Hours |
-| **Configuration** | **Python** | YAML / DSL |
-| **Learning Curve** | **Low** | Steep |
-| **UI** | **Included** | Separate / Paid |
-| **Caching** | **Automatic** | Manual |
-
-## 🛠️ Powerful Features
-
-*   **🌊 Unified Pipelines**: Define DAGs using standard Python functions.
-*   **📦 Asset Management**: First-class support for Datasets, Models, and Metrics.
-*   **🏛️ Model Registry**: Manage your model lifecycle from dev to prod.
-*   **🔄 Versioning**: Track every change in code, data, and configuration.
-*   **⏰ Scheduling**: Built-in scheduler for recurring jobs.
-*   **🔧 Debugging**: Breakpoints, tracing, and profiling tools.
-
-## 🏁 Ready to Dive In?
+## 📚 Documentation Guide
 
 <div class="grid cards" markdown>
 
--   :rocket: **Getting Started**
+-   :rocket: **[Getting Started](getting-started.md)**
     ---
     Build your first pipeline in 5 minutes.
-    [:arrow_right: Go to Guide](getting-started.md)
 
--   :books: **User Guide**
+-   :book: **[User Guide](user-guide/projects.md)**
     ---
-    Master all the features of UniFlow.
-    [:arrow_right: Read Docs](user-guide/pipelines.md)
+    Master projects, versioning, and scheduling.
 
--   :computer: **Examples**
+-   :zap: **[Advanced Features](advanced/caching.md)**
     ---
-    See real-world usage patterns.
-    [:arrow_right: View Examples](examples.md)
+    Deep dive into caching, parallelism, and debugging.
+
+-   :plug: **[Integrations](integrations/keras.md)**
+    ---
+    Connect with Keras, GCP, and more.
 
 </div>
-
----
-
-<p align="center">
-  <strong>Making ML Pipelines Effortless 🧪✨</strong><br>
-  <em>Built with ❤️ for the ML community by <a href="https://unicolab.ai">🦄 UnicoLab</a></em>
-</p>

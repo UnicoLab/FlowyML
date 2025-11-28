@@ -1,8 +1,8 @@
-# Pipeline Versioning
+# Pipeline Versioning 🔄
 
 Track, compare, and manage different versions of your pipelines.
 
-## Overview
+## Overview ℹ️
 
 The `VersionedPipeline` class extends the standard `Pipeline` with version control capabilities, allowing you to:
 - Save pipeline versions with metadata
@@ -10,7 +10,7 @@ The `VersionedPipeline` class extends the standard `Pipeline` with version contr
 - Track pipeline evolution over time
 - Maintain a history of pipeline configurations
 
-## Basic Usage
+## Basic Usage 🚀
 
 ```python
 from uniflow import VersionedPipeline, step
@@ -35,7 +35,7 @@ pipeline.add_step(train)
 pipeline.save_version(metadata={"description": "Initial training pipeline"})
 ```
 
-## Comparing Versions
+## Comparing Versions 🔍
 
 ```python
 # Make changes to the pipeline
@@ -65,7 +65,7 @@ print(diff)
 pipeline.display_comparison("v1.0.0")
 ```
 
-## Listing Versions
+## Listing Versions 📋
 
 ```python
 # Get all saved versions
@@ -79,7 +79,7 @@ print(version_info.created_at)
 print(version_info.metadata)
 ```
 
-## Version Storage
+## Version Storage 💾
 
 Versions are stored as JSON files in `.uniflow/versions/{pipeline_name}/` by default. You can customize the storage location:
 
@@ -90,7 +90,7 @@ pipeline = VersionedPipeline(
 )
 ```
 
-## Best Practices
+## Best Practices 💡
 
 ### 1. Use Semantic Versioning
 
@@ -119,7 +119,7 @@ if pipeline.version != "v1.0.0":  # production version
         pipeline.display_comparison("v1.0.0")
 ```
 
-## Advanced Features
+## Advanced Features ⚡
 
 ### Hash-Based Change Detection
 
@@ -156,7 +156,7 @@ diff = pipeline.compare_with(previous_version)
 # Will show context_changes
 ```
 
-## Integration with CI/CD
+## Integration with CI/CD 🚀
 
 ```python
 # In your CI pipeline
@@ -180,7 +180,7 @@ def verify_version_changes():
     return diff
 ```
 
-## API Reference
+## API Reference 📚
 
 ### VersionedPipeline
 

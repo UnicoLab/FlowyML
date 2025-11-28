@@ -1,66 +1,48 @@
 # Materializers 📦
 
-Materializers are the secret sauce that allows UniFlow to save and load complex objects (like PyTorch models or Pandas DataFrames) to and from disk.
+Materializers control how artifacts (data, models, metrics) are serialized and stored. UniFlow provides default materializers for common types (Pandas DataFrames, NumPy arrays, JSON), but you can create custom ones for specialized data.
 
-## How it Works ⚙️
+## 📦 Built-in Materializers
 
-When a step returns an object, UniFlow looks for a registered **Materializer** that supports that object type.
+UniFlow automatically selects the appropriate materializer based on the type hint or object type.
 
-1.  **Serialization**: The materializer's `save()` method writes the object to the artifact store.
-2.  **Deserialization**: When the object is needed (e.g., by a downstream step or when loading from cache), the `load()` method reads it back into memory.
+- **PandasMaterializer**: Parquet or CSV.
+- **NumpyMaterializer**: `.npy` files.
+- **JsonMaterializer**: JSON files.
+- **PickleMaterializer**: Fallback for arbitrary Python objects.
 
-## Supported Types ✅
+## 🛠 Custom Materializers
 
-UniFlow comes with built-in materializers for:
-
-| Type | Materializer | Format |
-|------|--------------|--------|
-| `pandas.DataFrame` | `PandasMaterializer` | Parquet / CSV |
-| `numpy.ndarray` | `NumpyMaterializer` | `.npy` |
-| `torch.nn.Module` | `PyTorchMaterializer` | `.pt` (TorchScript/StateDict) |
-| `tensorflow.keras.Model` | `TensorFlowMaterializer` | SavedModel |
-| `sklearn.base.BaseEstimator` | `SklearnMaterializer` | Pickle (joblib) |
-| Any other object | `PickleMaterializer` | Pickle |
-
-## Custom Materializers 🛠️
-
-You can define custom materializers for your own types.
-
-### 1. Define the Materializer
-
-Inherit from `BaseMaterializer` and implement `save`, `load`, and `supported_types`.
+To support a custom type, subclass `BaseMaterializer`.
 
 ```python
-from uniflow.storage.materializers.base import BaseMaterializer
-from PIL import Image
-import os
+from uniflow.io import BaseMaterializer
+from my_library import CustomGraph
 
-class ImageMaterializer(BaseMaterializer):
-    def save(self, obj: Image.Image, path: Path) -> None:
-        obj.save(os.path.join(path, "image.png"))
+class GraphMaterializer(BaseMaterializer):
+    ASSOCIATED_TYPES = (CustomGraph,)
 
-    def load(self, path: Path) -> Image.Image:
-        return Image.open(os.path.join(path, "image.png"))
+    def handle_input(self, data_type):
+        # Read from artifact store
+        with open(self.artifact.uri, 'rb') as f:
+            return CustomGraph.load(f)
 
-    @classmethod
-    def supported_types(cls):
-        return [Image.Image]
+    def handle_return(self, graph):
+        # Write to artifact store
+        with open(self.artifact.uri, 'wb') as f:
+            graph.save(f)
+
+# Register the materializer
+from uniflow import materializer_registry
+materializer_registry.register(GraphMaterializer)
 ```
 
-### 2. Register it
+## 🎯 Usage
 
-```python
-from uniflow.storage.materializers import register_materializer
-
-register_materializer(ImageMaterializer)
-```
-
-!!! success "Automatic Usage"
-    Now, any step returning a PIL Image will automatically use your custom materializer!
+Once registered, UniFlow will automatically use your materializer when a step returns a `CustomGraph` object.
 
 ```python
 @step
-def process_image() -> Image.Image:
-    # ...
-    return img  # Automatically saved as PNG
+def build_graph() -> CustomGraph:
+    return CustomGraph(...)
 ```

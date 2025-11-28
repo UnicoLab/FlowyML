@@ -1,15 +1,15 @@
-# Debugging Tools
+# Debugging Tools 🐛
 
 Powerful debugging utilities for step and pipeline execution.
 
-## Overview
+## Overview ℹ️
 
 UniFlow provides comprehensive debugging tools:
 - **StepDebugger**: Debug individual steps with breakpoints and inspection
 - **PipelineDebugger**: Debug entire pipelines with execution tracing
 - **Utility Functions**: Quick debugging helpers
 
-## Step Debugging
+## Step Debugging 🐞
 
 ### Basic Usage
 
@@ -83,7 +83,7 @@ except Exception as e:
     # Shows: exception type, message, inputs that caused it
 ```
 
-## Pipeline Debugging
+## Pipeline Debugging 🕸️
 
 ### Tracing Execution
 
@@ -162,7 +162,7 @@ debugger.replay_execution(
 )
 ```
 
-## Quick Debugging Utilities
+## Quick Debugging Utilities 🛠️
 
 ### debug_step
 
@@ -209,7 +209,7 @@ print(f"Execution time: {stats['time']:.3f}s")
 print(f"Memory used: {stats['memory_mb']:.1f}MB")
 ```
 
-## Best Practices
+## Best Practices 💡
 
 ### 1. Use Conditional Breakpoints
 
@@ -259,7 +259,7 @@ debugger.add_breakpoint(
 )
 ```
 
-## Advanced Usage
+## Advanced Usage ⚡
 
 ### Custom Breakpoint Actions
 
@@ -300,7 +300,7 @@ debugger.add_breakpoint(
 )
 ```
 
-## API Reference
+## API Reference 📚
 
 ### StepDebugger
 

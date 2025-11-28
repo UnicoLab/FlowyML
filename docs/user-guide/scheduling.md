@@ -1,8 +1,8 @@
-# Pipeline Scheduling
+# Pipeline Scheduling ⏰
 
 Automate pipeline execution with flexible scheduling options.
 
-## Overview
+## Overview ℹ️
 
 The `PipelineScheduler` allows you to run pipelines automatically at specified times or intervals:
 - **Daily schedules**: Run at specific times each day
@@ -10,7 +10,7 @@ The `PipelineScheduler` allows you to run pipelines automatically at specified t
 - **Interval schedules**: Run at regular intervals
 - **Manual control**: Enable/disable schedules dynamically
 
-## Quick Start
+## Quick Start 🚀
 
 ```python
 from uniflow import Pipeline, PipelineScheduler, step
@@ -41,7 +41,7 @@ scheduler.start()
 # Keep your application running...
 ```
 
-## Schedule Types
+## Schedule Types 📅
 
 ### Daily Schedule
 
@@ -95,7 +95,7 @@ scheduler.schedule_interval(
 )
 ```
 
-## Managing Schedules
+## Managing Schedules 🛠️
 
 ### List All Schedules
 
@@ -136,7 +136,7 @@ scheduler.clear()
 scheduler.stop()
 ```
 
-## Advanced Usage
+## Advanced Usage ⚡
 
 ### Schedule with Context
 
@@ -221,7 +221,7 @@ scheduler.schedule_daily(
 )
 ```
 
-## Integration with Projects
+## Integration with Projects 🏢
 
 ```python
 from uniflow import Project, PipelineScheduler
@@ -241,7 +241,7 @@ scheduler.schedule_daily(
 )
 ```
 
-## Integration with Versioning
+## Integration with Versioning 🔄
 
 ```python
 from uniflow import VersionedPipeline, PipelineScheduler
@@ -271,7 +271,7 @@ scheduler.schedule_daily(
 )
 ```
 
-## Best Practices
+## Best Practices 💡
 
 ### 1. Use Descriptive Names
 
@@ -365,7 +365,7 @@ if __name__ == "__main__":
     main()
 ```
 
-## API Integration
+## API Integration 🔌
 
 Using with the PipelineRegistry for API-driven scheduling:
 
@@ -392,7 +392,7 @@ scheduler.schedule_daily(
 )
 ```
 
-## API Reference
+## API Reference 📚
 
 ### PipelineScheduler
 
@@ -424,7 +424,7 @@ PipelineScheduler()
 - `next_run: datetime` - Next scheduled execution
 - `context: Optional[Dict]` - Context data
 
-## Deployment
+## Deployment 🚀
 
 ### Systemd Service (Linux)
 
@@ -480,7 +480,7 @@ spec:
           restartPolicy: OnFailure
 ```
 
-## FAQ
+## FAQ ❓
 
 **Q: Can I schedule the same pipeline multiple times?**
 A: Yes! Use different schedule names:

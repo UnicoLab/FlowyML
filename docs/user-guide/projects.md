@@ -1,8 +1,8 @@
-# Projects & Multi-Tenancy
+# Projects & Multi-Tenancy 🏢
 
 Organize pipelines, runs, and artifacts into isolated projects for multi-tenant deployments.
 
-## Overview
+## Overview ℹ️
 
 The `Project` and `ProjectManager` classes provide:
 - **Isolation**: Each project has its own metadata store and artifact storage
@@ -10,7 +10,7 @@ The `Project` and `ProjectManager` classes provide:
 - **Multi-tenancy**: Support multiple teams/clients in one deployment
 - **Resource management**: Track pipelines, runs, and artifacts per project
 
-## Quick Start
+## Quick Start 🚀
 
 ```python
 from uniflow import Project
@@ -32,7 +32,7 @@ print(f"Total runs: {stats['total_runs']}")
 print(f"Total artifacts: {stats['total_artifacts']}")
 ```
 
-## Project Management
+## Project Management 🏗️
 
 ### Creating Projects
 
@@ -70,7 +70,7 @@ projects/
     └── metadata.db          # SQLite metadata store
 ```
 
-## Working with Projects
+## Working with Projects 🛠️
 
 ### Creating Pipelines
 
@@ -121,7 +121,7 @@ Artifacts: {stats['total_artifacts']}
 """)
 ```
 
-## Multi-Tenant Architecture
+## Multi-Tenant Architecture 🏘️
 
 ### Isolating Client Data
 
@@ -166,7 +166,7 @@ for client in clients:
     print(f"{client}: {usage['runs']} runs, {usage['storage_usage_mb']}MB")
 ```
 
-## Best Practices
+## Best Practices 💡
 
 ### 1. Project Naming
 
@@ -203,7 +203,7 @@ pipelines = project.get_pipelines()
 # manager.delete_project("old_project", confirm=True)
 ```
 
-## Integration Examples
+## Integration Examples 🔌
 
 ### With Versioning
 
@@ -246,7 +246,7 @@ scheduler.schedule_daily(
 )
 ```
 
-## API Reference
+## API Reference 📚
 
 ### Project
 
@@ -275,7 +275,7 @@ Project(
 - `list_projects() -> List[Dict]` - List all projects
 - `delete_project(name: str, confirm: bool = False)` - Delete project
 
-## FAQ
+## FAQ ❓
 
 **Q: Can I move a pipeline from one project to another?**
 A: Currently, pipelines are tied to their project's metadata store. You would need to export/import the pipeline definition manually.

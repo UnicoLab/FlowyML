@@ -1,28 +1,30 @@
 site_name: UniFlow
-site_description: A lightweight, unified ML pipeline framework.
-site_url: https://github.com/UnicoLab/UniFlow
+site_description: The Enterprise-Grade ML Pipeline Framework for Humans.
+site_url: https://docs.uniflow.ai
 repo_url: https://github.com/UnicoLab/UniFlow
 repo_name: UniFlow
 
 theme:
   name: material
+  logo: logo.png
+  favicon: logo.png
   palette:
     - scheme: default
       primary: black
-      accent: black
+      accent: indigo
       toggle:
         icon: material/toggle-switch-off-outline
         name: Switch to dark mode
     - scheme: slate
-      primary: teal
-      accent: teal
+      primary: black
+      accent: indigo
       toggle:
         icon: material/toggle-switch
         name: Switch to light mode
   features:
-    - navigation.tabs
     - navigation.sections
     - navigation.expand
+    - navigation.top
     - content.code.copy
     - content.tabs.link
     - content.tooltips
@@ -43,6 +45,8 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
 
 plugins:
   - search
@@ -55,61 +59,44 @@ plugins:
             show_root_heading: true
             show_source: true
             show_signature_annotations: true
-            # separate_signature: true
             docstring_style: google
             merge_init_into_class: true
             show_category_heading: true
-  - mike:
-      canonical_version: null
-      version_selector: true
-      css_dir: css
-      javascript_dir: js
-      # Copy files instead of creating symlinks (GitHub Pages doesn't follow symlinks)
-      alias_type: copy
-
-  - include-markdown:
-      encoding: ascii
-      preserve_includer_indent: false
-      dedent: false
-      trailing_newlines: true
-      comments: true
-      rewrite_relative_urls: true
-      heading_offset: 0
-      start: <!--start-->
-      end: <!--end-->
-      recursive: true
-
-
-# Disable directory URLs to make relative paths work better
-use_directory_urls: false
-
-extra:
-  version:
-    provider: mike
-  social:
-    - icon: fontawesome/brands/github
-      link: https://github.com/UnicoLab/UniFlow
-    - icon: fontawesome/brands/python
-      link: https://pypi.org/project/UniFlow/
-
-extra_javascript:
-  - assets/js/fix-image-paths.js
 
 nav:
   - 🏠 Home: index.md
   - 🚀 Getting Started: getting-started.md
-  - 📚 User Guide:
-    - 🎢 Pipelines: user-guide/pipelines.md
-    - ☊ Steps: user-guide/steps.md
-    - 📦 Assets & Artifacts: user-guide/artifacts.md
-    - 📜 Context & Parameters: user-guide/context.md
-    - 🏪 Caching: user-guide/caching.md
-    - 🤖 Model Registry: user-guide/model-registry.md
-    - 🚨 Monitoring & Alerts: user-guide/monitoring.md
+  - 📚 Core Concepts:
+    - 🎢 Pipelines: core/pipelines.md
+    - ☊ Steps: core/steps.md
+    - 📜 Context: core/context.md
+    - 📦 Assets: core/assets.md
+  - 📖 User Guide:
+    - 📁 Projects: user-guide/projects.md
+    - 🔄 Versioning: user-guide/versioning.md
+    - ⏰ Scheduling: user-guide/scheduling.md
+    - ⚙️ Configuration: user-guide/configuration.md
+    - 🚀 API Execution: user-guide/api-execution.md
+    - 🚨 Monitoring: user-guide/monitoring.md
     - 💻 UI Guide: user-guide/ui.md
     - 🛠 CLI: user-guide/cli.md
-  - 📚 Advanced:
+  - ⚡ Advanced Features:
+    - 🏪 Caching: advanced/caching.md
+    - 💾 Checkpointing: advanced/checkpointing.md
+    - 🕵️ LLM Tracing: advanced/llm-tracing.md
+    - ✋ Human-in-the-Loop: advanced/human-in-the-loop.md
+    - 🔔 Notifications: advanced/notifications.md
+    - 🏆 Model Leaderboard: advanced/model-leaderboard.md
+    - 📉 Data Drift: advanced/data-drift.md
+    - 🛡️ Error Handling: advanced/error-handling.md
+    - 🚀 Parallel Execution: advanced/parallel.md
+    - 🔀 Conditional Execution: advanced/conditional.md
+    - 📋 Templates: advanced/templates.md
+    - 🐛 Debugging: advanced/debugging.md
     - 📦 Materializers: advanced/materializers.md
+  - 🔌 Integrations:
+    - 🧠 Keras: integrations/keras.md
+    - ☁️ GCP: integrations/gcp.md
   - 📚 API Reference:
     - 🤩 Core: api/core.md
     - 📦 Assets: api/assets.md
@@ -119,3 +106,10 @@ nav:
     - 🏗️ Architecture: architecture.md
     - 🤝 Contributing: contributing.md
   - 📚 Examples: examples.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/UnicoLab/UniFlow
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/UniFlow/
