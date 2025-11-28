@@ -256,8 +256,14 @@ def clear() -> None:
         click.echo(f"✗ Error clearing cache: {e}", err=True)
 
 
-@cli.command()
+@cli.group()
 def config() -> None:
+    """Configuration management commands."""
+    pass
+
+
+@config.command("show")
+def show_config() -> None:
     """Show current configuration."""
     cfg = get_config()
 
@@ -266,10 +272,39 @@ def config() -> None:
     click.echo(f"  Artifacts Dir: {cfg.artifacts_dir}")
     click.echo(f"  Metadata DB: {cfg.metadata_db}")
     click.echo(f"  Default Stack: {cfg.default_stack}")
+    click.echo(f"  Execution Mode: {cfg.execution_mode}")
+    if cfg.execution_mode == "remote":
+        click.echo(f"  Remote Server URL: {cfg.remote_server_url}")
+        click.echo(f"  Remote UI URL: {cfg.remote_ui_url}")
     click.echo(f"  Enable Caching: {cfg.enable_caching}")
     click.echo(f"  Log Level: {cfg.log_level}")
     click.echo(f"  UI Port: {cfg.ui_port}")
     click.echo(f"  Debug Mode: {cfg.debug_mode}")
+
+
+@config.command("set-mode")
+@click.argument("mode", type=click.Choice(["local", "remote"]))
+def set_mode(mode: str) -> None:
+    """Set execution mode (local or remote)."""
+    cfg = get_config()
+    cfg.execution_mode = mode
+    cfg.save()
+    click.echo(f"✓ Execution mode set to '{mode}'")
+
+
+@config.command("set-url")
+@click.option("--server", help="Remote server URL")
+@click.option("--ui", help="Remote UI URL")
+def set_url(server: str, ui: str) -> None:
+    """Set remote server and UI URLs."""
+    cfg = get_config()
+    if server:
+        cfg.remote_server_url = server
+        click.echo(f"✓ Remote server URL set to '{server}'")
+    if ui:
+        cfg.remote_ui_url = ui
+        click.echo(f"✓ Remote UI URL set to '{ui}'")
+    cfg.save()
 
 
 @cli.command()

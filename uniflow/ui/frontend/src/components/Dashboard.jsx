@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { fetchApi } from '../utils/api';
 import { Link } from 'react-router-dom';
 import { Activity, Layers, Database, TrendingUp, Clock, CheckCircle, XCircle, Zap, ArrowRight } from 'lucide-react';
 import { Card } from './ui/Card';
@@ -25,8 +26,8 @@ export function Dashboard() {
                     : '/api/runs?limit=5';
 
                 const [statsData, runsData] = await Promise.all([
-                    fetch(statsUrl).then(res => res.json()),
-                    fetch(runsUrl).then(res => res.json())
+                    fetchApi(statsUrl).then(res => res.json()),
+                    fetchApi(runsUrl).then(res => res.json())
                 ]);
 
                 setStats(statsData);

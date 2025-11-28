@@ -21,6 +21,9 @@ class UniFlowConfig:
 
     # Execution settings
     default_stack: str = "local"
+    execution_mode: str = "local"  # local or remote
+    remote_server_url: str = ""
+    remote_ui_url: str = ""
     enable_caching: bool = True
     enable_logging: bool = True
     log_level: str = "INFO"
@@ -83,6 +86,9 @@ class UniFlowConfig:
             "runs_dir": str(self.runs_dir),
             "experiments_dir": str(self.experiments_dir),
             "default_stack": self.default_stack,
+            "execution_mode": self.execution_mode,
+            "remote_server_url": self.remote_server_url,
+            "remote_ui_url": self.remote_ui_url,
             "enable_caching": self.enable_caching,
             "enable_logging": self.enable_logging,
             "log_level": self.log_level,
@@ -259,6 +265,9 @@ def get_env_config() -> dict[str, Any]:
         "UNIFLOW_METADATA_DB": "metadata_db",
         "UNIFLOW_CACHE_DIR": "cache_dir",
         "UNIFLOW_DEFAULT_STACK": "default_stack",
+        "UNIFLOW_EXECUTION_MODE": "execution_mode",
+        "UNIFLOW_REMOTE_SERVER_URL": "remote_server_url",
+        "UNIFLOW_REMOTE_UI_URL": "remote_ui_url",
         "UNIFLOW_ENABLE_CACHING": "enable_caching",
         "UNIFLOW_LOG_LEVEL": "log_level",
         "UNIFLOW_UI_HOST": "ui_host",

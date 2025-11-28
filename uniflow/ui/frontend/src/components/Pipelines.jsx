@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { fetchApi } from '../utils/api';
 import { Link } from 'react-router-dom';
 import { Layers, Play, Clock, CheckCircle, XCircle, TrendingUp, Calendar, Activity, ArrowRight, Zap } from 'lucide-react';
 import { Card } from './ui/Card';
@@ -23,11 +24,11 @@ export function Pipelines() {
                     ? `/api/runs?project=${encodeURIComponent(selectedProject)}`
                     : '/api/runs';
 
-                const pipelinesRes = await fetch(pipelinesUrl);
+                const pipelinesRes = await fetchApi(pipelinesUrl);
                 const pipelinesData = await pipelinesRes.json();
 
                 // Fetch runs to calculate stats per pipeline
-                const runsRes = await fetch(runsUrl);
+                const runsRes = await fetchApi(runsUrl);
                 const runsData = await runsRes.json();
 
                 // Calculate stats for each pipeline

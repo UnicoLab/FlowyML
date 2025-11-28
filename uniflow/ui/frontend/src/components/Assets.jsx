@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { fetchApi } from '../utils/api';
 import { Database, Box, BarChart2, FileText, Search, Filter, Calendar, Package, Download, Eye, X, ArrowRight } from 'lucide-react';
 import { Card } from './ui/Card';
 import { Badge } from './ui/Badge';
@@ -22,7 +23,7 @@ export function Assets() {
                 const url = selectedProject
                     ? `/api/assets?limit=50&project=${encodeURIComponent(selectedProject)}`
                     : '/api/assets?limit=50';
-                const res = await fetch(url);
+                const res = await fetchApi(url);
                 const data = await res.json();
                 setAssets(data.assets || []);
             } catch (err) {

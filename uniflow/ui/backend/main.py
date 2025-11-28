@@ -40,6 +40,20 @@ async def health_check():
     return {"status": "ok", "version": "0.1.0"}
 
 
+@app.get("/api/config")
+async def get_public_config():
+    """Get public configuration."""
+    from uniflow.utils.config import get_config
+
+    config = get_config()
+    return {
+        "execution_mode": config.execution_mode,
+        "remote_server_url": config.remote_server_url,
+        "remote_ui_url": config.remote_ui_url,
+        "enable_ui": config.enable_ui,
+    }
+
+
 app.include_router(pipelines.router, prefix="/api/pipelines", tags=["pipelines"])
 app.include_router(runs.router, prefix="/api/runs", tags=["runs"])
 app.include_router(assets.router, prefix="/api/assets", tags=["assets"])

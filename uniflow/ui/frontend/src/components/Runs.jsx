@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { fetchApi } from '../utils/api';
 import { Link } from 'react-router-dom';
 import { Play, Clock, CheckCircle, XCircle, Loader, Calendar, TrendingUp, Activity, ArrowRight } from 'lucide-react';
 import { Card } from './ui/Card';
@@ -21,7 +22,7 @@ export function Runs() {
                 const url = selectedProject
                     ? `/api/runs?project=${encodeURIComponent(selectedProject)}`
                     : '/api/runs';
-                const res = await fetch(url);
+                const res = await fetchApi(url);
                 const data = await res.json();
                 setRuns(data.runs || []);
             } catch (err) {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { fetchApi } from '../utils/api';
 import { Activity, Zap, MessageSquare, Clock, DollarSign } from 'lucide-react';
 
 export default function Traces() {
@@ -19,7 +20,7 @@ export default function Traces() {
         params.append('event_type', filterType);
       }
 
-      const response = await fetch(`/api/traces?${params}`);
+      const response = await fetchApi(`/api/traces?${params}`);
       const data = await response.json();
       setTraces(data);
     } catch (error) {
@@ -31,7 +32,7 @@ export default function Traces() {
 
   const fetchTraceDetails = async (traceId) => {
     try {
-      const response = await fetch(`/api/traces/${traceId}`);
+      const response = await fetchApi(`/api/traces/${traceId}`);
       const data = await response.json();
       setSelectedTrace(data);
     } catch (error) {

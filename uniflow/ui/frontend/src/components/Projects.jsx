@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { fetchApi } from '../utils/api';
 import { Folder, Plus, Trash2, Activity, Database, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { DataView } from './ui/DataView';
@@ -17,7 +18,7 @@ export default function Projects() {
 
     const fetchProjects = async () => {
         try {
-            const response = await fetch('/api/projects/');
+            const response = await fetchApi('/api/projects/');
             const data = await response.json();
             setProjects(data);
         } catch (error) {
@@ -30,7 +31,7 @@ export default function Projects() {
     const createProject = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch('/api/projects/', {
+            const response = await fetchApi('/api/projects/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -54,7 +55,7 @@ export default function Projects() {
         if (!confirm(`Are you sure you want to delete project "${name}"?`)) return;
 
         try {
-            const response = await fetch(`/api/projects/${name}`, {
+            const response = await fetchApi(`/api/projects/${name}`, {
                 method: 'DELETE'
             });
 

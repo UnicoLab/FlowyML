@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { fetchApi } from '../utils/api';
 import { Trophy, TrendingUp, TrendingDown, Filter } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -14,7 +15,7 @@ export default function Leaderboard() {
     const fetchLeaderboard = async () => {
         setLoading(true);
         try {
-            const response = await fetch(`/api/leaderboard/${metric}`);
+            const response = await fetchApi(`/api/leaderboard/${metric}`);
             const result = await response.json();
             setData(result);
         } catch (error) {
@@ -59,7 +60,7 @@ export default function Leaderboard() {
                         onClick={async () => {
                             setLoading(true);
                             try {
-                                await fetch('/api/leaderboard/generate_sample_data', { method: 'POST' });
+                                await fetchApi('/api/leaderboard/generate_sample_data', { method: 'POST' });
                                 fetchLeaderboard();
                             } catch (error) {
                                 console.error('Failed to generate sample data:', error);

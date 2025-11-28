@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
+import { fetchApi } from '../utils/api';
 import { useParams, Link } from 'react-router-dom';
 import { CheckCircle, XCircle, Clock, Calendar, Package, ArrowRight, BarChart2, FileText, Database, Box, ChevronRight, Activity, Layers, Code2, Terminal, Info, X, Maximize2, TrendingUp, Download } from 'lucide-react';
 import { Card } from './ui/Card';
@@ -22,8 +23,8 @@ export function RunDetails() {
         const fetchData = async () => {
             try {
                 const [runRes, assetsRes] = await Promise.all([
-                    fetch(`/api/runs/${runId}`),
-                    fetch(`/api/assets?run_id=${runId}`)
+                    fetchApi(`/api/runs/${runId}`),
+                    fetchApi(`/api/assets?run_id=${runId}`)
                 ]);
 
                 const runData = await runRes.json();
@@ -31,7 +32,7 @@ export function RunDetails() {
 
                 let metricsData = [];
                 try {
-                    const mRes = await fetch(`/api/runs/${runId}/metrics`);
+                    const mRes = await fetchApi(`/api/runs/${runId}/metrics`);
                     if (mRes.ok) {
                         const mJson = await mRes.json();
                         metricsData = mJson.metrics || [];

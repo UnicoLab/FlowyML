@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: uniflow/ui/backend/Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./.uniflow:/root/.uniflow
+    environment:
+      - UNIFLOW_HOME=/root/.uniflow
+      - UNIFLOW_UI_HOST=0.0.0.0
+      - UNIFLOW_UI_PORT=8000
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: uniflow/ui/frontend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    restart: unless-stopped

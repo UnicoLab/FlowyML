@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { fetchApi } from '../utils/api';
 import { useParams, Link } from 'react-router-dom';
 import { Activity, ChevronRight, FlaskConical, TrendingUp, Calendar, BarChart3 } from 'lucide-react';
 import { Card } from './ui/Card';
@@ -13,7 +14,7 @@ export function ExperimentDetails() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetch(`/api/experiments/${experimentId}`)
+        fetchApi(`/api/experiments/${experimentId}`)
             .then(res => res.json())
             .then(data => {
                 setExperiment(data);

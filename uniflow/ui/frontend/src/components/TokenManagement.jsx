@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { fetchApi } from '../utils/api';
 import { Key, Plus, Trash2, Copy, Check, Shield, Calendar, AlertCircle } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/Card';
 import { Button } from './ui/Button';
@@ -20,7 +21,7 @@ export function TokenManagement() {
     const fetchTokens = async () => {
         try {
             // First check if we have any tokens (for initial token creation)
-            const res = await fetch('/api/execution/tokens');
+            const res = await fetchApi('/api/execution/tokens');
             if (res.status === 401) {
                 // No tokens exist yet
                 setTokens([]);
@@ -39,7 +40,7 @@ export function TokenManagement() {
 
     const createInitialToken = async () => {
         try {
-            const res = await fetch('/api/execution/tokens/init', {
+            const res = await fetchApi('/api/execution/tokens/init', {
                 method: 'POST'
             });
             const data = await res.json();
@@ -155,7 +156,7 @@ function TokenItem({ token, onRevoke }) {
     const handleRevoke = async () => {
         try {
             // This would need to be implemented in the backend
-            await fetch(`/api/execution/tokens/${token.name}`, {
+            await fetch(`/ api / execution / tokens / ${token.name} `, {
                 method: 'DELETE'
             });
             onRevoke();
@@ -187,7 +188,7 @@ function TokenItem({ token, onRevoke }) {
                         {token.permissions?.map(perm => (
                             <span
                                 key={perm}
-                                className={`px-2 py-0.5 rounded text-xs font-medium ${permissionColors[perm] || 'bg-slate-100 text-slate-700'}`}
+                                className={`px - 2 py - 0.5 rounded text - xs font - medium ${permissionColors[perm] || 'bg-slate-100 text-slate-700'} `}
                             >
                                 {perm}
                             </span>
