@@ -1,5 +1,100 @@
 # Advanced Features Guide
 
+## ⚡ Step Grouping
+
+Group consecutive pipeline steps to execute in the same container/environment, reducing overhead while maintaining clear step boundaries.
+
+### Basic Usage
+
+```python
+from uniflow import Pipeline, step
+from uniflow.core.resources import ResourceRequirements, GPUConfig
+
+# Group preprocessing steps
+@step(outputs=["raw_data"], execution_group="preprocessing")
+def load_data():
+    return fetch_from_source()
+
+@step(inputs=["raw_data"], outputs=["clean_data"], execution_group="preprocessing")
+def clean_data(raw_data):
+    return preprocess(raw_data)
+
+@step(inputs=["clean_data"], outputs=["features"], execution_group="preprocessing")
+def extract_features(clean_data):
+    return transform(clean_data)
+
+pipeline = Pipeline("data_pipeline")
+pipeline.add_step(load_data)
+pipeline.add_step(clean_data)
+pipeline.add_step(extract_features)
+
+result = pipeline.run()
+# All three steps run in the same container
+```
+
+### Resource Aggregation
+
+When steps are grouped, UniFlow automatically aggregates their resource requirements:
+
+```python
+@step(
+    outputs=["data"],
+    execution_group="training",
+    resources=ResourceRequirements(cpu="2", memory="4Gi")
+)
+def prepare_data():
+    return "data"
+
+@step(
+    inputs=["data"],
+    outputs=["model"],
+    execution_group="training",
+    resources=ResourceRequirements(
+        cpu="8",
+        memory="16Gi",
+        gpu=GPUConfig(gpu_type="nvidia-a100", count=2)
+    )
+)
+def train_model(data):
+    return "model"
+
+# Group executes with: cpu="8", memory="16Gi", gpu=2x A100 (max of all)
+```
+
+**Aggregation Strategy:**
+- **CPU/Memory**: Maximum across all steps
+- **GPU**: Maximum count, best GPU type (A100 > V100 > T4)
+- **Storage**: Maximum across all steps
+
+### Smart Sequential Analysis
+
+UniFlow only groups steps that can execute consecutively in the DAG:
+
+```python
+# Consecutive: A → B → C (all in "group1")
+# Result: Single group with all three steps ✅
+
+# Non-consecutive: A ("group1") → X (no group) → B ("group1")
+# Result: A and B run separately (not consecutive) ✅
+```
+
+### Inspection
+
+After building, inspect created groups:
+
+```python
+pipeline.build()
+
+for group in pipeline.step_groups:
+    print(f"Group: {group.group_name}")
+    print(f"  Steps: {[s.name for s in group.steps]}")
+    print(f"  Resources: CPU={group.aggregated_resources.cpu}")
+```
+
+See [Step Grouping Guide](step-grouping.md) for complete documentation.
+
+---
+
 ## 🤖 GenAI & LLM Monitoring
 
 ### LLM Call Tracing

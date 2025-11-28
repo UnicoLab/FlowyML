@@ -71,7 +71,22 @@ def generate_summary(text: str):
     return openai.ChatCompletion.create(...)
 ```
 
-### 4. 🔀 Dynamic Workflows
+### 4. ⚡ Efficient Step Grouping
+Group related steps to run in the same container - reduce overhead, maintain clarity.
+
+```python
+# Run preprocessing steps in same container (shares resources)
+@step(outputs=["raw"], execution_group="preprocessing")
+def load(): return fetch_data()
+
+@step(inputs=["raw"], outputs=["clean"], execution_group="preprocessing")
+def clean(raw): return preprocess(raw)
+
+# UniFlow automatically aggregates resources (max CPU, memory, best GPU)
+# and executes consecutively in same environment
+```
+
+### 5. 🔀 Dynamic Workflows
 Build adaptive workflows with conditional logic.
 
 ```python
@@ -83,18 +98,145 @@ pipeline.add_step(
 )
 ```
 
-### 5. 🔍 Interactive Debugging
+### 6. 🧩 Universal Plugin System
+Extend UniFlow with any tool - even wrap ZenML components!
+
+```python
+from uniflow.stacks.plugins import load_component
+
+# Use any ZenML orchestrator, artifact store, or integration
+k8s_orch = load_component("zenml:zenml.integrations.kubernetes.orchestrators.KubernetesOrchestrator")
+mlflow = load_component("zenml:zenml.integrations.mlflow.MLflowExperimentTracker")
+```
+
+### 7. 👤 Human-in-the-Loop
+Pause pipelines for manual approval or review.
+
+```python
+from uniflow import approval
+
+approval_step = approval(
+    name="approve_deployment",
+    approver="ml-team",
+    timeout_seconds=3600
+)
+```
+
+### 8. 📊 Built-in Experiment Tracking
+No external tools needed - tracking is built-in.
+
+```python
+from uniflow.tracking import Experiment
+
+exp = Experiment("baseline_training")
+exp.log_run(run_id="run_001", metrics={"accuracy": 0.95}, parameters={"lr": 0.01})
+best = exp.get_best_run("accuracy", maximize=True)
+```
+
+### 9. 🏆 Model Leaderboard & Registry
+Track, compare, and version your models.
+
+```python
+from uniflow import ModelLeaderboard
+from uniflow.core import Model
+
+# Track performance
+leaderboard = ModelLeaderboard(metric="accuracy")
+leaderboard.add_score(model_name="bert-base", score=0.92)
+
+# Register models with stages
+model = Model.create(artifact={...})
+model.register(name="text_classifier", stage="production")
+```
+
+### 10. 📅 Built-in Scheduling
+Schedule recurring jobs without external orchestrators.
+
+```python
+from uniflow import PipelineScheduler
+
+scheduler = PipelineScheduler()
+scheduler.schedule_daily(
+    name="daily_training",
+    pipeline_func=lambda: pipeline.run(),
+    hour=2, minute=0
+)
+scheduler.start()
+```
+
+### 11. 🔔 Smart Notifications
+Slack, Email, and custom alerts built-in.
+
+```python
+from uniflow import configure_notifications
+
+configure_notifications(
+    slack_webhook="https://hooks.slack.com/...",
+    email_config={...}
+)
+# Automatic notifications on pipeline success/failure
+```
+
+### 12. 🎯 Step-Level Debugging
+Set breakpoints and inspect state mid-pipeline.
+
+```python
+from uniflow import StepDebugger
+
+debugger = StepDebugger()
+debugger.set_breakpoint("train_model")
+pipeline.run(debug=True)  # Pauses at breakpoint
+```
+
+### 13. 📦 First-Class Assets
+Specialized types for ML workflows.
+
+```python
+from uniflow.core import Dataset, Model, Metrics, FeatureSet
+
+dataset = Dataset.create(data=df, name="training_data")
+model = Model.create(artifact=trained_model, score=0.95)
+metrics = Metrics.create(values={"accuracy": 0.95})
+```
+
+### 14. 🔄 Smart Retries & Circuit Breakers
+Handle failures gracefully.
+
+```python
+@step(retry=3, timeout=300)
+def flaky_api_call():
+    return external_api.fetch()
+
+# Circuit breakers prevent cascading failures
+```
+
+### 15. 📈 Data Drift Detection
+Monitor distribution shifts automatically.
+
+```python
+from uniflow import detect_drift
+
+drift = detect_drift(
+    reference_data=train_feature,
+    current_data=prod_feature,
+    threshold=0.1
+)
+if drift['drift_detected']:
+    trigger_retraining()
+```
+
+### 16. 🔍 Interactive Debugging
 - **StepDebugger**: Set breakpoints in your pipeline.
 - **Artifact Inspection**: View intermediate data in the UI.
 - **Local Execution**: Run the exact same code locally as in production.
 
-### 6. 🏭 Enterprise Production Features
+### 17. 🏭 Enterprise Production Features
 - **🔄 Automatic Retries**: Handle transient failures.
 - **⏰ Scheduling**: Built-in cron scheduler.
 - **🔔 Notifications**: Slack/Email alerts.
 - **🛡️ Circuit Breakers**: Stop cascading failures.
 
-### 7. 🔌 Universal Integrations
+### 18. 🔌 Universal Integrations
 - **ML Frameworks**: PyTorch, TensorFlow, Keras, Scikit-learn, HuggingFace.
 - **Cloud Providers**: AWS, GCP, Azure (via plugins).
 - **Tools**: MLflow, Weights & Biases, Great Expectations.

@@ -28,6 +28,7 @@ class StepConfig:
     resources: Union[dict[str, Any], "ResourceRequirements", None] = None
     tags: dict[str, str] = field(default_factory=dict)
     condition: Callable | None = None
+    execution_group: str | None = None
 
     def __hash__(self):
         """Make StepConfig hashable."""
@@ -49,6 +50,7 @@ class Step:
         resources: Union[dict[str, Any], "ResourceRequirements", None] = None,
         tags: dict[str, str] | None = None,
         condition: Callable | None = None,
+        execution_group: str | None = None,
     ):
         self.func = func
         self.name = name or func.__name__
@@ -63,6 +65,7 @@ class Step:
 
         self.tags = tags or {}
         self.condition = condition
+        self.execution_group = execution_group
 
         # Capture source code for UI display
         try:
@@ -81,6 +84,7 @@ class Step:
             resources=self.resources,
             tags=self.tags,
             condition=self.condition,
+            execution_group=self.execution_group,
         )
 
     def __call__(self, *args, **kwargs):
@@ -143,6 +147,7 @@ def step(
     tags: dict[str, str] | None = None,
     name: str | None = None,
     condition: Callable | None = None,
+    execution_group: str | None = None,
 ):
     """Decorator to define a pipeline step with automatic context injection.
 
@@ -159,6 +164,7 @@ def step(
         tags: Metadata tags for the step
         name: Optional custom name for the step
         condition: Optional callable that returns True if step should run
+        execution_group: Optional group name for executing multiple steps together
 
     Example:
         >>> @step
@@ -186,6 +192,7 @@ def step(
             resources=resources,
             tags=tags,
             condition=condition,
+            execution_group=execution_group,
         )
 
     if _func is None:

@@ -51,6 +51,32 @@ class Executor:
         """
         raise NotImplementedError
 
+    def execute_step_group(
+        self,
+        step_group,  # StepGroup
+        inputs: dict[str, Any],
+        context_params: dict[str, Any],
+        cache_store: Any | None = None,
+        artifact_store: Any | None = None,
+        run_id: str | None = None,
+        project_name: str = "default",
+    ) -> list[ExecutionResult]:
+        """Execute a group of steps together.
+
+        Args:
+            step_group: StepGroup to execute
+            inputs: Input data available to the group
+            context_params: Parameters from context
+            cache_store: Cache store for caching
+            artifact_store: Artifact store for materialization
+            run_id: Run identifier
+            project_name: Project name
+
+        Returns:
+            List of ExecutionResult (one per step)
+        """
+        raise NotImplementedError
+
 
 class LocalExecutor(Executor):
     """Local executor - runs steps in the current process."""
@@ -195,6 +221,92 @@ class LocalExecutor(Executor):
             retries=retries,
         )
 
+    def execute_step_group(
+        self,
+        step_group,  # StepGroup from step_grouping module
+        inputs: dict[str, Any],
+        context_params: dict[str, Any],
+        cache_store: Any | None = None,
+        artifact_store: Any | None = None,
+        run_id: str | None = None,
+        project_name: str = "default",
+    ) -> list[ExecutionResult]:
+        """Execute a group of steps together in the same environment.
+
+        For local execution, steps execute sequentially but share the same process.
+
+        Args:
+            step_group: StepGroup containing steps to execute
+            inputs: Input data available to the group
+            context_params: Parameters from context
+            cache_store: Cache store for caching
+            artifact_store: Artifact store for materialization
+            run_id: Run identifier
+            project_name: Project name
+
+        Returns:
+            List of ExecutionResult (one per step in execution order)
+        """
+        results: list[ExecutionResult] = []
+        step_outputs = dict(inputs)  # Copy initial inputs
+
+        # Execute steps in their defined order
+        for step_name in step_group.execution_order:
+            # Find the step object
+            step = next(s for s in step_group.steps if s.name == step_name)
+
+            # Prepare inputs for this step
+            step_inputs = {}
+            for input_name in step.inputs:
+                if input_name in step_outputs:
+                    step_inputs[input_name] = step_outputs[input_name]
+
+            # Execute this step
+            result = self.execute_step(
+                step=step,
+                inputs=step_inputs,
+                context_params=context_params,
+                cache_store=cache_store,
+                artifact_store=artifact_store,
+                run_id=run_id,
+                project_name=project_name,
+            )
+
+            results.append(result)
+
+            # If step failed, stop group execution
+            if not result.success:
+                # Mark remaining steps as skipped
+                current_index = step_group.execution_order.index(step_name)
+                remaining_steps = step_group.execution_order[current_index + 1 :]
+
+                for remaining_name in remaining_steps:
+                    skip_result = ExecutionResult(
+                        step_name=remaining_name,
+                        success=True,  # Set to True since skipped steps technically don't fail
+                        error="Skipped due to earlier failure in group",
+                        skipped=True,
+                    )
+                    results.append(skip_result)
+                break
+
+            # Store outputs for next steps in group
+            if result.output is not None:
+                if len(step.outputs) == 1:
+                    step_outputs[step.outputs[0]] = result.output
+                elif isinstance(result.output, (list, tuple)) and len(result.output) == len(step.outputs):
+                    for name, val in zip(step.outputs, result.output, strict=False):
+                        step_outputs[name] = val
+                elif isinstance(result.output, dict):
+                    for name in step.outputs:
+                        if name in result.output:
+                            step_outputs[name] = result.output[name]
+                else:
+                    if step.outputs:
+                        step_outputs[step.outputs[0]] = result.output
+
+        return results
+
 
 class DistributedExecutor(Executor):
     """Distributed executor - runs steps on remote workers.
@@ -216,3 +328,27 @@ class DistributedExecutor(Executor):
         # For now, fall back to local execution
         local_executor = LocalExecutor()
         return local_executor.execute_step(step, inputs, context_params, cache_store)
+
+    def execute_step_group(
+        self,
+        step_group,  # StepGroup
+        inputs: dict[str, Any],
+        context_params: dict[str, Any],
+        cache_store: Any | None = None,
+        artifact_store: Any | None = None,
+        run_id: str | None = None,
+        project_name: str = "default",
+    ) -> list[ExecutionResult]:
+        """Execute step group in distributed manner."""
+        # Placeholder - in real implementation, would send entire group to remote worker
+        # For now, fall back to local execution
+        local_executor = LocalExecutor()
+        return local_executor.execute_step_group(
+            step_group,
+            inputs,
+            context_params,
+            cache_store,
+            artifact_store,
+            run_id,
+            project_name,
+        )

@@ -177,6 +177,7 @@ class Pipeline:
 
         # State
         self._built = False
+        self.step_groups: list[Any] = []  # Will hold StepGroup objects
 
     def add_step(self, step: Step) -> "Pipeline":
         """Add a step to the pipeline.
@@ -216,6 +217,12 @@ class Pipeline:
         errors = self.dag.validate()
         if errors:
             raise ValueError("Pipeline validation failed:\n" + "\n".join(errors))
+
+        # Analyze step groups
+        from uniflow.core.step_grouping import StepGroupAnalyzer
+
+        analyzer = StepGroupAnalyzer()
+        self.step_groups = analyzer.analyze_groups(self.dag, self.steps)
 
         self._built = True
 
@@ -269,97 +276,161 @@ class Pipeline:
         result = PipelineResult(run_id, self.name)
         step_outputs = inputs or {}
 
-        # Get execution order
-        execution_order = self.dag.topological_sort()
-
         # Map step names to step objects for easier lookup
         self.steps_dict = {step.name: step for step in self.steps}
-
         if debug:
             pass
         else:
             # Always print the run URL for better UX
             pass
 
-        # Execute steps in order
-        for node in execution_order:
-            step = node.step
+        # Get execution units (individual steps or groups)
+        from uniflow.core.step_grouping import get_execution_units
 
-            if debug:
-                pass
+        execution_units = get_execution_units(self.dag, self.steps)
 
-            # Validate context parameters
-            missing_params = self.context.validate_for_step(step.func, exclude=step.inputs)
-            if missing_params:
+        # Execute steps/groups in order
+        for unit in execution_units:
+            # Check if unit is a group or individual step
+            from uniflow.core.step_grouping import StepGroup
+
+            if isinstance(unit, StepGroup):
+                # Execute entire group
                 if debug:
                     pass
-                error_msg = f"Missing required parameters: {missing_params}"
-                step_result = ExecutionResult(
-                    step_name=step.name,
-                    success=False,
-                    error=error_msg,
+
+                # Get context parameters (use first step's function as representative)
+                first_step = unit.steps[0]
+                context_params = self.context.inject_params(first_step.func)
+
+                # Execute the group
+                group_results = self.executor.execute_step_group(
+                    step_group=unit,
+                    inputs=step_outputs,
+                    context_params=context_params,
+                    cache_store=self.cache_store,
+                    artifact_store=artifact_store,
+                    run_id=run_id,
+                    project_name=self.name,
                 )
+
+                # Process each step result
+                for step_result in group_results:
+                    result.add_step_result(step_result)
+
+                    if debug:
+                        pass
+
+                    # Handle failure
+                    if not step_result.success and not step_result.skipped:
+                        result.finalize(success=False)
+                        self._save_run(result)
+                        return result
+
+                    # Store outputs for next steps/groups
+                    if step_result.output is not None:
+                        # Find step definition to get output names
+                        step_def = next((s for s in self.steps if s.name == step_result.step_name), None)
+                        if step_def:
+                            if len(step_def.outputs) == 1:
+                                step_outputs[step_def.outputs[0]] = step_result.output
+                                result.outputs[step_def.outputs[0]] = step_result.output
+                            elif isinstance(step_result.output, (list, tuple)) and len(step_result.output) == len(
+                                step_def.outputs,
+                            ):
+                                for name, val in zip(step_def.outputs, step_result.output, strict=False):
+                                    step_outputs[name] = val
+                                    result.outputs[name] = val
+                            elif isinstance(step_result.output, dict):
+                                for name in step_def.outputs:
+                                    if name in step_result.output:
+                                        step_outputs[name] = step_result.output[name]
+                                        result.outputs[name] = step_result.output[name]
+                            else:
+                                if step_def.outputs:
+                                    step_outputs[step_def.outputs[0]] = step_result.output
+                                    result.outputs[step_def.outputs[0]] = step_result.output
+
+            else:
+                # Execute single ungrouped step
+                step = unit
+
+                if debug:
+                    pass
+
+                # Validate context parameters
+                missing_params = self.context.validate_for_step(step.func, exclude=step.inputs)
+                if missing_params:
+                    if debug:
+                        pass
+
+                    error_msg = f"Missing required parameters: {missing_params}"
+                    step_result = ExecutionResult(
+                        step_name=step.name,
+                        success=False,
+                        error=error_msg,
+                    )
+                    result.add_step_result(step_result)
+                    result.finalize(success=False)
+                    self._save_run(result)  # Save run before returning
+                    return result
+
+                # Prepare step inputs
+                step_inputs = {}
+                for input_name in step.inputs:
+                    if input_name in step_outputs:
+                        step_inputs[input_name] = step_outputs[input_name]
+                    else:
+                        # Input might be parameter name, not asset name
+                        # This is simplified - real implementation would be smarter
+                        pass
+
+                # Get context parameters for this step
+                context_params = self.context.inject_params(step.func)
+
+                # Execute step
+                step_result = self.executor.execute_step(
+                    step,
+                    step_inputs,
+                    context_params,
+                    self.cache_store,
+                    artifact_store=artifact_store,
+                    run_id=run_id,
+                    project_name=self.name,
+                )
+
                 result.add_step_result(step_result)
-                result.finalize(success=False)
-                self._save_run(result)  # Save run before returning
-                return result
 
-            # Prepare step inputs
-            step_inputs = {}
-            for input_name in step.inputs:
-                if input_name in step_outputs:
-                    step_inputs[input_name] = step_outputs[input_name]
-                else:
-                    # Input might be parameter name, not asset name
-                    # This is simplified - real implementation would be smarter
+                if debug:
                     pass
 
-            # Get context parameters for this step
-            context_params = self.context.inject_params(step.func)
+                # Handle failure
+                if not step_result.success:
+                    if debug and not step_result.error:
+                        pass
+                    result.finalize(success=False)
+                    self._save_run(result)
+                    return result
 
-            # Execute step
-            step_result = self.executor.execute_step(
-                step,
-                step_inputs,
-                context_params,
-                self.cache_store,
-                artifact_store=artifact_store,
-                run_id=run_id,
-                project_name=self.name,
-            )
-
-            result.add_step_result(step_result)
-
-            if debug:
-                pass
-
-            # Handle failure
-            if not step_result.success:
-                if debug and not step_result.error:
-                    pass
-                result.finalize(success=False)
-                self._save_run(result)
-                return result
-
-            # Store outputs for next steps
-            if step_result.output is not None:
-                if len(step.outputs) == 1:
-                    step_outputs[step.outputs[0]] = step_result.output
-                    result.outputs[step.outputs[0]] = step_result.output
-                elif isinstance(step_result.output, (list, tuple)) and len(step_result.output) == len(step.outputs):
-                    for name, val in zip(step.outputs, step_result.output, strict=False):
-                        step_outputs[name] = val
-                        result.outputs[name] = val
-                elif isinstance(step_result.output, dict):
-                    for name in step.outputs:
-                        if name in step_result.output:
-                            step_outputs[name] = step_result.output[name]
-                            result.outputs[name] = step_result.output[name]
-                else:
-                    # Fallback: assign to first output if available
-                    if step.outputs:
+                # Store outputs for next steps
+                if step_result.output is not None:
+                    if len(step.outputs) == 1:
                         step_outputs[step.outputs[0]] = step_result.output
                         result.outputs[step.outputs[0]] = step_result.output
+                    elif isinstance(step_result.output, (list, tuple)) and len(step_result.output) == len(step.outputs):
+                        for name, val in zip(step.outputs, step_result.output, strict=False):
+                            step_outputs[name] = val
+                            result.outputs[name] = val
+                    elif isinstance(step_result.output, dict):
+                        for name in step.outputs:
+                            if name in step_result.output:
+                                step_outputs[name] = step_result.output[name]
+                                result.outputs[name] = step_result.output[name]
+                    else:
+                        # Fallback: assign to first output if available
+                        if step.outputs:
+                            step_outputs[step.outputs[0]] = step_result.output
+                            result.outputs[step.outputs[0]] = step_result.output
 
         # Success!
         result.finalize(success=True)
@@ -412,7 +483,7 @@ class Pipeline:
                 "inputs": step.inputs,
                 "outputs": step.outputs,
                 "tags": step.tags,
-                "resources": step.resources,
+                "resources": step.resources.to_dict() if hasattr(step.resources, "to_dict") else step.resources,
             }
 
         # Save to metadata database for UI

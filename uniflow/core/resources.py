@@ -49,6 +49,81 @@ class GPUConfig:
             "memory": self.memory,
         }
 
+    def merge_with(self, other: "GPUConfig") -> "GPUConfig":
+        """Merge with another GPU config, taking max count and best GPU type.
+
+        Args:
+            other: Another GPUConfig to merge with
+
+        Returns:
+            New GPUConfig with merged specifications
+        """
+        # Prefer A100 > V100 > T4 > other, or just take first if unknown
+        gpu_hierarchy = ["nvidia-a100", "nvidia-tesla-a100", "nvidia-tesla-v100", "nvidia-v100", "nvidia-t4"]
+
+        best_type = self.gpu_type
+        for gpu_type in gpu_hierarchy:
+            if gpu_type in self.gpu_type.lower():
+                self_rank = gpu_hierarchy.index(gpu_type)
+                break
+        else:
+            self_rank = 999
+
+        for gpu_type in gpu_hierarchy:
+            if gpu_type in other.gpu_type.lower():
+                other_rank = gpu_hierarchy.index(gpu_type)
+                break
+        else:
+            other_rank = 999
+
+        if other_rank < self_rank:
+            best_type = other.gpu_type
+
+        # Take max count
+        max_count = max(self.count, other.count)
+
+        # Take max memory if both specified
+        max_memory = None
+        if self.memory and other.memory:
+            max_memory = self._compare_memory(self.memory, other.memory)
+        elif self.memory:
+            max_memory = self.memory
+        elif other.memory:
+            max_memory = other.memory
+
+        return GPUConfig(
+            gpu_type=best_type,
+            count=max_count,
+            memory=max_memory,
+        )
+
+    @staticmethod
+    def _compare_memory(mem1: str, mem2: str) -> str:
+        """Return the larger memory specification."""
+
+        # Simple comparison - convert to bytes and compare
+        def to_bytes(mem: str) -> int:
+            import re
+
+            match = re.match(r"^(\d+(?:\.\d+)?)(Ki|Mi|Gi|Ti|K|M|G|T)?$", mem)
+            if not match:
+                return 0
+            value, unit = float(match.group(1)), match.group(2) or ""
+            multipliers = {
+                "Ki": 1024,
+                "Mi": 1024**2,
+                "Gi": 1024**3,
+                "Ti": 1024**4,
+                "K": 1000,
+                "M": 1000**2,
+                "G": 1000**3,
+                "T": 1000**4,
+                "": 1,
+            }
+            return int(value * multipliers.get(unit, 1))
+
+        return mem1 if to_bytes(mem1) >= to_bytes(mem2) else mem2
+
 
 @dataclass
 class NodeAffinity:
@@ -76,6 +151,33 @@ class NodeAffinity:
             "preferred": self.preferred,
             "tolerations": self.tolerations,
         }
+
+    def merge_with(self, other: "NodeAffinity") -> "NodeAffinity":
+        """Merge with another node affinity, combining constraints.
+
+        Args:
+            other: Another NodeAffinity to merge with
+
+        Returns:
+            New NodeAffinity with merged constraints
+        """
+        # Merge required labels (intersection - both must be satisfied)
+        merged_required = {**self.required, **other.required}
+
+        # Merge preferred labels (union - prefer either)
+        merged_preferred = {**self.preferred, **other.preferred}
+
+        # Merge tolerations (union - tolerate all)
+        merged_tolerations = list(self.tolerations)
+        for tol in other.tolerations:
+            if tol not in merged_tolerations:
+                merged_tolerations.append(tol)
+
+        return NodeAffinity(
+            required=merged_required,
+            preferred=merged_preferred,
+            tolerations=merged_tolerations,
+        )
 
 
 @dataclass
@@ -159,6 +261,133 @@ class ResourceRequirements:
     def get_gpu_count(self) -> int:
         """Get total number of GPUs requested."""
         return self.gpu.count if self.gpu else 0
+
+    @staticmethod
+    def _compare_cpu(cpu1: str, cpu2: str) -> str:
+        """Return the larger CPU requirement.
+
+        Args:
+            cpu1: First CPU specification (e.g., "2", "500m")
+            cpu2: Second CPU specification
+
+        Returns:
+            The larger CPU specification
+        """
+
+        def to_millicores(cpu: str) -> int:
+            if cpu.endswith("m"):
+                return int(cpu[:-1])
+            return int(float(cpu) * 1000)
+
+        return cpu1 if to_millicores(cpu1) >= to_millicores(cpu2) else cpu2
+
+    @staticmethod
+    def _compare_memory(mem1: str, mem2: str) -> str:
+        """Return the larger memory requirement.
+
+        Args:
+            mem1: First memory specification (e.g., "4Gi", "8192Mi")
+            mem2: Second memory specification
+
+        Returns:
+            The larger memory specification (in original format)
+        """
+        import re
+
+        def to_bytes(mem: str) -> int:
+            match = re.match(r"^(\d+(?:\.\d+)?)(Ki|Mi|Gi|Ti|K|M|G|T|B)?$", mem)
+            if not match:
+                return 0
+            value, unit = float(match.group(1)), match.group(2) or "B"
+            multipliers = {
+                "Ki": 1024,
+                "Mi": 1024**2,
+                "Gi": 1024**3,
+                "Ti": 1024**4,
+                "K": 1000,
+                "M": 1000**2,
+                "G": 1000**3,
+                "T": 1000**4,
+                "B": 1,
+                "": 1,
+            }
+            return int(value * multipliers.get(unit, 1))
+
+        bytes1 = to_bytes(mem1)
+        bytes2 = to_bytes(mem2)
+
+        # Return whichever is larger, but keep original format
+        return mem1 if bytes1 >= bytes2 else mem2
+
+    def merge_with(self, other: "ResourceRequirements") -> "ResourceRequirements":
+        """Merge with another ResourceRequirements, taking maximum of each.
+
+        This is used when grouping steps to aggregate their resource needs.
+        Strategy:
+        - CPU: Take maximum
+        - Memory: Take maximum
+        - Storage: Take maximum
+        - GPU: Merge configs (max count, best type)
+        - Node affinity: Merge constraints
+
+        Args:
+            other: Another ResourceRequirements to merge with
+
+        Returns:
+            New ResourceRequirements with merged specifications
+        """
+        # Merge CPU
+        merged_cpu = None
+        if self.cpu and other.cpu:
+            merged_cpu = self._compare_cpu(self.cpu, other.cpu)
+        elif self.cpu:
+            merged_cpu = self.cpu
+        elif other.cpu:
+            merged_cpu = other.cpu
+
+        # Merge memory
+        merged_memory = None
+        if self.memory and other.memory:
+            merged_memory = self._compare_memory(self.memory, other.memory)
+        elif self.memory:
+            merged_memory = self.memory
+        elif other.memory:
+            merged_memory = other.memory
+
+        # Merge storage
+        merged_storage = None
+        if self.storage and other.storage:
+            merged_storage = self._compare_memory(self.storage, other.storage)
+        elif self.storage:
+            merged_storage = self.storage
+        elif other.storage:
+            merged_storage = other.storage
+
+        # Merge GPU
+        merged_gpu = None
+        if self.gpu and other.gpu:
+            merged_gpu = self.gpu.merge_with(other.gpu)
+        elif self.gpu:
+            merged_gpu = self.gpu
+        elif other.gpu:
+            merged_gpu = other.gpu
+
+        # Merge node affinity
+        merged_affinity = None
+        if self.node_affinity and other.node_affinity:
+            merged_affinity = self.node_affinity.merge_with(other.node_affinity)
+        elif self.node_affinity:
+            merged_affinity = self.node_affinity
+        elif other.node_affinity:
+            merged_affinity = other.node_affinity
+
+        return ResourceRequirements(
+            cpu=merged_cpu,
+            memory=merged_memory,
+            storage=merged_storage,
+            gpu=merged_gpu,
+            node_affinity=merged_affinity,
+        )
 
 
 def resources(
