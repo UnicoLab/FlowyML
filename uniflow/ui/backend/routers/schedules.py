@@ -14,10 +14,12 @@ scheduler.start()  # Start the scheduler thread
 class ScheduleRequest(BaseModel):
     name: str
     pipeline_name: str
-    schedule_type: str  # 'daily', 'hourly', 'interval'
+    schedule_type: str  # 'daily', 'hourly', 'interval', 'cron'
     hour: int | None = 0
     minute: int | None = 0
     interval_seconds: int | None = 0
+    cron_expression: str | None = None
+    timezone: str = "UTC"
     project_name: str | None = None
 
 
@@ -34,9 +36,16 @@ async def list_schedules():
             "enabled": s.enabled,
             "last_run": s.last_run,
             "next_run": s.next_run,
+            "timezone": s.timezone,
         }
         for s in schedules
     ]
+
+
+@router.get("/health")
+async def get_scheduler_health():
+    """Get scheduler health metrics."""
+    return scheduler.health_check()
 
 
 @router.post("/")
@@ -81,24 +90,38 @@ async def create_schedule(schedule: ScheduleRequest):
                 pipeline_func=pipeline_func,
                 hour=schedule.hour,
                 minute=schedule.minute,
+                timezone=schedule.timezone,
             )
         elif schedule.schedule_type == "hourly":
             scheduler.schedule_hourly(
                 name=schedule.name,
                 pipeline_func=pipeline_func,
                 minute=schedule.minute,
+                timezone=schedule.timezone,
             )
         elif schedule.schedule_type == "interval":
             scheduler.schedule_interval(
                 name=schedule.name,
                 pipeline_func=pipeline_func,
                 seconds=schedule.interval_seconds,
+                timezone=schedule.timezone,
+            )
+        elif schedule.schedule_type == "cron":
+            if not schedule.cron_expression:
+                raise HTTPException(status_code=400, detail="Cron expression required for cron schedule")
+            scheduler.schedule_cron(
+                name=schedule.name,
+                pipeline_func=pipeline_func,
+                cron_expression=schedule.cron_expression,
+                timezone=schedule.timezone,
             )
         else:
             raise HTTPException(status_code=400, detail="Invalid schedule type")
 
         return {"status": "success", "message": f"Scheduled '{schedule.name}'"}
 
+    except ImportError as e:
+        raise HTTPException(status_code=501, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -124,15 +147,45 @@ async def disable_schedule(schedule_name: str):
     return {"status": "success"}
 
 
+@router.get("/{schedule_name}/history")
+async def get_schedule_history(schedule_name: str, limit: int = 50):
+    """Get execution history for a schedule."""
+    return scheduler.get_history(schedule_name, limit)
+
+
 @router.get("/registered-pipelines")
-async def list_registered_pipelines():
+async def list_registered_pipelines(project: str = None):
     """List all pipelines available for scheduling."""
     from uniflow.core.templates import list_templates
+    from uniflow.storage.metadata import SQLiteMetadataStore
 
     registered = pipeline_registry.list_pipelines()
     templates = list_templates()
 
+    # Also get pipelines from metadata store (historical runs)
+    metadata_pipelines = []
+    try:
+        store = SQLiteMetadataStore()
+        import sqlite3
+
+        conn = sqlite3.connect(store.db_path)
+        cursor = conn.cursor()
+
+        if project:
+            cursor.execute(
+                "SELECT DISTINCT pipeline_name FROM runs WHERE project = ? ORDER BY pipeline_name",
+                (project,),
+            )
+        else:
+            cursor.execute("SELECT DISTINCT pipeline_name FROM runs ORDER BY pipeline_name")
+
+        metadata_pipelines = [row[0] for row in cursor.fetchall()]
+        conn.close()
+    except Exception as e:
+        print(f"Failed to fetch pipelines from metadata store: {e}")
+
     return {
         "registered": list(registered.keys()),
         "templates": templates,
+        "metadata": metadata_pipelines,
     }
