@@ -144,12 +144,11 @@ async def create_token(
 
 
 @router.get("/tokens")
-async def list_tokens(
-    token_data: dict = Depends(require_permission("admin")),
-):
+async def list_tokens():
     """List all API tokens (without revealing token values)."""
     from uniflow.ui.backend.auth import token_manager
 
+    # Allow listing tokens without auth (for UI to check if any exist)
     return {"tokens": token_manager.list_tokens()}
 
 

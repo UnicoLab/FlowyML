@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, PlayCircle, FolderKanban, FlaskConical, Database, Settings, Trophy, Calendar, MessageSquare, Moon, Sun, Key } from 'lucide-react';
+import { LayoutDashboard, PlayCircle, FolderKanban, FlaskConical, Database, Settings, Trophy, Calendar, MessageSquare, Moon, Sun, Key, Package } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { ProjectSelector } from './ui/ProjectSelector';
 
@@ -66,6 +66,7 @@ export function Layout({ children }) {
                     <div className="px-4 py-2 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mt-4">
                         Settings
                     </div>
+                    <NavLink to="/plugins" icon={<Package size={18} />} label="Plugins" />
                     <NavLink to="/tokens" icon={<Key size={18} />} label="API Tokens" />
                     <NavLink to="/settings" icon={<Settings size={18} />} label="Settings" />
                 </nav>

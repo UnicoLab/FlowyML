@@ -1,0 +1,11 @@
+plugins:
+  - name: zenml_k8s_orchestrator
+    source: zenml.integrations.kubernetes.orchestrators.KubernetesOrchestrator
+    type: orchestrator
+    adaptation:
+      method_mapping:
+        run_pipeline: run
+
+  - name: zenml_s3_store
+    source: zenml.integrations.s3.artifact_stores.S3ArtifactStore
+    type: artifact_store

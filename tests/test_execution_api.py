@@ -133,13 +133,17 @@ class TestTokenManagement:
         assert isinstance(data["tokens"], list)
 
     def test_list_tokens_without_admin(self, client, execute_token):
-        """Test that listing tokens without admin fails."""
+        """Test that listing tokens works without admin (changed for UI support)."""
         response = client.get(
             "/api/execution/tokens",
             headers={"Authorization": f"Bearer {execute_token}"},
         )
 
-        assert response.status_code == 403
+        # Changed: Now allows listing tokens without admin for UI to check if tokens exist
+        assert response.status_code == 200
+        data = response.json()
+        assert "tokens" in data
+        assert isinstance(data["tokens"], list)
 
 
 class TestPipelineExecution:

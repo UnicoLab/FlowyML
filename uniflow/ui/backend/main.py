@@ -16,6 +16,7 @@ from uniflow.ui.backend.routers import (
     notifications,
     leaderboard,
     execution,
+    plugins,
 )
 
 app = FastAPI(
@@ -64,6 +65,7 @@ app.include_router(schedules.router, prefix="/api/schedules", tags=["schedules"]
 app.include_router(notifications.router, prefix="/api/notifications", tags=["notifications"])
 app.include_router(leaderboard.router, prefix="/api/leaderboard", tags=["leaderboard"])
 app.include_router(execution.router, prefix="/api/execution", tags=["execution"])
+app.include_router(plugins.router, prefix="/api", tags=["plugins"])
 
 
 # Stats endpoint for dashboard

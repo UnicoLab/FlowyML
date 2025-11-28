@@ -16,6 +16,7 @@ import { Experiments } from './components/Experiments'
 import { ExperimentDetails } from './components/ExperimentDetails'
 import { Settings as SettingsPage } from './components/Settings'
 import { TokenManagement } from './components/TokenManagement'
+import { Plugins } from './components/Plugins'
 import Traces from './components/Traces';
 import Projects from './components/Projects';
 import Schedules from './components/Schedules';
@@ -39,6 +40,7 @@ function App() {
                         <Route path="/projects" element={<Projects />} />
                         <Route path="/schedules" element={<Schedules />} />
                         <Route path="/leaderboard" element={<Leaderboard />} />
+                        <Route path="/plugins" element={<Plugins />} />
                         <Route path="/settings" element={<SettingsPage />} />
                         <Route path="/tokens" element={<TokenManagement />} />
                     </Routes>

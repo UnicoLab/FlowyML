@@ -1,0 +1,9 @@
+plugins:
+  - name: airflow_bigquery
+    source: airflow.providers.google.cloud.operators.bigquery.BigQueryExecuteQueryOperator
+    type: orchestrator
+    adaptation:
+      method_mapping:
+        run_pipeline: execute
+      attribute_mapping:
+        config: params

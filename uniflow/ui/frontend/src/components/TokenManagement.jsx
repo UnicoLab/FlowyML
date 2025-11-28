@@ -290,6 +290,24 @@ function CreateTokenModal({ onClose, onCreate }) {
     const [permissions, setPermissions] = useState(['read', 'write', 'execute']);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [projects, setProjects] = useState([]);
+    const [loadingProjects, setLoadingProjects] = useState(true);
+
+    useEffect(() => {
+        fetchProjects();
+    }, []);
+
+    const fetchProjects = async () => {
+        try {
+            const res = await fetchApi('/api/projects/');
+            const data = await res.json();
+            setProjects(data || []);
+        } catch (err) {
+            console.error('Failed to fetch projects:', err);
+        } finally {
+            setLoadingProjects(false);
+        }
+    };
 
     const handleCreate = async () => {
         if (!name) {
@@ -375,15 +393,24 @@ function CreateTokenModal({ onClose, onCreate }) {
 
                         <div>
                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                Project Scope (optional)
+                                Project Scope
                             </label>
-                            <input
-                                type="text"
+                            <select
                                 value={project}
                                 onChange={(e) => setProject(e.target.value)}
-                                placeholder="Leave empty for all projects"
+                                disabled={loadingProjects}
                                 className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
-                            />
+                            >
+                                <option value="">All Projects</option>
+                                {projects.map(proj => (
+                                    <option key={proj.name} value={proj.name}>
+                                        {proj.name}
+                                    </option>
+                                ))}
+                            </select>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                Restrict this token to a specific project or allow access to all
+                            </p>
                         </div>
 
                         <div>

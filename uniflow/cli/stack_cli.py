@@ -330,5 +330,203 @@ docker:
     click.echo("  3. Run your pipeline: uniflow run pipeline.py")
 
 
+@cli.group()
+def plugin() -> None:
+    """Manage plugins and integrations."""
+    pass
+
+
+@plugin.command("list")
+@click.option("--installed", is_flag=True, help="Show only installed plugins")
+def list_plugins(installed: bool) -> None:
+    """List available and installed plugins."""
+    from uniflow.stacks.plugins import get_component_registry
+
+    registry = get_component_registry()
+    plugins = registry.list_plugins()
+
+    if not plugins:
+        click.echo("No plugins found.")
+        return
+
+    click.echo("\n🔌 Plugins:")
+    for p in plugins:
+        status = "✅ Installed" if p.is_installed else "Available"
+        click.echo(f"  • {p.name} ({p.version}) - {status}")
+        if p.description:
+            click.echo(f"    {p.description}")
+    click.echo()
+
+
+@plugin.command("search")
+@click.argument("query", required=False)
+@click.option("--source", "-s", type=click.Choice(["pypi", "zenml", "all"]), default="all")
+def search_plugins(query: str | None, source: str) -> None:
+    """Search for available plugins."""
+    click.echo(f"Searching for plugins matching '{query or '*'}' from {source}...")
+
+    # In a real implementation, this would query PyPI or a central registry
+    # For now, we'll simulate discovery of common ZenML plugins
+
+    common_plugins = [
+        {"name": "zenml-kubernetes", "desc": "Kubernetes orchestrator for ZenML/UniFlow"},
+        {"name": "zenml-mlflow", "desc": "MLflow integration for experiment tracking"},
+        {"name": "zenml-aws", "desc": "AWS stack components (S3, ECR, SageMaker)"},
+        {"name": "zenml-gcp", "desc": "Google Cloud stack components"},
+        {"name": "zenml-azure", "desc": "Azure stack components"},
+        {"name": "zenml-airflow", "desc": "Airflow orchestrator integration"},
+    ]
+
+    found = False
+    for p in common_plugins:
+        if not query or query.lower() in p["name"] or query.lower() in p["desc"].lower():
+            click.echo(f"\n📦 {p['name']}")
+            click.echo(f"   {p['desc']}")
+            click.echo(f"   Install: uniflow plugin install {p['name']}")
+            found = True
+
+    if not found:
+        click.echo("No plugins found matching your query.")
+
+
+@plugin.command("install")
+@click.argument("plugin_name")
+def install_plugin(plugin_name: str) -> None:
+    """Install a plugin."""
+    from uniflow.stacks.plugins import get_component_registry
+
+    registry = get_component_registry()
+
+    try:
+        from rich.console import Console
+
+        console = Console()
+
+        with console.status(f"[bold green]Installing {plugin_name}..."):
+            if registry.install_plugin(plugin_name):
+                console.print(f"[bold green]✅ Successfully installed {plugin_name}![/bold green]")
+            else:
+                console.print(f"[bold red]❌ Failed to install {plugin_name}[/bold red]")
+
+    except ImportError:
+        click.echo(f"Installing {plugin_name}...")
+        if registry.install_plugin(plugin_name):
+            click.echo(f"✅ Successfully installed {plugin_name}!")
+        else:
+            click.echo(f"❌ Failed to install {plugin_name}")
+
+
+@plugin.command("info")
+@click.argument("plugin_name")
+def plugin_info(plugin_name: str) -> None:
+    """Get detailed info about a plugin."""
+    # Simulated info
+    info = {
+        "name": plugin_name,
+        "version": "1.0.0",
+        "author": "UniFlow Team",
+        "description": "A powerful plugin for UniFlow.",
+        "components": ["Orchestrator", "ArtifactStore"],
+        "dependencies": ["zenml>=0.40.0", "boto3"],
+    }
+
+    try:
+        from rich.console import Console
+        from rich.markdown import Markdown
+        from rich.panel import Panel
+
+        console = Console()
+
+        content = f"""
+# {info['name']} (v{info['version']})
+
+{info['description']}
+
+**Author:** {info['author']}
+
+## Components
+{chr(10).join(f'- {c}' for c in info['components'])}
+
+## Dependencies
+{chr(10).join(f'- {d}' for d in info['dependencies'])}
+"""
+        console.print(Panel(Markdown(content), title="Plugin Info", expand=False))
+
+    except ImportError:
+        click.echo(f"Plugin: {info['name']}")
+        click.echo(f"Version: {info['version']}")
+        click.echo(f"Description: {info['description']}")
+
+
+@plugin.command("import-zenml-stack")
+@click.argument("stack_name")
+@click.option("--output", "-o", default="uniflow.yaml", help="Output file path")
+def import_zenml_stack(stack_name: str, output: str) -> None:
+    """Import an existing ZenML stack."""
+    from uniflow.stacks.migration import StackMigrator
+
+    migrator = StackMigrator()
+
+    try:
+        # Try to use rich if available
+        try:
+            from rich.console import Console
+            from rich.panel import Panel
+
+            console = Console()
+            use_rich = True
+        except ImportError:
+            use_rich = False
+
+        if use_rich:
+            console.print(f"🔍 Analyzing ZenML stack [bold cyan]'{stack_name}'[/bold cyan]...")
+        else:
+            click.echo(f"🔍 Analyzing ZenML stack '{stack_name}'...")
+
+        migration_data = migrator.migrate_zenml_stack(stack_name)
+
+        msg = f"✅ Found stack '{stack_name}' with {len(migration_data['plugins'])} components."
+        if use_rich:
+            console.print(f"[bold green]{msg}[/bold green]")
+            console.print("\n[bold]Plugins to configure:[/bold]")
+            for p in migration_data["plugins"]:
+                console.print(f"  • [cyan]{p['name']}[/cyan] ([dim]{p['source']}[/dim])")
+        else:
+            click.echo(msg)
+            click.echo("\nPlugins to configure:")
+            for p in migration_data["plugins"]:
+                click.echo(f"  • {p['name']} ({p['source']})")
+
+        if click.confirm(f"\nGenerate configuration in {output}?", default=True):
+            yaml_content = migrator.generate_yaml(migration_data)
+
+            # Append or write new
+            mode = "a" if Path(output).exists() else "w"
+            with open(output, mode) as f:
+                if mode == "a":
+                    f.write("\n" + yaml_content)
+                else:
+                    f.write(yaml_content)
+
+            if use_rich:
+                console.print(
+                    Panel(
+                        f"✅ Successfully imported stack to [bold]{output}[/bold]\n\nYou can now use it with: [green]uniflow run --stack {stack_name}[/green]",
+                        title="Success",
+                        style="green",
+                    ),
+                )
+            else:
+                click.echo(f"✅ Successfully imported stack to {output}")
+                click.echo(f"You can now use it with: uniflow run --stack {stack_name}")
+
+    except ImportError:
+        click.echo("❌ ZenML is not installed. Install it with: pip install zenml", err=True)
+    except ValueError as e:
+        click.echo(f"❌ {e}", err=True)
+    except Exception as e:
+        click.echo(f"❌ Migration failed: {e}", err=True)
+
+
 if __name__ == "__main__":
     cli()
