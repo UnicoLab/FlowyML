@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { fetchApi } from '../utils/api';
+import { fetchApi } from '../../utils/api';
 import { Trophy, TrendingUp, TrendingDown, Filter } from 'lucide-react';
 import { format } from 'date-fns';
 
-export default function Leaderboard() {
+export function Leaderboard() {
     const [metric, setMetric] = useState('accuracy');
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);

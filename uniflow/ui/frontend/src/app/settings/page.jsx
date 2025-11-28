@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Settings as SettingsIcon, Moon, Sun, Bell, Shield, Key, Save } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardContent } from './ui/Card';
-import { Button } from './ui/Button';
+import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
 import { motion } from 'framer-motion';
-import { useTheme } from '../contexts/ThemeContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export function Settings() {
     const { theme, setTheme } = useTheme();

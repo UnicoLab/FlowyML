@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { fetchApi } from '../utils/api';
+import { fetchApi } from '../../utils/api';
 import { Activity, Zap, MessageSquare, Clock, DollarSign } from 'lucide-react';
 
-export default function Traces() {
+export function Traces() {
   const [traces, setTraces] = useState([]);
   const [selectedTrace, setSelectedTrace] = useState(null);
   const [loading, setLoading] = useState(true);

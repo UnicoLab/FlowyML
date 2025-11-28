@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Play, Pause, Trash2, Plus, Clock, CheckCircle, XCircle, Activity, Globe, History, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
-import { DataView } from './ui/DataView';
-import { Card } from './ui/Card';
-import { Badge } from './ui/Badge';
-import { Button } from './ui/Button';
-import { useProject } from '../contexts/ProjectContext';
+import { DataView } from '../../components/ui/DataView';
+import { Card } from '../../components/ui/Card';
+import { Badge } from '../../components/ui/Badge';
+import { Button } from '../../components/ui/Button';
+import { useProject } from '../../contexts/ProjectContext';
 
-export default function Schedules() {
+export function Schedules() {
     const { selectedProject } = useProject();
     const [schedules, setSchedules] = useState([]);
     const [pipelines, setPipelines] = useState({ registered: [], templates: [], metadata: [] });

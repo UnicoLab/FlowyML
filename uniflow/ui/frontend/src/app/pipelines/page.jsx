@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { fetchApi } from '../utils/api';
+import { fetchApi } from '../../utils/api';
 import { Link } from 'react-router-dom';
 import { Layers, Play, Clock, CheckCircle, XCircle, TrendingUp, Calendar, Activity, ArrowRight, Zap } from 'lucide-react';
-import { Card } from './ui/Card';
-import { Badge } from './ui/Badge';
+import { Card } from '../../components/ui/Card';
+import { Badge } from '../../components/ui/Badge';
 import { format } from 'date-fns';
-import { DataView } from './ui/DataView';
-import { useProject } from '../contexts/ProjectContext';
+import { DataView } from '../../components/ui/DataView';
+import { useProject } from '../../contexts/ProjectContext';
 
 export function Pipelines() {
     const [pipelines, setPipelines] = useState([]);

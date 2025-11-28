@@ -1,7 +1,7 @@
 import React from 'react';
 import { Package } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { PluginManager } from './plugins/PluginManager';
+import { PluginManager } from '../../components/plugins/PluginManager';
 
 export function Plugins() {
     const container = {

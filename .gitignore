@@ -24,6 +24,8 @@ wheels/
 
 # docs
 site/
+analysis/
+zenml*
 
 # Flowy specific
 .flowy/

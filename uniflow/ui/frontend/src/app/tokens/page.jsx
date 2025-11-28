@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { fetchApi } from '../utils/api';
+import { fetchApi } from '../../utils/api';
 import { Key, Plus, Trash2, Copy, Check, Shield, Calendar, AlertCircle } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardContent } from './ui/Card';
-import { Button } from './ui/Button';
-import { Badge } from './ui/Badge';
+import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
+import { Badge } from '../../components/ui/Badge';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 

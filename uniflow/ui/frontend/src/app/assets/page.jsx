@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { fetchApi } from '../utils/api';
+import { fetchApi } from '../../utils/api';
 import { Database, Box, BarChart2, FileText, Search, Filter, Calendar, Package, Download, Eye, X, ArrowRight } from 'lucide-react';
-import { Card } from './ui/Card';
-import { Badge } from './ui/Badge';
-import { Button } from './ui/Button';
+import { Card } from '../../components/ui/Card';
+import { Badge } from '../../components/ui/Badge';
+import { Button } from '../../components/ui/Button';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { DataView } from './ui/DataView';
-import { useProject } from '../contexts/ProjectContext';
+import { DataView } from '../../components/ui/DataView';
+import { useProject } from '../../contexts/ProjectContext';
 
 export function Assets() {
     const [assets, setAssets] = useState([]);

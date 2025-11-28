@@ -1,13 +1,13 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { fetchApi } from '../utils/api';
+import { fetchApi } from '../../../utils/api';
 import { useParams, Link } from 'react-router-dom';
-import { CheckCircle, XCircle, Clock, Calendar, Package, ArrowRight, BarChart2, FileText, Database, Box, ChevronRight, Activity, Layers, Code2, Terminal, Info, X, Maximize2, TrendingUp, Download } from 'lucide-react';
-import { Card } from './ui/Card';
-import { Badge } from './ui/Badge';
-import { Button } from './ui/Button';
+import { CheckCircle, XCircle, Clock, Calendar, Package, ArrowRight, BarChart2, FileText, Database, Box, ChevronRight, Activity, Layers, Code2, Terminal, Info, X, Maximize2, TrendingUp, Download, ArrowDownCircle, ArrowUpCircle, Tag, Zap, AlertCircle } from 'lucide-react';
+import { Card } from '../../../components/ui/Card';
+import { Badge } from '../../../components/ui/Badge';
+import { Button } from '../../../components/ui/Button';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PipelineGraph } from './PipelineGraph';
+import { PipelineGraph } from '../../../components/PipelineGraph';
 
 export function RunDetails() {
     const { runId } = useParams();
@@ -260,68 +260,154 @@ function TabButton({ active, onClick, children }) {
 }
 
 function OverviewTab({ stepData, metrics }) {
+    const formatDuration = (seconds) => {
+        if (!seconds) return 'N/A';
+        if (seconds < 1) return `${(seconds * 1000).toFixed(0)}ms`;
+        if (seconds < 60) return `${seconds.toFixed(2)}s`;
+        const mins = Math.floor(seconds / 60);
+        const secs = (seconds % 60).toFixed(0);
+        return `${mins}m ${secs}s`;
+    };
+
     return (
-        <div className="space-y-4">
-            {/* Metadata */}
-            <div>
-                <h5 className="text-sm font-semibold text-slate-700 mb-2">Metadata</h5>
-                <div className="space-y-2 text-sm">
-                    {stepData.inputs?.length > 0 && (
-                        <div>
-                            <span className="text-slate-500">Inputs:</span>
-                            <div className="flex flex-wrap gap-1 mt-1">
-                                {stepData.inputs.map(input => (
-                                    <span key={input} className="bg-slate-100 px-2 py-0.5 rounded text-xs font-mono">
-                                        {input}
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                    {stepData.outputs?.length > 0 && (
-                        <div>
-                            <span className="text-slate-500">Outputs:</span>
-                            <div className="flex flex-wrap gap-1 mt-1">
-                                {stepData.outputs.map(output => (
-                                    <span key={output} className="bg-slate-100 px-2 py-0.5 rounded text-xs font-mono">
-                                        {output}
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                    {stepData.tags && Object.keys(stepData.tags).length > 0 && (
-                        <div>
-                            <span className="text-slate-500">Tags:</span>
-                            <div className="flex flex-wrap gap-1 mt-1">
-                                {Object.entries(stepData.tags).map(([key, value]) => (
-                                    <span key={key} className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs">
-                                        {key}: {value}
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
-                    )}
+        <div className="space-y-6">
+            {/* Status & Execution Info */}
+            <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-gradient-to-br from-slate-50 to-white rounded-xl border border-slate-200">
+                    <div className="flex items-center gap-2 mb-2">
+                        <Clock size={14} className="text-slate-400" />
+                        <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">Duration</span>
+                    </div>
+                    <p className="text-2xl font-bold text-slate-900">
+                        {formatDuration(stepData.duration)}
+                    </p>
+                </div>
+                <div className="p-4 bg-gradient-to-br from-slate-50 to-white rounded-xl border border-slate-200">
+                    <div className="flex items-center gap-2 mb-2">
+                        <Activity size={14} className="text-slate-400" />
+                        <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">Status</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        {stepData.success ? (
+                            <>
+                                <CheckCircle size={20} className="text-emerald-500" />
+                                <span className="text-lg font-bold text-emerald-700">Success</span>
+                            </>
+                        ) : stepData.error ? (
+                            <>
+                                <XCircle size={20} className="text-rose-500" />
+                                <span className="text-lg font-bold text-rose-700">Failed</span>
+                            </>
+                        ) : (
+                            <>
+                                <Clock size={20} className="text-amber-500" />
+                                <span className="text-lg font-bold text-amber-700">Pending</span>
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
+
+            {/* Inputs & Outputs */}
+            {(stepData.inputs?.length > 0 || stepData.outputs?.length > 0) && (
+                <div className="space-y-4">
+                    <h5 className="text-sm font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2">
+                        <Database size={16} />
+                        Data Flow
+                    </h5>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {stepData.inputs?.length > 0 && (
+                            <div className="p-4 bg-blue-50/50 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-800">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <ArrowDownCircle size={16} className="text-blue-600" />
+                                    <span className="text-sm font-semibold text-blue-900 dark:text-blue-100">Inputs</span>
+                                    <Badge variant="secondary" className="ml-auto text-xs">{stepData.inputs.length}</Badge>
+                                </div>
+                                <div className="space-y-1.5">
+                                    {stepData.inputs.map((input, idx) => (
+                                        <div key={idx} className="flex items-center gap-2 p-2 bg-white dark:bg-slate-800 rounded-lg border border-blue-100 dark:border-blue-800/50">
+                                            <Database size={12} className="text-blue-500 flex-shrink-0" />
+                                            <span className="text-sm font-mono text-slate-700 dark:text-slate-200 truncate">{input}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        {stepData.outputs?.length > 0 && (
+                            <div className="p-4 bg-purple-50/50 dark:bg-purple-900/10 rounded-xl border border-purple-100 dark:border-purple-800">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <ArrowUpCircle size={16} className="text-purple-600" />
+                                    <span className="text-sm font-semibold text-purple-900 dark:text-purple-100">Outputs</span>
+                                    <Badge variant="secondary" className="ml-auto text-xs">{stepData.outputs.length}</Badge>
+                                </div>
+                                <div className="space-y-1.5">
+                                    {stepData.outputs.map((output, idx) => (
+                                        <div key={idx} className="flex items-center gap-2 p-2 bg-white dark:bg-slate-800 rounded-lg border border-purple-100 dark:border-purple-800/50">
+                                            <Box size={12} className="text-purple-500 flex-shrink-0" />
+                                            <span className="text-sm font-mono text-slate-700 dark:text-slate-200 truncate">{output}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Tags/Metadata */}
+            {stepData.tags && Object.keys(stepData.tags).length > 0 && (
+                <div>
+                    <h5 className="text-sm font-bold text-slate-700 uppercase tracking-wide mb-3 flex items-center gap-2">
+                        <Tag size={16} />
+                        Metadata
+                    </h5>
+                    <div className="grid grid-cols-2 gap-3">
+                        {Object.entries(stepData.tags).map(([key, value]) => (
+                            <div key={key} className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                                <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">{key}</div>
+                                <div className="text-sm font-mono font-medium text-slate-900 dark:text-white truncate">{String(value)}</div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Cached Badge */}
+            {stepData.cached && (
+                <div className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-xl border-2 border-blue-200 dark:border-blue-800">
+                    <div className="flex items-center gap-3">
+                        <Zap size={24} className="text-blue-600" />
+                        <div>
+                            <h6 className="font-bold text-blue-900 dark:text-blue-100">Cached Result</h6>
+                            <p className="text-sm text-blue-700 dark:text-blue-300">This step used cached results from a previous run</p>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Error */}
             {stepData.error && (
                 <div>
-                    <h5 className="text-sm font-semibold text-rose-700 mb-2">Error</h5>
-                    <pre className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-xs font-mono whitespace-pre-wrap overflow-x-auto">
-                        {stepData.error}
-                    </pre>
+                    <h5 className="text-sm font-bold text-rose-700 uppercase tracking-wide mb-3 flex items-center gap-2">
+                        <AlertCircle size={16} />
+                        Error Details
+                    </h5>
+                    <div className="p-4 bg-rose-50 dark:bg-rose-900/20 rounded-xl border-2 border-rose-200 dark:border-rose-800">
+                        <pre className="text-sm font-mono text-rose-700 dark:text-rose-300 whitespace-pre-wrap overflow-x-auto">
+                            {stepData.error}
+                        </pre>
+                    </div>
                 </div>
             )}
 
             {/* Metrics with Visualization */}
             {metrics?.length > 0 && (
                 <div>
-                    <h5 className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
-                        <TrendingUp size={16} /> Metrics
+                    <h5 className="text-sm font-bold text-slate-700 uppercase tracking-wide mb-3 flex items-center gap-2">
+                        <TrendingUp size={16} />
+                        Performance Metrics
                     </h5>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 gap-3">
                         {metrics.map((metric, idx) => (
                             <MetricCard key={idx} metric={metric} />
                         ))}

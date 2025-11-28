@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { fetchApi } from '../utils/api';
+import { fetchApi } from '../../utils/api';
 import { Link } from 'react-router-dom';
 import { Play, Clock, CheckCircle, XCircle, Loader, Calendar, TrendingUp, Activity, ArrowRight } from 'lucide-react';
-import { Card } from './ui/Card';
-import { Badge } from './ui/Badge';
+import { Card } from '../../components/ui/Card';
+import { Badge } from '../../components/ui/Badge';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
-import { DataView } from './ui/DataView';
-import { useProject } from '../contexts/ProjectContext';
+import { DataView } from '../../components/ui/DataView';
+import { useProject } from '../../contexts/ProjectContext';
 
 export function Runs() {
     const [runs, setRuns] = useState([]);

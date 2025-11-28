@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { fetchApi } from '../utils/api';
+import { fetchApi } from '../../utils/api';
 import { Folder, Plus, Trash2, Activity, Database, Clock } from 'lucide-react';
 import { format } from 'date-fns';
-import { DataView } from './ui/DataView';
-import { Button } from './ui/Button';
+import { DataView } from '../../components/ui/DataView';
+import { Button } from '../../components/ui/Button';
 
-export default function Projects() {
+export function Projects() {
     const [projects, setProjects] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showCreateModal, setShowCreateModal] = useState(false);
