@@ -1,6 +1,25 @@
 # Conditional Execution 🔀
 
-UniFlow supports dynamic pipeline execution paths based on runtime conditions. This allows you to build flexible workflows that adapt to data quality, model performance, or external factors.
+UniFlow supports dynamic pipeline execution paths based on runtime conditions. Build smart workflows that adapt to data quality, model performance, or external factors.
+
+> [!NOTE]
+> **What you'll learn**: How to build adaptive pipelines that change behavior based on data
+>
+> **Key insight**: Real-world pipelines aren't linear. They need to make decisions (e.g., "Is this model good enough to deploy?").
+
+## Why Conditional Logic Matters
+
+**Without conditional logic**:
+- **Manual intervention**: Stopping pipelines manually if accuracy is low
+- **Rigid workflows**: One size fits all, regardless of data volume or quality
+- **Separate pipelines**: Maintaining "Training" and "Deployment" pipelines separately
+
+**With UniFlow conditional logic**:
+- **Automated decisions**: "If accuracy > 90%, deploy. Else, retrain."
+- **Adaptive behavior**: "If data > 1GB, use Spark. Else, use Pandas."
+- **Unified workflows**: Handle edge cases within the same pipeline
+
+## Conditional Patterns
 
 ## 🔀 Conditional Steps
 
@@ -49,17 +68,38 @@ def upload_to_s3(data):
     s3.upload(data)
 ```
 
-## 🔄 Dynamic DAGs
+## Decision Guide: Control Flow
 
-For more complex scenarios, you can dynamically construct the DAG at runtime.
+| Pattern | Use When | Example |
+|---------|----------|---------|
+| `If / Switch` | **Branching logic**: Choose between different paths | Deploy vs. Retrain |
+| `skip_if` | **Optional steps**: Skip a step based on a flag | Skip upload in `dry_run` |
+| Dynamic DAG | **Complex routing**: Structure depends on data | Route A for images, Route B for text |
+
+### Pattern 1: The Deployment Gate
+
+The most common pattern: only deploy if the model meets a threshold.
 
 ```python
-@step
-def decide_path(data):
-    if data['type'] == 'image':
-        return 'image_processing'
-    else:
-        return 'text_processing'
+from uniflow import If
 
-# Note: Dynamic DAG modification is an advanced feature and requires careful handling of dependencies.
+pipeline.add_control_flow(
+    If(condition=lambda ctx: ctx["accuracy"] > 0.95)
+    .then(deploy_to_prod)
+    .else_(notify_slack_failure)
+)
 ```
+
+### Pattern 2: The Dry Run
+
+Skip side-effects when testing.
+
+```python
+@step(skip_if=lambda ctx: ctx.params.get("dry_run", False))
+def upload_to_s3(data):
+    # This won't run if dry_run=True
+    s3.upload(data)
+```
+
+> [!TIP]
+> **Best Practice**: Keep conditions simple. If your logic is complex, move it into a dedicated `@step` that outputs a boolean flag, then check that flag in the `If` condition.

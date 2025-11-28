@@ -1,10 +1,92 @@
 # Pipelines 🚀
 
-Pipelines are the core abstraction in UniFlow. They represent a workflow of connected steps that transform data.
+Pipelines are the core abstraction in UniFlow — they represent workflows that orchestrate your ML operations from data to deployment.
+
+> [!NOTE]
+> **What you'll learn**: How to design, build, and run production-grade pipelines
+>
+> **Key insight**: A well-designed pipeline is infrastructure-agnostic. Write it once, run it anywhere (local, staging, production) without code changes.
+
+## Why Pipelines Matter
+
+Without pipelines, ML workflows are often:
+- **Scripts scattered across notebooks** — Hard to reproduce, impossible to version
+- **Tightly coupled to infrastructure** — Rewrite for every environment
+- **Manually orchestrated** — Prone to human error, doesn't scale
+- **Opaque** — Can't see what's running, debug failures, or track lineage
+
+**UniFlow pipelines solve this** by providing:
+- **Declarative workflows** — Define what to do, not how to execute it
+- **Automatic dependency resolution** — Steps run in the right order
+- **Built-in observability** — Track every run, inspect every artifact
+- **Environment portability** — Same code, different stacks
+
+## Pipeline Design Principles
+
+Before diving into code, understand these design principles:
+
+### 1. **Steps Should Be Pure Functions**
+
+```python
+# ✅ Good: Pure function, testable in isolation
+@step(outputs=["processed"])
+def clean_data(raw_data):
+    return raw_data.dropna().reset_index(drop=True)
+
+# ❌ Bad: Side effects, hard to test
+@step
+def clean_data():
+    global df  # Don't do this!
+    df = df.dropna()
+```
+
+**Why**: Pure functions are testable, cacheable, and parallelizable.
+
+### 2. **One Step, One Responsibility**
+
+```python
+# ✅ Good: Focused steps
+@step(outputs=["split_data"])
+def split_data(data): ...
+
+@step(inputs=["split_data"], outputs=["model"])
+def train_model(split_data): ...
+
+# ❌ Bad: Doing too much
+@step(outputs=["model"])
+def split_and_train(data):
+    # Splitting and training in one step = can't cache independently
+    split = split_data(data)
+    model = train(split)
+    return model
+```
+
+**Why**: Granular steps enable better caching, debugging, and reuse.
+
+### 3. **Configuration Belongs in Context**
+
+```python
+# ✅ Good: Context injection
+ctx = context(learning_rate=0.001, epochs=10)
+pipeline = Pipeline("training", context=ctx)
+
+@step(outputs=["model"])
+def train(data, learning_rate: float, epochs: int):
+    # Parameters injected automatically
+    ...
+
+# ❌ Bad: Hardcoded configuration
+@step(outputs=["model"])
+def train(data):
+    learning_rate = 0.001  # Can't change without code edit
+    epochs = 10
+```
+
+**Why**: Separation of code and config enables dev/staging/prod with one codebase.
 
 ## Creating Your First Pipeline
 
-A pipeline in UniFlow is created using the `Pipeline` class and decorated steps:
+Here's a complete, runnable example:
 
 ```python
 from uniflow import Pipeline, step, context
@@ -27,7 +109,12 @@ pipeline.add_step(transform)
 
 # Run the pipeline
 result = pipeline.run()
+
+if result.success:
+    print(f"✓ Processed data: {result.outputs['processed_data']}")
 ```
+
+**What just happened**: UniFlow built a DAG, determined execution order, and ran your steps. No Airflow DAG files, no Kubeflow YAML, just Python.
 
 ## Pipeline Configuration ⚙️
 
@@ -257,62 +344,199 @@ def flaky_step():
     return fetch_external_data()
 ```
 
-## Best Practices 💡
+## Pipeline Patterns & Anti-Patterns
 
-### 1. Name Your Pipelines Descriptively
+### ✅ Pattern: Environment-Agnostic Design
 
 ```python
-# ✅ Good
-pipeline = Pipeline("customer_churn_prediction")
+# Same pipeline code works everywhere
+ctx_dev = context(data_path="./local_data.csv", batch_size=32)
+ctx_prod = context(data_path="gs://bucket/data.csv", batch_size=512)
 
-# ❌ Bad
-pipeline = Pipeline("pipeline1")
+# Development
+pipeline = Pipeline("ml_training", context=ctx_dev)
+pipeline.run()
+
+# Production (same code!)
+pipeline = Pipeline("ml_training", context=ctx_prod, stack=prod_stack)
+pipeline.run()
 ```
 
-### 2. Define Clear Inputs and Outputs
+**Why this works**: Zero code changes from dev to prod. Just swap context and stack.
+
+### ❌ Anti-Pattern: Environment-Specific Branches
 
 ```python
-# ✅ Good - explicit dependencies
-@step(inputs=["raw_data"], outputs=["clean_data"])
-def clean(raw_data):
-    return process(raw_data)
+# Don't do this!
+@step(outputs=["data"])
+def load_data():
+    if os.getenv("ENV") == "production":
+        return load_from_gcs()
+    else:
+        return load_from_local()
+```
 
-# ⚠️ Less clear
-@step
+**Why it's bad**: Logic pollution, hard to test, environments drift apart.
+
+**Fix**: Use context and stacks to handle environment differences.
+
+---
+
+### ✅ Pattern: Composition Over Inheritance
+
+```python
+# Reusable, composable steps
+@step(outputs=["data"])
+def load_csv(path: str):
+    return pd.read_csv(path)
+
+@step(inputs=["data"], outputs=["clean"])
 def clean(data):
-    return process(data)
+    return data.dropna()
+
+# Build multiple pipelines from same steps
+etl_pipeline = Pipeline("etl").add_step(load_csv).add_step(clean)
+validation_pipeline = Pipeline("validation").add_step(load_csv).add_step(validate)
 ```
 
-### 3. Keep Steps Focused
+**Why this works**: Steps are building blocks. Mix and match for different workflows.
 
-Each step should do one thing well. Break complex operations into multiple steps.
-
-### 4. Use Context for Configuration
+### ❌ Anti-Pattern: Monolithic Pipelines
 
 ```python
-# ✅ Good - configuration in context
-ctx = context(model_type="xgboost", max_depth=10)
-pipeline = Pipeline("training", context=ctx)
-
-# ❌ Bad - hardcoded values
-@step
-def train():
-    model = XGBoost(max_depth=10)  # Hard to change
+# Don't do this!
+@step(outputs=["everything"])
+def do_everything():
+    data = load()
+    clean = process(data)
+    model = train(clean)
+    metrics = evaluate(model)
+    deploy(model)
+    return metrics
 ```
 
-### 5. Enable Caching for Development
+**Why it's bad**: Can't cache parts, can't parallelize, can't reuse, hard to debug.
+
+---
+
+### ✅ Pattern: Fail Fast with Validation Steps
 
 ```python
-# Fast iteration during development
-pipeline = Pipeline("dev_pipeline", enable_cache=True)
+@step(outputs=["data"])
+def load_data():
+    return fetch_data()
 
-# Disable for production runs
-pipeline = Pipeline("prod_pipeline", enable_cache=False)
+@step(inputs=["data"])
+def validate_data(data):
+    if len(data) < 100:
+        raise ValueError("Insufficient data")
+    if data['target'].isnull().any():
+        raise ValueError("Missing target values")
+    # Validation passes, no output needed
+
+@step(inputs=["data"], outputs=["model"])
+def train_model(data):
+    # Only runs if validation passed
+    return train(data)
 ```
+
+**Why this works**: Catch problems early, save expensive compute on bad data.
+
+---
+
+## Decision Guide: When to Split Steps
+
+| Scenario | Split? | Reason |
+|----------|--------|--------|
+| Step takes >5 minutes to run | ✅ Yes | Better caching granularity |
+| Might want to run parts separately | ✅ Yes | Enables reuse |
+| Operation is expensive (GPU, API calls) | ✅ Yes | Cache results independently |
+| Tightly coupled operations (save + load same artifact) | ❌ No | Keep together for atomicity |
+| Fast operations (<1 second) | ❌ Maybe | Balance overhead vs. benefit |
+
+---
+
+## Real-World Pipeline Examples
+
+### ML Training Pipeline
+
+```python
+from uniflow import Pipeline, step, context
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+
+ctx = context(
+    data_path="data/train.csv",
+    test_size=0.2,
+    n_estimators=100,
+    random_state=42
+)
+
+@step(outputs=["raw_data"])
+def load_data(data_path: str):
+    return pd.read_csv(data_path)
+
+@step(inputs=["raw_data"], outputs=["X_train", "X_test", "y_train", "y_test"])
+def split_data(raw_data, test_size: float, random_state: int):
+    X = raw_data.drop('target', axis=1)
+    y = raw_data['target']
+    return train_test_split(X, y, test_size=test_size, random_state=random_state)
+
+@step(inputs=["X_train", "y_train"], outputs=["model"])
+def train(X_train, y_train, n_estimators: int):
+    model = RandomForestClassifier(n_estimators=n_estimators)
+    model.fit(X_train, y_train)
+    return model
+
+@step(inputs=["model", "X_test", "y_test"], outputs=["accuracy"])
+def evaluate(model, X_test, y_test):
+    return model.score(X_test, y_test)
+
+pipeline = Pipeline("ml_training", context=ctx)
+pipeline.add_step(load_data)
+pipeline.add_step(split_data)
+pipeline.add_step(train)
+pipeline.add_step(evaluate)
+
+result = pipeline.run()
+print(f"Model accuracy: {result.outputs['accuracy']:.2%}")
+```
+
+**Why this design works**:
+- Each step is independently cacheable
+- Parameters in context, not hardcoded
+- Can easily add more steps (preprocessing, feature engineering)
+- Testable components
+
+---
+
+## Best Practices Summary
+
+1. **Name descriptively**: `customer_churn_prediction` > `pipeline1`
+2. **Explicit dependencies**: Always declare `inputs` and `outputs`
+3. **One responsibility per step**: Split complex logic into focused steps
+4. **Context for configuration**: Never hardcode parameters
+5. **Enable caching in dev**: Speed up iteration, disable in prod if needed
+6. **Fail fast**: Validate early, don't waste compute on bad data
+7. **Test in isolation**: Each step should be unit-testable
+8. **Document assumptions**: Use docstrings to explain step requirements
+9. **Version your pipelines**: Use Git for pipeline code versioning
+10. **Monitor in production**: Use the UI to track runs and catch failures
 
 ## Next Steps 📚
 
-- **[Steps](steps.md)**: Master step configuration and decorators
-- **[Context](context.md)**: Learn about parameter injection
-- **[Caching](caching.md)**: Understand intelligent caching
-- **[Artifacts](artifacts.md)**: Work with datasets and models
+**Master the building blocks**:
+- **[Steps](steps.md)**: Deep dive into step configuration, decorators, and best practices
+- **[Context](context.md)**: Learn parameter injection patterns and environment management
+- **[Assets](assets.md)**: Work with typed artifacts (Datasets, Models, Metrics)
+
+**Level up your pipelines**:
+- **[Caching](../advanced/caching.md)**: Optimize iteration speed with intelligent caching
+- **[Conditional Execution](../advanced/conditional.md)**: Build adaptive workflows
+- **[Parallel Execution](../advanced/parallel.md)**: Speed up independent operations
+- **[Error Handling](../advanced/error-handling.md)**: Build resilient production pipelines
+
+**Deploy to production**:
+- **[Stack Architecture](../architecture/stacks.md)**: Understand local vs. cloud execution
+- **[Projects](../user-guide/projects.md)**: Organize multi-tenant deployments
+- **[Scheduling](../user-guide/scheduling.md)**: Automate recurring pipelines

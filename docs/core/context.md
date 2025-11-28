@@ -1,13 +1,36 @@
 # Context & Parameters 🧠
 
-UniFlow provides a powerful context system that allows you to manage parameters, configuration, and runtime state across your pipeline steps without manual plumbing.
+UniFlow's context system eliminates configuration hell by providing automatic parameter injection across pipeline steps.
+
+> [!NOTE]
+> **What you'll learn**: How to manage configuration without hardcoding, enabling the same pipeline to run in dev/staging/prod
+>
+> **Key insight**: Context separates **what** your pipeline does from **how** it's configured. Change parameters, not code.
+
+## Why Context Matters
+
+**Without context**, ML pipelines suffer from:
+- **Hardcoded parameters**: `learning_rate = 0.001` buried in code
+- **Environment coupling**: Different code for dev vs. prod
+- **Configuration sprawl**: Parameters scattered across files
+- **Manual wiring**: Pass every parameter through every function
+
+**With UniFlow context**, you get:
+- **Automatic injection**: Parameters flow to steps that need them
+- **Environment flexibility**: Same code, different configs
+- **Centralized configuration**: All parameters in one place
+- **Type safety**: Type hints validate parameters automatically
+
+> [!TIP]
+> **The killer feature**: Run the same pipeline with different configs just by swapping context. No code changes to go from dev (small dataset, CPU) to prod (full dataset, GPU).
 
 ## The Context Object
 
 The `Context` object serves as a container for:
-1. **Global Parameters**: Hyperparameters, configuration settings, environment variables
-2. **Runtime State**: Information about the current run, execution timestamp, etc.
-3. **Dependency Injection**: Automatically providing parameters to steps that need them
+1. **Global Parameters**: Hyperparameters, configuration settings
+2. **Environment Variables**: Paths, endpoints, credentials
+3. **Runtime Settings**: Batch sizes, resource requirements
+4. **Domain Logic**: Business rules, thresholds
 
 ### Creating a Context
 

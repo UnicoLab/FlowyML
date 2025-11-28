@@ -1,10 +1,36 @@
 # Pipeline Scheduling ⏰
 
-Automate pipeline execution with flexible scheduling options, including cron expressions, timezone support, and distributed coordination.
+Automate pipeline execution so you never miss a deadline.
+
+> [!NOTE]
+> **What you'll learn**: How to schedule pipelines for recurring execution with zero manual intervention
+>
+> **Key insight**: Manual pipeline execution doesn't scale. Scheduling turns ad-hoc jobs into reliable automation.
+
+## Why Scheduling Matters
+
+**Without scheduling**:
+- **Manual overhead**: "Did someone run the daily ETL?"
+- **Missed deadlines**: Forgetting to run the weekly report
+- **No reliability**: Pipelines run only when someone remembers
+
+**With UniFlow scheduling**:
+- **Zero manual work**: Pipelines run automatically
+- **Multi-timezone**: Run at 9 AM local time for each region
+- **Fault-tolerant**: Survives restarts, prevents duplicate runs
+
+## Decision Guide: Scheduling Strategy
+
+| Use Case | Schedule Type | Example |
+|----------|---------------|----------|
+| **Business Reports** | `Daily` at specific time | "Run sales report at 8 AM" |
+| **Data Sync** | `Interval` (minutes/hours) | "Poll API every 15 minutes" |
+| **Complex Timing** | `Cron` expression | "Every weekday at 9 AM, except holidays" |
+| **High Frequency** | `Hourly` at specific minute | "Update cache at :00 past each hour" |
 
 ## Overview ℹ️
 
-The `PipelineScheduler` allows you to run pipelines automatically at specified times or intervals:
+The `PipelineScheduler` provides:
 - **Cron schedules**: Complex schedules using standard cron syntax
 - **Daily schedules**: Run at specific times each day
 - **Hourly schedules**: Run at specific minute each hour

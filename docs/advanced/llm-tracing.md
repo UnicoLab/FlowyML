@@ -1,6 +1,27 @@
 # GenAI & LLM Tracing 🕵️
 
-UniFlow provides built-in tracing for Large Language Model (LLM) interactions, allowing you to monitor token usage, costs, latency, and full execution traces of your GenAI pipelines.
+UniFlow provides built-in observability for Large Language Models (LLMs), giving you X-ray vision into your GenAI applications.
+
+> [!NOTE]
+> **What you'll learn**: How to track token usage, costs, and latency for every LLM call
+>
+> **Key insight**: LLMs are black boxes. Tracing turns them into transparent, measurable components.
+
+## Why Tracing Matters
+
+**Without tracing**:
+- **Hidden costs**: "Why is our OpenAI bill $500 this month?"
+- **Latency spikes**: "Why is the chatbot taking 10 seconds?"
+- **Quality issues**: "What exact prompt caused this hallucination?"
+
+**With UniFlow tracing**:
+- **Cost transparency**: See cost per call, per user, or per pipeline
+- **Performance metrics**: Pinpoint slow steps in your RAG chain
+- **Full context**: See the exact prompt and completion for every interaction
+
+## 🕵️ LLM Call Tracing
+
+You can trace any function as an LLM call or a chain of calls using the `@trace_llm` decorator. UniFlow automatically captures inputs, outputs, and metadata.
 
 ## 🕵️ LLM Call Tracing
 
@@ -24,30 +45,41 @@ def generate_text(prompt: str):
 result = generate_text("Write a haiku about ML pipelines")
 ```
 
-### Nested Traces (Chains & Agents)
+### Real-World Pattern: RAG Pipeline
 
-You can nest traces to visualize complex workflows like RAG (Retrieval Augmented Generation) or Agents.
+Trace a complete Retrieval Augmented Generation (RAG) workflow to see where time is spent.
 
 ```python
 from uniflow import trace_llm
 
-@trace_llm(name="rag_pipeline", event_type="chain")
+@trace_llm(name="rag_chain", event_type="chain")
 def rag_pipeline(query: str):
-    # This child trace will be nested under 'rag_pipeline'
+    # 1. Retrieve context (Tool)
     context = retrieve_context(query)
+
+    # 2. Generate answer (LLM)
     answer = generate_answer(query, context)
     return answer
 
 @trace_llm(name="retrieval", event_type="tool")
 def retrieve_context(query: str):
-    # Simulate retrieval
-    return "UniFlow is a great tool."
+    # Simulate vector DB lookup
+    return "UniFlow documentation..."
 
-@trace_llm(name="generation", event_type="llm")
+@trace_llm(name="generation", event_type="llm", model="gpt-4")
 def generate_answer(query: str, context: str):
-    # Simulate generation
-    return f"Based on {context}, I answer: {query}"
+    # This call's tokens and cost will be tracked
+    return openai.ChatCompletion.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": f"Context: {context}"},
+            {"role": "user", "content": query}
+        ]
+    )
 ```
+
+> [!TIP]
+> **Pro Tip**: Use `event_type="chain"` for the parent function and `"llm"` or `"tool"` for children. This creates a beautiful nested waterfall view in the UI.
 
 ## 📊 Viewing Traces
 

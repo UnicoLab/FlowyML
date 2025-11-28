@@ -1,10 +1,36 @@
 # Pipeline Versioning 🔄
 
-Track, compare, and manage different versions of your pipelines.
+Track changes to your pipelines like you track code with Git.
+
+> [!NOTE]
+> **What you'll learn**: How to version your pipelines and compare changes over time
+>
+> **Key insight**: "What changed between v1 and v2?" is a question you'll ask every week. Versioning answers it instantly.
+
+## Why Versioning Matters
+
+**Without versioning**:
+- **No audit trail**: "Who changed the data loader last month?"
+- **Risky deployments**: You don't know what changed
+- **Lost history**: Can't rollback to a working version
+
+**With UniFlow versioning**:
+- **Full history**: See exactly what changed and when
+- **Safe releases**: Compare new version with production before deploying
+- **Easy rollback**: Restore a previous version instantly
+
+## When to Version
+
+| Scenario | Action |
+|----------|--------|
+| **Before deploying to production** | Always save a version |
+| **After adding/removing steps** | Save with descriptive metadata |
+| **Major logic changes** | Bump version number (v1.0 → v2.0) |
+| **Daily experiments** | Not necessary—only version what you'll deploy |
 
 ## Overview ℹ️
 
-The `VersionedPipeline` class extends the standard `Pipeline` with version control capabilities, allowing you to:
+The `VersionedPipeline` class provides:
 - Save pipeline versions with metadata
 - Compare versions to see what changed
 - Track pipeline evolution over time

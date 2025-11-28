@@ -1,55 +1,66 @@
-# Google Cloud Platform (GCP) Integration
+# Google Cloud Platform (GCP) ☁️
 
-UniFlow allows you to run pipelines on GCP Vertex AI or use GCS as an artifact store.
+Scale your pipelines from local prototypes to production workloads on Google Cloud.
+
+> [!NOTE]
+> **What you'll learn**: How to run UniFlow pipelines on Vertex AI and store data in GCS
+>
+> **Key insight**: Develop locally on your laptop, then flip a switch to run on a 100-GPU cluster in the cloud.
+
+## Why Use GCP with UniFlow?
+
+**Local limitations**:
+- **Memory**: "OOM Error" on large datasets
+- **Compute**: Training takes days on a CPU
+- **Storage**: Hard drive full of model checkpoints
+
+**GCP advantages**:
+- **Infinite Scale**: Spin up as many machines as you need
+- **Managed Services**: Vertex AI handles the infrastructure
+- **Unified Data**: Store everything in GCS, accessible from anywhere
 
 ## ☁️ GCS Artifact Store
 
-Store your pipeline artifacts (datasets, models) in Google Cloud Storage.
+Store your pipeline artifacts (datasets, models) in Google Cloud Storage. This makes them accessible to your team and production systems.
 
 ### Configuration
 
 ```bash
-uniflow stack register gcp-stack \
+# Register a stack that uses GCS
+uniflow stack register gcp-prod \
     --artifact-store gs://my-bucket/uniflow-artifacts \
     --metadata-store sqlite:///uniflow.db
 ```
 
-Or in Python:
-
-```python
-from uniflow.stacks import GCPStack
-
-stack = GCPStack(
-    name="production-gcp",
-    artifact_store="gs://my-bucket/artifacts"
-)
-stack.activate()
-```
-
 ## 🚀 Vertex AI Execution
 
-Run your pipeline steps as Vertex AI Custom Jobs.
+Run your pipeline steps as Vertex AI Custom Jobs. UniFlow handles the Dockerization and submission automatically.
 
-### Requirements
+### Real-World Pattern: Hybrid Execution
 
-- GCP Project with Vertex AI API enabled.
-- Docker installed locally (to build step images).
-
-### Usage
+Develop locally, then deploy to Vertex AI for the heavy lifting.
 
 ```python
 from uniflow import Pipeline
 from uniflow.integrations.gcp import VertexAIOrchestrator
 
-pipeline = Pipeline("vertex_pipeline")
+pipeline = Pipeline("training_pipeline")
 # ... add steps ...
 
-# Run on Vertex AI
+# Option 1: Run locally for debugging
+# pipeline.run()
+
+# Option 2: Run on Vertex AI for production
 pipeline.run(
     orchestrator=VertexAIOrchestrator(
         project="my-gcp-project",
         location="us-central1",
-        machine_type="n1-standard-4"
+        machine_type="n1-standard-16", # Powerful machine!
+        accelerator_type="NVIDIA_TESLA_T4",
+        accelerator_count=1
     )
 )
 ```
+
+> [!TIP]
+> **Cost Control**: Vertex AI charges by the second. UniFlow ensures resources are only provisioned while your steps are running.

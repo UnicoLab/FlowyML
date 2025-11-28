@@ -1,6 +1,27 @@
 # Data Drift Detection 📉
 
-UniFlow provides built-in tools to detect data drift between training and inference datasets, ensuring your models remain reliable over time.
+UniFlow ensures your models don't rot in production by detecting when live data diverges from training data.
+
+> [!NOTE]
+> **What you'll learn**: How to catch "silent failures" where models degrade because the world changed
+>
+> **Key insight**: A model is only as good as the data it sees. If data changes, predictions fail.
+
+## Why Drift Detection Matters
+
+**Without drift detection**:
+- **Silent degradation**: Model accuracy drops, but no errors are thrown
+- **Reactive debugging**: Users complain about bad predictions weeks later
+- **Blind retraining**: Retraining on schedule regardless of need
+
+**With UniFlow drift detection**:
+- **Proactive alerts**: Know immediately when data distribution shifts
+- **Targeted retraining**: Retrain only when necessary
+- **Root cause analysis**: See exactly which features drifted (e.g., "Age distribution shifted older")
+
+## 📉 Concept
+
+Data drift occurs when the statistical properties of the target variable or input features change over time. UniFlow uses the **Population Stability Index (PSI)** to quantify this shift.
 
 ## 📉 Concept
 
@@ -47,20 +68,36 @@ print(stats)
 # Output: {'count': 1000.0, 'mean': 0.48, 'std': 1.01, ...}
 ```
 
-## 🔔 Automated Monitoring
+## Real-World Pattern: Automated Quality Gate
 
-Combine drift detection with notifications to get alerted automatically.
+Stop a pipeline if drift is detected, preventing bad models from being deployed or bad predictions from being served.
 
 ```python
-from uniflow import step, get_notifier
+from uniflow import step, get_notifier, If
 
-@step
-def validate_data(new_batch):
+@step(outputs=["drift_result"])
+def check_drift(new_batch):
     reference = load_reference_data()
     result = detect_drift(reference, new_batch)
+    return result
 
-    if result['drift_detected']:
-        get_notifier().on_drift_detected("input_features", result['psi'])
+@step
+def alert_team(result):
+    get_notifier().send_slack(f"🚨 Drift detected! PSI: {result['psi']}")
 
-    return new_batch
+@step
+def process_data(data):
+    # Continue processing
+    pass
+
+# Build pipeline with a quality gate
+pipeline.add_step(check_drift)
+pipeline.add_control_flow(
+    If(condition=lambda ctx: ctx["drift_result"]["drift_detected"])
+    .then(alert_team)
+    .else_(process_data)
+)
 ```
+
+> [!TIP]
+> **Thresholds**: A PSI < 0.1 is usually safe. PSI > 0.2 indicates significant drift requiring investigation.

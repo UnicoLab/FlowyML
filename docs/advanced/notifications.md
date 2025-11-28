@@ -1,6 +1,23 @@
 # Notifications & Alerts 🔔
 
-UniFlow includes a flexible notification system to keep you informed about pipeline events, failures, and drift detection.
+Know immediately when pipelines succeed, fail, or detect issues.
+
+> [!NOTE]
+> **What you'll learn**: How to set up proactive alerts so you don't have to watch dashboards all day
+>
+> **Key insight**: The faster you know about a failure, the faster you can fix it.
+
+## Why Alerts Matter
+
+**Without alerts**:
+- **Silent failures**: A nightly job fails, and no one notices until the dashboard is empty in the morning
+- **Dashboard fatigue**: Constantly refreshing the UI to check status
+- **Delayed response**: Critical production issues persist for hours
+
+**With UniFlow alerts**:
+- **Instant notification**: Slack ping the moment an exception is thrown
+- **Contextual info**: "Pipeline X failed at step Y with error Z"
+- **Multi-channel**: Email for summaries, Slack for urgent issues
 
 ## 🔔 Configuration
 
@@ -25,16 +42,23 @@ configure_notifications(
 
 You can send manual notifications from any step.
 
+## Real-World Pattern: The "Success" Ping
+
+Notify the team when a long training run finishes successfully.
+
 ```python
-from uniflow import get_notifier
+from uniflow import step, get_notifier
 
 @step
-def notify_team():
+def notify_success(metrics):
     notifier = get_notifier()
+
+    # Send a rich message to Slack
     notifier.notify(
-        title="Training Complete",
-        message="Model accuracy: 98%",
-        level="success"
+        title="🚀 Model Training Complete",
+        message=f"New model ready!\nAccuracy: {metrics['acc']:.2%}\nF1: {metrics['f1']:.2f}",
+        level="success",
+        channels=["slack"]
     )
 ```
 

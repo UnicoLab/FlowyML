@@ -1,6 +1,23 @@
 # Materializers 📦
 
-Materializers control how artifacts (data, models, metrics) are serialized and stored. UniFlow provides default materializers for common types (Pandas DataFrames, NumPy arrays, JSON), but you can create custom ones for specialized data.
+Teach UniFlow how to save and load your custom objects.
+
+> [!NOTE]
+> **What you'll learn**: How to make any Python object persistable and trackable
+>
+> **Key insight**: If you can't save it, you can't cache it, version it, or inspect it. Materializers bridge the gap between memory and storage.
+
+## Why Custom Serialization Matters
+
+**Without materializers**:
+- **Pickle hell**: Relying on `pickle` for everything (brittle, insecure)
+- **Lost metadata**: Saving a model as bytes loses its hyperparameters
+- **No visualization**: The UI can't show a preview of a custom object
+
+**With UniFlow materializers**:
+- **Optimized storage**: Save large arrays as Parquet/Numpy, not JSON
+- **Rich visualization**: Tell the UI how to display your object
+- **Cross-language support**: Save as standard formats (ONNX, CSV) usable by other tools
 
 ## 📦 Built-in Materializers
 
@@ -15,26 +32,30 @@ UniFlow automatically selects the appropriate materializer based on the type hin
 
 To support a custom type, subclass `BaseMaterializer`.
 
-```python
-from uniflow.io import BaseMaterializer
-from my_library import CustomGraph
+## Real-World Pattern: PyTorch Model Wrapper
 
-class GraphMaterializer(BaseMaterializer):
-    ASSOCIATED_TYPES = (CustomGraph,)
+Save PyTorch models with their metadata in a clean, versioned way.
+
+```python
+import torch
+from uniflow.io import BaseMaterializer
+
+class PyTorchMaterializer(BaseMaterializer):
+    ASSOCIATED_TYPES = (torch.nn.Module,)
 
     def handle_input(self, data_type):
-        # Read from artifact store
+        # Load model state dict
         with open(self.artifact.uri, 'rb') as f:
-            return CustomGraph.load(f)
+            return torch.load(f)
 
-    def handle_return(self, graph):
-        # Write to artifact store
+    def handle_return(self, model):
+        # Save model state dict
         with open(self.artifact.uri, 'wb') as f:
-            graph.save(f)
+            torch.save(model, f)
 
-# Register the materializer
+# Register it once
 from uniflow import materializer_registry
-materializer_registry.register(GraphMaterializer)
+materializer_registry.register(PyTorchMaterializer)
 ```
 
 ## 🎯 Usage

@@ -1,10 +1,87 @@
 # Steps 👣
 
-Steps are the atomic units of work in a UniFlow pipeline. They are regular Python functions wrapped with the `@step` decorator.
+Steps are the atomic units of work in UniFlow pipelines. They transform regular Python functions into tracked, cacheable, retriable building blocks.
+
+> [!NOTE]
+> **What you'll learn**: How to design reusable, testable steps that compose into production pipelines
+>
+> **Key insight**: Well-designed steps are **pure, focused, and composable**. They work in isolation, cache intelligently, and combine into complex workflows.
+
+## Why Steps Matter
+
+**Without steps**, you have:
+- Functions scattered across files, hard to reuse
+- No automatic caching of expensive operations
+- Manual error handling and retries
+- No visibility into what's running or failed
+
+**With UniFlow steps**, you get:
+- **Automatic dependency tracking**: UniFlow knows execution order
+- **Intelligent caching**: Skip redundant computation automatically
+- **Built-in retry logic**: Handle transient failures gracefully
+- **Full observability**: See inputs, outputs, duration for every execution
+- **Testability**: Each step is a pure function you can unit test
+
+## Step Design Principles
+
+### 1. **Steps Should Be Pure Functions**
+
+```python
+# ✅ Good: Pure function, deterministic output
+@step(outputs=["processed"])
+def clean_data(raw_data):
+    return raw_data.dropna().reset_index(drop=True)
+
+# ❌ Bad: Side effects, global state
+@step
+def clean_data_impure():
+    global df_global  # Don't do this!
+    df_global = df_global.dropna()
+    return df_global
+```
+
+**Why**: Pure functions are testable, cacheable, and parallelizable. Side effects break caching and make debugging nightmares.
+
+### 2. **One Step, One Responsibility**
+
+```python
+# ✅ Good: Focused steps, independently cacheable
+@step(outputs=["split"])
+def split_data(data, test_size=0.2): ...
+
+@step(inputs=["split"], outputs=["model"])
+def train_model(split): ...
+
+# ❌ Bad: Monolithic step, can't cache parts
+@step(outputs=["model"])
+def split_and_train_and_evaluate(data):
+    split = split_data(data)      # Can't cache this separately
+    model = train_model(split)    # Or this
+    metrics = evaluate(model)     # Or this
+    return model, metrics
+```
+
+**Why**: Granular steps enable better caching. Tweaking training doesn't re-run data splitting.
+
+### 3. **Explicit Is Better Than Implicit**
+
+```python
+# ✅ Good: Clear inputs/outputs
+@step(inputs=["raw_data"], outputs=["clean_data"])
+def clean(raw_data):
+    return process(raw_data)
+
+# ⚠️ Less clear: UniFlow can't validate dependencies
+@step
+def clean(data):
+    return process(data)
+```
+
+**Why**: Explicit `inputs`/`outputs` enable DAG visualization, validation, and better error messages.
 
 ## Anatomy of a Step
 
-A step is defined by decorating a function with `@step`:
+A step is a Python function with the `@step` decorator:
 
 ```python
 from uniflow import step
@@ -255,20 +332,94 @@ Resources are used by:
 - **Cloud stacks**: To provision appropriate instances
 - **Kubernetes**: To set pod resources
 
+## Decision Guide: Caching Strategies
+
+| Scenario | Use | Why |
+|----------|-----|-----|
+| Expensive computation, stable code | `code_hash` (default) | Re-runs only when logic changes |
+| Data preprocessing | `input_hash` | Re-runs when input data changes |
+| Real-time data fetching | `cache=False` | Always get latest |
+| Model training (hours) | `input_hash` | Don't retrain unless data/params change |
+| API calls (rate-limited) | `input_hash` | Cache responses, respect limits |
+
+**Pro tip**: Use `input_hash` for expensive operations where inputs determine outputs. Use `code_hash` for pure transformations.
+
+---
+
+## Step Testing Patterns 🧪
+
+### Unit Testing Steps
+
+Steps are just functions — test them like functions:
+
+```python
+import pytest
+from my_pipeline import clean_data, train_model
+
+def test_clean_data():
+    # Arrange
+    raw = pd.DataFrame({"a": [1, None, 3]})
+
+    # Act
+    result = clean_data(raw)
+
+    # Assert
+    assert result["a"].isnull().sum() == 0
+    assert len(result) == 2
+
+def test_train_model():
+    X = np.random.rand(100, 10)
+    y = np.random.rand(100)
+
+    model = train_model(X, y, learning_rate=0.01, epochs=10)
+
+    assert model is not None
+    assert hasattr(model, 'predict')
+```
+
+**Why this works**: Steps are pure functions. No pipeline infrastructure needed for unit tests.
+
+### Integration Testing Steps
+
+```python
+def test_pipeline_integration():
+    from uniflow import Pipeline, context
+
+    ctx = context(learning_rate=0.01)
+    pipeline = Pipeline("test_pipeline", context=ctx)
+    pipeline.add_step(load_data)
+    pipeline.add_step(train_model)
+
+    result = pipeline.run()
+
+    assert result.success
+    assert "model" in result.outputs
+```
+
+---
+
 ## Step Execution Lifecycle
 
-Understanding how steps execute:
+Understanding what happens when a step runs:
 
 1. **Validation**: Check all required inputs are available
-2. **Cache Check**: Look for cached result
-3. **Execution**: Run the step function
+2. **Cache Check**: Look for cached result matching strategy
+3. **Execution**: Run the step function if not cached
 4. **Materialization**: Save outputs to artifact store (if configured)
 5. **Result Storage**: Store output for downstream steps
+6. **Lineage**: Record provenance metadata
 
 ```python
 # This all happens automatically!
 result = pipeline.run()
+
+# You get full observability:
+for step_name, step_result in result.step_results.items():
+    print(f"{step_name}: {step_result.duration_seconds:.2f}s, cached={step_result.cached}")
 ```
+
+> [!TIP]
+> **Performance insight**: Viewing cached steps in the UI shows how much time you're saving. A well-cached pipeline can go from hours to minutes during iteration.
 
 ## Best Practices 💡
 

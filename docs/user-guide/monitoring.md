@@ -1,6 +1,23 @@
 # Monitoring & Alerts 🚨
 
-UniFlow provides a built-in monitoring system to track system health and pipeline execution status. It can detect issues like high resource usage or pipeline failures and send alerts.
+Know when pipelines fail before your users do.
+
+> [!NOTE]
+> **What you'll learn**: How to monitor system health and get instant alerts
+>
+> **Key insight**: Silent failures are the worst kind. Alerts turn invisible problems into actionable notifications.
+
+## Why Monitoring Matters
+
+**Without monitoring**:
+- **Silent failures**: A nightly job fails, and you find out at the next standup
+- **Resource waste**: Pipelines consume 100% CPU and you don't know why
+- **Slow debugging**: "When did this start failing?"
+
+**With UniFlow monitoring**:
+- **Instant alerts**: Slack notification the moment a pipeline fails
+- **Resource visibility**: See CPU/memory usage in real-time
+- **Historical data**: Track success rates and failure patterns
 
 ## System Monitor 🖥️
 
@@ -45,21 +62,31 @@ alert_manager.send_alert(
 )
 ```
 
-### Custom Alert Handlers 🛠️
+### Real-World Pattern: Production Alert Setup
 
-You can implement your own alert handlers to integrate with external systems.
+Send critical alerts to Slack, warnings to email.
 
 ```python
-from uniflow.monitoring.alerts import AlertHandler, Alert
+from uniflow.monitoring.alerts import AlertHandler, Alert, AlertLevel
+import requests
 
 class SlackAlertHandler(AlertHandler):
     def handle(self, alert: Alert):
-        # Send to Slack API
-        print(f"Sending to Slack: {alert.title}")
+        # Only send CRITICAL/ERROR to Slack (avoid noise)
+        if alert.level in [AlertLevel.CRITICAL, AlertLevel.ERROR]:
+            requests.post(
+                "https://hooks.slack.com/services/...",
+                json={"text": f"🚨 {alert.title}: {alert.message}"}
+            )
 
 # Register the handler
 alert_manager.add_handler(SlackAlertHandler())
+
+# Now all pipeline failures will ping Slack
 ```
+
+> [!TIP]
+> **Pro Tip**: Use different alert levels to avoid alert fatigue. Reserve CRITICAL for production outages only.
 
 ## CLI Monitoring 💻
 

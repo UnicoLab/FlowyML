@@ -1,26 +1,51 @@
 # Checkpointing & Experiment Tracking 💾
 
-UniFlow provides robust mechanisms to save the state of your pipelines and track your machine learning experiments.
+UniFlow ensures you never lose progress. Save pipeline state automatically and track every experiment detail.
+
+> [!NOTE]
+> **What you'll learn**: How to resume failed pipelines and track model performance over time
+>
+> **Key insight**: Long-running pipelines *will* fail eventually. Checkpointing turns a catastrophe into a minor annoyance.
+
+## Why Checkpointing Matters
+
+**Without checkpointing**:
+- **Lost time**: A crash at hour 9 of a 10-hour job means restarting from hour 0
+- **Wasted compute**: Re-computing expensive intermediate steps
+- **Frustration**: "It worked on my machine, why did it fail now?"
+
+**With UniFlow checkpointing**:
+- **Resume instantly**: Restart exactly where it failed
+- **Inspect state**: Load the checkpoint to debug what went wrong
+- **Skip redundant work**: Re-use successful steps
 
 ## 💾 Checkpointing
 
 Checkpointing allows you to save the intermediate results of your pipeline steps. This is crucial for long-running pipelines, as it enables you to resume execution from the point of failure or to skip expensive steps that have already been computed.
 
-### Automatic Checkpointing
+### Real-World Pattern: The "Resume" Workflow
 
-You can enable automatic checkpointing for a pipeline run. UniFlow will serialize the outputs of each step to the configured artifact store.
+Crash-proof your long-running pipelines.
 
 ```python
 from uniflow import Pipeline, checkpoint_enabled_pipeline
 
-pipeline = Pipeline("data_processing")
+pipeline = Pipeline("heavy_processing")
 
-# Enable checkpointing with a specific run ID
-# If a run with this ID exists, it will attempt to resume
+# 1. Try to run
+try:
+    pipeline.run()
+except Exception:
+    print("Pipeline crashed! Fix the bug and re-run.")
+
+# 2. Resume later (e.g., in a new script or after fix)
+# UniFlow detects the previous run state and resumes
 pipeline = checkpoint_enabled_pipeline(pipeline, run_id="run_2023_10_27")
-
 pipeline.run()
 ```
+
+> [!TIP]
+> **Pro Tip**: Always enable checkpointing for pipelines that take longer than 10 minutes. The storage cost is negligible compared to the compute time saved.
 
 ### Manual Checkpointing
 

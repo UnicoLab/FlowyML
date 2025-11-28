@@ -1,6 +1,22 @@
-# Installation Guide
+# Installation Guide 📦
 
-## Basic Installation
+> [!TIP]
+> **Quick start**: If you're just exploring UniFlow, run `pip install "uniflow[all]"` and you're ready to go. Come back to this page when you need production-grade deployment.
+
+## System Requirements
+
+- **Python**: 3.8 or higher (3.10+ recommended for best performance)
+- **Operating System**: Linux, macOS, Windows (WSL2 recommended for Windows)
+- **Memory**: Minimum 4GB RAM (8GB+ for larger pipelines)
+- **Disk Space**: 500MB for full installation
+
+**Why these requirements**: UniFlow is designed to run anywhere Python runs. The minimum specs support local development; production workloads scale based on your pipeline needs.
+
+## Installation Options
+
+Choose the installation that matches your use case:
+
+### Basic Installation — Local Development Only
 
 Install UniFlow core package:
 
@@ -8,55 +24,65 @@ Install UniFlow core package:
 pip install uniflow
 ```
 
-## Optional Dependencies
+**What you get**: Core pipeline orchestration, local artifact storage, metadata tracking.
 
-UniFlow supports various optional dependencies based on your use case:
+**Use this when**: You're prototyping locally and don't need cloud deployment or the web UI yet.
 
-### Machine Learning Frameworks
-
-Install support for specific ML frameworks:
+### Full Installation — Everything Included (Recommended)
 
 ```bash
-# TensorFlow/Keras support
-pip install uniflow[tensorflow]
-
-# PyTorch support
-pip install uniflow[pytorch]
-
-# Scikit-learn support
-pip install uniflow[sklearn]
+pip install "uniflow[all]"
 ```
 
-### Cloud Platforms
+**What you get**: Web UI, cloud integrations, ML framework support, everything.
 
-Install support for cloud platforms:
+**Use this when**: You want to try all UniFlow features without reinstalling. This is the recommended approach for new users.
+
+---
+
+## Optional Dependencies — Pick What You Need
+
+For minimal installations or specific production setups, install only what you need:
+
+### ML Framework Support
 
 ```bash
-# Google Cloud Platform (Vertex AI, GCS, GCR)
-pip install uniflow[gcp]
+# TensorFlow/Keras automatic tracking
+pip install "uniflow[tensorflow]"
 
-# AWS (coming soon)
-pip install uniflow[aws]
+# PyTorch integration
+pip install "uniflow[pytorch]"
 
-# Azure (coming soon)
-pip install uniflow[azure]
+# Scikit-learn utilities
+pip install "uniflow[sklearn]"
 ```
 
-### UI and API
+**Use this when**: You're building Docker images and want to minimize size, or you only use specific frameworks.
 
-Install web UI and API server:
+### Cloud Platform Support
 
 ```bash
-pip install uniflow[ui]
+# Google Cloud Platform (Vertex AI, GCS, Container Registry)
+pip install "uniflow[gcp]"
+
+# AWS support (coming soon)
+pip install "uniflow[aws]"
+
+# Azure support (coming soon)
+pip install "uniflow[azure]"
 ```
 
-### All Features
+**Use this when**: You're deploying to cloud and want cloud-specific features like managed orchestration (Vertex AI), cloud storage (GCS/S3), and container registries.
 
-Install everything:
+### Web UI & API Server
 
 ```bash
-pip install uniflow[all]
+pip install "uniflow[ui]"
 ```
+
+**What you get**: The visualization dashboard, REST API,real-time monitoring.
+
+**Use this when**: You need the visual interface for debugging or monitoring, or building tools that integrate with UniFlow's API.
 
 ### Development
 
@@ -145,26 +171,135 @@ pip install uniflow[gcp,tensorflow]  # or pytorch
 pip install uniflow[all,dev]
 ```
 
-## Troubleshooting
+## Installation Best Practices 💡
 
-### Import Errors
+### Use Virtual Environments
 
-If you get import errors for optional components:
-
-```python
-# TensorFlow
-pip install uniflow[tensorflow]
-
-# GCP
-pip install uniflow[gcp]
-```
-
-### Version Conflicts
-
-Create a fresh virtual environment:
+**Always** use virtual environments to avoid dependency conflicts:
 
 ```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install uniflow[your-extras]
+# Using venv (built-in)
+python -m venv uniflow-env
+source uniflow-env/bin/activate  # Windows: uniflow-env\Scripts\activate
+pip install "uniflow[all]"
+
+# Using conda
+conda create -n uniflow python=3.10
+conda activate uniflow
+pip install "uniflow[all]"
 ```
+
+**Why this matters**: Prevents conflicts with other Python projects and makes it easy to reproduce your environment.
+
+### Pin Versions in Production
+
+For production deployments, pin exact versions:
+
+```bash
+# Generate requirements file
+pip freeze > requirements.txt
+
+# Or use Poetry (recommended)
+poetry add uniflow[all]
+poetry lock
+```
+
+**Why this matters**: Ensures reproducible deployments and prevents surprise breakages from dependency updates.
+
+---
+
+## Troubleshooting Common Issues
+
+### "Module not found" errors for optional features
+
+**Problem**: You see `ImportError` or `ModuleNotFoundError` when using specific features.
+
+**Solution**: Install the corresponding extra:
+
+```bash
+# For TensorFlow features
+pip install "uniflow[tensorflow]"
+
+# For GCP features
+pip install "uniflow[gcp]"
+
+# Or just install everything
+pip install "uniflow[all]"
+```
+
+### Dependency version conflicts
+
+**Problem**: pip reports conflicts between UniFlow's dependencies and existing packages.
+
+**Solution**: Create a fresh virtual environment:
+
+```bash
+# Deactivate current environment if active
+deactivate
+
+# Create new environment
+python -m venv new-uniflow-env
+source new-uniflow-env/bin/activate
+pip install "uniflow[all]"
+```
+
+### Python version too old
+
+**Problem**: Installation fails with Python version errors.
+
+**Solution**: Upgrade Python to 3.8 or higher:
+
+```bash
+# Check current version
+python --version
+
+# Using conda (recommended)
+conda create -n uniflow python=3.10
+conda activate uniflow
+
+# Or use pyenv
+pyenv install 3.10.0
+pyenv local 3.10.0
+```
+
+### GCP authentication issues
+
+**Problem**: Can't access GCS or Vertex AI.
+
+**Solution**: Authenticate with gcloud:
+
+```bash
+# Install gcloud CLI first: https://cloud.google.com/sdk/docs/install
+gcloud auth login
+gcloud auth application-default login
+gcloud config set project YOUR-PROJECT-ID
+```
+
+### Installation is slow
+
+**Problem**: `pip install` takes a very long time.
+
+**Solution**: Clear pip cache or use a faster mirror:
+
+```bash
+# Clear cache
+pip cache purge
+
+# Or upgrade pip/setuptools
+pip install --upgrade pip setuptools wheel
+
+# Then retry
+pip install "uniflow[all]"
+```
+
+---
+
+## Next Steps
+
+Once installed:
+
+1. **Verify installation**: Run `uniflow --version` to confirm
+2. **Build your first pipeline**: Follow the [Getting Started](getting-started.md) guide
+3. **Explore examples**: Check out the [Examples](examples.md) page for real-world patterns
+
+**Need help?** Visit the [Resources](resources.md) page for community support and troubleshooting guides.

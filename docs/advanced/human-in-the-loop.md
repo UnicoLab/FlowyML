@@ -1,12 +1,27 @@
 # Human-in-the-Loop & Approvals ✋
 
-UniFlow supports "Human-in-the-Loop" workflows, allowing pipelines to pause and wait for manual approval before proceeding. This is essential for deployment pipelines or critical decision points.
+Inject human intelligence into automated workflows. Pause pipelines for manual review, safety checks, or compliance approvals.
+
+> [!NOTE]
+> **What you'll learn**: How to stop automation when a human decision is required
+>
+> **Key insight**: Not everything should be automated. Deployment to production often needs a human "thumbs up."
+
+## Why Human Review Matters
+
+**Use cases**:
+- **Safety**: "Does this model output look safe?"
+- **Compliance**: "Has Legal approved this dataset?"
+- **Quality Assurance**: "Is the generated image high quality?"
+- **Cost Control**: "Approve spending $500 on this training run?"
 
 ## ✋ Approval Steps
 
 You can insert an `approval` step anywhere in your pipeline.
 
-### Basic Usage
+### Real-World Pattern: The Deployment Gate
+
+The classic MLOps pattern: Train automatically, deploy manually.
 
 ```python
 from uniflow import Pipeline, step, approval
@@ -15,27 +30,23 @@ pipeline = Pipeline("deployment_pipeline")
 
 @step
 def train():
-    # ... training logic ...
     return model
 
-# Create an approval step
+# Pause here!
 approve_deploy = approval(
     name="approve_deploy",
-    approver="ml-team",
-    timeout_seconds=3600  # Wait up to 1 hour
+    approver="lead-data-scientist",
+    timeout_seconds=86400  # 24 hours to approve
 )
 
 @step
 def deploy(model):
-    # ... deployment logic ...
-    pass
+    # Only runs if approved
+    production.deploy(model)
 
 pipeline.add_step(train)
 pipeline.add_step(approve_deploy)
 pipeline.add_step(deploy)
-
-# Link dependencies
-# deploy depends on approve_deploy, which depends on train
 ```
 
 ### Interactive Approval

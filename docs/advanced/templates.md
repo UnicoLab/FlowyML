@@ -1,6 +1,23 @@
 # Pipeline Templates 📋
 
-Templates allow you to define reusable pipeline structures that can be instantiated with different parameters or step implementations. This promotes standardization and reduces code duplication across teams.
+Standardize your ML workflows with reusable templates. Define the "Golden Path" for your team.
+
+> [!NOTE]
+> **What you'll learn**: How to create reusable pipeline blueprints that enforce best practices
+>
+> **Key insight**: Don't copy-paste code. Use templates to ensure every project starts with the right structure, logging, and error handling.
+
+## Why Templates Matter
+
+**Without templates**:
+- **Inconsistency**: Team A uses `pandas`, Team B uses `polars`, Team C writes raw SQL
+- **Boilerplate**: Rewriting the same setup code for every new project
+- **Maintenance nightmare**: Updating a best practice requires editing 50 repos
+
+**With UniFlow templates**:
+- **Standardization**: "Use the `training_template`" ensures everyone logs metrics the same way
+- **Speed**: Start a new project in seconds, not hours
+- **Governance**: Bake compliance checks into the base template
 
 ## 📋 Using Built-in Templates
 
@@ -23,36 +40,42 @@ pipeline = create_from_template(
 
 You can define your own templates by creating a function that returns a `Pipeline` object.
 
-```python
-from uniflow import Pipeline
+## Real-World Pattern: The "Golden Path" Template
 
-def create_etl_pipeline(name, source, destination):
+Create a standard ETL pipeline that enforces your team's best practices (e.g., always validating data).
+
+```python
+from uniflow import Pipeline, step
+
+def create_standard_etl(name, source_config, dest_config):
+    """
+    A template that enforces:
+    1. Extraction
+    2. Validation (Mandatory!)
+    3. Loading
+    """
     pipeline = Pipeline(name)
 
     @step
     def extract():
-        return source.read()
+        return connect(source_config).read()
 
     @step
-    def transform(data):
-        return data.clean()
+    def validate(data):
+        # Enforce quality checks
+        if data.null_count > 0:
+            raise ValueError("Data quality check failed!")
+        return data
 
     @step
     def load(data):
-        destination.write(data)
+        connect(dest_config).write(data)
 
     pipeline.add_step(extract)
-    pipeline.add_step(transform)
+    pipeline.add_step(validate)
     pipeline.add_step(load)
 
     return pipeline
-
-# Instantiate
-pipeline = create_etl_pipeline(
-    "daily_etl",
-    source=PostgresSource(...),
-    destination=S3Destination(...)
-)
 ```
 
 ## 📦 Sharing Templates

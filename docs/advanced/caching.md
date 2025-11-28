@@ -1,36 +1,41 @@
 # Caching ⚡
 
-UniFlow features an intelligent caching system designed to save time and resources by avoiding redundant computations. If a step has been executed before with the same code and inputs, UniFlow can retrieve the result from the cache instead of re-running the step.
+UniFlow's intelligent caching system eliminates redundant work, saving you time and compute costs.
+
+> [!NOTE]
+> **What you'll learn**: How to skip expensive steps that have already run
+>
+> **Key insight**: The fastest code is the code you don't run. UniFlow automatically detects when inputs and code haven't changed.
+
+## Why Caching Matters
+
+**Without caching**:
+- **Wasted time**: Re-running data loading (10 mins) just to fix a typo in plotting
+- **Wasted money**: Retraining models (GPU hours) when only the evaluation metric changed
+- **Slow iteration**: Feedback loops take hours instead of seconds
+
+**With UniFlow caching**:
+- **Instant feedback**: Skip straight to the step you're working on
+- **Cost savings**: Reduce cloud compute bills by 40-60%
+- **Resume capability**: Crash in step 5? Fix it and resume instantly; steps 1-4 are cached
 
 ## How Caching Works
 
-When a step is about to run, UniFlow calculates a **Cache Key**. This key is a hash of:
-1. The step's function code (source code hash)
-2. The step's input arguments (input hash)
-3. The step's name
+UniFlow calculates a **Cache Key** for every step before it runs. If a matching key exists, the step is skipped.
 
-If a valid entry for this key exists in the cache store, the step is skipped, and the cached output is returned immediately.
+The key combines:
+1. **Code Hash**: The source code of the function
+2. **Input Hash**: The values of all input arguments
+3. **Configuration**: Parameters injected from context
 
-### Cache Flow
-
-```
-Step Execution Request
-         ↓
-   Generate Cache Key
-         ↓
-   Check Cache Store
-         ↓
-  ┌──────┴──────┐
-  │             │
-Cache Hit    Cache Miss
-  │             │
-Return        Execute
-Cached   →    Step
-Result         ↓
-           Store Result
-              in Cache
-                ↓
-           Return Result
+```mermaid
+graph TD
+    A[Start Step] --> B{Cache Key Exists?}
+    B -- Yes --> C[Load Output from Disk]
+    B -- No --> D[Execute Step]
+    D --> E[Save Output to Disk]
+    C --> F[Return Result]
+    E --> F
 ```
 
 ## Configuration ⚙️
@@ -70,69 +75,50 @@ def always_run():
     return fetch_latest_data()
 ```
 
-## Caching Strategies
+## Decision Guide: Caching Strategies
 
-The `@step` decorator's `cache` parameter supports three strategies:
+| Strategy | Behavior | Use When |
+|----------|----------|----------|
+| `code_hash` (Default) | Invalidate if **code OR inputs** change | **Development**: You're tweaking logic and need safety. |
+| `input_hash` | Invalidate ONLY if **inputs** change | **Production/Training**: Code is stable, but you're tuning hyperparameters. |
+| `cache=False` | **Always** run | **Side Effects**: Sending emails, writing to DB, fetching live data. |
 
-### 1. `cache="code_hash"` (Default)
+### 1. `cache="code_hash"` (Safest)
 
-Invalidates cache if either the function code OR inputs change.
+The default. If you change *anything* in the function (even a comment), it re-runs.
 
 ```python
-@step(cache="code_hash")  # or just @step
+@step(cache="code_hash")
 def process(data):
+    # Changing this comment triggers a re-run!
     return [x * 2 for x in data]
-
-# Cache is invalidated if:
-# - The function code changes (even comments!)
-# - Input 'data' changes
 ```
 
-**Use when:**
-- Step logic is actively being developed
-- You want to ensure code changes always trigger re-execution
-- Safety is more important than cache hit rate
+### 2. `cache="input_hash"` (Fastest)
 
-### 2. `cache="input_hash"`
-
-Invalidates cache ONLY if inputs change. Ignores code changes.
+Ignores code changes. Only re-runs if the *data* passed to it changes.
 
 ```python
 @step(cache="input_hash")
-def stable_transform(data, config):
-    # Cache only invalidated if data or config changes
-    # Code changes (comments, formatting) don't affect cache
-    return transform(data, config)
+def train_model(dataset, epochs):
+    # You can refactor this code without triggering a 4-hour training run
+    # It only re-runs if 'dataset' or 'epochs' change
+    return model.fit(dataset, epochs=epochs)
 ```
 
-**Use when:**
-- Step logic is stable and well-tested
-- You frequently change comments or documentation
-- Input variations are your primary concern
+> [!WARNING]
+> Use `input_hash` carefully! If you change the logic (e.g., fix a bug) but inputs stay the same, UniFlow won't know to re-run it. You'll get the old, buggy result.
 
-**⚠️ Warning**: Be careful! If you change the actual logic, the cache won't be invalidated.
+### 3. `cache=False` (Side Effects)
 
-### 3. `cache=False`
-
-Always executes the step, never caches.
+For steps that must always run.
 
 ```python
 @step(cache=False)
-def fetch_realtime_data():
-    # Always fetch fresh data
-    return api.get_latest()
-
-@step(cache=False)
-def send_notification(message):
-    # Side effect - don't cache
-    email_service.send(message)
+def send_slack_alert(metrics):
+    # Always send the alert, even if metrics haven't changed
+    slack.send(f"Accuracy: {metrics['accuracy']}")
 ```
-
-**Use when:**
-- Step has non-deterministic outputs (random values, timestamps)
-- Step has side effects (writes to database, sends emails)
-- Step fetches real-time data
-- Debugging and you want to force re-execution
 
 ## Practical Examples
 

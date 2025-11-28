@@ -1,6 +1,34 @@
 # Debugging Tools 🐛
 
-Powerful debugging utilities for step and pipeline execution.
+UniFlow provides interactive debugging tools that let you pause pipelines, inspect state, and fix issues without restarting from scratch.
+
+> [!NOTE]
+> **What you'll learn**: How to debug pipelines like standard Python code
+>
+> **Key insight**: Distributed pipelines are notoriously hard to debug. UniFlow brings the "IDE experience" to pipelines.
+
+## Why Interactive Debugging Matters
+
+**The old way (Airflow/Kubeflow)**:
+1. Push code
+2. Wait 10 mins for container build
+3. Wait 20 mins for pipeline to fail
+4. Read logs: `KeyError: 'x'`
+5. Add print statement, repeat
+
+**The UniFlow way**:
+1. Set a breakpoint: `debugger.add_breakpoint(...)`
+2. Run pipeline locally
+3. Execution pauses at the error
+4. Inspect variables, fix code, resume
+
+## Debugging Strategies
+
+| Strategy | Tool | Use When |
+|----------|------|----------|
+| **Interactive** | `StepDebugger` | You need to inspect variables mid-execution |
+| **Tracing** | `PipelineDebugger` | You need to see the sequence of events and timing |
+| **Post-Mortem** | `analyze_errors` | A run already failed and you want to know why |
 
 ## Overview ℹ️
 
@@ -29,8 +57,29 @@ debugger.add_breakpoint(
     action=lambda step, inputs: print(f"Large dataset: {len(inputs['data'])} items")
 )
 
-# Debug execution
-result = debugger.debug_execute(data=[1, 2, 3])
+### Real-World Pattern: Conditional Breakpoint
+
+Stop execution only when data looks weird.
+
+```python
+from uniflow import StepDebugger, step
+
+@step
+def process_data(batch):
+    # ... complex logic ...
+    return result
+
+# Debug specific edge case
+debugger = StepDebugger(process_data)
+
+# "Stop if we get an empty batch"
+debugger.add_breakpoint(
+    condition=lambda inputs: len(inputs['batch']) == 0,
+    action=lambda step, inputs: print(f"⚠️ Empty batch detected in {step.name}!")
+)
+
+# Run pipeline - it will pause ONLY if the condition is met
+pipeline.run(debugger=debugger)
 ```
 
 ### Inspecting Inputs and Outputs

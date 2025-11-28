@@ -29,42 +29,75 @@
 | **Asset Management** | 📦 **First-Class Assets** - Models & Datasets with lineage. | 📁 Generic file paths only. |
 | **Architecture** | 🏗️ **Modular Stacks** - Local, Cloud, Hybrid. | 🔒 Vendor lock-in or complex setup. |
 
-## 🌟 Everything You Can Do
+## 🚀 Feature Showcase
 
-UniFlow is packed with features to handle every aspect of the ML lifecycle.
+UniFlow is a complete toolkit for building, debugging, and deploying ML applications.
 
-### 🏗️ Core Orchestration
-- **Unified Pipelines**: Define DAGs using standard Python functions.
-- **Conditional Execution**: Dynamic branching logic (`If`, `Switch`) based on runtime data.
-- **Parallel Execution**: Run independent steps concurrently on threads or processes.
-- **Pipeline Templates**: Reusable workflow patterns for standardizing team practices.
-- **Human-in-the-Loop**: Pause pipelines for manual approval steps.
+### 1. Zero-Boilerplate Orchestration
+Write pipelines as standard Python functions. No YAML, no DSLs.
 
-### 📦 Asset Management
-- **First-Class Assets**: Specialized classes for `Dataset`, `Model`, `Metrics`, and `FeatureSet`.
-- **Lineage Tracking**: Automatically track the provenance of every artifact.
-- **Model Registry**: Version and manage models from development to production.
-- **Artifact Store**: Pluggable storage backends (Local, S3, GCS, Azure).
+```python
+@step(outputs=["data"])
+def load(): return [1, 2, 3]
 
-### 🏭 Production Features
-- **Project Isolation**: Multi-tenant support with isolated workspaces.
-- **Pipeline Versioning**: Git-like versioning for pipelines. Compare and rollback.
-- **Automated Scheduling**: Cron-style scheduling for recurring jobs.
-- **Notifications**: Alerts via Slack, Email, or custom webhooks on success/failure.
-- **Error Handling**: Automatic retries, circuit breakers, and fallback logic.
+@step(inputs=["data"], outputs=["model"])
+def train(data): return Model.train(data)
 
-### 🔍 Observability & Debugging
-- **Interactive Debugging**: Breakpoints (`StepDebugger`) and execution tracing.
-- **LLM Tracing**: Trace GenAI calls (tokens, latency, cost) with `@trace_llm`.
-- **Data Drift Detection**: Monitor distribution shifts with Population Stability Index (PSI).
-- **Model Leaderboard**: Track and compare model performance across runs.
-- **System Monitoring**: Built-in CPU/Memory and pipeline health monitoring.
+# It's just Python!
+pipeline = Pipeline("simple").add_step(load).add_step(train)
+pipeline.run()
+```
 
-### 🔌 Integrations
-- **Framework Agnostic**: Works with PyTorch, TensorFlow, Keras, Scikit-learn, HuggingFace.
-- **Cloud Native**: Deploy execution to Vertex AI, AWS SageMaker (coming soon).
-- **Keras Callback**: Automatic experiment tracking for Keras models.
-- **API Execution**: Trigger pipelines remotely via REST API.
+### 2. 🧠 Intelligent Caching
+Don't waste time re-running successful steps.
+- **Code Hash**: Re-runs only when code changes.
+- **Input Hash**: Re-runs only when data changes.
+
+```python
+# Only re-runs if 'data' changes, ignoring code changes
+@step(cache="input_hash", outputs=["processed"])
+def expensive_processing(data):
+    return process(data)
+```
+
+### 3. 🤖 LLM & GenAI Ready
+Trace token usage, latency, and costs automatically.
+
+```python
+@step
+@trace_llm(model="gpt-4", tags=["production"])
+def generate_summary(text: str):
+    # UniFlow automatically tracks tokens, cost, and latency
+    return openai.ChatCompletion.create(...)
+```
+
+### 4. 🔀 Dynamic Workflows
+Build adaptive workflows with conditional logic.
+
+```python
+# Run 'deploy' only if model accuracy > 0.9
+pipeline.add_step(
+    If(condition=lambda ctx: ctx["accuracy"] > 0.9)
+    .then(deploy_model)
+    .else_(notify_team)
+)
+```
+
+### 5. 🔍 Interactive Debugging
+- **StepDebugger**: Set breakpoints in your pipeline.
+- **Artifact Inspection**: View intermediate data in the UI.
+- **Local Execution**: Run the exact same code locally as in production.
+
+### 6. 🏭 Enterprise Production Features
+- **🔄 Automatic Retries**: Handle transient failures.
+- **⏰ Scheduling**: Built-in cron scheduler.
+- **🔔 Notifications**: Slack/Email alerts.
+- **🛡️ Circuit Breakers**: Stop cascading failures.
+
+### 7. 🔌 Universal Integrations
+- **ML Frameworks**: PyTorch, TensorFlow, Keras, Scikit-learn, HuggingFace.
+- **Cloud Providers**: AWS, GCP, Azure (via plugins).
+- **Tools**: MLflow, Weights & Biases, Great Expectations.
 
 ## 📦 Installation
 

@@ -1,10 +1,32 @@
 # Assets & Artifacts 💎
 
-In UniFlow, data is treated as a first-class citizen. Any data passed between steps is an **Artifact**, and structured, versioned artifacts are called **Assets**.
+In UniFlow, data lineage and artifact tracking are first-class features. Every piece of data flowing through your pipeline is tracked, versioned, and queryable.
+
+> [!NOTE]
+> **What you'll learn**: How to work with typed assets (Datasets, Models, Metrics) and track complete data lineage
+>
+> **Key insight**: **Reproducibility requires lineage**. UniFlow tracks not just what models you trained, but what data created them, which code version, and all hyperparameters.
+
+## Why Assets Matter
+
+**Without structured assets**, teams face:
+- **"Which data trained this model?"** — Unknown, guesswork
+- **"Can we reproduce this result?"** — Maybe, if you kept notes
+- **"Where did this artifact come from?"** — Lost in the pipeline
+- **"What changed between runs?"** — Manual diffing, error-prone
+
+**With UniFlow assets**, you get:
+- **Automatic lineage tracking**: Every asset knows its parents
+- **Version control for data**: Not just code, but datasets and models
+- **Audit trails**: Full provenance from raw data to predictions
+- **Reproducibility**: Re-create any result on demand
+
+> [!IMPORTANT]
+> **For regulated industries** (finance, healthcare, legal): Asset lineage isn't optional. UniFlow provides audit-ready traceability out of the box.
 
 ## The Asset Hierarchy 🏛️
 
-UniFlow provides specialized classes for different types of ML assets:
+UniFlow provides specialized classes for different ML artifact types:
 
 - **Asset**: The base class for all versioned objects.
 - **Dataset**: Represents data (DataFrames, file paths, tensors).

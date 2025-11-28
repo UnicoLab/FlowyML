@@ -1,10 +1,27 @@
 # Parallel Execution 🚀
 
-UniFlow allows you to execute independent steps concurrently, significantly reducing the total execution time of your pipelines. This is particularly useful for tasks like data processing, hyperparameter tuning, or running multiple models in parallel.
+UniFlow allows you to execute independent steps concurrently, slashing pipeline runtime by running tasks in parallel.
 
-## 🚀 Enabling Parallelism
+> [!NOTE]
+> **What you'll learn**: How to run multiple steps at once to speed up execution
+>
+> **Key insight**: Most ML pipelines have independent branches (e.g., processing different datasets). Running them sequentially is a waste of time.
 
-You can enable parallel execution by using the `ParallelExecutor`.
+## Why Parallelism Matters
+
+**Without parallelism**:
+- **Slow execution**: Steps run one after another (A → B → C)
+- **Idle resources**: CPU cores sit idle while one core works
+- **Long feedback loops**: Waiting hours for independent tasks
+
+**With UniFlow parallelism**:
+- **Faster results**: Run A, B, and C at the same time
+- **Resource efficiency**: Utilize all CPU cores
+- **Scalability**: Process 10x data in the same amount of time
+
+## Enabling Parallelism
+
+You can enable parallel execution by using the `ParallelExecutor`. It automatically detects independent steps in your DAG and runs them concurrently.
 
 ### Basic Usage
 
@@ -43,21 +60,49 @@ def batch_process(items):
     return results
 ```
 
-## ⚙️ Configuration
+## Decision Guide: Execution Backends
 
-The `ParallelExecutor` supports several configuration options:
+| Backend | Best For | Why |
+|---------|----------|-----|
+| `process` (Default) | **CPU-bound tasks** | Bypasses Python's GIL. Good for data processing, training. |
+| `thread` | **I/O-bound tasks** | Lightweight. Good for API calls, downloading files, DB queries. |
 
-- `max_workers`: Maximum number of concurrent threads/processes.
-- `backend`: Execution backend (`thread` or `process`). Use `process` for CPU-bound tasks and `thread` for I/O-bound tasks.
+### When to use `process` (CPU)
+- Data transformation (pandas, numpy)
+- Image processing
+- Model training (sklearn)
+
+### When to use `thread` (I/O)
+- Fetching data from APIs
+- Uploading files to S3
+- Querying databases
+
+## Real-World Pattern: Batch Processing
+
+Process a large dataset by splitting it into chunks and processing them in parallel.
 
 ```python
-executor = ParallelExecutor(
-    max_workers=8,
-    backend="process"
-)
+from uniflow import Pipeline, ParallelExecutor, step
+
+@step
+def process_chunk(chunk_path):
+    # Heavy CPU work
+    df = pd.read_csv(chunk_path)
+    return df.mean()
+
+pipeline = Pipeline("batch_processor")
+
+# Add 10 parallel steps
+for i in range(10):
+    pipeline.add_step(
+        process_chunk,
+        name=f"chunk_{i}",
+        params={"chunk_path": f"data/part_{i}.csv"}
+    )
+
+# Run with 4 processes
+pipeline.run(executor=ParallelExecutor(max_workers=4, backend="process"))
 ```
 
-## ⚠️ Considerations
-
-- **Shared Resources**: Be careful when accessing shared resources (databases, files) from parallel steps.
-- **Global Interpreter Lock (GIL)**: For CPU-intensive tasks in Python, use the `process` backend to bypass the GIL.
+> [!TIP]
+> **Performance Tip**: Set `max_workers` to `cpu_count() - 1` to keep one core free for the system.
