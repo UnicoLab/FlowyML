@@ -21,6 +21,12 @@ from uniflow.core.error_handling import (
     retry,
     on_failure,
 )
+from uniflow.core.resources import (
+    ResourceRequirements,
+    GPUConfig,
+    NodeAffinity,
+    resources,
+)
 
 __all__ = [
     # Context
@@ -54,4 +60,9 @@ __all__ = [
     "FallbackHandler",
     "retry",
     "on_failure",
+    # Resources
+    "ResourceRequirements",
+    "GPUConfig",
+    "NodeAffinity",
+    "resources",
 ]

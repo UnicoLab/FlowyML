@@ -6,7 +6,6 @@ to UniFlow configuration.
 
 from typing import Any
 import yaml
-from dataclasses import asdict
 
 from uniflow.stacks.plugin_config import PluginConfig
 
@@ -66,7 +65,15 @@ class StackMigrator:
                 }
 
         return {
-            "plugins": [asdict(p) for p in plugins],
+            "plugins": [
+                {
+                    "name": p.name,
+                    "source": p.source,
+                    "type": p.component_type,  # Serialize as 'type' for compatibility
+                    "adaptation": p.adaptation,
+                }
+                for p in plugins
+            ],
             "stack": stack_config,
         }
 

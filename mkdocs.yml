@@ -65,7 +65,9 @@ plugins:
 
 nav:
   - 🏠 Home: index.md
+  - 📥 Installation: INSTALLATION.md
   - 🚀 Getting Started: getting-started.md
+  - 📚 Quick Reference: QUICK_REFERENCE.md
   - 📚 Core Concepts:
     - 🎢 Pipelines: core/pipelines.md
     - ☊ Steps: core/steps.md
@@ -76,6 +78,10 @@ nav:
     - 🔄 Versioning: user-guide/versioning.md
     - ⏰ Scheduling: user-guide/scheduling.md
     - ⚙️ Configuration: user-guide/configuration.md
+    - 💻 Resources: resources.md
+    - 🔧 Components: user-guide/components.md
+    - 📦 Model Registry: user-guide/model-registry.md
+    - ⚡ Performance: user-guide/performance.md
     - 🚀 API Execution: user-guide/api-execution.md
     - 🚨 Monitoring: user-guide/monitoring.md
     - 💻 UI Guide: user-guide/ui.md
@@ -97,13 +103,25 @@ nav:
   - 🔌 Integrations:
     - 🧠 Keras: integrations/keras.md
     - ☁️ GCP: integrations/gcp.md
+  - 🔌 Plugins:
+    - 📚 Overview: plugins/overview.md
+    - 🔧 Creating Plugins: plugins/creating-plugins.md
+    - 🔄 ZenML Integration: plugins/zenml-integration.md
+  - 🎓 Tutorials:
+    - 🔧 Extensible Pipeline: tutorials/extensible-pipeline.md
+  - 📐 Guides:
+    - 🛠️ Custom Components: guides/custom-components.md
+    - ✨ Improved UX: guides/improved-ux.md
   - 📚 API Reference:
     - 🤩 Core: api/core.md
     - 📦 Assets: api/assets.md
     - 🗂️ Storage: api/storage.md
   - 📚 Reference:
     - 📚 Cheatsheet: reference/cheatsheet.md
+    - 🛠️ CLI Reference: reference/cli.md
     - 🏗️ Architecture: architecture.md
+    - 🏛️ Stack Architecture: architecture/stacks.md
+    - 🚀 Deployment: deployment.md
     - 🤝 Contributing: contributing.md
   - 📚 Examples: examples.md
 

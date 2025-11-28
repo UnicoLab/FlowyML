@@ -3,9 +3,15 @@
 import hashlib
 import inspect
 import json
-from typing import Any
+from typing import Any, Union
 from collections.abc import Callable
 from dataclasses import dataclass, field
+
+# Import resource types
+try:
+    from uniflow.core.resources import ResourceRequirements
+except ImportError:
+    ResourceRequirements = None  # Type: ignore
 
 
 @dataclass
@@ -19,7 +25,7 @@ class StepConfig:
     cache: bool | str | Callable = "code_hash"
     retry: int = 0
     timeout: int | None = None
-    resources: dict[str, Any] = field(default_factory=dict)
+    resources: Union[dict[str, Any], "ResourceRequirements", None] = None
     tags: dict[str, str] = field(default_factory=dict)
     condition: Callable | None = None
 
@@ -40,7 +46,7 @@ class Step:
         cache: bool | str | Callable = "code_hash",
         retry: int = 0,
         timeout: int | None = None,
-        resources: dict[str, Any] | None = None,
+        resources: Union[dict[str, Any], "ResourceRequirements", None] = None,
         tags: dict[str, str] | None = None,
         condition: Callable | None = None,
     ):
@@ -51,7 +57,10 @@ class Step:
         self.cache = cache
         self.retry = retry
         self.timeout = timeout
-        self.resources = resources or {}
+
+        # Store resources (accept both dict for backward compatibility and ResourceRequirements)
+        self.resources = resources
+
         self.tags = tags or {}
         self.condition = condition
 
@@ -130,7 +139,7 @@ def step(
     cache: bool | str | Callable = "code_hash",
     retry: int = 0,
     timeout: int | None = None,
-    resources: dict[str, Any] | None = None,
+    resources: Union[dict[str, Any], "ResourceRequirements", None] = None,
     tags: dict[str, str] | None = None,
     name: str | None = None,
     condition: Callable | None = None,
@@ -146,7 +155,7 @@ def step(
         cache: Caching strategy ("code_hash", "input_hash", callable, or False)
         retry: Number of retry attempts on failure
         timeout: Maximum execution time in seconds
-        resources: Resource requirements (e.g., {"gpu": 1, "memory": "16GB"})
+        resources: Resource requirements (ResourceRequirements object or dict for backward compat)
         tags: Metadata tags for the step
         name: Optional custom name for the step
         condition: Optional callable that returns True if step should run
@@ -157,6 +166,11 @@ def step(
         ...     ...
         >>> @step(inputs=["data/train"], outputs=["model/trained"])
         ... def train_model(train_data):
+        ...     ...
+        >>> # With resource requirements
+        >>> from uniflow.core.resources import ResourceRequirements, GPUConfig
+        >>> @step(resources=ResourceRequirements(cpu="4", memory="16Gi", gpu=GPUConfig(gpu_type="nvidia-v100", count=2)))
+        ... def gpu_train(data):
         ...     ...
     """
 
