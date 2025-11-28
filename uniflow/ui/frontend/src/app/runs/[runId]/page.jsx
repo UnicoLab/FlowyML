@@ -8,6 +8,7 @@ import { Button } from '../../../components/ui/Button';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PipelineGraph } from '../../../components/PipelineGraph';
+import { CodeSnippet } from '../../../components/ui/CodeSnippet';
 
 export function RunDetails() {
     const { runId } = useParams();
@@ -441,22 +442,11 @@ function MetricCard({ metric }) {
 
 function CodeTab({ sourceCode }) {
     return (
-        <div>
-            <div className="flex items-center justify-between mb-2">
-                <h5 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                    <Code2 size={16} /> Source Code
-                </h5>
-                <button
-                    className="text-xs text-slate-500 hover:text-slate-700 flex items-center gap-1"
-                    onClick={() => navigator.clipboard.writeText(sourceCode || '')}
-                >
-                    <Download size={12} /> Copy
-                </button>
-            </div>
-            <pre className="p-4 bg-slate-900 text-slate-100 rounded-lg text-xs font-mono overflow-x-auto leading-relaxed">
-                {sourceCode || '# Source code not available'}
-            </pre>
-        </div>
+        <CodeSnippet
+            code={sourceCode || '# Source code not available'}
+            language="python"
+            title="Step Source Code"
+        />
     );
 }
 
