@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 from uniflow.storage.metadata import SQLiteMetadataStore
 
 router = APIRouter()
@@ -48,3 +49,18 @@ async def get_run_artifacts(run_id: str):
     store = get_store()
     artifacts = store.list_assets(run_id=run_id)
     return {"artifacts": artifacts}
+
+
+class ProjectUpdate(BaseModel):
+    project_name: str
+
+
+@router.put("/{run_id}/project")
+async def update_run_project(run_id: str, update: ProjectUpdate):
+    """Update the project for a run."""
+    store = get_store()
+    try:
+        store.update_run_project(run_id, update.project_name)
+        return {"status": "success", "project": update.project_name}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

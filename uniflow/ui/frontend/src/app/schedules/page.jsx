@@ -6,6 +6,7 @@ import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { useProject } from '../../contexts/ProjectContext';
+import { EmptyState } from '../../components/ui/EmptyState';
 
 export function Schedules() {
     const { selectedProject } = useProject();
@@ -87,10 +88,13 @@ export function Schedules() {
     const createSchedule = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch('/api/schedules/', {
+            const response = await fetch('/api/schedules', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
+                body: JSON.stringify({
+                    ...formData,
+                    project_name: selectedProject || null
+                })
             });
 
             if (response.ok) {
@@ -333,18 +337,16 @@ export function Schedules() {
                     </Button>
                 }
                 emptyState={
-                    <div className="text-center py-16 bg-slate-50 dark:bg-slate-800/30 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700">
-                        <div className="mx-auto w-20 h-20 bg-slate-100 dark:bg-slate-700 rounded-2xl flex items-center justify-center mb-6">
-                            <Calendar className="text-slate-400" size={32} />
-                        </div>
-                        <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">No active schedules</h3>
-                        <p className="text-slate-500 max-w-md mx-auto mb-6">
-                            Automate your pipelines by creating a schedule.
-                        </p>
-                        <Button onClick={() => setShowCreateModal(true)}>
-                            Create your first schedule
-                        </Button>
-                    </div>
+                    <EmptyState
+                        icon={Calendar}
+                        title="No active schedules"
+                        description="Automate your pipelines by creating a schedule."
+                        action={
+                            <Button onClick={() => setShowCreateModal(true)}>
+                                Create your first schedule
+                            </Button>
+                        }
+                    />
                 }
             />
 

@@ -32,3 +32,18 @@ async def get_experiment(experiment_id: str):
     if not experiment:
         raise HTTPException(status_code=404, detail="Experiment not found")
     return experiment
+
+
+@router.put("/{experiment_name}/project")
+async def update_experiment_project(experiment_name: str, project_update: dict):
+    """Update the project for an experiment."""
+    try:
+        store = get_store()
+        project_name = project_update.get("project_name")
+
+        # Update experiment project
+        store.update_experiment_project(experiment_name, project_name)
+
+        return {"message": f"Updated experiment {experiment_name} to project {project_name}"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

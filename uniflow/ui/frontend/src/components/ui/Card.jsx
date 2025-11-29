@@ -8,7 +8,7 @@ export function Card({ className, children, hover = true, ...props }) {
             whileHover={hover ? { y: -2, boxShadow: "0 10px 30px -10px rgba(0,0,0,0.1)" } : {}}
             transition={{ duration: 0.2 }}
             className={cn(
-                "bg-white rounded-xl border border-slate-100 shadow-sm p-6",
+                "bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm p-6",
                 "transition-colors duration-200",
                 className
             )}
@@ -29,7 +29,7 @@ export function CardHeader({ className, children, ...props }) {
 
 export function CardTitle({ className, children, ...props }) {
     return (
-        <h3 className={cn("font-semibold leading-none tracking-tight text-slate-900", className)} {...props}>
+        <h3 className={cn("font-semibold leading-none tracking-tight text-slate-900 dark:text-white", className)} {...props}>
             {children}
         </h3>
     );

@@ -69,10 +69,41 @@ async def create_schedule(schedule: ScheduleRequest):
 
             pipeline_func = template_wrapper
         else:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Pipeline '{schedule.pipeline_name}' not found in registry. Please register it using @register_pipeline.",
-            )
+            # Check if it's a historical pipeline (in metadata but not registry)
+            # This means we can't run it because we don't have the code loaded
+            from uniflow.storage.metadata import SQLiteMetadataStore
+
+            store = SQLiteMetadataStore()
+            pipelines = store.list_pipelines()
+
+            if schedule.pipeline_name in pipelines:
+                # Try to load pipeline definition
+                from uniflow.storage.metadata import SQLiteMetadataStore
+
+                store = SQLiteMetadataStore()
+                pipeline_def = store.get_pipeline_definition(schedule.pipeline_name)
+
+                if pipeline_def:
+                    # Reconstruct pipeline from definition
+                    from uniflow.core.pipeline import Pipeline
+                    from uniflow.core.context import Context
+
+                    def pipeline_wrapper():
+                        # Reconstruct pipeline each time
+                        p = Pipeline.from_definition(pipeline_def, Context())
+                        return p.run()
+
+                    pipeline_func = pipeline_wrapper
+                else:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Pipeline '{schedule.pipeline_name}' found in history but no definition stored. Please run the pipeline again to enable scheduling.",
+                    )
+            else:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Pipeline '{schedule.pipeline_name}' not found in registry. Please register it using @register_pipeline.",
+                )
     else:
         # Create a wrapper to instantiate and run the pipeline
         def pipeline_wrapper():

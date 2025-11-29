@@ -1,161 +1,314 @@
-import React, { useState } from 'react';
-import { Settings as SettingsIcon, Moon, Sun, Bell, Shield, Key, Save } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
+import React, { useState, useEffect } from 'react';
+import { Key, Copy, Trash2, Plus, Eye, EyeOff, Calendar, Shield, CheckCircle2 } from 'lucide-react';
+import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { motion } from 'framer-motion';
-import { useTheme } from '../../contexts/ThemeContext';
+import { Badge } from '../../components/ui/Badge';
+import { format } from 'date-fns';
 
 export function Settings() {
-    const { theme, setTheme } = useTheme();
-    const [notifications, setNotifications] = useState(true);
-    const [apiKey, setApiKey] = useState('sk-........................');
+    const [tokens, setTokens] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [newTokenName, setNewTokenName] = useState('');
+    const [createdToken, setCreatedToken] = useState(null);
+    const [visibleTokens, setVisibleTokens] = useState(new Set());
 
-    const container = {
-        hidden: { opacity: 0 },
-        show: {
-            opacity: 1,
-            transition: {
-                staggerChildren: 0.1
-            }
+    useEffect(() => {
+        fetchTokens();
+    }, []);
+
+    const fetchTokens = async () => {
+        try {
+            const response = await fetch('/api/execution/tokens');
+            const data = await response.json();
+            setTokens(data.tokens || []);
+        } catch (error) {
+            console.error('Failed to fetch tokens:', error);
+        } finally {
+            setLoading(false);
         }
     };
 
-    const item = {
-        hidden: { opacity: 0, y: 20 },
-        show: { opacity: 1, y: 0 }
+    const createToken = async (e) => {
+        e.preventDefault();
+        try {
+            const response = await fetch('/api/execution/tokens', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: newTokenName })
+            });
+            const data = await response.json();
+            setCreatedToken(data.token);
+            setNewTokenName('');
+            fetchTokens();
+        } catch (error) {
+            console.error('Failed to create token:', error);
+        }
     };
 
+    const deleteToken = async (tokenId) => {
+        if (!confirm('Are you sure you want to delete this token? This action cannot be undone.')) return;
+
+        try {
+            await fetch(`/api/execution/tokens/${tokenId}`, {
+                method: 'DELETE'
+            });
+            fetchTokens();
+        } catch (error) {
+            console.error('Failed to delete token:', error);
+        }
+    };
+
+    const copyToClipboard = (text) => {
+        navigator.clipboard.writeText(text);
+        // Could add a toast notification here
+    };
+
+    const toggleTokenVisibility = (tokenId) => {
+        setVisibleTokens(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(tokenId)) {
+                newSet.delete(tokenId);
+            } else {
+                newSet.add(tokenId);
+            }
+            return newSet;
+        });
+    };
+
+    const maskToken = (token) => {
+        return `${token.substring(0, 8)}${'•'.repeat(32)}${token.substring(token.length - 8)}`;
+    };
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+            </div>
+        );
+    }
+
     return (
-        <motion.div
-            initial="hidden"
-            animate="show"
-            variants={container}
-            className="space-y-6 max-w-4xl mx-auto"
-        >
+        <div className="p-6 max-w-6xl mx-auto space-y-6">
             {/* Header */}
-            <motion.div variants={item}>
-                <div className="flex items-center gap-3 mb-2">
-                    <div className="p-2 bg-gradient-to-br from-slate-700 to-slate-900 dark:from-primary-600 dark:to-primary-800 rounded-lg">
-                        <SettingsIcon className="text-white" size={24} />
-                    </div>
-                    <h2 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Settings</h2>
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
+                        <div className="p-3 bg-gradient-to-br from-primary-500 to-purple-500 rounded-xl text-white">
+                            <Key size={28} />
+                        </div>
+                        API Tokens
+                    </h1>
+                    <p className="text-slate-500 dark:text-slate-400 mt-2">
+                        Manage API tokens for programmatic access to UniFlow
+                    </p>
                 </div>
-                <p className="text-slate-500 dark:text-slate-400 mt-2">Manage your workspace preferences and configurations.</p>
-            </motion.div>
+                <Button
+                    onClick={() => setShowCreateModal(true)}
+                    className="flex items-center gap-2 bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700"
+                >
+                    <Plus size={16} />
+                    Create Token
+                </Button>
+            </div>
 
-            {/* Appearance */}
-            <motion.div variants={item}>
-                <Card>
-                    <CardHeader>
-                        <div className="flex items-center gap-2">
-                            <Sun size={20} className="text-slate-400" />
-                            <CardTitle>Appearance</CardTitle>
+            {/* Security Notice */}
+            <Card className="border-l-4 border-l-amber-500 bg-amber-50 dark:bg-amber-900/10">
+                <div className="flex items-start gap-3">
+                    <Shield className="text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" size={20} />
+                    <div>
+                        <h3 className="font-semibold text-amber-900 dark:text-amber-200">Security Notice</h3>
+                        <p className="text-sm text-amber-800 dark:text-amber-300 mt-1">
+                            Treat your API tokens like passwords. Never share them publicly or commit them to version control.
+                        </p>
+                    </div>
+                </div>
+            </Card>
+
+            {/* Token List */}
+            <div className="grid gap-4">
+                {tokens.length === 0 ? (
+                    <Card className="text-center py-16 bg-slate-50 dark:bg-slate-800/30">
+                        <div className="mx-auto w-20 h-20 bg-slate-100 dark:bg-slate-700 rounded-2xl flex items-center justify-center mb-6">
+                            <Key className="text-slate-400" size={32} />
                         </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <h4 className="font-medium text-slate-900 dark:text-white">Theme</h4>
-                                <p className="text-sm text-slate-500 dark:text-slate-400">Select your preferred interface theme.</p>
-                            </div>
-                            <div className="flex gap-2 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
-                                <button
-                                    onClick={() => setTheme('light')}
-                                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${theme === 'light'
-                                        ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
-                                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-                                        }`}
-                                >
-                                    <div className="flex items-center gap-2">
-                                        <Sun size={14} />
-                                        Light
+                        <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">No API tokens yet</h3>
+                        <p className="text-slate-500 max-w-md mx-auto mb-6">
+                            Create your first API token to start making programmatic requests to UniFlow
+                        </p>
+                        <Button
+                            onClick={() => setShowCreateModal(true)}
+                            className="bg-primary-600 hover:bg-primary-700"
+                        >
+                            <Plus size={16} className="mr-2" />
+                            Create Your First Token
+                        </Button>
+                    </Card>
+                ) : (
+                    tokens.map((token) => (
+                        <Card key={token.id} className="hover:shadow-lg transition-all duration-200">
+                            <div className="flex items-center justify-between gap-4">
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <div className="p-2 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
+                                            <Key className="text-primary-600 dark:text-primary-400" size={20} />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className="text-lg font-semibold text-slate-900 dark:text-white truncate">
+                                                {token.name}
+                                            </h3>
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                                                    <Calendar size={12} />
+                                                    Created {format(new Date(token.created_at), 'MMM d, yyyy')}
+                                                </span>
+                                                <Badge variant="secondary" className="text-xs">
+                                                    {token.id}
+                                                </Badge>
+                                            </div>
+                                        </div>
                                     </div>
-                                </button>
-                                <button
-                                    onClick={() => setTheme('dark')}
-                                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${theme === 'dark'
-                                        ? 'bg-slate-800 dark:bg-slate-600 text-white shadow-sm'
-                                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-                                        }`}
-                                >
-                                    <div className="flex items-center gap-2">
-                                        <Moon size={14} />
-                                        Dark
+
+                                    {/* Token Value */}
+                                    <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-3 font-mono text-sm border border-slate-200 dark:border-slate-700">
+                                        <div className="flex items-center gap-2">
+                                            <code className="flex-1 truncate text-slate-700 dark:text-slate-300">
+                                                {visibleTokens.has(token.id) ? token.token : maskToken(token.token)}
+                                            </code>
+                                            <div className="flex items-center gap-1">
+                                                <button
+                                                    onClick={() => toggleTokenVisibility(token.id)}
+                                                    className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors"
+                                                    title={visibleTokens.has(token.id) ? 'Hide token' : 'Show token'}
+                                                >
+                                                    {visibleTokens.has(token.id) ? (
+                                                        <EyeOff size={16} className="text-slate-500" />
+                                                    ) : (
+                                                        <Eye size={16} className="text-slate-500" />
+                                                    )}
+                                                </button>
+                                                <button
+                                                    onClick={() => copyToClipboard(token.token)}
+                                                    className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors"
+                                                    title="Copy to clipboard"
+                                                >
+                                                    <Copy size={16} className="text-slate-500" />
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
-                                </button>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            </motion.div>
+                                </div>
 
-            {/* Notifications */}
-            <motion.div variants={item}>
-                <Card>
-                    <CardHeader>
-                        <div className="flex items-center gap-2">
-                            <Bell size={20} className="text-slate-400" />
-                            <CardTitle>Notifications</CardTitle>
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex items-center justify-between">
+                                <Button
+                                    onClick={() => deleteToken(token.id)}
+                                    variant="ghost"
+                                    className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-900/20 flex-shrink-0"
+                                >
+                                    <Trash2 size={18} />
+                                </Button>
+                            </div>
+                        </Card>
+                    ))
+                )}
+            </div>
+
+            {/* Create Token Modal */}
+            {showCreateModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <Card className="max-w-lg w-full">
+                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                            <Plus className="text-primary-600" size={24} />
+                            Create New Token
+                        </h2>
+
+                        <form onSubmit={createToken} className="space-y-4">
                             <div>
-                                <h4 className="font-medium text-slate-900 dark:text-white">Pipeline Alerts</h4>
-                                <p className="text-sm text-slate-500 dark:text-slate-400">Receive notifications when pipelines fail or succeed.</p>
-                            </div>
-                            <label className="relative inline-flex items-center cursor-pointer">
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                    Token Name
+                                </label>
                                 <input
-                                    type="checkbox"
-                                    className="sr-only peer"
-                                    checked={notifications}
-                                    onChange={() => setNotifications(!notifications)}
+                                    type="text"
+                                    value={newTokenName}
+                                    onChange={(e) => setNewTokenName(e.target.value)}
+                                    placeholder="e.g., Production API, CI/CD Pipeline"
+                                    className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                                    required
                                 />
-                                <div className="w-11 h-6 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
-                            </label>
-                        </div>
-                    </CardContent>
-                </Card>
-            </motion.div>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                    Choose a descriptive name to identify this token's purpose
+                                </p>
+                            </div>
 
-            {/* API Configuration */}
-            <motion.div variants={item}>
-                <Card>
-                    <CardHeader>
-                        <div className="flex items-center gap-2">
-                            <Key size={20} className="text-slate-400" />
-                            <CardTitle>API Configuration</CardTitle>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                UniFlow API Key
-                            </label>
-                            <div className="flex gap-2">
-                                <input
-                                    type="password"
-                                    value={apiKey}
-                                    onChange={(e) => setApiKey(e.target.value)}
-                                    className="flex-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent font-mono text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-                                />
-                                <Button variant="outline">Regenerate</Button>
+                            <div className="flex gap-3 justify-end pt-4">
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    onClick={() => setShowCreateModal(false)}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    className="bg-primary-600 hover:bg-primary-700"
+                                >
+                                    Create Token
+                                </Button>
                             </div>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                Used for authenticating CLI and SDK requests.
+                        </form>
+                    </Card>
+                </div>
+            )}
+
+            {/* Token Created Success Modal */}
+            {createdToken && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <Card className="max-w-2xl w-full">
+                        <div className="text-center mb-6">
+                            <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mb-4">
+                                <CheckCircle2 className="text-green-600 dark:text-green-400" size={32} />
+                            </div>
+                            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Token Created Successfully!</h2>
+                            <p className="text-slate-500 dark:text-slate-400 mt-2">
+                                Copy this token now. You won't be able to see it again.
                             </p>
                         </div>
-                    </CardContent>
-                </Card>
-            </motion.div>
 
-            {/* Save Button */}
-            <motion.div variants={item} className="flex justify-end pt-4">
-                <Button className="flex items-center gap-2 px-6">
-                    <Save size={18} />
-                    Save Changes
-                </Button>
-            </motion.div>
-        </motion.div >
+                        <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 mb-6 border-2 border-primary-200 dark:border-primary-800">
+                            <div className="flex items-center gap-2 mb-2">
+                                <code className="flex-1 font-mono text-sm break-all text-slate-900 dark:text-white">
+                                    {createdToken}
+                                </code>
+                                <button
+                                    onClick={() => copyToClipboard(createdToken)}
+                                    className="p-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors flex-shrink-0"
+                                    title="Copy to clipboard"
+                                >
+                                    <Copy size={18} />
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mb-6">
+                            <div className="flex gap-2">
+                                <Shield className="text-amber-600 dark:text-amber-400 flex-shrink-0" size={20} />
+                                <div className="text-sm text-amber-800 dark:text-amber-200">
+                                    <strong>Important:</strong> Store this token securely. It won't be displayed again.
+                                </div>
+                            </div>
+                        </div>
+
+                        <Button
+                            onClick={() => {
+                                setCreatedToken(null);
+                                setShowCreateModal(false);
+                            }}
+                            className="w-full bg-primary-600 hover:bg-primary-700"
+                        >
+                            I've Saved My Token
+                        </Button>
+                    </Card>
+                </div>
+            )}
+        </div>
     );
 }

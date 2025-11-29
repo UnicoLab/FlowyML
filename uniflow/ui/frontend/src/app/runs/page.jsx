@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { fetchApi } from '../../utils/api';
 import { Link } from 'react-router-dom';
-import { Play, Clock, Calendar, TrendingUp, Activity, ArrowRight, Search, CheckCircle, XCircle, Loader } from 'lucide-react';
+import { Play, Clock, Calendar, TrendingUp, Activity, ArrowRight, Search, CheckCircle, XCircle, Loader, FolderPlus } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { format } from 'date-fns';
@@ -15,24 +15,26 @@ export function Runs() {
     const [runs, setRuns] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all'); // all, completed, failed, running
+    const [selectedRunIds, setSelectedRunIds] = useState([]);
     const { selectedProject } = useProject();
 
+    const fetchRuns = async () => {
+        setLoading(true);
+        try {
+            const url = selectedProject
+                ? `/api/runs?project=${encodeURIComponent(selectedProject)}`
+                : '/api/runs';
+            const res = await fetchApi(url);
+            const data = await res.json();
+            setRuns(data.runs || []);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchRuns = async () => {
-            setLoading(true);
-            try {
-                const url = selectedProject
-                    ? `/api/runs?project=${encodeURIComponent(selectedProject)}`
-                    : '/api/runs';
-                const res = await fetchApi(url);
-                const data = await res.json();
-                setRuns(data.runs || []);
-            } catch (err) {
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchRuns();
     }, [selectedProject]);
 
@@ -50,6 +52,38 @@ export function Runs() {
 
     const columns = [
         {
+            header: (
+                <input
+                    type="checkbox"
+                    checked={selectedRunIds.length === filteredRuns.length && filteredRuns.length > 0}
+                    onChange={(e) => {
+                        if (e.target.checked) {
+                            setSelectedRunIds(filteredRuns.map(r => r.run_id));
+                        } else {
+                            setSelectedRunIds([]);
+                        }
+                    }}
+                    className="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                />
+            ),
+            key: 'select',
+            render: (run) => (
+                <input
+                    type="checkbox"
+                    checked={selectedRunIds.includes(run.run_id)}
+                    onChange={(e) => {
+                        if (e.target.checked) {
+                            setSelectedRunIds([...selectedRunIds, run.run_id]);
+                        } else {
+                            setSelectedRunIds(selectedRunIds.filter(id => id !== run.run_id));
+                        }
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                />
+            )
+        },
+        {
             header: 'Status',
             key: 'status',
             sortable: true,
@@ -61,6 +95,16 @@ export function Runs() {
             sortable: true,
             render: (run) => (
                 <span className="font-medium text-slate-900 dark:text-white">{run.pipeline_name}</span>
+            )
+        },
+        {
+            header: 'Project',
+            key: 'project',
+            sortable: true,
+            render: (run) => (
+                <span className="text-sm text-slate-600 dark:text-slate-400">
+                    {run.project || '-'}
+                </span>
             )
         },
         {
@@ -246,6 +290,19 @@ export function Runs() {
                 columns={columns}
                 renderGrid={renderGrid}
                 initialView="table" // Default to table for runs as it's usually more useful
+                actions={
+                    <div className="flex items-center gap-2">
+                        {/* Add to Project Action */}
+                        <ProjectSelector
+                            selectedRuns={selectedRunIds}
+                            onComplete={() => {
+                                // Call fetchRuns from parent scope
+                                fetchRuns();
+                                setSelectedRunIds([]);
+                            }}
+                        />
+                    </div>
+                }
                 emptyState={
                     <EmptyState
                         icon={Activity}
@@ -257,6 +314,104 @@ export function Runs() {
                     />
                 }
             />
+        </div>
+    );
+}
+
+function ProjectSelector({ selectedRuns, onComplete }) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [projects, setProjects] = useState([]);
+    const [updating, setUpdating] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            fetch('/api/projects/')
+                .then(res => res.json())
+                .then(data => setProjects(data))
+                .catch(err => console.error('Failed to load projects:', err));
+        }
+    }, [isOpen]);
+
+    const handleSelectProject = async (projectName) => {
+        setUpdating(true);
+        try {
+            // Update all selected runs
+            const updates = selectedRuns.map(runId =>
+                fetch(`/api/runs/${runId}/project`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ project_name: projectName })
+                })
+            );
+
+            await Promise.all(updates);
+
+            // Show success notification
+            showNotification('success', `Added ${selectedRuns.length} run(s) to project ${projectName}`);
+
+            setIsOpen(false);
+            if (onComplete) onComplete();
+        } catch (error) {
+            console.error('Failed to update projects:', error);
+            showNotification('error', 'Failed to update project attribution');
+        } finally {
+            setUpdating(false);
+        }
+    };
+
+    const showNotification = (type, message) => {
+        // Simple toast notification
+        const toast = document.createElement('div');
+        toast.className = `fixed top-4 right-4 px-4 py-3 rounded-lg shadow-lg z-50 ${type === 'success' ? 'bg-green-500' : 'bg-red-500'
+            } text-white animate-in slide-in-from-right`;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => {
+            toast.classList.add('animate-out', 'fade-out');
+            setTimeout(() => document.body.removeChild(toast), 300);
+        }, 3000);
+    };
+
+    return (
+        <div className="relative">
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                disabled={updating || selectedRuns.length === 0}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+                <FolderPlus size={16} />
+                {updating ? 'Updating...' : `Add to Project (${selectedRuns.length})`}
+            </button>
+
+            {isOpen && (
+                <>
+                    <div
+                        className="fixed inset-0 z-10"
+                        onClick={() => setIsOpen(false)}
+                    />
+                    <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-20 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                        <div className="p-2 border-b border-slate-100 dark:border-slate-700">
+                            <span className="text-xs font-semibold text-slate-500 px-2">Select Project</span>
+                        </div>
+                        <div className="max-h-64 overflow-y-auto p-1">
+                            {projects.length > 0 ? (
+                                projects.map(p => (
+                                    <button
+                                        key={p.name}
+                                        onClick={() => handleSelectProject(p.name)}
+                                        disabled={updating}
+                                        className="w-full text-left px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50"
+                                    >
+                                        {p.name}
+                                    </button>
+                                ))
+                            ) : (
+                                <div className="px-3 py-2 text-sm text-slate-400 italic">No projects found</div>
+                            )}
+                        </div>
+                    </div>
+                </>
+            )}
         </div>
     );
 }

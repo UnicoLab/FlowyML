@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { fetchApi } from '../../utils/api';
 import { Link } from 'react-router-dom';
-import { Layers, Play, Clock, CheckCircle, XCircle, TrendingUp, Calendar, Activity, ArrowRight, Zap } from 'lucide-react';
+import { Layers, Play, Clock, CheckCircle, XCircle, TrendingUp, Calendar, Activity, ArrowRight, Zap, FolderPlus } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { format } from 'date-fns';
@@ -11,62 +11,102 @@ import { useProject } from '../../contexts/ProjectContext';
 export function Pipelines() {
     const [pipelines, setPipelines] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [selectedPipelines, setSelectedPipelines] = useState([]);
     const { selectedProject } = useProject();
 
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            const pipelinesUrl = selectedProject
+                ? `/api/pipelines?project=${encodeURIComponent(selectedProject)}`
+                : '/api/pipelines';
+            const runsUrl = selectedProject
+                ? `/api/runs?project=${encodeURIComponent(selectedProject)}`
+                : '/api/runs';
+
+            const pipelinesRes = await fetchApi(pipelinesUrl);
+            const pipelinesData = await pipelinesRes.json();
+
+            // Fetch runs to calculate stats per pipeline
+            const runsRes = await fetchApi(runsUrl);
+            const runsData = await runsRes.json();
+
+            // Calculate stats for each pipeline
+            const pipelinesWithStats = pipelinesData.pipelines.map(pipeline => {
+                const pipelineRuns = runsData.runs.filter(r => r.pipeline_name === pipeline);
+                const completedRuns = pipelineRuns.filter(r => r.status === 'completed');
+                const failedRuns = pipelineRuns.filter(r => r.status === 'failed');
+                const avgDuration = pipelineRuns.length > 0
+                    ? pipelineRuns.reduce((sum, r) => sum + (r.duration || 0), 0) / pipelineRuns.length
+                    : 0;
+
+                const lastRun = pipelineRuns.length > 0
+                    ? pipelineRuns.sort((a, b) => new Date(b.start_time) - new Date(a.start_time))[0]
+                    : null;
+
+                // Get most common project from runs
+                const projects = pipelineRuns.map(r => r.project).filter(Boolean);
+                const projectCounts = {};
+                projects.forEach(p => projectCounts[p] = (projectCounts[p] || 0) + 1);
+                const mostCommonProject = Object.keys(projectCounts).sort((a, b) => projectCounts[b] - projectCounts[a])[0] || null;
+
+                return {
+                    name: pipeline,
+                    totalRuns: pipelineRuns.length,
+                    completedRuns: completedRuns.length,
+                    failedRuns: failedRuns.length,
+                    successRate: pipelineRuns.length > 0 ? (completedRuns.length / pipelineRuns.length) * 100 : 0,
+                    avgDuration,
+                    lastRun,
+                    project: mostCommonProject
+                };
+            });
+
+            setPipelines(pipelinesWithStats);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchData = async () => {
-            setLoading(true);
-            try {
-                const pipelinesUrl = selectedProject
-                    ? `/api/pipelines?project=${encodeURIComponent(selectedProject)}`
-                    : '/api/pipelines';
-                const runsUrl = selectedProject
-                    ? `/api/runs?project=${encodeURIComponent(selectedProject)}`
-                    : '/api/runs';
-
-                const pipelinesRes = await fetchApi(pipelinesUrl);
-                const pipelinesData = await pipelinesRes.json();
-
-                // Fetch runs to calculate stats per pipeline
-                const runsRes = await fetchApi(runsUrl);
-                const runsData = await runsRes.json();
-
-                // Calculate stats for each pipeline
-                const pipelinesWithStats = pipelinesData.pipelines.map(pipeline => {
-                    const pipelineRuns = runsData.runs.filter(r => r.pipeline_name === pipeline);
-                    const completedRuns = pipelineRuns.filter(r => r.status === 'completed');
-                    const failedRuns = pipelineRuns.filter(r => r.status === 'failed');
-                    const avgDuration = pipelineRuns.length > 0
-                        ? pipelineRuns.reduce((sum, r) => sum + (r.duration || 0), 0) / pipelineRuns.length
-                        : 0;
-
-                    const lastRun = pipelineRuns.length > 0
-                        ? pipelineRuns.sort((a, b) => new Date(b.start_time) - new Date(a.start_time))[0]
-                        : null;
-
-                    return {
-                        name: pipeline,
-                        totalRuns: pipelineRuns.length,
-                        completedRuns: completedRuns.length,
-                        failedRuns: failedRuns.length,
-                        successRate: pipelineRuns.length > 0 ? (completedRuns.length / pipelineRuns.length) * 100 : 0,
-                        avgDuration,
-                        lastRun
-                    };
-                });
-
-                setPipelines(pipelinesWithStats);
-            } catch (err) {
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchData();
     }, [selectedProject]);
 
     const columns = [
+        {
+            header: (
+                <input
+                    type="checkbox"
+                    checked={selectedPipelines.length === pipelines.length && pipelines.length > 0}
+                    onChange={(e) => {
+                        if (e.target.checked) {
+                            setSelectedPipelines(pipelines.map(p => p.name));
+                        } else {
+                            setSelectedPipelines([]);
+                        }
+                    }}
+                    className="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                />
+            ),
+            key: 'select',
+            render: (item) => (
+                <input
+                    type="checkbox"
+                    checked={selectedPipelines.includes(item.name)}
+                    onChange={(e) => {
+                        if (e.target.checked) {
+                            setSelectedPipelines([...selectedPipelines, item.name]);
+                        } else {
+                            setSelectedPipelines(selectedPipelines.filter(n => n !== item.name));
+                        }
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                />
+            )
+        },
         {
             header: 'Pipeline',
             key: 'name',
@@ -78,6 +118,15 @@ export function Pipelines() {
                     </div>
                     <span className="font-medium text-slate-900 dark:text-white">{item.name}</span>
                 </div>
+            )
+        },
+        {
+            header: 'Project',
+            key: 'project',
+            render: (item) => (
+                <span className="text-sm text-slate-600 dark:text-slate-400">
+                    {item.project || '-'}
+                </span>
             )
         },
         {
@@ -210,11 +259,20 @@ export function Pipelines() {
         <div className="p-6 max-w-7xl mx-auto">
             <DataView
                 title="Pipelines"
-                subtitle="Manage and monitor your ML pipeline definitions"
+                subtitle="View and manage your ML pipelines"
                 items={pipelines}
                 loading={loading}
                 columns={columns}
                 renderGrid={renderGrid}
+                actions={
+                    <PipelineProjectSelector
+                        selectedPipelines={selectedPipelines}
+                        onComplete={() => {
+                            fetchData();
+                            setSelectedPipelines([]);
+                        }}
+                    />
+                }
                 emptyState={
                     <div className="text-center py-16 bg-slate-50 dark:bg-slate-800/30 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700">
                         <div className="mx-auto w-20 h-20 bg-slate-100 dark:bg-slate-700 rounded-2xl flex items-center justify-center mb-6">
@@ -224,9 +282,69 @@ export function Pipelines() {
                         <p className="text-slate-500 max-w-md mx-auto">
                             Create your first pipeline by defining steps and running them with UniFlow
                         </p>
-                    </div>
+                    </div >
                 }
             />
+        </div >
+    );
+}
+
+
+
+function ProjectSelector({ onSelect }) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [projects, setProjects] = useState([]);
+
+    useEffect(() => {
+        if (isOpen) {
+            fetch('/api/projects/')
+                .then(res => res.json())
+                .then(data => setProjects(data))
+                .catch(err => console.error('Failed to load projects:', err));
+        }
+    }, [isOpen]);
+
+    return (
+        <div className="relative">
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+            >
+                <FolderPlus size={16} />
+                Add to Project
+            </button>
+
+            {isOpen && (
+                <>
+                    <div
+                        className="fixed inset-0 z-10"
+                        onClick={() => setIsOpen(false)}
+                    />
+                    <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-20 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                        <div className="p-2 border-b border-slate-100 dark:border-slate-700">
+                            <span className="text-xs font-semibold text-slate-500 px-2">Select Project</span>
+                        </div>
+                        <div className="max-h-64 overflow-y-auto p-1">
+                            {projects.length > 0 ? (
+                                projects.map(p => (
+                                    <button
+                                        key={p.name}
+                                        onClick={() => {
+                                            onSelect(p.name);
+                                            setIsOpen(false);
+                                        }}
+                                        className="w-full text-left px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                                    >
+                                        {p.name}
+                                    </button>
+                                ))
+                            ) : (
+                                <div className="px-3 py-2 text-sm text-slate-400 italic">No projects found</div>
+                            )}
+                        </div>
+                    </div>
+                </>
+            )}
         </div>
     );
 }
@@ -248,6 +366,89 @@ function StatItem({ icon, label, value, color }) {
                 <p className="text-xs text-slate-500">{label}</p>
                 <p className="text-sm font-bold text-slate-900 dark:text-white">{value}</p>
             </div>
+        </div>
+    );
+}
+
+function PipelineProjectSelector({ selectedPipelines, onComplete }) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [projects, setProjects] = useState([]);
+    const [updating, setUpdating] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            fetch('/api/projects/')
+                .then(res => res.json())
+                .then(data => setProjects(data))
+                .catch(err => console.error('Failed to load projects:', err));
+        }
+    }, [isOpen]);
+
+    const handleSelectProject = async (projectName) => {
+        setUpdating(true);
+        try {
+            const updates = selectedPipelines.map(pipelineName =>
+                fetch(`/api/pipelines/${pipelineName}/project`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ project_name: projectName })
+                })
+            );
+
+            await Promise.all(updates);
+
+            const toast = document.createElement('div');
+            toast.className = 'fixed top-4 right-4 px-4 py-3 rounded-lg shadow-lg z-50 bg-green-500 text-white';
+            toast.textContent = `Added ${selectedPipelines.length} pipeline(s) to project ${projectName}`;
+            document.body.appendChild(toast);
+            setTimeout(() => document.body.removeChild(toast), 3000);
+
+            setIsOpen(false);
+            if (onComplete) onComplete();
+        } catch (error) {
+            console.error('Failed to update projects:', error);
+        } finally {
+            setUpdating(false);
+        }
+    };
+
+    return (
+        <div className="relative">
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                disabled={updating || selectedPipelines.length === 0}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+                <FolderPlus size={16} />
+                {updating ? 'Updating...' : `Add to Project (${selectedPipelines.length})`}
+            </button>
+
+            {isOpen && (
+                <>
+                    <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
+                    <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-20">
+                        <div className="p-2 border-b border-slate-100 dark:border-slate-700">
+                            <span className="text-xs font-semibold text-slate-500 px-2">Select Project</span>
+                        </div>
+                        <div className="max-h-64 overflow-y-auto p-1">
+                            {projects.length > 0 ? (
+                                projects.map(p => (
+                                    <button
+                                        key={p.name}
+                                        onClick={() => handleSelectProject(p.name)}
+                                        disabled={updating}
+                                        className="w-full text-left px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50"
+                                    >
+                                        {p.name}
+                                    </button>
+                                ))
+                            ) : (
+                                <div className="px-3 py-2 text-sm text-slate-400 italic">No projects found</div>
+                            )}
+                        </div>
+                    </div>
+                </>
+            )}
         </div>
     );
 }

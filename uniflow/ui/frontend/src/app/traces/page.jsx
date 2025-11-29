@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { fetchApi } from '../../utils/api';
 import { Activity, Zap, MessageSquare, Clock, DollarSign } from 'lucide-react';
+import { useProject } from '../../contexts/ProjectContext';
 
 export function Traces() {
   const [traces, setTraces] = useState([]);
   const [selectedTrace, setSelectedTrace] = useState(null);
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState('all');
+  const { selectedProject } = useProject();
 
   useEffect(() => {
     fetchTraces();
-  }, [filterType]);
+  }, [filterType, selectedProject]);
 
   const fetchTraces = async () => {
     setLoading(true);
@@ -18,6 +20,9 @@ export function Traces() {
       const params = new URLSearchParams();
       if (filterType !== 'all') {
         params.append('event_type', filterType);
+      }
+      if (selectedProject) {
+        params.append('project', selectedProject);
       }
 
       const response = await fetchApi(`/api/traces?${params}`);

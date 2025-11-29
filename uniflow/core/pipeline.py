@@ -358,8 +358,58 @@ class Pipeline:
                 if debug:
                     pass
 
+                # Prepare step inputs
+                step_inputs = {}
+
+                # Get function signature to map inputs to parameters
+                import inspect
+
+                sig = inspect.signature(step.func)
+                params = list(sig.parameters.values())
+
+                # Filter out self/cls
+                params = [p for p in params if p.name not in ("self", "cls")]
+
+                # Strategy:
+                # 1. Map inputs to parameters
+                #    - If input name matches param name, use it
+                #    - If not, use positional mapping (input[i] -> param[i])
+
+                # Track which parameters have been assigned
+                assigned_params = set()
+
+                if step.inputs:
+                    for i, input_name in enumerate(step.inputs):
+                        if input_name not in step_outputs:
+                            continue
+
+                        val = step_outputs[input_name]
+
+                        # Check if input name matches a parameter
+                        param_match = next((p for p in params if p.name == input_name), None)
+
+                        if param_match:
+                            step_inputs[param_match.name] = val
+                            assigned_params.add(param_match.name)
+                        elif i < len(params):
+                            # Positional fallback
+                            # Only if this parameter hasn't been assigned yet
+                            target_param = params[i]
+                            if target_param.name not in assigned_params:
+                                step_inputs[target_param.name] = val
+                                assigned_params.add(target_param.name)
+
+                # Auto-map parameters from available outputs if they match function signature
+                # This allows passing inputs to run() without declaring them as asset dependencies
+                for param in params:
+                    if param.name in step_outputs and param.name not in step_inputs:
+                        step_inputs[param.name] = step_outputs[param.name]
+                        assigned_params.add(param.name)
+
                 # Validate context parameters
-                missing_params = self.context.validate_for_step(step.func, exclude=step.inputs)
+                # Exclude parameters that are already provided in step_inputs
+                exclude_params = list(step.inputs) + list(step_inputs.keys())
+                missing_params = self.context.validate_for_step(step.func, exclude=exclude_params)
                 if missing_params:
                     if debug:
                         pass
@@ -373,17 +423,9 @@ class Pipeline:
                     result.add_step_result(step_result)
                     result.finalize(success=False)
                     self._save_run(result)  # Save run before returning
+                    self._save_pipeline_definition()  # Save definition even on failure
+                    print("DEBUG: Pipeline failed at step execution")
                     return result
-
-                # Prepare step inputs
-                step_inputs = {}
-                for input_name in step.inputs:
-                    if input_name in step_outputs:
-                        step_inputs[input_name] = step_outputs[input_name]
-                    else:
-                        # Input might be parameter name, not asset name
-                        # This is simplified - real implementation would be smarter
-                        pass
 
                 # Get context parameters for this step
                 context_params = self.context.inject_params(step.func)
@@ -410,6 +452,8 @@ class Pipeline:
                         pass
                     result.finalize(success=False)
                     self._save_run(result)
+                    self._save_pipeline_definition()  # Save definition even on failure
+                    print("DEBUG: Pipeline failed at step execution")
                     return result
 
                 # Store outputs for next steps
@@ -439,7 +483,49 @@ class Pipeline:
             pass
 
         self._save_run(result)
+        self._save_pipeline_definition()  # Save pipeline structure for scheduling
         return result
+
+    def to_definition(self) -> dict:
+        """Serialize pipeline to definition for storage and reconstruction."""
+        if not self._built:
+            self.build()
+
+        return {
+            "name": self.name,
+            "steps": [
+                {
+                    "name": step.name,
+                    "inputs": step.inputs,
+                    "outputs": step.outputs,
+                    "source_code": step.source_code,
+                    "tags": step.tags,
+                }
+                for step in self.steps
+            ],
+            "dag": {
+                "nodes": [
+                    {
+                        "name": node.name,
+                        "inputs": node.inputs,
+                        "outputs": node.outputs,
+                    }
+                    for node in self.dag.nodes.values()
+                ],
+                "edges": [
+                    {"source": dep, "target": node_name} for node_name, deps in self.dag.edges.items() for dep in deps
+                ],
+            },
+        }
+
+    def _save_pipeline_definition(self) -> None:
+        """Save pipeline definition to metadata store for scheduling."""
+        try:
+            definition = self.to_definition()
+            self.metadata_store.save_pipeline_definition(self.name, definition)
+        except Exception as e:
+            # Don't fail the run if definition saving fails
+            print(f"Warning: Failed to save pipeline definition: {e}")
 
     def _save_run(self, result: PipelineResult) -> None:
         """Save run results to disk and metadata database."""
@@ -623,6 +709,56 @@ class Pipeline:
         if not self._built:
             self.build()
         return self.dag.visualize()
+
+    @classmethod
+    def from_definition(cls, definition: dict, context: Context | None = None) -> "Pipeline":
+        """Reconstruct pipeline from stored definition.
+
+        This creates a "ghost" pipeline that can be executed but uses
+        the stored step structure. Actual step logic must still be
+        available in the codebase.
+
+        Args:
+            definition: Pipeline definition from to_definition()
+            context: Optional context for execution
+
+        Returns:
+            Reconstructed Pipeline instance
+        """
+        from uniflow.core.step import step as step_decorator
+
+        # Create pipeline instance
+        pipeline = cls(
+            name=definition["name"],
+            context=context or Context(),
+        )
+
+        # Reconstruct steps
+        for step_def in definition["steps"]:
+            # Create a generic step function that can be called
+            # In a real implementation, we'd need to either:
+            # 1. Store serialized functions (using cloudpickle)
+            # 2. Import functions by name from codebase
+            # 3. Use placeholder functions
+
+            # For now, we'll create a placeholder that logs execution
+            def generic_step_func(*args, **kwargs):
+                """Generic step function for reconstructed pipeline."""
+                print(f"Executing reconstructed step with args={args}, kwargs={kwargs}")
+                return
+
+            # Apply step decorator with stored metadata
+            decorated = step_decorator(
+                name=step_def["name"],
+                inputs=step_def["inputs"],
+                outputs=step_def["outputs"],
+                tags=step_def.get("tags", []),
+            )(generic_step_func)
+
+            # Add to pipeline
+            pipeline.add_step(decorated)
+
+        return pipeline
 
     def __repr__(self) -> str:
         return f"Pipeline(name='{self.name}', steps={len(self.steps)})"

@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { fetchApi } from '../../utils/api';
+import { Link } from 'react-router-dom';
 import { Folder, Plus, Trash2, Activity, Database, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { DataView } from '../../components/ui/DataView';
 import { Button } from '../../components/ui/Button';
+import { useProject } from '../../contexts/ProjectContext';
 
 export function Projects() {
     const [projects, setProjects] = useState([]);
@@ -11,6 +13,8 @@ export function Projects() {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [newProjectName, setNewProjectName] = useState('');
     const [newProjectDesc, setNewProjectDesc] = useState('');
+    const [projectStats, setProjectStats] = useState({});
+    const { setSelectedProject } = useProject();
 
     useEffect(() => {
         fetchProjects();
@@ -20,7 +24,41 @@ export function Projects() {
         try {
             const response = await fetchApi('/api/projects/');
             const data = await response.json();
-            setProjects(data);
+            // setProjects(data); // This line will be replaced/modified
+
+            // Fetch stats for each project
+            const projectsList = Array.isArray(data) ? data : (data.projects || []);
+            const projectsWithStats = await Promise.all(projectsList.map(async (project) => {
+                try {
+                    // Fetch runs for this project
+                    const runsRes = await fetch(`/api/runs?project=${encodeURIComponent(project.name)}`);
+                    const runsData = await runsRes.json();
+
+                    // Fetch pipelines - we need to count unique pipelines from runs
+                    const pipelineNames = new Set((runsData.runs || []).map(r => r.pipeline_name));
+
+                    // Fetch artifacts for this project
+                    const artifactsRes = await fetch(`/api/assets?project=${encodeURIComponent(project.name)}`);
+                    const artifactsData = await artifactsRes.json();
+
+                    return {
+                        ...project,
+                        runs: (runsData.runs || []).length,
+                        pipelines: pipelineNames.size,
+                        artifacts: (artifactsData.artifacts || []).length
+                    };
+                } catch (err) {
+                    console.error(`Failed to fetch stats for project ${project.name}:`, err);
+                    return {
+                        ...project,
+                        runs: 0,
+                        pipelines: 0,
+                        artifacts: 0
+                    };
+                }
+            }));
+
+            setProjects(projectsWithStats);
         } catch (error) {
             console.error('Failed to fetch projects:', error);
         } finally {
@@ -96,13 +134,16 @@ export function Projects() {
         {
             header: 'Stats',
             key: 'stats',
-            render: (project) => (
-                <div className="flex gap-4 text-sm text-slate-500">
-                    <span className="flex items-center gap-1"><Activity size={14} /> {project.pipelines?.length || 0}</span>
-                    <span className="flex items-center gap-1"><Clock size={14} /> 0</span>
-                    <span className="flex items-center gap-1"><Database size={14} /> 0</span>
-                </div>
-            )
+            render: (project) => {
+                const stats = projectStats[project.name] || { runs: 0, pipelines: 0, artifacts: 0 };
+                return (
+                    <div className="flex gap-4 text-sm text-slate-500">
+                        <span className="flex items-center gap-1"><Activity size={14} /> {stats.pipelines || 0}</span>
+                        <span className="flex items-center gap-1"><Clock size={14} /> {stats.runs || 0}</span>
+                        <span className="flex items-center gap-1"><Database size={14} /> {stats.artifacts || 0}</span>
+                    </div>
+                );
+            }
         },
         {
             header: 'Actions',
@@ -118,54 +159,64 @@ export function Projects() {
         }
     ];
 
-    const renderGrid = (project) => (
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 hover:border-blue-500/50 hover:shadow-md transition-all group">
-            <div className="flex justify-between items-start mb-4">
-                <div className="flex items-center gap-3">
-                    <div className="p-3 bg-blue-500/10 rounded-xl group-hover:bg-blue-500/20 transition-colors">
-                        <Folder className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                    </div>
-                    <div>
-                        <h3 className="font-bold text-lg text-slate-900 dark:text-white">{project.name}</h3>
-                        <p className="text-xs text-slate-500">
-                            Created {format(new Date(project.created_at), 'MMM d, yyyy')}
-                        </p>
-                    </div>
-                </div>
-                <button
-                    onClick={() => deleteProject(project.name)}
-                    className="text-slate-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
-                >
-                    <Trash2 className="w-4 h-4" />
-                </button>
-            </div>
+    const renderGrid = (project) => {
+        const stats = projectStats[project.name] || { runs: 0, pipelines: 0, artifacts: 0 };
 
-            <p className="text-slate-500 dark:text-slate-400 mb-6 h-10 overflow-hidden text-sm line-clamp-2">
-                {project.description || "No description provided."}
-            </p>
+        return (
+            <Link
+                to={`/runs?project=${encodeURIComponent(project.name)}`}
+                onClick={() => setSelectedProject(project.name)}
+                className="block"
+            >
+                <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 hover:border-blue-500/50 hover:shadow-md transition-all group cursor-pointer">
+                    <div className="flex justify-between items-start mb-4">
+                        <div className="flex items-center gap-3">
+                            <div className="p-3 bg-blue-500/10 rounded-xl group-hover:bg-blue-500/20 transition-colors">
+                                <Folder className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-lg text-slate-900 dark:text-white">{project.name}</h3>
+                                <p className="text-xs text-slate-500">
+                                    Created {format(new Date(project.created_at), 'MMM d, yyyy')}
+                                </p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteProject(project.name); }}
+                            className="text-slate-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                        </button>
+                    </div>
 
-            <div className="grid grid-cols-3 gap-4 border-t border-slate-100 dark:border-slate-700 pt-4">
-                <div className="text-center">
-                    <div className="flex items-center justify-center gap-1 text-slate-400 text-xs mb-1">
-                        <Activity className="w-3 h-3" /> Pipelines
+                    <p className="text-slate-500 dark:text-slate-400 mb-6 h-10 overflow-hidden text-sm line-clamp-2">
+                        {project.description || "No description provided."}
+                    </p>
+
+                    <div className="grid grid-cols-3 gap-4 border-t border-slate-100 dark:border-slate-700 pt-4">
+                        <div className="text-center">
+                            <div className="flex items-center justify-center gap-1 text-slate-400 text-xs mb-1">
+                                <Activity className="w-3 h-3" /> Pipelines
+                            </div>
+                            <span className="font-bold text-slate-700 dark:text-slate-200">{stats.pipelines || 0}</span>
+                        </div>
+                        <div className="text-center">
+                            <div className="flex items-center justify-center gap-1 text-slate-400 text-xs mb-1">
+                                <Clock className="w-3 h-3" /> Runs
+                            </div>
+                            <span className="font-bold text-slate-700 dark:text-slate-200">{stats.runs || 0}</span>
+                        </div>
+                        <div className="text-center">
+                            <div className="flex items-center justify-center gap-1 text-slate-400 text-xs mb-1">
+                                <Database className="w-3 h-3" /> Artifacts
+                            </div>
+                            <span className="font-bold text-slate-700 dark:text-slate-200">{stats.artifacts || 0}</span>
+                        </div>
                     </div>
-                    <span className="font-bold text-slate-700 dark:text-slate-200">{project.pipelines?.length || 0}</span>
                 </div>
-                <div className="text-center">
-                    <div className="flex items-center justify-center gap-1 text-slate-400 text-xs mb-1">
-                        <Clock className="w-3 h-3" /> Runs
-                    </div>
-                    <span className="font-bold text-slate-700 dark:text-slate-200">0</span>
-                </div>
-                <div className="text-center">
-                    <div className="flex items-center justify-center gap-1 text-slate-400 text-xs mb-1">
-                        <Database className="w-3 h-3" /> Artifacts
-                    </div>
-                    <span className="font-bold text-slate-700 dark:text-slate-200">0</span>
-                </div>
-            </div>
-        </div>
-    );
+            </Link>
+        );
+    };
 
     return (
         <div className="p-6 max-w-7xl mx-auto">

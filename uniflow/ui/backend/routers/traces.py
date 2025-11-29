@@ -11,8 +11,9 @@ async def list_traces(
     limit: int = 50,
     trace_id: str | None = None,
     event_type: str | None = None,
+    project: str | None = None,
 ):
-    """List traces."""
+    """List traces, optionally filtered by project."""
     store = SQLiteMetadataStore()
 
     # We need to implement list_traces in metadata store or query manually
@@ -33,6 +34,10 @@ async def list_traces(
     if event_type:
         conditions.append("event_type = ?")
         params.append(event_type)
+
+    if project:
+        conditions.append("project = ?")
+        params.append(project)
 
     if conditions:
         query += " WHERE " + " AND ".join(conditions)

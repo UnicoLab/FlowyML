@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { fetchApi } from '../../utils/api';
+import { Link } from 'react-router-dom';
 import { Database, Box, BarChart2, FileText, Search, Filter, Calendar, Package, Download, Eye, X, ArrowRight } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
@@ -8,6 +9,8 @@ import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DataView } from '../../components/ui/DataView';
 import { useProject } from '../../contexts/ProjectContext';
+import { EmptyState } from '../../components/ui/EmptyState';
+import { KeyValue, KeyValueGrid } from '../../components/ui/KeyValue';
 
 export function Assets() {
     const [assets, setAssets] = useState([]);
@@ -81,12 +84,37 @@ export function Assets() {
             )
         },
         {
+            header: 'Pipeline',
+            key: 'pipeline',
+            sortable: true,
+            render: (asset) => (
+                <span className="text-sm text-slate-600 dark:text-slate-400">
+                    {asset.pipeline_name || '-'}
+                </span>
+            )
+        },
+        {
+            header: 'Project',
+            key: 'project',
+            sortable: true,
+            render: (asset) => (
+                <span className="text-sm text-slate-600 dark:text-slate-400">
+                    {asset.project || '-'}
+                </span>
+            )
+        },
+        {
             header: 'Run ID',
             key: 'run_id',
-            render: (asset) => (
-                <span className="font-mono text-xs bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded text-slate-600 dark:text-slate-300">
+            render: (asset) => asset.run_id ? (
+                <Link
+                    to={`/runs/${asset.run_id}`}
+                    className="font-mono text-xs bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
+                >
                     {asset.run_id.substring(0, 8)}...
-                </span>
+                </Link>
+            ) : (
+                <span className="font-mono text-xs text-slate-400">-</span>
             )
         },
         {
@@ -219,18 +247,14 @@ export function Assets() {
                 columns={columns}
                 renderGrid={renderGrid}
                 emptyState={
-                    <div className="text-center py-16 bg-slate-50 dark:bg-slate-800/30 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700">
-                        <div className="mx-auto w-20 h-20 bg-slate-100 dark:bg-slate-700 rounded-2xl flex items-center justify-center mb-6">
-                            <Package className="text-slate-400" size={32} />
-                        </div>
-                        <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">No artifacts found</h3>
-                        <p className="text-slate-500 max-w-md mx-auto">
-                            {typeFilter !== 'all'
-                                ? 'Try adjusting your filters'
-                                : 'Run a pipeline to generate artifacts'
-                            }
-                        </p>
-                    </div>
+                    <EmptyState
+                        icon={Package}
+                        title="No artifacts found"
+                        description={typeFilter !== 'all'
+                            ? 'Try adjusting your filters'
+                            : 'Run a pipeline to generate artifacts'
+                        }
+                    />
                 }
             />
 
@@ -323,21 +347,21 @@ function AssetDetailModal({ asset, onClose }) {
                             {/* Metadata */}
                             <div>
                                 <h4 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Metadata</h4>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <MetadataItem label="Artifact ID" value={asset.artifact_id} mono />
-                                    <MetadataItem label="Type" value={asset.type} />
-                                    <MetadataItem label="Step" value={asset.step} />
-                                    <MetadataItem label="Run ID" value={asset.run_id} mono />
-                                    {asset.created_at && (
-                                        <MetadataItem
-                                            label="Created At"
-                                            value={format(new Date(asset.created_at), 'MMM d, yyyy HH:mm:ss')}
-                                        />
-                                    )}
-                                    {asset.path && (
-                                        <MetadataItem label="Path" value={asset.path} mono />
-                                    )}
-                                </div>
+                                <KeyValueGrid items={[
+                                    { label: "Artifact ID", value: asset.artifact_id, valueClassName: "font-mono text-xs" },
+                                    { label: "Type", value: asset.type },
+                                    { label: "Step", value: asset.step },
+                                    { label: "Run ID", value: asset.run_id, valueClassName: "font-mono text-xs" },
+                                    ...(asset.created_at ? [{
+                                        label: "Created At",
+                                        value: format(new Date(asset.created_at), 'MMM d, yyyy HH:mm:ss')
+                                    }] : []),
+                                    ...(asset.path ? [{
+                                        label: "Path",
+                                        value: asset.path,
+                                        valueClassName: "font-mono text-xs"
+                                    }] : [])
+                                ]} columns={2} />
                             </div>
                         </div>
                     </div>
@@ -361,16 +385,7 @@ function AssetDetailModal({ asset, onClose }) {
     );
 }
 
-function MetadataItem({ label, value, mono = false }) {
-    return (
-        <div className="p-3 bg-white dark:bg-slate-700/50 rounded-lg border border-slate-100 dark:border-slate-700">
-            <span className="text-xs text-slate-500 dark:text-slate-400 block mb-1">{label}</span>
-            <span className={`text-sm text-slate-900 dark:text-white font-semibold ${mono ? 'font-mono text-xs' : ''} break-all`}>
-                {value}
-            </span>
-        </div>
-    );
-}
+
 
 function getTypeIcon(type) {
     const icons = {

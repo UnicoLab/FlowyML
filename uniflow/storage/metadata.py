@@ -81,10 +81,16 @@ class SQLiteMetadataStore(MetadataStore):
                 end_time TEXT,
                 duration REAL,
                 metadata TEXT,
+                project TEXT,
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP
             )
         """,
         )
+
+        # Migration: Add project column if it doesn't exist
+        # Migration: Add project column if it doesn't exist
+        with contextlib.suppress(sqlite3.OperationalError):
+            cursor.execute("ALTER TABLE runs ADD COLUMN project TEXT")
 
         # Artifacts table
         cursor.execute(
@@ -96,11 +102,17 @@ class SQLiteMetadataStore(MetadataStore):
                 run_id TEXT,
                 path TEXT,
                 metadata TEXT,
+                project TEXT,
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (run_id) REFERENCES runs(run_id)
             )
         """,
         )
+
+        # Migration: Add project column to artifacts if it doesn't exist
+        # Migration: Add project column to artifacts if it doesn't exist
+        with contextlib.suppress(sqlite3.OperationalError):
+            cursor.execute("ALTER TABLE artifacts ADD COLUMN project TEXT")
 
         # Metrics table
         cursor.execute(
@@ -138,10 +150,16 @@ class SQLiteMetadataStore(MetadataStore):
                 name TEXT,
                 description TEXT,
                 tags TEXT,
+                project TEXT,
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP
             )
         """,
         )
+
+        # Migration: Add project column to experiments if it doesn't exist
+        # Migration: Add project column to experiments if it doesn't exist
+        with contextlib.suppress(sqlite3.OperationalError):
+            cursor.execute("ALTER TABLE experiments ADD COLUMN project TEXT")
 
         # Experiment Runs link table
         cursor.execute(
@@ -181,20 +199,42 @@ class SQLiteMetadataStore(MetadataStore):
                 total_tokens INTEGER,
                 cost REAL,
                 model TEXT,
+                project TEXT,
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP
             )
         """,
         )
 
+        # Migration: Add project column to traces if it doesn't exist
+        # Migration: Add project column to traces if it doesn't exist
+        with contextlib.suppress(sqlite3.OperationalError):
+            cursor.execute("ALTER TABLE traces ADD COLUMN project TEXT")
+
         # Create indexes for better query performance
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_runs_pipeline ON runs(pipeline_name)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_runs_status ON runs(status)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_runs_project ON runs(project)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_artifacts_run ON artifacts(run_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_artifacts_project ON artifacts(project)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_metrics_run ON metrics(run_id)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_parameters_run ON parameters(run_id)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_experiments_name ON experiments(name)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_experiments_project ON experiments(project)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_traces_trace_id ON traces(trace_id)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_traces_type ON traces(event_type)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_traces_project ON traces(project)")
+
+        # Pipeline definitions for scheduling
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS pipeline_definitions (
+                pipeline_name TEXT PRIMARY KEY,
+                definition TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+            """,
+        )
 
         conn.commit()
         conn.close()
@@ -212,8 +252,8 @@ class SQLiteMetadataStore(MetadataStore):
         cursor.execute(
             """
             INSERT OR REPLACE INTO runs
-            (run_id, pipeline_name, status, start_time, end_time, duration, metadata)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            (run_id, pipeline_name, status, start_time, end_time, duration, metadata, project)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """,
             (
                 run_id,
@@ -223,6 +263,7 @@ class SQLiteMetadataStore(MetadataStore):
                 metadata.get("end_time"),
                 metadata.get("duration"),
                 json.dumps(metadata),
+                metadata.get("project"),
             ),
         )
 
@@ -265,8 +306,40 @@ class SQLiteMetadataStore(MetadataStore):
         conn.close()
 
         if row:
-            return json.loads(row[0])
+            data = json.loads(row[0])
+            # Ensure project is in metadata if it's in the column but not the JSON blob
+            # (This might happen if we update the column directly)
+            # Actually, let's just return what's in the blob for now,
+            # but we should probably sync them.
+            return data
         return None
+
+    def update_run_project(self, run_id: str, project_name: str) -> None:
+        """Update the project for a run.
+
+        Args:
+            run_id: Run identifier
+            project_name: Name of the project
+        """
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        # 1. Update the column
+        cursor.execute("UPDATE runs SET project = ? WHERE run_id = ?", (project_name, run_id))
+
+        # 2. Update the JSON blob
+        cursor.execute("SELECT metadata FROM runs WHERE run_id = ?", (run_id,))
+        row = cursor.fetchone()
+        if row:
+            metadata = json.loads(row[0])
+            metadata["project"] = project_name
+            cursor.execute(
+                "UPDATE runs SET metadata = ? WHERE run_id = ?",
+                (json.dumps(metadata), run_id),
+            )
+
+        conn.commit()
+        conn.close()
 
     def list_runs(self, limit: int | None = None) -> list[dict]:
         """List all runs from database.
@@ -291,8 +364,11 @@ class SQLiteMetadataStore(MetadataStore):
 
         return [json.loads(row[0]) for row in rows]
 
-    def list_pipelines(self) -> list[str]:
+    def list_pipelines(self, project: str = None) -> list[str]:
         """List all unique pipeline names.
+
+        Args:
+            project: Optional project name to filter by
 
         Returns:
             List of pipeline names
@@ -300,7 +376,14 @@ class SQLiteMetadataStore(MetadataStore):
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
 
-        cursor.execute("SELECT DISTINCT pipeline_name FROM runs ORDER BY pipeline_name")
+        if project:
+            cursor.execute(
+                "SELECT DISTINCT pipeline_name FROM runs WHERE project = ? ORDER BY pipeline_name",
+                (project,),
+            )
+        else:
+            cursor.execute("SELECT DISTINCT pipeline_name FROM runs ORDER BY pipeline_name")
+
         rows = cursor.fetchall()
 
         conn.close()
@@ -320,8 +403,8 @@ class SQLiteMetadataStore(MetadataStore):
         cursor.execute(
             """
             INSERT OR REPLACE INTO artifacts
-            (artifact_id, name, type, run_id, path, metadata)
-            VALUES (?, ?, ?, ?, ?, ?)
+            (artifact_id, name, type, run_id, path, metadata, project)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         """,
             (
                 artifact_id,
@@ -330,6 +413,7 @@ class SQLiteMetadataStore(MetadataStore):
                 metadata.get("run_id"),
                 metadata.get("path"),
                 json.dumps(metadata),
+                metadata.get("project"),
             ),
         )
 
@@ -568,9 +652,27 @@ class SQLiteMetadataStore(MetadataStore):
                     "run_count": run_count,
                 },
             )
-
         conn.close()
         return experiments
+
+    def update_experiment_project(self, experiment_name: str, project_name: str) -> None:
+        """Update the project for an experiment.
+
+        Args:
+            experiment_name: Name of the experiment
+            project_name: New project name
+        """
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        try:
+            cursor.execute(
+                "UPDATE experiments SET project = ? WHERE name = ?",
+                (project_name, experiment_name),
+            )
+            conn.commit()
+        finally:
+            conn.close()
 
     def get_experiment(self, experiment_id: str) -> dict | None:
         """Get experiment details.
@@ -738,3 +840,92 @@ class SQLiteMetadataStore(MetadataStore):
 
         conn.close()
         return events
+
+    def save_pipeline_definition(self, pipeline_name: str, definition: dict) -> None:
+        """Save pipeline definition for scheduling."""
+        from datetime import datetime
+
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        now = datetime.now().isoformat()
+
+        # Check if definition already exists
+        cursor.execute(
+            "SELECT pipeline_name FROM pipeline_definitions WHERE pipeline_name = ?",
+            (pipeline_name,),
+        )
+        exists = cursor.fetchone()
+
+        if exists:
+            # Update existing
+            cursor.execute(
+                """
+                UPDATE pipeline_definitions
+                SET definition = ?, updated_at = ?
+                WHERE pipeline_name = ?
+                """,
+                (json.dumps(definition), now, pipeline_name),
+            )
+        else:
+            # Insert new
+            cursor.execute(
+                """
+                INSERT INTO pipeline_definitions (pipeline_name, definition, created_at, updated_at)
+                VALUES (?, ?, ?, ?)
+                """,
+                (pipeline_name, json.dumps(definition), now, now),
+            )
+
+        conn.commit()
+        conn.close()
+
+    def update_pipeline_project(self, pipeline_name: str, project_name: str) -> None:
+        """Update the project for all runs of a pipeline.
+
+        Args:
+            pipeline_name: Name of the pipeline
+            project_name: New project name
+        """
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        try:
+            # Update runs table
+            cursor.execute(
+                "UPDATE runs SET project = ? WHERE pipeline_name = ?",
+                (project_name, pipeline_name),
+            )
+
+            # Update artifacts table (optional, but good for consistency if artifacts store project)
+            # Currently artifacts are linked to runs, so run update might be enough
+            # But let's check if artifacts table has project column
+            cursor.execute("PRAGMA table_info(artifacts)")
+            columns = [info[1] for info in cursor.fetchall()]
+            if "project" in columns:
+                cursor.execute(
+                    """
+                    UPDATE artifacts
+                    SET project = ?
+                    WHERE run_id IN (SELECT run_id FROM runs WHERE pipeline_name = ?)
+                    """,
+                    (project_name, pipeline_name),
+                )
+
+            conn.commit()
+        finally:
+            conn.close()
+
+    def get_pipeline_definition(self, pipeline_name: str) -> dict | None:
+        """Retrieve pipeline definition."""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT definition FROM pipeline_definitions WHERE pipeline_name = ?",
+            (pipeline_name,),
+        )
+        row = cursor.fetchone()
+        conn.close()
+
+        if row:
+            return json.loads(row[0])
+        return None

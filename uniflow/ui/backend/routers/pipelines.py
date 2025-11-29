@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 from uniflow.storage.metadata import SQLiteMetadataStore
 from uniflow.utils.config import get_config
 
@@ -17,15 +18,7 @@ async def list_pipelines(project: str = None):
     """List all unique pipelines, optionally filtered by project."""
     try:
         store = get_store()
-        pipelines = store.list_pipelines()
-
-        # Filter by project if specified
-        if project:
-            # Get all runs and filter pipelines that have runs in this project
-            all_runs = store.list_runs(limit=1000)
-            project_pipeline_names = {r.get("pipeline_name") for r in all_runs if r.get("project") == project}
-            pipelines = [p for p in pipelines if p in project_pipeline_names]
-
+        pipelines = store.list_pipelines(project=project)
         return {"pipelines": pipelines}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -97,3 +90,21 @@ async def get_pipeline_stats(pipeline_name: str):
         }
     except Exception as e:
         return {"total_runs": 0, "success_rate": 0, "avg_duration": 0, "error": str(e)}
+
+
+class ProjectUpdate(BaseModel):
+    project_name: str
+
+
+@router.put("/{pipeline_name}/project")
+async def update_pipeline_project(pipeline_name: str, update: ProjectUpdate):
+    """Update the project for a pipeline."""
+    try:
+        store = get_store()
+        # This updates all runs for this pipeline to the new project
+        # In a real system, we might want to just tag the pipeline definition
+        # But since our "pipeline" concept is derived from runs, we update runs
+        store.update_pipeline_project(pipeline_name, update.project_name)
+        return {"status": "success", "project": update.project_name}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FlaskConical, ArrowRight, Sparkles, Calendar, Activity } from 'lucide-react';
+import { FlaskConical, ArrowRight, Sparkles, Calendar, Activity, FolderPlus } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
@@ -8,10 +8,12 @@ import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import { DataView } from '../../components/ui/DataView';
 import { useProject } from '../../contexts/ProjectContext';
+import { EmptyState } from '../../components/ui/EmptyState';
 
 export function Experiments() {
     const [experiments, setExperiments] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [selectedExperiments, setSelectedExperiments] = useState([]);
     const { selectedProject } = useProject();
 
     useEffect(() => {
@@ -35,6 +37,38 @@ export function Experiments() {
 
     const columns = [
         {
+            header: (
+                <input
+                    type="checkbox"
+                    checked={selectedExperiments.length === experiments.length && experiments.length > 0}
+                    onChange={(e) => {
+                        if (e.target.checked) {
+                            setSelectedExperiments(experiments.map(e => e.name));
+                        } else {
+                            setSelectedExperiments([]);
+                        }
+                    }}
+                    className="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                />
+            ),
+            key: 'select',
+            render: (exp) => (
+                <input
+                    type="checkbox"
+                    checked={selectedExperiments.includes(exp.name)}
+                    onChange={(e) => {
+                        if (e.target.checked) {
+                            setSelectedExperiments([...selectedExperiments, exp.name]);
+                        } else {
+                            setSelectedExperiments(selectedExperiments.filter(n => n !== exp.name));
+                        }
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                />
+            )
+        },
+        {
             header: 'Experiment',
             key: 'name',
             sortable: true,
@@ -50,6 +84,26 @@ export function Experiments() {
                         )}
                     </div>
                 </div>
+            )
+        },
+        {
+            header: 'Project',
+            key: 'project',
+            sortable: true,
+            render: (exp) => (
+                <span className="text-sm text-slate-600 dark:text-slate-400">
+                    {exp.project || '-'}
+                </span>
+            )
+        },
+        {
+            header: 'Pipeline',
+            key: 'pipeline',
+            sortable: true,
+            render: (exp) => (
+                <span className="text-sm text-slate-600 dark:text-slate-400">
+                    {exp.pipeline_name || '-'}
+                </span>
             )
         },
         {
@@ -139,21 +193,168 @@ export function Experiments() {
                 loading={loading}
                 columns={columns}
                 renderGrid={renderGrid}
+                actions={
+                    <ExperimentProjectSelector
+                        selectedExperiments={selectedExperiments}
+                        onComplete={() => {
+                            window.location.reload();
+                        }}
+                    />
+                }
                 emptyState={
-                    <div className="text-center py-16 bg-slate-50 dark:bg-slate-800/30 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700">
-                        <div className="mx-auto w-20 h-20 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 rounded-2xl flex items-center justify-center mb-6 shadow-inner">
-                            <FlaskConical className="text-purple-400" size={32} />
-                        </div>
-                        <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">No experiments yet</h3>
-                        <p className="text-slate-500 max-w-md mx-auto mb-6">
-                            Start tracking your ML experiments using the Experiment API to compare runs and optimize your models.
-                        </p>
-                        <div className="inline-block px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm font-mono text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                            <code>from flowy.tracking import Experiment</code>
-                        </div>
-                    </div>
+                    <EmptyState
+                        icon={FlaskConical}
+                        title="No experiments yet"
+                        description="Start tracking your ML experiments using the Experiment API to compare runs and optimize your models."
+                        action={
+                            <div className="inline-block px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm font-mono text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                                <code>from flowy.tracking import Experiment</code>
+                            </div>
+                        }
+                    />
                 }
             />
+        </div>
+    );
+}
+
+function ExperimentProjectSelector({ selectedExperiments, onComplete }) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [projects, setProjects] = useState([]);
+    const [updating, setUpdating] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            fetch('/api/projects/')
+                .then(res => res.json())
+                .then(data => setProjects(data))
+                .catch(err => console.error('Failed to load projects:', err));
+        }
+    }, [isOpen]);
+
+    const handleSelectProject = async (projectName) => {
+        setUpdating(true);
+        try {
+            const updates = selectedExperiments.map(expName =>
+                fetch(`/api/experiments/${expName}/project`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ project_name: projectName })
+                })
+            );
+
+            await Promise.all(updates);
+
+            const toast = document.createElement('div');
+            toast.className = 'fixed top-4 right-4 px-4 py-3 rounded-lg shadow-lg z-50 bg-green-500 text-white';
+            toast.textContent = `Added ${selectedExperiments.length} experiment(s) to project ${projectName}`;
+            document.body.appendChild(toast);
+            setTimeout(() => document.body.removeChild(toast), 3000);
+
+            setIsOpen(false);
+            if (onComplete) onComplete();
+        } catch (error) {
+            console.error('Failed to update projects:', error);
+        } finally {
+            setUpdating(false);
+        }
+    };
+
+    return (
+        <div className="relative">
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                disabled={updating || selectedExperiments.length === 0}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+                <FolderPlus size={16} />
+                {updating ? 'Updating...' : `Add to Project (${selectedExperiments.length})`}
+            </button>
+
+            {isOpen && (
+                <>
+                    <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
+                    <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-20">
+                        <div className="p-2 border-b border-slate-100 dark:border-slate-700">
+                            <span className="text-xs font-semibold text-slate-500 px-2">Select Project</span>
+                        </div>
+                        <div className="max-h-64 overflow-y-auto p-1">
+                            {projects.length > 0 ? (
+                                projects.map(p => (
+                                    <button
+                                        key={p.name}
+                                        onClick={() => handleSelectProject(p.name)}
+                                        disabled={updating}
+                                        className="w-full text-left px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50"
+                                    >
+                                        {p.name}
+                                    </button>
+                                ))
+                            ) : (
+                                <div className="px-3 py-2 text-sm text-slate-400 italic">No projects found</div>
+                            )}
+                        </div>
+                    </div>
+                </>
+            )}
+        </div>
+    );
+}
+
+function ProjectSelector({ onSelect }) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [projects, setProjects] = useState([]);
+
+    useEffect(() => {
+        if (isOpen) {
+            fetch('/api/projects/')
+                .then(res => res.json())
+                .then(data => setProjects(data))
+                .catch(err => console.error('Failed to load projects:', err));
+        }
+    }, [isOpen]);
+
+    return (
+        <div className="relative">
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+            >
+                <FolderPlus size={16} />
+                Add to Project
+            </button>
+
+            {isOpen && (
+                <>
+                    <div
+                        className="fixed inset-0 z-10"
+                        onClick={() => setIsOpen(false)}
+                    />
+                    <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-20 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                        <div className="p-2 border-b border-slate-100 dark:border-slate-700">
+                            <span className="text-xs font-semibold text-slate-500 px-2">Select Project</span>
+                        </div>
+                        <div className="max-h-64 overflow-y-auto p-1">
+                            {projects.length > 0 ? (
+                                projects.map(p => (
+                                    <button
+                                        key={p.name}
+                                        onClick={() => {
+                                            onSelect(p.name);
+                                            setIsOpen(false);
+                                        }}
+                                        className="w-full text-left px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                                    >
+                                        {p.name}
+                                    </button>
+                                ))
+                            ) : (
+                                <div className="px-3 py-2 text-sm text-slate-400 italic">No projects found</div>
+                            )}
+                        </div>
+                    </div>
+                </>
+            )}
         </div>
     );
 }

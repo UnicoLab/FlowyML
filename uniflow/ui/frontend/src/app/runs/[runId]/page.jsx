@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { fetchApi } from '../../../utils/api';
 import { useParams, Link } from 'react-router-dom';
-import { CheckCircle, XCircle, Clock, Calendar, Package, ArrowRight, BarChart2, FileText, Database, Box, ChevronRight, Activity, Layers, Code2, Terminal, Info, X, Maximize2, TrendingUp, Download, ArrowDownCircle, ArrowUpCircle, Tag, Zap, AlertCircle } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Calendar, Package, ArrowRight, BarChart2, FileText, Database, Box, ChevronRight, Activity, Layers, Code2, Terminal, Info, X, Maximize2, TrendingUp, Download, ArrowDownCircle, ArrowUpCircle, Tag, Zap, AlertCircle, FolderPlus } from 'lucide-react';
 import { Card } from '../../../components/ui/Card';
 import { Badge } from '../../../components/ui/Badge';
 import { Button } from '../../../components/ui/Button';
@@ -97,9 +97,12 @@ export function RunDetails() {
                     </p>
                 </div>
                 <div className="flex flex-col items-end gap-2">
-                    <Badge variant={statusVariant} className="text-sm px-4 py-1.5 uppercase tracking-wide shadow-sm">
-                        {run.status}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                        <SimpleProjectSelector runId={run.run_id} currentProject={run.project} />
+                        <Badge variant={statusVariant} className="text-sm px-4 py-1.5 uppercase tracking-wide shadow-sm">
+                            {run.status}
+                        </Badge>
+                    </div>
                     <span className="text-xs text-slate-400 font-mono">ID: {run.run_id}</span>
                 </div>
             </div>
@@ -592,5 +595,88 @@ function ArtifactModal({ artifact, onClose }) {
                 </motion.div>
             </motion.div>
         </AnimatePresence>
+    );
+}
+
+function SimpleProjectSelector({ runId, currentProject }) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [projects, setProjects] = useState([]);
+    const [updating, setUpdating] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            fetch('/api/projects/')
+                .then(res => res.json())
+                .then(data => setProjects(data))
+                .catch(err => console.error('Failed to load projects:', err));
+        }
+    }, [isOpen]);
+
+    const handleSelectProject = async (projectName) => {
+        setUpdating(true);
+        try {
+            await fetch(`/api/runs/${runId}/project`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ project_name: projectName })
+            });
+
+            const toast = document.createElement('div');
+            toast.className = 'fixed top-4 right-4 px-4 py-3 rounded-lg shadow-lg z-50 bg-green-500 text-white';
+            toast.textContent = `Run added to project ${projectName}`;
+            document.body.appendChild(toast);
+            setTimeout(() => document.body.removeChild(toast), 3000);
+
+            setIsOpen(false);
+            setTimeout(() => window.location.reload(), 500);
+        } catch (error) {
+            console.error('Failed to update project:', error);
+        } finally {
+            setUpdating(false);
+        }
+    };
+
+    return (
+        <div className="relative">
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                disabled={updating}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
+                title={currentProject ? `Current project: ${currentProject}` : 'Add to project'}
+            >
+                <FolderPlus size={16} />
+                {currentProject || 'Add to Project'}
+            </button>
+
+            {isOpen && (
+                <>
+                    <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
+                    <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-20">
+                        <div className="p-2 border-b border-slate-100 dark:border-slate-700">
+                            <span className="text-xs font-semibold text-slate-500 px-2">Select Project</span>
+                        </div>
+                        <div className="max-h-64 overflow-y-auto p-1">
+                            {projects.length > 0 ? (
+                                projects.map(p => (
+                                    <button
+                                        key={p.name}
+                                        onClick={() => handleSelectProject(p.name)}
+                                        disabled={updating}
+                                        className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-colors ${p.name === currentProject
+                                                ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium'
+                                                : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
+                                            }`}
+                                    >
+                                        {p.name} {p.name === currentProject && '✓'}
+                                    </button>
+                                ))
+                            ) : (
+                                <div className="px-3 py-2 text-sm text-slate-400">No projects found</div>
+                            )}
+                        </div>
+                    </div>
+                </>
+            )}
+        </div>
     );
 }
