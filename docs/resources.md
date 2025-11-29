@@ -1,6 +1,6 @@
 # Step-Level Resource Specification
 
-UniFlow provides comprehensive step-level resource specification that allows you to declare CPU, GPU, memory, and other compute requirements for individual pipeline steps. These specifications are automatically translated to orchestrator-specific formats (Kubernetes, Google Vertex AI, AWS SageMaker, etc.).
+FlowyML provides comprehensive step-level resource specification that allows you to declare CPU, GPU, memory, and other compute requirements for individual pipeline steps. These specifications are automatically translated to orchestrator-specific formats (Kubernetes, Google Vertex AI, AWS SageMaker, etc.).
 
 ## Overview
 
@@ -16,8 +16,8 @@ Resource specification enables you to:
 ### Simple CPU and Memory
 
 ```python
-from uniflow.core import step
-from uniflow.core.resources import ResourceRequirements
+from flowyml.core import step
+from flowyml.core.resources import ResourceRequirements
 
 @step(resources=ResourceRequirements(cpu="2", memory="4Gi"))
 def preprocess_data(data):
@@ -28,7 +28,7 @@ def preprocess_data(data):
 ### GPU Training
 
 ```python
-from uniflow.core.resources import ResourceRequirements, GPUConfig
+from flowyml.core.resources import ResourceRequirements, GPUConfig
 
 @step(
     resources=ResourceRequirements(
@@ -135,8 +135,8 @@ node_affinity=NodeAffinity(
 ### Example 1: Data Processing Pipeline
 
 ```python
-from uniflow.core import step
-from uniflow.core.resources import ResourceRequirements
+from flowyml.core import step
+from flowyml.core.resources import ResourceRequirements
 
 @step(resources=ResourceRequirements(cpu="1", memory="2Gi"))
 def load_data(path):
@@ -157,8 +157,8 @@ def save_results(processed):
 ### Example 2: GPU Training with Node Affinity
 
 ```python
-from uniflow.core import step
-from uniflow.core.resources import ResourceRequirements, GPUConfig, NodeAffinity
+from flowyml.core import step
+from flowyml.core.resources import ResourceRequirements, GPUConfig, NodeAffinity
 
 @step(
     resources=ResourceRequirements(
@@ -186,8 +186,8 @@ def distributed_training(dataset):
 ### Example 3: Multi-Step ML Pipeline
 
 ```python
-from uniflow.core import step
-from uniflow.core.resources import ResourceRequirements, GPUConfig
+from flowyml.core import step
+from flowyml.core.resources import ResourceRequirements, GPUConfig
 
 # Preprocessing: Moderate resources
 @step(resources=ResourceRequirements(cpu="4", memory="16Gi"))
@@ -269,7 +269,7 @@ affinity:
 Translates to Vertex AI machine types and accelerators:
 
 ```python
-# UniFlow resource spec
+# FlowyML resource spec
 resources=ResourceRequirements(
     cpu="16", memory="64Gi",
     gpu=GPUConfig(gpu_type="nvidia-tesla-v100", count=4)
@@ -286,7 +286,7 @@ resources=ResourceRequirements(
 Translates to SageMaker instance types:
 
 ```python
-# UniFlow resource spec
+# FlowyML resource spec
 resources=ResourceRequirements(
     cpu="8", memory="32Gi",
     gpu=GPUConfig(gpu_type="nvidia-tesla-v100", count=1)
@@ -385,7 +385,7 @@ ResourceRequirements(gpu=GPUConfig(gpu_type="v100", count=0))  # Count must be >
 
 ## Migration from ZenML
 
-If you're migrating from ZenML, UniFlow resource specifications are similar:
+If you're migrating from ZenML, flowyml resource specifications are similar:
 
 ```python
 # ZenML
@@ -398,16 +398,16 @@ from zenml.config import ResourceSettings
 def zenml_step():
     pass
 
-# UniFlow
-from uniflow.core import step
-from uniflow.core.resources import ResourceRequirements, GPUConfig
+# FlowyML
+from flowyml.core import step
+from flowyml.core.resources import ResourceRequirements, GPUConfig
 
 @step(resources=ResourceRequirements(
     cpu="2",
     memory="4Gi",  # Note: Gi not GB
     gpu=GPUConfig(gpu_type="nvidia-tesla-v100", count=1)
 ))
-def uniflow_step():
+def flowyml_step():
     pass
 ```
 
@@ -468,6 +468,6 @@ def memory_intensive():
 ## API Reference
 
 For complete API documentation, see:
-- [`uniflow.core.resources.ResourceRequirements`](../api/resources.md#resourcerequirements)
-- [`uniflow.core.resources.GPUConfig`](../api/resources.md#gpuconfig)
-- [`uniflow.core.resources.NodeAffinity`](../api/resources.md#nodeaffinity)
+- [`flowyml.core.resources.ResourceRequirements`](../api/resources.md#resourcerequirements)
+- [`flowyml.core.resources.GPUConfig`](../api/resources.md#gpuconfig)
+- [`flowyml.core.resources.NodeAffinity`](../api/resources.md#nodeaffinity)

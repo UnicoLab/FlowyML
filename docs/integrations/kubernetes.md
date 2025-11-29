@@ -3,7 +3,7 @@
 Orchestrate your pipelines on Kubernetes clusters for massive scale.
 
 > [!NOTE]
-> **What you'll learn**: How to deploy UniFlow pipelines to K8s
+> **What you'll learn**: How to deploy flowyml pipelines to K8s
 >
 > **Key insight**: Turn your K8s cluster into a powerful ML engine.
 
@@ -15,17 +15,17 @@ Orchestrate your pipelines on Kubernetes clusters for massive scale.
 
 ## ☸️ Running on Kubernetes
 
-UniFlow submits each step as a Kubernetes Pod.
+flowyml submits each step as a Kubernetes Pod.
 
 ### Configuration
 
 ```python
-from uniflow.integrations.kubernetes import KubernetesOrchestrator
+from flowyml.integrations.kubernetes import KubernetesOrchestrator
 
 pipeline.run(
     orchestrator=KubernetesOrchestrator(
-        namespace="uniflow-jobs",
-        image="my-registry/uniflow-app:latest"
+        namespace="flowyml-jobs",
+        image="my-registry/flowyml-app:latest"
     )
 )
 ```
@@ -35,7 +35,7 @@ pipeline.run(
 Customize resources for specific steps.
 
 ```python
-from uniflow import step, Resources
+from flowyml import step, Resources
 
 @step(
     resources=Resources(

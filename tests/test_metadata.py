@@ -5,7 +5,7 @@ import tempfile
 import shutil
 from pathlib import Path
 
-from uniflow.storage.metadata import SQLiteMetadataStore
+from flowyml.storage.metadata import SQLiteMetadataStore
 
 
 class TestMetadata(unittest.TestCase):

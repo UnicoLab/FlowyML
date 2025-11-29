@@ -6,7 +6,7 @@ import unittest
 import time
 import threading
 from datetime import datetime, timedelta
-from uniflow.core.scheduler import PipelineScheduler, Schedule
+from flowyml.core.scheduler import PipelineScheduler, Schedule
 
 
 class TestPipelineScheduler(unittest.TestCase):

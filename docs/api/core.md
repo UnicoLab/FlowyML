@@ -2,12 +2,12 @@
 
 ## Pipeline
 
-::: uniflow.core.pipeline.Pipeline
+::: flowyml.core.pipeline.Pipeline
 
 ## Step
 
-::: uniflow.core.step.Step
+::: flowyml.core.step.Step
 
 ## Context
 
-::: uniflow.core.context.Context
+::: flowyml.core.context.Context

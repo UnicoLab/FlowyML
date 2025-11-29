@@ -1,28 +1,28 @@
 # Keras Integration 🧠
 
-Deep learning for humans, orchestrated by UniFlow.
+Deep learning for humans, orchestrated by flowyml.
 
 > [!NOTE]
 > **What you'll learn**: How to track Keras training runs automatically
 >
 > **Key insight**: Add one callback, get full experiment tracking for free.
 
-## Why Keras + UniFlow?
+## Why Keras + flowyml?
 
 - **Zero-Boilerplate Tracking**: No need to write `log_metric` loops.
 - **Model Versioning**: Every `model.fit()` produces a versioned artifact.
 - **Reproducibility**: Capture exact hyperparameters and architecture.
 
-## 🧠 UniFlowKerasCallback
+## 🧠 flowymlKerasCallback
 
-The core of the integration is the `UniFlowKerasCallback`. It automatically logs metrics, parameters, and model checkpoints during training.
+The core of the integration is the `flowymlKerasCallback`. It automatically logs metrics, parameters, and model checkpoints during training.
 
 ### Real-World Pattern: Auto-Tracking
 
 ```python
 import tensorflow as tf
-from uniflow.integrations.keras import UniFlowKerasCallback
-from uniflow import step
+from flowyml.integrations.keras import flowymlKerasCallback
+from flowyml import step
 
 @step
 def train_model(x_train, y_train):
@@ -38,7 +38,7 @@ def train_model(x_train, y_train):
         x_train, y_train,
         epochs=10,
         callbacks=[
-            UniFlowKerasCallback(
+            flowymlKerasCallback(
                 experiment_name="mnist_classifier",
                 log_model=True  # Auto-save to artifact store
             )
@@ -50,10 +50,10 @@ def train_model(x_train, y_train):
 
 ## 📦 Model Management
 
-Models trained with the callback are automatically registered in UniFlow's Model Registry.
+Models trained with the callback are automatically registered in flowyml's Model Registry.
 
 ```python
-from uniflow import ModelRegistry
+from flowyml import ModelRegistry
 
 # Load the latest champion
 registry = ModelRegistry()

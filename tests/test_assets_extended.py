@@ -6,8 +6,8 @@ import shutil
 from pathlib import Path
 import pandas as pd
 
-from uniflow import Dataset, Model, Metrics, FeatureSet
-from uniflow.assets.base import Asset
+from flowyml import Dataset, Model, Metrics, FeatureSet
+from flowyml.assets.base import Asset
 from tests.base import BaseTestCase
 
 

@@ -1,10 +1,10 @@
 # API-Based Execution & Token Management 🚀
 
-UniFlow provides a robust REST API for executing pipelines, managing tokens, and interacting with the system programmatically. This allows you to integrate UniFlow into your existing infrastructure, such as CI/CD pipelines or custom dashboards.
+flowyml provides a robust REST API for executing pipelines, managing tokens, and interacting with the system programmatically. This allows you to integrate flowyml into your existing infrastructure, such as CI/CD pipelines or custom dashboards.
 
 ## 🔑 Token Management
 
-Secure access to the UniFlow API is managed via API tokens.
+Secure access to the flowyml API is managed via API tokens.
 
 ### Creating Tokens
 
@@ -13,13 +13,13 @@ You can generate tokens via the UI or CLI.
 **Using CLI:**
 ```bash
 # Generate a new token
-uniflow token create --name "ci-cd-token" --role "admin"
+flowyml token create --name "ci-cd-token" --role "admin"
 
 # List tokens
-uniflow token list
+flowyml token list
 
 # Revoke a token
-uniflow token revoke --token-id <token_id>
+flowyml token revoke --token-id <token_id>
 ```
 
 **Using UI:**

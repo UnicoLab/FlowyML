@@ -1,6 +1,6 @@
 # Conditional Execution 🔀
 
-UniFlow supports dynamic pipeline execution paths based on runtime conditions. Build smart workflows that adapt to data quality, model performance, or external factors.
+flowyml supports dynamic pipeline execution paths based on runtime conditions. Build smart workflows that adapt to data quality, model performance, or external factors.
 
 > [!NOTE]
 > **What you'll learn**: How to build adaptive pipelines that change behavior based on data
@@ -14,7 +14,7 @@ UniFlow supports dynamic pipeline execution paths based on runtime conditions. B
 - **Rigid workflows**: One size fits all, regardless of data volume or quality
 - **Separate pipelines**: Maintaining "Training" and "Deployment" pipelines separately
 
-**With UniFlow conditional logic**:
+**With flowyml conditional logic**:
 - **Automated decisions**: "If accuracy > 90%, deploy. Else, retrain."
 - **Adaptive behavior**: "If data > 1GB, use Spark. Else, use Pandas."
 - **Unified workflows**: Handle edge cases within the same pipeline
@@ -28,7 +28,7 @@ You can use the `conditional` decorator or utility to define branching logic.
 ### Using `If` Condition
 
 ```python
-from uniflow import Pipeline, step, If
+from flowyml import Pipeline, step, If
 
 @step(outputs=["accuracy"])
 def evaluate_model():
@@ -81,7 +81,7 @@ def upload_to_s3(data):
 The most common pattern: only deploy if the model meets a threshold.
 
 ```python
-from uniflow import If
+from flowyml import If
 
 pipeline.add_control_flow(
     If(condition=lambda ctx: ctx["accuracy"] > 0.95)

@@ -2,20 +2,20 @@
 Clean Pipeline Example - Infrastructure Agnostic.
 
 This pipeline has NO infrastructure configuration hardcoded.
-It can run on any stack configured in uniflow.yaml.
+It can run on any stack configured in flowyml.yaml.
 
 Run with:
     # Local development
-    uniflow run clean_pipeline.py
+    flowyml run clean_pipeline.py
 
     # Production on GCP
-    uniflow run clean_pipeline.py --stack production
+    flowyml run clean_pipeline.py --stack production
 
     # With GPU resources
-    uniflow run clean_pipeline.py --stack production --resources gpu_training
+    flowyml run clean_pipeline.py --stack production --resources gpu_training
 """
 
-from uniflow import Pipeline, step, Dataset, Model, Metrics
+from flowyml import Pipeline, step, Dataset, Model, Metrics
 import pandas as pd
 
 
@@ -101,6 +101,6 @@ pipeline.add_step(evaluate)
 
 if __name__ == "__main__":
     # For programmatic execution (optional)
-    # Stack is still configured externally via uniflow.yaml or CLI
+    # Stack is still configured externally via flowyml.yaml or CLI
     result = pipeline.run(context={"data_path": "data/train.csv"})
     print(f"✅ Pipeline completed: {result}")

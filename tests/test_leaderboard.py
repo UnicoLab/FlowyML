@@ -5,13 +5,13 @@ Tests for model leaderboard and comparison.
 import unittest
 import os
 from datetime import datetime
-from uniflow.tracking.leaderboard import ModelLeaderboard, ModelScore, compare_runs
-from uniflow.storage.metadata import SQLiteMetadataStore
+from flowyml.tracking.leaderboard import ModelLeaderboard, ModelScore, compare_runs
+from flowyml.storage.metadata import SQLiteMetadataStore
 
 
 class TestModelLeaderboard(unittest.TestCase):
     def setUp(self):
-        self.db_path = ".uniflow/test_leaderboard.db"
+        self.db_path = ".flowyml/test_leaderboard.db"
         if os.path.exists(self.db_path):
             os.remove(self.db_path)
         self.metadata_store = SQLiteMetadataStore(self.db_path)
@@ -115,7 +115,7 @@ class TestModelLeaderboard(unittest.TestCase):
 
 class TestCompareRuns(unittest.TestCase):
     def setUp(self):
-        self.db_path = ".uniflow/test_compare.db"
+        self.db_path = ".flowyml/test_compare.db"
         if os.path.exists(self.db_path):
             os.remove(self.db_path)
         self.metadata_store = SQLiteMetadataStore(self.db_path)
@@ -138,7 +138,7 @@ class TestCompareRuns(unittest.TestCase):
         # Compare - patch the metadata store
         from unittest.mock import patch
 
-        with patch("uniflow.tracking.leaderboard.SQLiteMetadataStore") as mock_store_class:
+        with patch("flowyml.tracking.leaderboard.SQLiteMetadataStore") as mock_store_class:
             mock_store_class.return_value = self.metadata_store
             comparison = compare_runs(["run_1", "run_2"], metrics=["accuracy", "f1_score"])
 

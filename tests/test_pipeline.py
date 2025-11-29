@@ -1,8 +1,8 @@
 """Test suite for pipeline functionality."""
 
 import unittest
-from uniflow import Pipeline, step
-from uniflow.core.context import Context
+from flowyml import Pipeline, step
+from flowyml.core.context import Context
 from tests.base import BaseTestCase
 
 

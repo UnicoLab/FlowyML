@@ -1,19 +1,19 @@
 """
-Example: Using UniFlow with Real-Time UI Monitoring.
+Example: Using flowyml with Real-Time UI Monitoring.
 
 This example demonstrates how to run a pipeline that integrates
-with the UniFlow UI for real-time monitoring of execution.
+with the flowyml UI for real-time monitoring of execution.
 
 To use this example:
-1. Install UniFlow with UI support: pip install "uniflow[ui]"
-2. Build the frontend: cd uniflow/ui/frontend && npm install && npm run build
-3. Start the UI server: uniflow ui start --open-browser
+1. Install flowyml with UI support: pip install "flowyml[ui]"
+2. Build the frontend: cd flowyml/ui/frontend && npm install && npm run build
+3. Start the UI server: flowyml ui start --open-browser
 4. Run this script: python examples/ui_integration_example.py
 5. Watch the pipeline execution in the UI at http://localhost:8080
 """
 
-from uniflow import Pipeline, step, context
-from uniflow.ui import is_ui_running, get_ui_url, get_run_url
+from flowyml import Pipeline, step, context
+from flowyml.ui import is_ui_running, get_ui_url, get_run_url
 import time
 import random
 
@@ -160,7 +160,7 @@ def export_model(trained_model, eval_metrics):
 def main():
     """Main function to run the pipeline with UI integration."""
     print("=" * 70)
-    print("🌊 UniFlow Pipeline with UI Integration Example")
+    print("🌊 flowyml Pipeline with UI Integration Example")
     print("=" * 70)
 
     # Check if UI is running
@@ -171,7 +171,7 @@ def main():
         print("   You can monitor this pipeline in real-time!")
     else:
         print("⚠️  UI server is not running.")
-        print("   Start it with: uniflow ui start --open-browser")
+        print("   Start it with: flowyml ui start --open-browser")
         print("   The pipeline will still run, but without UI monitoring.")
 
     print("\n" + "=" * 70)

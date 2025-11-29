@@ -1,7 +1,7 @@
 """Tests for experiment tracking functionality."""
 
 import unittest
-from uniflow.tracking.experiment import Experiment
+from flowyml.tracking.experiment import Experiment
 from tests.base import BaseTestCase
 
 

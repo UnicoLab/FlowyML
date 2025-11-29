@@ -1,16 +1,16 @@
-"""Example: Using Step Grouping in UniFlow
+"""Example: Using Step Grouping in flowyml
 
 This example demonstrates how to use execution groups to run multiple steps
 in the same Docker container or remote executor, optimizing resource usage
 and reducing container overhead.
 """
 
-from uniflow.core import step, Pipeline
-from uniflow.core.resources import ResourceRequirements, GPUConfig
+from flowyml.core import step, Pipeline
+from flowyml.core.resources import ResourceRequirements, GPUConfig
 
 
 print("=" * 70)
-print("UniFlow Step Grouping Example")
+print("flowyml Step Grouping Example")
 print("=" * 70)
 
 
@@ -260,7 +260,7 @@ print(
 
 Next Steps:
 - Use execution_group parameter in your @step decorators
-- Let UniFlow handle the rest - no complex configuration needed!
+- Let flowyml handle the rest - no complex configuration needed!
 - Check pipeline.step_groups after build() to see grouping results
 """,
 )

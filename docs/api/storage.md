@@ -2,8 +2,8 @@
 
 ## ArtifactStore
 
-::: uniflow.storage.artifacts.ArtifactStore
+::: flowyml.storage.artifacts.ArtifactStore
 
 ## MetadataStore
 
-::: uniflow.storage.metadata.MetadataStore
+::: flowyml.storage.metadata.MetadataStore

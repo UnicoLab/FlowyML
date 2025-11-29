@@ -2,7 +2,7 @@
 
 import unittest
 import logging
-from uniflow.utils.logging import get_logger, setup_logger
+from flowyml.utils.logging import get_logger, setup_logger
 
 
 class TestLogging(unittest.TestCase):

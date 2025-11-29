@@ -1,4 +1,4 @@
-# 🌊 UniFlow - Quick Reference Guide
+# 🌊 flowyml - Quick Reference Guide
 
 ## New Features Overview
 
@@ -7,7 +7,7 @@
 Track LLM calls, tokens, and costs automatically:
 
 ```python
-from uniflow import trace_llm
+from flowyml import trace_llm
 
 @trace_llm(name="summarize")
 def generate_summary(text):
@@ -35,13 +35,13 @@ result = generate_summary("Long text here...")
 Automatic experiment tracking for Keras models:
 
 ```python
-from uniflow import UniFlowKerasCallback
+from flowyml import flowymlKerasCallback
 
 model.fit(
     x_train, y_train,
     epochs=10,
     callbacks=[
-        UniFlowKerasCallback(
+        flowymlKerasCallback(
             experiment_name="mnist_training",
             run_name="baseline_v1",
             log_model=True
@@ -64,7 +64,7 @@ model.fit(
 Monitor data distribution shifts:
 
 ```python
-from uniflow import detect_drift, compute_stats
+from flowyml import detect_drift, compute_stats
 
 # Detect drift
 drift_result = detect_drift(
@@ -88,7 +88,7 @@ print(f"Mean: {stats['mean']}, Std: {stats['std']}")
 Run pipelines automatically on a schedule:
 
 ```python
-from uniflow import PipelineScheduler
+from flowyml import PipelineScheduler
 
 scheduler = PipelineScheduler()
 
@@ -118,7 +118,7 @@ scheduler.start()  # Non-blocking
 Get notified about pipeline events:
 
 ```python
-from uniflow import configure_notifications, get_notifier
+from flowyml import configure_notifications, get_notifier
 
 # Configure channels
 configure_notifications(
@@ -154,7 +154,7 @@ notifier.on_drift_detected(feature_name, psi_value)
 Compare and rank models:
 
 ```python
-from uniflow import ModelLeaderboard
+from flowyml import ModelLeaderboard
 
 leaderboard = ModelLeaderboard(
     metric="accuracy",
@@ -175,7 +175,7 @@ top_5 = leaderboard.get_top(n=5)
 **Compare multiple runs:**
 
 ```python
-from uniflow import compare_runs
+from flowyml import compare_runs
 
 comparison = compare_runs(
     run_ids=["run_123", "run_124", "run_125"],
@@ -190,7 +190,7 @@ comparison = compare_runs(
 Create pipelines from pre-built templates:
 
 ```python
-from uniflow import create_from_template, list_templates
+from flowyml import create_from_template, list_templates
 
 # See available templates
 print(list_templates())  # ['ml_training', 'etl', 'ab_test']
@@ -222,7 +222,7 @@ result = pipeline.run()
 Resume failed pipelines:
 
 ```python
-from uniflow import PipelineCheckpoint
+from flowyml import PipelineCheckpoint
 
 checkpoint = PipelineCheckpoint(run_id="run_123")
 
@@ -246,7 +246,7 @@ if checkpoint.exists():
 Add approval gates to pipelines:
 
 ```python
-from uniflow import approval, Pipeline
+from flowyml import approval, Pipeline
 
 pipeline = Pipeline("sensitive_operation")
 
@@ -281,12 +281,12 @@ Access the web UI at `http://localhost:8080`:
 Complete example using multiple features:
 
 ```python
-from uniflow import (
+from flowyml import (
     Pipeline, step, context,
     configure_notifications,
     PipelineScheduler,
     ModelLeaderboard,
-    UniFlowKerasCallback
+    flowymlKerasCallback
 )
 
 # 1. Configure notifications
@@ -303,7 +303,7 @@ def train(epochs: int, batch_size: int):
         x_train, y_train,
         epochs=epochs,
         batch_size=batch_size,
-        callbacks=[UniFlowKerasCallback("mnist_exp")]
+        callbacks=[flowymlKerasCallback("mnist_exp")]
     )
     return model, history.history
 

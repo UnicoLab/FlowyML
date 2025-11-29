@@ -1,15 +1,15 @@
 # Custom Component Package Template
 
-This is a template for creating a UniFlow component package.
+This is a template for creating a flowyml component package.
 
 ## Structure
 
 ```
-my-uniflow-components/
+my-flowyml-components/
 ├── pyproject.toml
 ├── README.md
 ├── LICENSE
-└── my_uniflow_components/
+└── my_flowyml_components/
     ├── __init__.py
     ├── my_orchestrator.py
     └── my_artifact_store.py
@@ -23,27 +23,27 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "my-uniflow-components"
+name = "my-flowyml-components"
 version = "0.1.0"
-description = "Custom UniFlow components"
+description = "Custom flowyml components"
 authors = [{name = "Your Name", email = "you@example.com"}]
 dependencies = [
-    "uniflow>=0.1.0",
+    "flowyml>=0.1.0",
     # Your dependencies
 ]
 
 # Register components via entry points
-[project.entry-points."uniflow.stack_components"]
-my_orchestrator = "my_uniflow_components.my_orchestrator:MyOrchestrator"
-my_store = "my_uniflow_components.my_artifact_store:MyArtifactStore"
+[project.entry-points."flowyml.stack_components"]
+my_orchestrator = "my_flowyml_components.my_orchestrator:MyOrchestrator"
+my_store = "my_flowyml_components.my_artifact_store:MyArtifactStore"
 ```
 
 ## Component Example
 
 ```python
-# my_uniflow_components/my_orchestrator.py
-from uniflow.stacks.components import Orchestrator
-from uniflow.stacks.plugins import register_component
+# my_flowyml_components/my_orchestrator.py
+from flowyml.stacks.components import Orchestrator
+from flowyml.stacks.plugins import register_component
 
 @register_component
 class MyOrchestrator(Orchestrator):
@@ -74,7 +74,7 @@ class MyOrchestrator(Orchestrator):
 pip install -e .
 
 # From PyPI (after publishing)
-pip install my-uniflow-components
+pip install my-flowyml-components
 ```
 
 ## Usage
@@ -82,7 +82,7 @@ pip install my-uniflow-components
 Components are auto-discovered after installation:
 
 ```yaml
-# uniflow.yaml
+# flowyml.yaml
 stacks:
   my_stack:
     orchestrator:
@@ -91,7 +91,7 @@ stacks:
 ```
 
 ```bash
-uniflow component list
+flowyml component list
 # Will show: my_orchestrator, my_store
 ```
 
@@ -100,7 +100,7 @@ uniflow component list
 ```python
 # tests/test_components.py
 import unittest
-from my_uniflow_components import MyOrchestrator
+from my_flowyml_components import MyOrchestrator
 
 class TestMyOrchestrator(unittest.TestCase):
     def test_validate(self):
@@ -122,14 +122,14 @@ python -m twine upload dist/*
 
 3. Users install:
 ```bash
-pip install my-uniflow-components
+pip install my-flowyml-components
 ```
 
-4. Auto-available in UniFlow!
+4. Auto-available in flowyml!
 
 ## Community
 
 Share your components:
 - Create GitHub repo
-- Add to UniFlow community registry
-- Tag with `uniflow-plugin`
+- Add to flowyml community registry
+- Tag with `flowyml-plugin`

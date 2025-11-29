@@ -7,7 +7,7 @@ Production-grade TensorFlow pipelines.
 >
 > **Key insight**: Enterprise-scale TF management.
 
-## Why TensorFlow + UniFlow?
+## Why TensorFlow + flowyml?
 
 - **SavedModel Support**: First-class support for TF SavedModel format.
 - **TFX Compatibility**: Integrate with TFX components.
@@ -17,13 +17,13 @@ Production-grade TensorFlow pipelines.
 
 ```python
 import tensorflow as tf
-from uniflow import step
+from flowyml import step
 
 @step
 def train_tf_model(dataset):
     model = tf.keras.Sequential([...])
 
-    # UniFlow tracks this execution
+    # flowyml tracks this execution
     model.fit(dataset, epochs=5)
 
     return model
@@ -31,4 +31,4 @@ def train_tf_model(dataset):
 
 ## 💾 Artifacts
 
-UniFlow saves TF models as `SavedModel` directories, preserving the graph and weights.
+flowyml saves TF models as `SavedModel` directories, preserving the graph and weights.

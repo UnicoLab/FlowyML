@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from unittest.mock import MagicMock, patch
 
 import pytest
-from uniflow.core.scheduler import (
+from flowyml.core.scheduler import (
     DistributedLock,
     PipelineScheduler,
     Schedule,

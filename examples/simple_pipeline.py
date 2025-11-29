@@ -1,13 +1,13 @@
 """
-Simple UniFlow Pipeline Example.
+Simple flowyml Pipeline Example.
 
-This is the simplest possible UniFlow pipeline to get you started.
+This is the simplest possible flowyml pipeline to get you started.
 
 Usage:
     $ python examples/simple_pipeline.py
 """
 
-from uniflow import Pipeline, step, context, Dataset, Model, Metrics
+from flowyml import Pipeline, step, context, Dataset, Model, Metrics
 import time
 
 # Define context with parameters

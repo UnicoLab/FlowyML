@@ -1,6 +1,6 @@
 # Context & Parameters 🧠
 
-UniFlow's context system eliminates configuration hell by providing automatic parameter injection across pipeline steps.
+flowyml's context system eliminates configuration hell by providing automatic parameter injection across pipeline steps.
 
 > [!NOTE]
 > **What you'll learn**: How to manage configuration without hardcoding, enabling the same pipeline to run in dev/staging/prod
@@ -15,7 +15,7 @@ UniFlow's context system eliminates configuration hell by providing automatic pa
 - **Configuration sprawl**: Parameters scattered across files
 - **Manual wiring**: Pass every parameter through every function
 
-**With UniFlow context**, you get:
+**With flowyml context**, you get:
 - **Automatic injection**: Parameters flow to steps that need them
 - **Environment flexibility**: Same code, different configs
 - **Centralized configuration**: All parameters in one place
@@ -37,7 +37,7 @@ The `Context` object serves as a container for:
 You can create a context with any number of keyword arguments:
 
 ```python
-from uniflow import context
+from flowyml import context
 
 # Define parameters
 ctx = context(
@@ -52,7 +52,7 @@ ctx = context(
 ### Using Context with Pipelines
 
 ```python
-from uniflow import Pipeline, context
+from flowyml import Pipeline, context
 
 ctx = context(learning_rate=0.01, epochs=100)
 
@@ -62,12 +62,12 @@ pipeline = Pipeline("training_pipeline", context=ctx)
 
 ## Automatic Injection 💉
 
-The most powerful feature of UniFlow's context is **automatic parameter injection**. If a step function argument matches a key in the context, UniFlow will automatically inject the value when the step is executed.
+The most powerful feature of flowyml's context is **automatic parameter injection**. If a step function argument matches a key in the context, flowyml will automatically inject the value when the step is executed.
 
 ### Example
 
 ```python
-from uniflow import Pipeline, step, context
+from flowyml import Pipeline, step, context
 
 # 1. Define Context
 ctx = context(
@@ -100,7 +100,7 @@ result = pipeline.run()
 
 ### How It Works
 
-1. **Parameter Matching**: UniFlow inspects each step function's signature
+1. **Parameter Matching**: flowyml inspects each step function's signature
 2. **Context Lookup**: For each parameter, it checks if a matching key exists in the context
 3. **Automatic Injection**: If found, the value is injected when calling the step
 4. **Type Validation**: Type hints are used to validate injected values
@@ -237,7 +237,7 @@ ctx = context(
 Type hints serve two purposes:
 
 1. **Documentation**: Clarify expected types
-2. **Validation**: Help UniFlow match parameters correctly
+2. **Validation**: Help flowyml match parameters correctly
 
 ```python
 from typing import List, Dict, Optional

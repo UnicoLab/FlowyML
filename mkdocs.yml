@@ -1,8 +1,8 @@
-site_name: UniFlow
+site_name: flowyml
 site_description: The Enterprise-Grade ML Pipeline Framework for Humans.
-site_url: https://docs.uniflow.ai
-repo_url: https://github.com/UnicoLab/UniFlow
-repo_name: UniFlow
+site_url: https://docs.flowyml.ai
+repo_url: https://github.com/UnicoLab/FlowyML
+repo_name: flowyml
 
 theme:
   name: material
@@ -128,6 +128,6 @@ nav:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/UnicoLab/UniFlow
+      link: https://github.com/UnicoLab/FlowyML
     - icon: fontawesome/brands/python
-      link: https://pypi.org/project/UniFlow/
+      link: https://pypi.org/project/flowyml/

@@ -1,7 +1,7 @@
 """Tests for model asset functionality."""
 
 import unittest
-from uniflow import Model
+from flowyml import Model
 from tests.base import BaseTestCase
 
 
@@ -58,7 +58,7 @@ class TestModel(BaseTestCase):
 
     def test_model_lineage(self):
         """Test model lineage from dataset."""
-        from uniflow import Dataset
+        from flowyml import Dataset
 
         dataset = Dataset.create(data=[1, 2, 3], name="training_data")
         model = Model.create(

@@ -1,8 +1,8 @@
 """Extended test suite for caching functionality."""
 
 import unittest
-from uniflow import Pipeline, step
-from uniflow.core.cache import CacheStore
+from flowyml import Pipeline, step
+from flowyml.core.cache import CacheStore
 from pathlib import Path
 from tests.base import BaseTestCase
 

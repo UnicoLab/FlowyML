@@ -7,7 +7,7 @@ This should populate the database and show in the UI.
 
 import sys
 
-from uniflow import Pipeline, step, context
+from flowyml import Pipeline, step, context
 import time
 
 # Define context with parameters
@@ -38,7 +38,7 @@ def train_model(data, learning_rate: float, epochs: int):
 
 # Create and run pipeline
 print("\n" + "=" * 70)
-print("🧪 Testing UniFlow UI Integration")
+print("🧪 Testing flowyml UI Integration")
 print("=" * 70)
 
 pipeline = Pipeline("ui_test_pipeline", context=ctx)

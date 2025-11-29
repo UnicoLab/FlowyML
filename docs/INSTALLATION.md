@@ -1,7 +1,7 @@
 # Installation Guide 📦
 
 > [!TIP]
-> **Quick start**: If you're just exploring UniFlow, run `pip install "uniflow[all]"` and you're ready to go. Come back to this page when you need production-grade deployment.
+> **Quick start**: If you're just exploring FlowyML, run `pip install "flowyml[all]"` and you're ready to go. Come back to this page when you need production-grade deployment.
 
 ## System Requirements
 
@@ -10,7 +10,7 @@
 - **Memory**: Minimum 4GB RAM (8GB+ for larger pipelines)
 - **Disk Space**: 500MB for full installation
 
-**Why these requirements**: UniFlow is designed to run anywhere Python runs. The minimum specs support local development; production workloads scale based on your pipeline needs.
+**Why these requirements**: FlowyML is designed to run anywhere Python runs. The minimum specs support local development; production workloads scale based on your pipeline needs.
 
 ## Installation Options
 
@@ -18,10 +18,10 @@ Choose the installation that matches your use case:
 
 ### Basic Installation — Local Development Only
 
-Install UniFlow core package:
+Install FlowyML core package:
 
 ```bash
-pip install uniflow
+pip install flowyml
 ```
 
 **What you get**: Core pipeline orchestration, local artifact storage, metadata tracking.
@@ -31,12 +31,12 @@ pip install uniflow
 ### Full Installation — Everything Included (Recommended)
 
 ```bash
-pip install "uniflow[all]"
+pip install "flowyml[all]"
 ```
 
 **What you get**: Web UI, cloud integrations, ML framework support, everything.
 
-**Use this when**: You want to try all UniFlow features without reinstalling. This is the recommended approach for new users.
+**Use this when**: You want to try all FlowyML features without reinstalling. This is the recommended approach for new users.
 
 ---
 
@@ -48,13 +48,13 @@ For minimal installations or specific production setups, install only what you n
 
 ```bash
 # TensorFlow/Keras automatic tracking
-pip install "uniflow[tensorflow]"
+pip install "flowyml[tensorflow]"
 
 # PyTorch integration
-pip install "uniflow[pytorch]"
+pip install "flowyml[pytorch]"
 
 # Scikit-learn utilities
-pip install "uniflow[sklearn]"
+pip install "flowyml[sklearn]"
 ```
 
 **Use this when**: You're building Docker images and want to minimize size, or you only use specific frameworks.
@@ -63,13 +63,13 @@ pip install "uniflow[sklearn]"
 
 ```bash
 # Google Cloud Platform (Vertex AI, GCS, Container Registry)
-pip install "uniflow[gcp]"
+pip install "flowyml[gcp]"
 
 # AWS support (coming soon)
-pip install "uniflow[aws]"
+pip install "flowyml[aws]"
 
 # Azure support (coming soon)
-pip install "uniflow[azure]"
+pip install "flowyml[azure]"
 ```
 
 **Use this when**: You're deploying to cloud and want cloud-specific features like managed orchestration (Vertex AI), cloud storage (GCS/S3), and container registries.
@@ -77,19 +77,19 @@ pip install "uniflow[azure]"
 ### Web UI & API Server
 
 ```bash
-pip install "uniflow[ui]"
+pip install "flowyml[ui]"
 ```
 
 **What you get**: The visualization dashboard, REST API,real-time monitoring.
 
-**Use this when**: You need the visual interface for debugging or monitoring, or building tools that integrate with UniFlow's API.
+**Use this when**: You need the visual interface for debugging or monitoring, or building tools that integrate with FlowyML's API.
 
 ### Development
 
 Install development dependencies:
 
 ```bash
-pip install uniflow[dev]
+pip install flowyml[dev]
 ```
 
 ## Combining Extras
@@ -98,20 +98,20 @@ You can combine multiple extras:
 
 ```bash
 # TensorFlow + GCP
-pip install uniflow[tensorflow,gcp]
+pip install flowyml[tensorflow,gcp]
 
 # All ML frameworks + GCP
-pip install uniflow[tensorflow,pytorch,sklearn,gcp]
+pip install flowyml[tensorflow,pytorch,sklearn,gcp]
 
 # Everything including UI
-pip install uniflow[all]
+pip install flowyml[all]
 ```
 
 ## From Source
 
 ```bash
-git clone https://github.com/uniflow/uniflow.git
-cd uniflow
+git clone https://github.com/UnicoLab/FlowyML.git
+cd FlowyML
 pip install -e ".[all]"
 ```
 
@@ -119,16 +119,16 @@ pip install -e ".[all]"
 
 ```bash
 # Basic image
-docker pull uniflow/uniflow:latest
+docker pull flowyml/flowyml:latest
 
 # With TensorFlow
-docker pull uniflow/uniflow:latest-tf
+docker pull flowyml/flowyml:latest-tf
 
 # With PyTorch
-docker pull uniflow/uniflow:latest-torch
+docker pull flowyml/flowyml:latest-torch
 
 # Full image
-docker pull uniflow/uniflow:latest-full
+docker pull flowyml/flowyml:latest-full
 ```
 
 ## Verification
@@ -136,11 +136,11 @@ docker pull uniflow/uniflow:latest-full
 Verify installation:
 
 ```python
-import uniflow
-print(uniflow.__version__)
+import flowyml
+print(flowyml.__version__)
 
 # Check available features
-from uniflow import check_features
+from flowyml import check_features
 check_features()
 ```
 
@@ -148,27 +148,27 @@ check_features()
 
 ### Local Development
 ```bash
-pip install uniflow
+pip install flowyml
 ```
 
 ### ML Training (TensorFlow)
 ```bash
-pip install uniflow[tensorflow]
+pip install flowyml[tensorflow]
 ```
 
 ### ML Training (PyTorch)
 ```bash
-pip install uniflow[pytorch]
+pip install flowyml[pytorch]
 ```
 
 ### Production on GCP
 ```bash
-pip install uniflow[gcp,tensorflow]  # or pytorch
+pip install flowyml[gcp,tensorflow]  # or pytorch
 ```
 
 ### Full Development Setup
 ```bash
-pip install uniflow[all,dev]
+pip install flowyml[all,dev]
 ```
 
 ## Installation Best Practices 💡
@@ -179,14 +179,14 @@ pip install uniflow[all,dev]
 
 ```bash
 # Using venv (built-in)
-python -m venv uniflow-env
-source uniflow-env/bin/activate  # Windows: uniflow-env\Scripts\activate
-pip install "uniflow[all]"
+python -m venv flowyml-env
+source flowyml-env/bin/activate  # Windows: flowyml-env\Scripts\activate
+pip install "flowyml[all]"
 
 # Using conda
-conda create -n uniflow python=3.10
-conda activate uniflow
-pip install "uniflow[all]"
+conda create -n flowyml python=3.10
+conda activate flowyml
+pip install "flowyml[all]"
 ```
 
 **Why this matters**: Prevents conflicts with other Python projects and makes it easy to reproduce your environment.
@@ -200,7 +200,7 @@ For production deployments, pin exact versions:
 pip freeze > requirements.txt
 
 # Or use Poetry (recommended)
-poetry add uniflow[all]
+pip install flowyml[all]
 poetry lock
 ```
 
@@ -218,18 +218,18 @@ poetry lock
 
 ```bash
 # For TensorFlow features
-pip install "uniflow[tensorflow]"
+pip install "flowyml[tensorflow]"
 
 # For GCP features
-pip install "uniflow[gcp]"
+pip install "flowyml[gcp]"
 
 # Or just install everything
-pip install "uniflow[all]"
+pip install "flowyml[all]"
 ```
 
 ### Dependency version conflicts
 
-**Problem**: pip reports conflicts between UniFlow's dependencies and existing packages.
+**Problem**: pip reports conflicts between FlowyML's dependencies and existing packages.
 
 **Solution**: Create a fresh virtual environment:
 
@@ -238,9 +238,9 @@ pip install "uniflow[all]"
 deactivate
 
 # Create new environment
-python -m venv new-uniflow-env
-source new-uniflow-env/bin/activate
-pip install "uniflow[all]"
+python -m venv new-flowyml-env
+source new-flowyml-env/bin/activate
+pip install "flowyml[all]"
 ```
 
 ### Python version too old
@@ -254,8 +254,8 @@ pip install "uniflow[all]"
 python --version
 
 # Using conda (recommended)
-conda create -n uniflow python=3.10
-conda activate uniflow
+conda create -n flowyml python=3.10
+conda activate flowyml
 
 # Or use pyenv
 pyenv install 3.10.0
@@ -289,7 +289,7 @@ pip cache purge
 pip install --upgrade pip setuptools wheel
 
 # Then retry
-pip install "uniflow[all]"
+pip install "flowyml[all]"
 ```
 
 ---
@@ -298,7 +298,7 @@ pip install "uniflow[all]"
 
 Once installed:
 
-1. **Verify installation**: Run `uniflow --version` to confirm
+1. **Verify installation**: Run `flowyml --version` to confirm
 2. **Build your first pipeline**: Follow the [Getting Started](getting-started.md) guide
 3. **Explore examples**: Check out the [Examples](examples.md) page for real-world patterns
 

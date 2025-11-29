@@ -1,25 +1,25 @@
 # GCP Stack Configuration Examples
 
-This directory contains example configurations for running UniFlow pipelines on Google Cloud Platform.
+This directory contains example configurations for running flowyml pipelines on Google Cloud Platform.
 
 ## Quick Start
 
 ### 1. Basic GCP Stack Setup
 
 ```python
-from uniflow.stacks.gcp import GCPStack
-from uniflow.stacks.components import ResourceConfig, DockerConfig
-from uniflow.stacks.registry import StackRegistry
-from uniflow import Pipeline, step
+from flowyml.stacks.gcp import GCPStack
+from flowyml.stacks.components import ResourceConfig, DockerConfig
+from flowyml.stacks.registry import StackRegistry
+from flowyml import Pipeline, step
 
 # Create GCP stack
 gcp_stack = GCPStack(
     name="production",
     project_id="my-gcp-project",
     region="us-central1",
-    bucket_name="my-uniflow-artifacts",
+    bucket_name="my-flowyml-artifacts",
     registry_uri="gcr.io/my-gcp-project",
-    service_account="uniflow-sa@my-project.iam.gserviceaccount.com"
+    service_account="flowyml-sa@my-project.iam.gserviceaccount.com"
 )
 
 # Register the stack
@@ -34,7 +34,7 @@ registry.register_stack(gcp_stack, set_active=True)
 Define compute resources for your pipeline steps:
 
 ```python
-from uniflow.stacks.components import ResourceConfig
+from flowyml.stacks.components import ResourceConfig
 
 # CPU-only workload
 cpu_resources = ResourceConfig(
@@ -65,7 +65,7 @@ memory_intensive = ResourceConfig(
 Configure Docker images for containerized execution:
 
 ```python
-from uniflow.stacks.components import DockerConfig
+from flowyml.stacks.components import DockerConfig
 
 # Using pre-built image
 docker_config = DockerConfig(
@@ -103,10 +103,10 @@ docker_with_deps = DockerConfig(
 ### 4. Complete ML Training Example
 
 ```python
-from uniflow import Pipeline, step, Dataset, Model, Metrics
-from uniflow.stacks.gcp import GCPStack
-from uniflow.stacks.components import ResourceConfig, DockerConfig
-from uniflow.stacks.registry import StackRegistry
+from flowyml import Pipeline, step, Dataset, Model, Metrics
+from flowyml.stacks.gcp import GCPStack
+from flowyml.stacks.components import ResourceConfig, DockerConfig
+from flowyml.stacks.registry import StackRegistry
 import tensorflow as tf
 
 # Setup GCP stack
@@ -215,9 +215,9 @@ result = pipeline.run(
 Seamlessly switch between local development and cloud production:
 
 ```python
-from uniflow.stacks import LocalStack
-from uniflow.stacks.gcp import GCPStack
-from uniflow.stacks.registry import StackRegistry
+from flowyml.stacks import LocalStack
+from flowyml.stacks.gcp import GCPStack
+from flowyml.stacks.registry import StackRegistry
 
 # Create registry
 registry = StackRegistry()
@@ -263,15 +263,15 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt /tmp/
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
-# Install UniFlow
-RUN pip install uniflow
+# Install flowyml
+RUN pip install flowyml
 
 # Copy pipeline code
 COPY . /app
 WORKDIR /app
 
 # Set entrypoint
-ENTRYPOINT ["python", "-m", "uniflow.cli.run"]
+ENTRYPOINT ["python", "-m", "flowyml.cli.run"]
 ```
 
 ## GCP Setup Checklist

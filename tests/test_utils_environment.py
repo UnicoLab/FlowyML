@@ -1,11 +1,11 @@
-"""Tests for uniflow.utils.environment."""
+"""Tests for flowyml.utils.environment."""
 
 import unittest
 from unittest.mock import patch, MagicMock
 import sys
 import os
 from pathlib import Path
-from uniflow.utils.environment import (
+from flowyml.utils.environment import (
     get_python_info,
     get_system_info,
     get_installed_packages,
@@ -61,7 +61,7 @@ class TestEnvironmentUtils(unittest.TestCase):
 
     def test_get_key_packages(self):
         """Test getting key packages."""
-        with patch("uniflow.utils.environment.get_installed_packages") as mock_get:
+        with patch("flowyml.utils.environment.get_installed_packages") as mock_get:
             mock_get.return_value = {
                 "numpy": "1.21.0",
                 "pandas": "1.3.0",
@@ -91,7 +91,7 @@ class TestEnvironmentUtils(unittest.TestCase):
         cwd = get_working_directory()
         self.assertEqual(cwd, str(Path.cwd()))
 
-    @patch("uniflow.utils.git.get_git_info")
+    @patch("flowyml.utils.git.get_git_info")
     def test_capture_environment(self, mock_get_git):
         """Test capturing complete environment."""
         mock_git_info = MagicMock()

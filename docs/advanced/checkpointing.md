@@ -1,6 +1,6 @@
 # Checkpointing & Experiment Tracking 💾
 
-UniFlow ensures you never lose progress. Save pipeline state automatically and track every experiment detail.
+flowyml ensures you never lose progress. Save pipeline state automatically and track every experiment detail.
 
 > [!NOTE]
 > **What you'll learn**: How to resume failed pipelines and track model performance over time
@@ -14,7 +14,7 @@ UniFlow ensures you never lose progress. Save pipeline state automatically and t
 - **Wasted compute**: Re-computing expensive intermediate steps
 - **Frustration**: "It worked on my machine, why did it fail now?"
 
-**With UniFlow checkpointing**:
+**With flowyml checkpointing**:
 - **Resume instantly**: Restart exactly where it failed
 - **Inspect state**: Load the checkpoint to debug what went wrong
 - **Skip redundant work**: Re-use successful steps
@@ -28,7 +28,7 @@ Checkpointing allows you to save the intermediate results of your pipeline steps
 Crash-proof your long-running pipelines.
 
 ```python
-from uniflow import Pipeline, checkpoint_enabled_pipeline
+from flowyml import Pipeline, checkpoint_enabled_pipeline
 
 pipeline = Pipeline("heavy_processing")
 
@@ -39,7 +39,7 @@ except Exception:
     print("Pipeline crashed! Fix the bug and re-run.")
 
 # 2. Resume later (e.g., in a new script or after fix)
-# UniFlow detects the previous run state and resumes
+# flowyml detects the previous run state and resumes
 pipeline = checkpoint_enabled_pipeline(pipeline, run_id="run_2023_10_27")
 pipeline.run()
 ```
@@ -52,7 +52,7 @@ pipeline.run()
 For finer control, you can use the `PipelineCheckpoint` object within your steps.
 
 ```python
-from uniflow import PipelineCheckpoint, step
+from flowyml import PipelineCheckpoint, step
 
 @step
 def train_large_model(data):
@@ -76,14 +76,14 @@ def train_large_model(data):
 
 ## 🧪 Experiment Tracking
 
-UniFlow automatically tracks every pipeline run, capturing parameters, metrics, and artifacts. This allows you to compare experiments and reproduce results.
+flowyml automatically tracks every pipeline run, capturing parameters, metrics, and artifacts. This allows you to compare experiments and reproduce results.
 
 ### Tracking Metrics
 
 Use the `Metrics` asset to log performance indicators.
 
 ```python
-from uniflow import step, Metrics
+from flowyml import step, Metrics
 
 @step(outputs=["metrics"])
 def evaluate(model, test_data):
@@ -104,12 +104,12 @@ You can compare runs using the CLI or the Python API.
 
 **CLI:**
 ```bash
-uniflow experiment compare <run_id_1> <run_id_2>
+flowyml experiment compare <run_id_1> <run_id_2>
 ```
 
 **Python:**
 ```python
-from uniflow import compare_runs
+from flowyml import compare_runs
 
 diff = compare_runs(["run_1", "run_2"])
 print(diff)
@@ -117,7 +117,7 @@ print(diff)
 
 ### Visualizing Experiments
 
-The UniFlow UI provides a dedicated **Experiments** view where you can:
+The flowyml UI provides a dedicated **Experiments** view where you can:
 - View a table of all runs.
 - Filter by parameters or metrics.
 - Plot metric trends over time.

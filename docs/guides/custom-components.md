@@ -1,6 +1,6 @@
-# Creating Custom Stack Components for UniFlow
+# Creating Custom Stack Components for flowyml
 
-This guide shows you how to create custom stack components and integrate them seamlessly into UniFlow.
+This guide shows you how to create custom stack components and integrate them seamlessly into flowyml.
 
 ## Quick Start
 
@@ -8,8 +8,8 @@ This guide shows you how to create custom stack components and integrate them se
 
 ```python
 # my_components.py
-from uniflow.stacks.components import Orchestrator
-from uniflow.stacks.plugins import register_component
+from flowyml.stacks.components import Orchestrator
+from flowyml.stacks.plugins import register_component
 
 @register_component
 class MyOrchestrator(Orchestrator):
@@ -38,7 +38,7 @@ class MyOrchestrator(Orchestrator):
 ### 2. Use in Configuration
 
 ```yaml
-# uniflow.yaml
+# flowyml.yaml
 stacks:
   my_stack:
     type: local
@@ -51,20 +51,20 @@ stacks:
 
 ```bash
 # Auto-loads from my_components.py if in PYTHONPATH
-uniflow run pipeline.py --stack my_stack
+flowyml run pipeline.py --stack my_stack
 
 # Or explicitly load
-uniflow component load my_components
+flowyml component load my_components
 ```
 
 ## Creating Components
 
 ### Base Classes
 
-UniFlow provides these base classes:
+flowyml provides these base classes:
 
 ```python
-from uniflow.stacks.components import (
+from flowyml.stacks.components import (
     Orchestrator,          # For pipeline orchestration
     ArtifactStore,        # For artifact storage
     ContainerRegistry,    # For Docker images
@@ -75,8 +75,8 @@ from uniflow.stacks.components import (
 ### Orchestrator Example
 
 ```python
-from uniflow.stacks.components import Orchestrator
-from uniflow.stacks.plugins import register_component
+from flowyml.stacks.components import Orchestrator
+from flowyml.stacks.plugins import register_component
 
 @register_component
 class AirflowOrchestrator(Orchestrator):
@@ -111,8 +111,8 @@ class AirflowOrchestrator(Orchestrator):
 ### Artifact Store Example
 
 ```python
-from uniflow.stacks.components import ArtifactStore
-from uniflow.stacks.plugins import register_component
+from flowyml.stacks.components import ArtifactStore
+from flowyml.stacks.plugins import register_component
 
 @register_component
 class MinIOArtifactStore(ArtifactStore):
@@ -120,7 +120,7 @@ class MinIOArtifactStore(ArtifactStore):
         self,
         name="minio",
         endpoint="localhost:9000",
-        bucket="uniflow"
+        bucket="flowyml"
     ):
         super().__init__(name)
         self.endpoint = endpoint
@@ -156,7 +156,7 @@ class MinIOArtifactStore(ArtifactStore):
 ### Method 1: Decorator (Recommended)
 
 ```python
-from uniflow.stacks.plugins import register_component
+from flowyml.stacks.plugins import register_component
 
 @register_component
 class MyComponent(Orchestrator):
@@ -171,7 +171,7 @@ class MyComponent(Orchestrator):
 ### Method 2: Manual Registration
 
 ```python
-from uniflow.stacks.plugins import get_component_registry
+from flowyml.stacks.plugins import get_component_registry
 
 class MyComponent(Orchestrator):
     pass
@@ -185,7 +185,7 @@ registry.register(MyComponent, "my_component")
 In your `pyproject.toml`:
 
 ```toml
-[project.entry-points."uniflow.stack_components"]
+[project.entry-points."flowyml.stack_components"]
 my_orchestrator = "my_package.components:MyOrchestrator"
 my_artifact_store = "my_package.components:MyArtifactStore"
 ```
@@ -197,7 +197,7 @@ Then components auto-load when package is installed!
 ### From Module
 
 ```python
-from uniflow.stacks.plugins import load_component
+from flowyml.stacks.plugins import load_component
 
 # Load all components from module
 load_component("my_package.components")
@@ -213,7 +213,7 @@ load_component("/path/to/component.py:MyOrchestrator")
 ### From Configuration
 
 ```yaml
-# uniflow.yaml
+# flowyml.yaml
 components:
   - module: my_package.components
   - file: /path/to/custom.py:CustomComponent
@@ -224,7 +224,7 @@ components:
 ### Wrap ZenML Component
 
 ```python
-from uniflow.stacks.plugins import get_component_registry
+from flowyml.stacks.plugins import get_component_registry
 
 # Load ZenML component
 registry = get_component_registry()
@@ -237,7 +237,7 @@ registry.wrap_zenml_component(
 ### Via Configuration
 
 ```yaml
-# uniflow.yaml
+# flowyml.yaml
 components:
   - zenml: zenml.orchestrators.kubernetes.KubernetesOrchestrator
     name: k8s
@@ -253,20 +253,20 @@ stacks:
 
 ```bash
 # Load ZenML component
-uniflow component load zenml:zenml.orchestrators.kubernetes.KubernetesOrchestrator
+flowyml component load zenml:zenml.orchestrators.kubernetes.KubernetesOrchestrator
 
 # List available components
-uniflow component list
+flowyml component list
 ```
 
 ## Component Discovery
 
-UniFlow automatically discovers components from:
+flowyml automatically discovers components from:
 
 1. **Installed packages** with entry points
 2. **`PYTHONPATH`** - any module in path
 3. **Current directory** - `./components/` folder
-4. **Configuration** - `uniflow.yaml` components section
+4. **Configuration** - `flowyml.yaml` components section
 
 ## Publishing Components
 
@@ -274,15 +274,15 @@ UniFlow automatically discovers components from:
 
 ```python
 # setup.py or pyproject.toml
-[project.entry-points."uniflow.stack_components"]
-my_orchestrator = "my_uniflow_plugin:MyOrchestrator"
+[project.entry-points."flowyml.stack_components"]
+my_orchestrator = "my_flowyml_plugin:MyOrchestrator"
 ```
 
 ```bash
-pip install my-uniflow-plugin
+pip install my-flowyml-plugin
 
-# Auto-available in UniFlow!
-uniflow component list
+# Auto-available in flowyml!
+flowyml component list
 ```
 
 ### As Module
@@ -301,8 +301,8 @@ pip install -e /path/to/my-components
 
 ```bash
 # Install from PyPI
-pip install uniflow-airflow-orchestrator
-pip install uniflow-minio-store
+pip install flowyml-airflow-orchestrator
+pip install flowyml-minio-store
 
 # Automatically available!
 ```
@@ -310,10 +310,10 @@ pip install uniflow-minio-store
 ### Creating Shareable Components
 
 ```
-my-uniflow-components/
+my-flowyml-components/
 ├── pyproject.toml
 ├── README.md
-└── my_uniflow_components/
+└── my_flowyml_components/
     ├── __init__.py
     ├── airflow_orchestrator.py
     └── minio_store.py
@@ -322,12 +322,12 @@ my-uniflow-components/
 ```toml
 # pyproject.toml
 [project]
-name = "my-uniflow-components"
+name = "my-flowyml-components"
 version = "0.1.0"
 
-[project.entry-points."uniflow.stack_components"]
-airflow = "my_uniflow_components.airflow_orchestrator:AirflowOrchestrator"
-minio = "my_uniflow_components.minio_store:MinIOArtifactStore"
+[project.entry-points."flowyml.stack_components"]
+airflow = "my_flowyml_components.airflow_orchestrator:AirflowOrchestrator"
+minio = "my_flowyml_components.minio_store:MinIOArtifactStore"
 ```
 
 ## Advanced: ZenML Integration
@@ -336,7 +336,7 @@ minio = "my_uniflow_components.minio_store:MinIOArtifactStore"
 
 ```python
 from zenml.stack import Stack as ZenMLStack
-from uniflow.stacks.plugins import get_component_registry
+from flowyml.stacks.plugins import get_component_registry
 
 # Import all ZenML components
 def import_zenml_stack(zenml_stack: ZenMLStack):
@@ -353,7 +353,7 @@ def import_zenml_stack(zenml_stack: ZenMLStack):
         "zenml_artifact_store"
     )
 
-    # Now use in UniFlow!
+    # Now use in flowyml!
 ```
 
 ### Gradual Migration from ZenML
@@ -362,14 +362,14 @@ def import_zenml_stack(zenml_stack: ZenMLStack):
 # Keep using ZenML components
 from zenml.integrations.kubernetes import KubernetesOrchestrator
 
-# Use in UniFlow
-from uniflow.stacks import Stack
-from uniflow.stacks.plugins import get_component_registry
+# Use in flowyml
+from flowyml.stacks import Stack
+from flowyml.stacks.plugins import get_component_registry
 
 registry = get_component_registry()
 registry.wrap_zenml_component(KubernetesOrchestrator, "k8s")
 
-# Create UniFlow stack with ZenML component
+# Create flowyml stack with ZenML component
 stack = Stack(
     name="hybrid",
     orchestrator=registry.get_orchestrator("k8s"),

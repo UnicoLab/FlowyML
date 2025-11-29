@@ -1,21 +1,21 @@
 # CLI Reference 💻
 
-Command-line interface for UniFlow.
+Command-line interface for flowyml.
 
 ## Usage
 
 ```bash
-uniflow [COMMAND] [OPTIONS]
+flowyml [COMMAND] [OPTIONS]
 ```
 
 ## Commands
 
 ### `init`
 
-Initialize a new UniFlow project.
+Initialize a new flowyml project.
 
 ```bash
-uniflow init [PROJECT_NAME]
+flowyml init [PROJECT_NAME]
 ```
 
 ### `run`
@@ -23,7 +23,7 @@ uniflow init [PROJECT_NAME]
 Run a pipeline.
 
 ```bash
-uniflow run [PIPELINE_FILE]
+flowyml run [PIPELINE_FILE]
 ```
 
 ### `stack`
@@ -31,9 +31,9 @@ uniflow run [PIPELINE_FILE]
 Manage infrastructure stacks.
 
 ```bash
-uniflow stack list
-uniflow stack register [NAME]
-uniflow stack set [NAME]
+flowyml stack list
+flowyml stack register [NAME]
+flowyml stack set [NAME]
 ```
 
 ### `ui`
@@ -41,5 +41,5 @@ uniflow stack set [NAME]
 Start the dashboard.
 
 ```bash
-uniflow ui --port 8080
+flowyml ui --port 8080
 ```

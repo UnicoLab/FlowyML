@@ -1,35 +1,35 @@
 # CLI Reference 💻
 
-The UniFlow Command Line Interface (CLI) is your primary tool for managing projects, running pipelines, and controlling the UI.
+The flowyml Command Line Interface (CLI) is your primary tool for managing projects, running pipelines, and controlling the UI.
 
 ## Installation
 
 The CLI is installed automatically with the package:
 
 ```bash
-pip install uniflow
+pip install flowyml
 ```
 
 Verify installation:
 
 ```bash
-uniflow --version
+flowyml --version
 ```
 
 ## Command Structure
 
 ```bash
-uniflow [COMMAND] [SUBCOMMAND] [OPTIONS]
+flowyml [COMMAND] [SUBCOMMAND] [OPTIONS]
 ```
 
 ## Commands
 
 ### `init` 🌱
 
-Initialize a new UniFlow project.
+Initialize a new flowyml project.
 
 ```bash
-uniflow init [PROJECT_NAME]
+flowyml init [PROJECT_NAME]
 ```
 
 **Options:**
@@ -38,18 +38,18 @@ uniflow init [PROJECT_NAME]
 
 **Example:**
 ```bash
-uniflow init my-ml-project --template ml
+flowyml init my-ml-project --template ml
 ```
 
 ### `ui` 🖥️
 
-Manage the UniFlow UI server.
+Manage the flowyml UI server.
 
 #### `ui start`
 Start the UI server.
 
 ```bash
-uniflow ui start
+flowyml ui start
 ```
 
 **Options:**
@@ -62,14 +62,14 @@ uniflow ui start
 Stop the running UI server.
 
 ```bash
-uniflow ui stop
+flowyml ui stop
 ```
 
 #### `ui status`
 Check if the UI server is running.
 
 ```bash
-uniflow ui status
+flowyml ui status
 ```
 
 ### `run` ▶️
@@ -77,7 +77,7 @@ uniflow ui status
 Execute a pipeline or script.
 
 ```bash
-uniflow run [SCRIPT_PATH]
+flowyml run [SCRIPT_PATH]
 ```
 
 **Options:**
@@ -86,7 +86,7 @@ uniflow run [SCRIPT_PATH]
 
 **Example:**
 ```bash
-uniflow run src/pipelines/training.py --param epochs=50
+flowyml run src/pipelines/training.py --param epochs=50
 ```
 
 ### `cache` 🧹
@@ -97,7 +97,7 @@ Manage the execution cache.
 Clear the cache.
 
 ```bash
-uniflow cache clear
+flowyml cache clear
 ```
 
 **Options:**
@@ -109,7 +109,7 @@ uniflow cache clear
 View or modify configuration.
 
 ```bash
-uniflow config
+flowyml config
 ```
 
 #### `config list`
@@ -119,14 +119,14 @@ List all current configuration values.
 Set a configuration value.
 
 ```bash
-uniflow config set ui.port 3000
+flowyml config set ui.port 3000
 ```
 
 ## Environment Variables 🌐
 
-You can also configure UniFlow using environment variables. All variables are prefixed with `UNIFLOW_`.
+You can also configure flowyml using environment variables. All variables are prefixed with `flowyml_`.
 
-- `UNIFLOW_HOME`: Path to the UniFlow home directory (default: `~/.uniflow`).
-- `UNIFLOW_ENV`: Environment name (e.g., `dev`, `prod`).
-- `UNIFLOW_UI_PORT`: Port for the UI.
-- `UNIFLOW_LOG_LEVEL`: Logging level (DEBUG, INFO, WARNING, ERROR).
+- `flowyml_HOME`: Path to the flowyml home directory (default: `~/.flowyml`).
+- `flowyml_ENV`: Environment name (e.g., `dev`, `prod`).
+- `flowyml_UI_PORT`: Port for the UI.
+- `flowyml_LOG_LEVEL`: Logging level (DEBUG, INFO, WARNING, ERROR).

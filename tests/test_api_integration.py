@@ -4,12 +4,12 @@ Integration tests for new features.
 
 import pytest
 import tempfile
-from uniflow.registry.pipeline_registry import pipeline_registry, register_pipeline
-from uniflow.core.pipeline import Pipeline
-from uniflow.core.step import step
-from uniflow.core.project import Project
-from uniflow.core.versioning import VersionedPipeline
-from uniflow.core.scheduler import PipelineScheduler
+from flowyml.registry.pipeline_registry import pipeline_registry, register_pipeline
+from flowyml.core.pipeline import Pipeline
+from flowyml.core.step import step
+from flowyml.core.project import Project
+from flowyml.core.versioning import VersionedPipeline
+from flowyml.core.scheduler import PipelineScheduler
 
 
 def test_pipeline_registry():

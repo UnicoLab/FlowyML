@@ -5,9 +5,9 @@ import tempfile
 import shutil
 from pathlib import Path
 
-from uniflow import Pipeline, step
-from uniflow.core.cache import CacheStore
-from uniflow.core.context import Context
+from flowyml import Pipeline, step
+from flowyml.core.cache import CacheStore
+from flowyml.core.context import Context
 from tests.base import BaseTestCase
 
 

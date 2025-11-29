@@ -4,20 +4,20 @@ services:
   backend:
     build:
       context: .
-      dockerfile: uniflow/ui/backend/Dockerfile
+      dockerfile: flowyml/ui/backend/Dockerfile
     ports:
       - "8000:8000"
     volumes:
-      - ./.uniflow:/root/.uniflow
+      - ./.flowyml:/root/.flowyml
     environment:
-      - UNIFLOW_HOME=/root/.uniflow
-      - UNIFLOW_UI_HOST=0.0.0.0
-      - UNIFLOW_UI_PORT=8000
+      - flowyml_HOME=/root/.flowyml
+      - flowyml_UI_HOST=0.0.0.0
+      - flowyml_UI_PORT=8000
     restart: unless-stopped
 
   frontend:
     build:
-      context: uniflow/ui/frontend
+      context: flowyml/ui/frontend
       dockerfile: Dockerfile
     ports:
       - "8080:80"

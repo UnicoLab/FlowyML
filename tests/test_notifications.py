@@ -5,7 +5,7 @@ Tests for notification system.
 import unittest
 from unittest.mock import MagicMock, patch
 from datetime import datetime
-from uniflow.monitoring.notifications import (
+from flowyml.monitoring.notifications import (
     Notification,
     NotificationManager,
     ConsoleNotifier,

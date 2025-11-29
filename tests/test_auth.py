@@ -4,7 +4,7 @@ import pytest
 import os
 import json
 from pathlib import Path
-from uniflow.ui.backend.auth import TokenManager, verify_api_token
+from flowyml.ui.backend.auth import TokenManager, verify_api_token
 from fastapi import HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
 
@@ -179,7 +179,7 @@ class TestAPITokenVerification:
     @pytest.fixture
     def setup_tokens(self, temp_tokens_file):
         """Setup test tokens."""
-        from uniflow.ui.backend.auth import token_manager
+        from flowyml.ui.backend.auth import token_manager
 
         token_manager.tokens_file = Path(temp_tokens_file)
         token_manager._load_tokens()

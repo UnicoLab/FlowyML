@@ -1,13 +1,13 @@
 [tool.poetry]
-name = "uniflow"
+name = "flowyml"
 version = "0.1.0"
 description = "Next-Generation ML Pipeline Framework"
-authors = ["UniFlow Team <support@unicolab.ai>"]
+authors = ["flowyml Team <support@unicolab.ai>"]
 license = "Apache-2.0"
 readme = "README.md"
-homepage = "https://github.com/UnicoLab/UniFlow"
-repository = "https://github.com/UnicoLab/UniFlow"
-documentation = "https://unicolab.github.io/UniFlow/latest"
+homepage = "https://github.com/UnicoLab/FlowyML"
+repository = "https://github.com/UnicoLab/FlowyML"
+documentation = "https://unicolab.github.io/FlowyML/latest"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -18,7 +18,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
 ]
-packages = [{include = "uniflow"}]
+packages = [{include = "flowyml"}]
 
 [tool.poetry.dependencies]
 python = ">=3.10,<4.0"
@@ -96,7 +96,7 @@ all = [
 ]
 
 [tool.poetry.scripts]
-uniflow = "uniflow.cli.main:cli"
+flowyml = "flowyml.cli.main:cli"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -124,7 +124,7 @@ disallow_untyped_defs = false
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_functions = ["test_*"]
-addopts = "-v --cov=uniflow --cov-report=term-missing"
+addopts = "-v --cov=flowyml --cov-report=term-missing"
 asyncio_mode = "auto"
 
 [tool.semantic_release]

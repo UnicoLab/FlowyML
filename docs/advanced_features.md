@@ -7,8 +7,8 @@ Group consecutive pipeline steps to execute in the same container/environment, r
 ### Basic Usage
 
 ```python
-from uniflow import Pipeline, step
-from uniflow.core.resources import ResourceRequirements, GPUConfig
+from flowyml import Pipeline, step
+from flowyml.core.resources import ResourceRequirements, GPUConfig
 
 # Group preprocessing steps
 @step(outputs=["raw_data"], execution_group="preprocessing")
@@ -34,7 +34,7 @@ result = pipeline.run()
 
 ### Resource Aggregation
 
-When steps are grouped, UniFlow automatically aggregates their resource requirements:
+When steps are grouped, flowyml automatically aggregates their resource requirements:
 
 ```python
 @step(
@@ -68,7 +68,7 @@ def train_model(data):
 
 ### Smart Sequential Analysis
 
-UniFlow only groups steps that can execute consecutively in the DAG:
+flowyml only groups steps that can execute consecutively in the DAG:
 
 ```python
 # Consecutive: A → B → C (all in "group1")
@@ -99,12 +99,12 @@ See [Step Grouping Guide](step-grouping.md) for complete documentation.
 
 ### LLM Call Tracing
 
-UniFlow provides built-in tracing for LLM calls, allowing you to monitor token usage, costs, and execution traces.
+flowyml provides built-in tracing for LLM calls, allowing you to monitor token usage, costs, and execution traces.
 
 #### Basic Usage
 
 ```python
-from uniflow import trace_llm
+from flowyml import trace_llm
 
 @trace_llm(name="text_generation")
 def generate_text(prompt: str):
@@ -121,7 +121,7 @@ result = generate_text("Write a haiku about ML")
 #### Nested Traces
 
 ```python
-from uniflow import trace_llm, tracer
+from flowyml import trace_llm, tracer
 
 @trace_llm(name="rag_pipeline", event_type="chain")
 def rag_pipeline(query: str):
@@ -148,7 +148,7 @@ Traces are automatically saved to the metadata store and can be viewed via:
 
 1. **Python API:**
 ```python
-from uniflow.storage.metadata import SQLiteMetadataStore
+from flowyml.storage.metadata import SQLiteMetadataStore
 
 store = SQLiteMetadataStore()
 trace_events = store.get_trace(trace_id="...")
@@ -164,7 +164,7 @@ Navigate to `http://localhost:8080/api/traces` to see all traces.
 ### Setup Notifications
 
 ```python
-from uniflow import configure_notifications
+from flowyml import configure_notifications
 
 configure_notifications(
     console=True,
@@ -183,7 +183,7 @@ configure_notifications(
 ### Using Notifications
 
 ```python
-from uniflow import get_notifier
+from flowyml import get_notifier
 
 notifier = get_notifier()
 
@@ -204,7 +204,7 @@ notifier.on_drift_detected("user_age", psi=0.25)
 ### Custom Notification Channels
 
 ```python
-from uniflow import NotificationManager, NotificationChannel, Notification
+from flowyml import NotificationManager, NotificationChannel, Notification
 
 class CustomNotifier(NotificationChannel):
     def send(self, notification: Notification) -> bool:
@@ -222,7 +222,7 @@ manager.add_channel(CustomNotifier())
 ### Schedule Pipelines
 
 ```python
-from uniflow import PipelineScheduler, Pipeline
+from flowyml import PipelineScheduler, Pipeline
 
 scheduler = PipelineScheduler()
 
@@ -285,7 +285,7 @@ scheduler.stop()
 ### Track Model Performance
 
 ```python
-from uniflow import ModelLeaderboard
+from flowyml import ModelLeaderboard
 
 # Create leaderboard for a metric
 leaderboard = ModelLeaderboard(
@@ -325,7 +325,7 @@ Rank   Model Name                     Score           Run ID
 ### Compare Runs
 
 ```python
-from uniflow import compare_runs
+from flowyml import compare_runs
 
 comparison = compare_runs(
     run_ids=["run_123", "run_124", "run_125"],
@@ -342,7 +342,7 @@ print(comparison)
 ### Using Templates
 
 ```python
-from uniflow import create_from_template, list_templates
+from flowyml import create_from_template, list_templates
 
 # See available templates
 templates = list_templates()
@@ -404,7 +404,7 @@ pipeline = create_from_template(
 ### Enable Checkpointing
 
 ```python
-from uniflow import PipelineCheckpoint
+from flowyml import PipelineCheckpoint
 
 checkpoint = PipelineCheckpoint(run_id="my_run_123")
 
@@ -427,7 +427,7 @@ if checkpoint.exists():
 ### Wrapper for Automatic Checkpointing
 
 ```python
-from uniflow import checkpoint_enabled_pipeline
+from flowyml import checkpoint_enabled_pipeline
 
 pipeline = Pipeline("training")
 # ... add steps ...
@@ -446,7 +446,7 @@ result = pipeline.run()
 ### Approval Steps
 
 ```python
-from uniflow import Pipeline, step, approval
+from flowyml import Pipeline, step, approval
 
 pipeline = Pipeline("deployment")
 
@@ -490,19 +490,19 @@ When run interactively:
 ### Automatic Experiment Tracking
 
 ```python
-from uniflow import UniFlowKerasCallback
+from flowyml import flowymlKerasCallback
 import tensorflow as tf
 
 model = tf.keras.Sequential([...])
 model.compile(optimizer='adam', loss='sparse_categorical_crossentropy')
 
-# Add UniFlow callback
+# Add flowyml callback
 model.fit(
     x_train, y_train,
     epochs=10,
     validation_data=(x_val, y_val),
     callbacks=[
-        UniFlowKerasCallback(
+        flowymlKerasCallback(
             experiment_name="mnist_classification",
             run_name="baseline_v1",
             log_model=True,
@@ -526,7 +526,7 @@ model.fit(
 ### Monitor Distribution Shifts
 
 ```python
-from uniflow import detect_drift, compute_stats
+from flowyml import detect_drift, compute_stats
 
 # Training data (reference)
 train_feature = train_df['age'].values
@@ -548,7 +548,7 @@ if drift_result['drift_detected']:
     print(f"Current stats: {drift_result['current_stats']}")
 
     # Send notification
-    from uniflow import get_notifier
+    from flowyml import get_notifier
     notifier = get_notifier()
     notifier.on_drift_detected('age', drift_result['psi'])
 ```
@@ -556,7 +556,7 @@ if drift_result['drift_detected']:
 ### Compute Statistics
 
 ```python
-from uniflow import compute_stats
+from flowyml import compute_stats
 
 stats = compute_stats(data_array)
 print(stats)
@@ -583,7 +583,7 @@ print(stats)
 ### Complete Example
 
 ```python
-from uniflow import (
+from flowyml import (
     Pipeline, step, context,
     configure_notifications,
     PipelineScheduler,

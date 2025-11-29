@@ -4,8 +4,8 @@ import unittest
 import tempfile
 import shutil
 from pathlib import Path
-from uniflow.storage.artifacts import LocalArtifactStore
-from uniflow import Dataset
+from flowyml.storage.artifacts import LocalArtifactStore
+from flowyml import Dataset
 
 
 class TestStorage(unittest.TestCase):

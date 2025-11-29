@@ -5,7 +5,7 @@ Track experiments and manage models with the industry-standard open source platf
 > [!NOTE]
 > **What you'll learn**: How to auto-log metrics and models to MLflow
 >
-> **Key insight**: UniFlow + MLflow = Automated Experiment Tracking.
+> **Key insight**: flowyml + MLflow = Automated Experiment Tracking.
 
 ## Why MLflow?
 
@@ -15,10 +15,10 @@ Track experiments and manage models with the industry-standard open source platf
 
 ## 🧪 Auto-Logging
 
-UniFlow can automatically configure MLflow tracking for your pipeline.
+flowyml can automatically configure MLflow tracking for your pipeline.
 
 ```python
-from uniflow.integrations.mlflow import MLflowTracker
+from flowyml.integrations.mlflow import MLflowTracker
 
 # Enable MLflow tracking
 pipeline.run(
@@ -35,7 +35,7 @@ You can also log custom metrics inside your steps.
 
 ```python
 import mlflow
-from uniflow import step
+from flowyml import step
 
 @step
 def train_model(data):

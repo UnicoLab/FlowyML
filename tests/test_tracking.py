@@ -1,7 +1,7 @@
 """Test suite for tracking functionality."""
 
 import unittest
-from uniflow.tracking.runs import Run, RunMetadata
+from flowyml.tracking.runs import Run, RunMetadata
 from datetime import datetime
 
 

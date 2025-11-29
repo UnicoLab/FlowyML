@@ -4,8 +4,8 @@ import pytest
 from unittest.mock import MagicMock
 from typing import Any
 
-from uniflow.stacks.bridge import GenericBridge, AdaptationRule
-from uniflow.stacks.components import ComponentType, Orchestrator, ArtifactStore
+from flowyml.stacks.bridge import GenericBridge, AdaptationRule
+from flowyml.stacks.components import ComponentType, Orchestrator, ArtifactStore
 
 
 # Mock external classes

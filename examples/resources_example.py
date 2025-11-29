@@ -1,11 +1,11 @@
 """Example: Using Resource Specifications
 
 This example demonstrates how to specify CPU, GPU, memory, and other resources
-for pipeline steps in UniFlow, with automatic translation to orchestrator-specific formats.
+for pipeline steps in flowyml, with automatic translation to orchestrator-specific formats.
 """
 
-from uniflow.core import step
-from uniflow.core.resources import ResourceRequirements, GPUConfig, NodeAffinity
+from flowyml.core import step
+from flowyml.core.resources import ResourceRequirements, GPUConfig, NodeAffinity
 
 
 # Example 1: Simple CPU and Memory Specification
@@ -104,7 +104,7 @@ def resource_intensive_pipeline():
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("UniFlow Resource Specification Example")
+    print("flowyml Resource Specification Example")
     print("=" * 60)
 
     print("\n1. Running simple training pipeline...")

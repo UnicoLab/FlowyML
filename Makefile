@@ -7,19 +7,19 @@
 POETRY := poetry
 PYTHON := $(POETRY) run python
 PYTEST := $(POETRY) run pytest
-UNIFLOW := $(POETRY) run uniflow
-BACKEND_DIR := uniflow/ui/backend
-FRONTEND_DIR := uniflow/ui/frontend
+flowyml := $(POETRY) run flowyml
+BACKEND_DIR := flowyml/ui/backend
+FRONTEND_DIR := flowyml/ui/frontend
 
 # Default target
 help: ## Show this help message
-	@echo "UniFlow - Available Make Targets"
+	@echo "flowyml - Available Make Targets"
 	@echo "================================="
 	@echo ""
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
 # Setup and Installation
-install: ## Install UniFlow package
+install: ## Install flowyml package
 	$(POETRY) install
 
 install-dev: ## Install development dependencies
@@ -48,39 +48,39 @@ backend-dev: ## Start backend development server (with auto-reload)
 backend-start: ## Start backend production server
 	cd $(BACKEND_DIR) && $(POETRY) run uvicorn main:app --host 0.0.0.0 --port 8000
 
-# UniFlow CLI Commands
-ui-start: ## Start UniFlow UI server
-	$(UNIFLOW) ui start --open-browser
+# flowyml CLI Commands
+ui-start: ## Start flowyml UI server
+	$(flowyml) ui start --open-browser
 
 ui-dev: ## Start UI in development mode
-	$(UNIFLOW) ui start --dev --open-browser
+	$(flowyml) ui start --dev --open-browser
 
-ui-stop: ## Stop UniFlow UI server
-	$(UNIFLOW) ui stop
+ui-stop: ## Stop flowyml UI server
+	$(flowyml) ui stop
 
 ui-status: ## Check UI server status
-	$(UNIFLOW) ui status
+	$(flowyml) ui status
 
-init: ## Initialize a new UniFlow project
-	$(UNIFLOW) init
+init: ## Initialize a new flowyml project
+	$(flowyml) init
 
 run: ## Run a pipeline (usage: make run PIPELINE=my_pipeline)
-	$(UNIFLOW) run $(PIPELINE)
+	$(flowyml) run $(PIPELINE)
 
 cache-stats: ## Show cache statistics
-	$(UNIFLOW) cache stats
+	$(flowyml) cache stats
 
 cache-clear: ## Clear cache
-	$(UNIFLOW) cache clear
+	$(flowyml) cache clear
 
 config: ## Show current configuration
-	$(UNIFLOW) config
+	$(flowyml) config
 
 experiments: ## List experiments
-	$(UNIFLOW) experiment list
+	$(flowyml) experiment list
 
 stacks: ## List available stacks
-	$(UNIFLOW) stack list
+	$(flowyml) stack list
 
 # Testing
 test: ## Run all tests
@@ -93,7 +93,7 @@ test-integration: ## Run integration tests only
 	$(PYTEST) tests/test_integration.py tests/test_api_integration.py -v
 
 test-coverage: ## Run tests with coverage report
-	$(PYTEST) tests/ --cov=uniflow --cov-report=html --cov-report=term
+	$(PYTEST) tests/ --cov=flowyml --cov-report=html --cov-report=term
 
 test-fast: ## Run tests without coverage (faster)
 	$(PYTEST) tests/ -v --tb=short
@@ -101,15 +101,15 @@ test-fast: ## Run tests without coverage (faster)
 # Code Quality
 lint: ## Run linters
 	@echo "Running ruff..."
-	-$(POETRY) run ruff check uniflow --fix
+	-$(POETRY) run ruff check flowyml --fix
 	@echo "Running mypy..."
-	-$(POETRY) run mypy uniflow --ignore-missing-imports
+	-$(POETRY) run mypy flowyml --ignore-missing-imports
 
 format: ## Format code with black
-	$(POETRY) run black uniflow tests examples --line-length=100
+	$(POETRY) run black flowyml tests examples --line-length=100
 
 format-check: ## Check code formatting
-	$(POETRY) run black uniflow tests examples --check --line-length=100
+	$(POETRY) run black flowyml tests examples --check --line-length=100
 
 check: format-check lint ## Run all code quality checks
 
@@ -153,7 +153,7 @@ run-examples: ## Run all examples
 
 # Database
 db-clean: ## Clean database and metadata
-	rm -rf .uniflow
+	rm -rf .flowyml
 	@echo "✅ Cleaned database and metadata"
 
 # Development workflow shortcuts
@@ -181,7 +181,7 @@ poetry-shell: ## Open poetry shell
 
 # Info
 info: ## Show project information
-	@echo "UniFlow Project Information"
+	@echo "flowyml Project Information"
 	@echo "============================"
 	@echo "Python version:  $$(python --version)"
 	@echo "Poetry version:  $$(poetry --version)"
@@ -197,5 +197,5 @@ info: ## Show project information
 	@echo "Installed packages:"
 	@$(POETRY) show --tree | head -20
 
-version: ## Show UniFlow version
-	$(UNIFLOW) --version
+version: ## Show flowyml version
+	$(flowyml) --version

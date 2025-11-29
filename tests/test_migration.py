@@ -4,7 +4,7 @@ import pytest
 from unittest.mock import MagicMock, patch
 import sys
 
-from uniflow.stacks.migration import StackMigrator
+from flowyml.stacks.migration import StackMigrator
 
 
 # Mock ZenML classes

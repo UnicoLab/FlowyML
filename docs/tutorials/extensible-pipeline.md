@@ -18,14 +18,14 @@ This step-by-step tutorial shows you how to build a production-ready ML pipeline
 
 ## Step 1: Project Setup
 
-### Install UniFlow
+### Install flowyml
 
 ```bash
 # Basic installation
-pip install uniflow
+pip install flowyml
 
 # With ML and GCP support
-pip install uniflow[tensorflow,gcp]
+pip install flowyml[tensorflow,gcp]
 ```
 
 ### Initialize Project
@@ -35,10 +35,10 @@ pip install uniflow[tensorflow,gcp]
 mkdir ml-pipeline-tutorial
 cd ml-pipeline-tutorial
 
-# Initialize UniFlow
-uniflow init
+# Initialize flowyml
+flowyml init
 
-# Should create uniflow.yaml
+# Should create flowyml.yaml
 ```
 
 ## Step 2: Write Your Pipeline
@@ -48,7 +48,7 @@ Create `training_pipeline.py`:
 ```python
 """Clean ML training pipeline - infrastructure agnostic."""
 
-from uniflow import Pipeline, step, context, Dataset, Model, Metrics
+from flowyml import Pipeline, step, context, Dataset, Model, Metrics
 import tensorflow as tf
 import pandas as pd
 import numpy as np
@@ -190,7 +190,7 @@ if __name__ == "__main__":
 ### Run with default (local) stack
 
 ```bash
-uniflow run training_pipeline.py
+flowyml run training_pipeline.py
 ```
 
 Output:
@@ -209,10 +209,10 @@ Epoch 1/10
 
 ```bash
 # Check artifact storage
-ls -R .uniflow/artifacts/
+ls -R .flowyml/artifacts/
 
 # Check metadata
-sqlite3 .uniflow/metadata.db "SELECT * FROM runs;"
+sqlite3 .flowyml/metadata.db "SELECT * FROM runs;"
 ```
 
 ## Step 4: Create Custom Component
@@ -224,8 +224,8 @@ Create `custom_components/minio_store.py`:
 ```python
 """Custom MinIO artifact store for tutorial."""
 
-from uniflow.stacks.components import ArtifactStore
-from uniflow.stacks.plugins import register_component
+from flowyml.stacks.components import ArtifactStore
+from flowyml.stacks.plugins import register_component
 from typing import Any
 import pickle
 import io
@@ -329,15 +329,15 @@ docker run -d \
   minio/minio server /data --console-address ":9001"
 
 # Load component
-uniflow component load custom_components.minio_store
+flowyml component load custom_components.minio_store
 
 # Verify
-uniflow component list
+flowyml component list
 ```
 
 ## Step 5: Multi-Environment Configuration
 
-Update `uniflow.yaml`:
+Update `flowyml.yaml`:
 
 ```yaml
 # Multi-environment configuration
@@ -347,9 +347,9 @@ stacks:
   local:
     type: local
     artifact_store:
-      path: .uniflow/artifacts
+      path: .flowyml/artifacts
     metadata_store:
-      path: .uniflow/metadata.db
+      path: .flowyml/metadata.db
 
   # Development with MinIO
   dev_minio:
@@ -359,7 +359,7 @@ stacks:
       endpoint: localhost:9000
       bucket: ml-dev
     metadata_store:
-      path: .uniflow/metadata.db
+      path: .flowyml/metadata.db
 
   # Staging on GCP
   staging:
@@ -409,16 +409,16 @@ components:
 
 ```bash
 # Local
-uniflow run training_pipeline.py
+flowyml run training_pipeline.py
 
 # With MinIO
-uniflow run training_pipeline.py --stack dev_minio
+flowyml run training_pipeline.py --stack dev_minio
 
 # Staging (dry run)
-uniflow run training_pipeline.py --stack staging --dry-run
+flowyml run training_pipeline.py --stack staging --dry-run
 
 # Production with GPUs
-uniflow run training_pipeline.py \
+flowyml run training_pipeline.py \
   --stack production \
   --resources training \
   --context epochs=50
@@ -450,8 +450,8 @@ RUN if [ -f pyproject.toml ]; then \
         pip install -r requirements.txt; \
     fi
 
-# Install UniFlow
-RUN pip install uniflow[tensorflow,gcp]
+# Install flowyml
+RUN pip install flowyml[tensorflow,gcp]
 
 # Copy code
 COPY . .
@@ -509,12 +509,12 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install uniflow[tensorflow]
+          pip install flowyml[tensorflow]
           pip install minio  # For custom component
 
       - name: Run tests
         run: |
-          uniflow run training_pipeline.py --dry-run
+          flowyml run training_pipeline.py --dry-run
 
   deploy:
     needs: test
@@ -529,9 +529,9 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install UniFlow
+      - name: Install flowyml
         run: |
-          pip install uniflow[tensorflow,gcp]
+          pip install flowyml[tensorflow,gcp]
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v1
@@ -547,7 +547,7 @@ jobs:
         run: |
           ENV=${{ github.event.inputs.environment || 'staging' }}
 
-          uniflow run training_pipeline.py \
+          flowyml run training_pipeline.py \
             --stack $ENV \
             --resources training \
             --context experiment_name=github-${{ github.run_id }}
@@ -559,10 +559,10 @@ jobs:
 
 ```bash
 # Check stack configuration
-uniflow stack show production
+flowyml stack show production
 
 # Dry run
-uniflow run training_pipeline.py \
+flowyml run training_pipeline.py \
   --stack production \
   --resources training \
   --dry-run
@@ -572,7 +572,7 @@ uniflow run training_pipeline.py \
 
 ```bash
 # Run on production
-uniflow run training_pipeline.py \
+flowyml run training_pipeline.py \
   --stack production \
   --resources training \
   --context epochs=100 \
@@ -615,7 +615,7 @@ uniflow run training_pipeline.py \
 - [Components Guide](../user-guide/components.md)
 - [Configuration Guide](../user-guide/configuration.md)
 - [CLI Reference](../reference/cli.md)
-- [Example Code](https://github.com/UnicoLab/UniFlow/tree/main/examples/)
+- [Example Code](https://github.com/UnicoLab/FlowyML/tree/main/examples/)
 
 ## Troubleshooting
 
@@ -647,10 +647,10 @@ gcloud auth application-default login
 python -c "import sys; print('\n'.join(sys.path))"
 
 # Load explicitly
-uniflow component load custom_components.minio_store
+flowyml component load custom_components.minio_store
 
 # Verify
-uniflow component list
+flowyml component list
 ```
 
 Congratulations! You've built a production-ready, extensible ML pipeline! 🎉

@@ -1,4 +1,4 @@
-# Example Dockerfile for UniFlow GCP Pipelines
+# Example Dockerfile for flowyml GCP Pipelines
 
 FROM python:3.11-slim
 
@@ -19,8 +19,8 @@ COPY requirements.txt /tmp/requirements.txt
 RUN pip install --upgrade pip && \
     pip install --no-cache-dir -r /tmp/requirements.txt
 
-# Install UniFlow
-RUN pip install uniflow
+# Install flowyml
+RUN pip install flowyml
 
 # Copy application code
 COPY . /app
@@ -28,4 +28,4 @@ WORKDIR /app
 
 # Set entrypoint
 ENTRYPOINT ["python"]
-CMD ["-m", "uniflow.cli.run"]
+CMD ["-m", "flowyml.cli.run"]

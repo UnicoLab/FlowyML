@@ -1,7 +1,7 @@
 """Tests for resource specification."""
 
 import pytest
-from uniflow.core.resources import ResourceRequirements, GPUConfig, NodeAffinity, resources
+from flowyml.core.resources import ResourceRequirements, GPUConfig, NodeAffinity, resources
 
 
 class TestResourceRequirements:

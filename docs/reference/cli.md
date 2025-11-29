@@ -2,86 +2,86 @@
 
 ## Overview
 
-UniFlow provides a powerful CLI for managing stacks, components, and running pipelines without modifying code.
+flowyml provides a powerful CLI for managing stacks, components, and running pipelines without modifying code.
 
 ## Installation
 
 ```bash
-pip install uniflow
+pip install flowyml
 ```
 
-The `uniflow` command will be available globally.
+The `flowyml` command will be available globally.
 
 ## Commands
 
-### `uniflow init`
+### `flowyml init`
 
-Initialize a new UniFlow project.
+Initialize a new flowyml project.
 
 ```bash
-uniflow init [OPTIONS]
+flowyml init [OPTIONS]
 ```
 
 **Options:**
-- `--output, -o TEXT`: Output file path (default: `uniflow.yaml`)
+- `--output, -o TEXT`: Output file path (default: `flowyml.yaml`)
 
 **Examples:**
 ```bash
-# Create uniflow.yaml
-uniflow init
+# Create flowyml.yaml
+flowyml init
 
 # Custom output path
-uniflow init --output config/uniflow.yaml
+flowyml init --output config/flowyml.yaml
 ```
 
 **Output:**
-Creates a `uniflow.yaml` file with default configuration including:
+Creates a `flowyml.yaml` file with default configuration including:
 - Local stack
 - Basic resource presets
 - Docker configuration
 
 ---
 
-### `uniflow run`
+### `flowyml run`
 
 Run a pipeline with specified stack and configuration.
 
 ```bash
-uniflow run PIPELINE_FILE [OPTIONS]
+flowyml run PIPELINE_FILE [OPTIONS]
 ```
 
 **Arguments:**
 - `PIPELINE_FILE`: Path to pipeline Python file
 
 **Options:**
-- `--stack, -s TEXT`: Stack to use (from uniflow.yaml)
+- `--stack, -s TEXT`: Stack to use (from flowyml.yaml)
 - `--resources, -r TEXT`: Resource configuration to use
-- `--config, -c TEXT`: Path to uniflow.yaml
+- `--config, -c TEXT`: Path to flowyml.yaml
 - `--context, -ctx TEXT`: Context variables (key=value), can be specified multiple times
 - `--dry-run`: Show what would be executed without running
 
 **Examples:**
 ```bash
 # Run with default (local) stack
-uniflow run pipeline.py
+flowyml run pipeline.py
 
 # Run on production stack
-uniflow run pipeline.py --stack production
+flowyml run pipeline.py --stack production
 
 # Run with GPU resources
-uniflow run pipeline.py --stack production --resources gpu_training
+flowyml run pipeline.py --stack production --resources gpu_training
 
 # Pass context variables
-uniflow run pipeline.py --context data_path=gs://bucket/data.csv --context model_id=123
+flowyml run pipeline.py --context data_path=gs://bucket/data.csv --context model_id=123
 
 # Dry run to see configuration
-uniflow run pipeline.py --stack production --dry-run
+flowyml run pipeline.py --stack production --dry-run
 
 # Custom config file
-uniflow run pipeline.py --config custom.yaml --stack staging
+flowyml run pipeline.py --config custom.yaml --stack staging
 
 # Combined example
-uniflow run train.py \
+flowyml run train.py \
   --stack production \
   --resources gpu_large \
   --context data_path=gs://prod/train.csv \
@@ -90,28 +90,28 @@ uniflow run train.py \
 
 ---
 
-### `uniflow stack`
+### `flowyml stack`
 
 Manage infrastructure stacks.
 
-#### `uniflow stack list`
+#### `flowyml stack list`
 
 List all configured stacks.
 
 ```bash
-uniflow stack list [OPTIONS]
+flowyml stack list [OPTIONS]
 ```
 
 **Options:**
-- `--config, -c TEXT`: Path to uniflow.yaml
+- `--config, -c TEXT`: Path to flowyml.yaml
 
 **Examples:**
 ```bash
 # List stacks
-uniflow stack list
+flowyml stack list
 
 # With custom config
-uniflow stack list --config custom.yaml
+flowyml stack list --config custom.yaml
 ```
 
 **Output:**
@@ -122,27 +122,27 @@ Configured stacks:
   • staging [gcp]
 ```
 
-#### `uniflow stack show`
+#### `flowyml stack show`
 
 Show detailed stack configuration.
 
 ```bash
-uniflow stack show STACK_NAME [OPTIONS]
+flowyml stack show STACK_NAME [OPTIONS]
 ```
 
 **Arguments:**
 - `STACK_NAME`: Name of stack to show
 
 **Options:**
-- `--config, -c TEXT`: Path to uniflow.yaml
+- `--config, -c TEXT`: Path to flowyml.yaml
 
 **Examples:**
 ```bash
 # Show production stack details
-uniflow stack show production
+flowyml stack show production
 
 # With custom config
-uniflow stack show staging --config staging.yaml
+flowyml stack show staging --config staging.yaml
 ```
 
 **Output:**
@@ -156,41 +156,41 @@ artifact_store:
   bucket: ml-artifacts-prod
 ```
 
-#### `uniflow stack set-default`
+#### `flowyml stack set-default`
 
 Set the default stack.
 
 ```bash
-uniflow stack set-default STACK_NAME [OPTIONS]
+flowyml stack set-default STACK_NAME [OPTIONS]
 ```
 
 **Arguments:**
 - `STACK_NAME`: Name of stack to set as default
 
 **Options:**
-- `--config, -c TEXT`: Path to uniflow.yaml
+- `--config, -c TEXT`: Path to flowyml.yaml
 
 **Examples:**
 ```bash
 # Set production as default
-uniflow stack set-default production
+flowyml stack set-default production
 
 # With custom config
-uniflow stack set-default local --config dev.yaml
+flowyml stack set-default local --config dev.yaml
 ```
 
 ---
 
-### `uniflow component`
+### `flowyml component`
 
 Manage stack components and plugins.
 
-#### `uniflow component list`
+#### `flowyml component list`
 
 List all registered components.
 
 ```bash
-uniflow component list [OPTIONS]
+flowyml component list [OPTIONS]
 ```
 
 **Options:**
@@ -199,13 +199,13 @@ uniflow component list [OPTIONS]
 **Examples:**
 ```bash
 # List all components
-uniflow component list
+flowyml component list
 
 # List only orchestrators
-uniflow component list --type orchestrators
+flowyml component list --type orchestrators
 
 # List only artifact stores
-uniflow component list --type artifact_stores
+flowyml component list --type artifact_stores
 ```
 
 **Output:**
@@ -222,12 +222,12 @@ Artifact_stores:
   • minio
 ```
 
-#### `uniflow component load`
+#### `flowyml component load`
 
 Load a component from various sources.
 
 ```bash
-uniflow component load SOURCE [OPTIONS]
+flowyml component load SOURCE [OPTIONS]
 ```
 
 **Arguments:**
@@ -239,16 +239,16 @@ uniflow component load SOURCE [OPTIONS]
 **Examples:**
 ```bash
 # From Python module
-uniflow component load my_uniflow_components
+flowyml component load my_flowyml_components
 
 # From file with specific class
-uniflow component load /path/to/custom.py:MyOrchestrator
+flowyml component load /path/to/custom.py:MyOrchestrator
 
 # From ZenML
-uniflow component load zenml:zenml.integrations.kubernetes.orchestrators.KubernetesOrchestrator
+flowyml component load zenml:zenml.integrations.kubernetes.orchestrators.KubernetesOrchestrator
 
 # With custom name
-uniflow component load my_components --name custom
+flowyml component load my_components --name custom
 ```
 
 **Source Formats:**
@@ -262,22 +262,22 @@ uniflow component load my_components --name custom
 
 All commands support:
 - `--help`: Show help message
-- `--version`: Show UniFlow version
+- `--version`: Show flowyml version
 
 ## Configuration Files
 
 ### Search Order
 
-UniFlow searches for configuration in this order:
+flowyml searches for configuration in this order:
 1. `--config` flag value
-2. `uniflow.yaml` (current directory)
-3. `uniflow.yml`
-4. `.uniflow/config.yaml`
-5. `.uniflow/config.yml`
+2. `flowyml.yaml` (current directory)
+3. `flowyml.yml`
+4. `.flowyml/config.yaml`
+5. `.flowyml/config.yml`
 
 ### Environment Variables
 
-UniFlow automatically expands environment variables in configuration:
+flowyml automatically expands environment variables in configuration:
 - `${VAR_NAME}` - Required variable (fails if not set)
 - `$VAR_NAME` - Required variable
 - `${VAR_NAME:-default}` - With default value (future)
@@ -288,64 +288,64 @@ UniFlow automatically expands environment variables in configuration:
 
 ```bash
 # 1. Initialize project
-uniflow init
+flowyml init
 
-# 2. Edit uniflow.yaml
-vim uniflow.yaml
+# 2. Edit flowyml.yaml
+vim flowyml.yaml
 
 # 3. List available stacks
-uniflow stack list
+flowyml stack list
 
 # 4. Run pipeline locally
-uniflow run pipeline.py
+flowyml run pipeline.py
 
 # 5. Test on staging
-uniflow run pipeline.py --stack staging --dry-run
+flowyml run pipeline.py --stack staging --dry-run
 
 # 6. Deploy to production
-uniflow run pipeline.py --stack production --resources gpu_training
+flowyml run pipeline.py --stack production --resources gpu_training
 ```
 
 ### Multi-Environment Deployment
 
 ```bash
 # Development
-uniflow run pipeline.py --config dev.yaml
+flowyml run pipeline.py --config dev.yaml
 
 # Staging
-uniflow run pipeline.py --config staging.yaml --stack staging
+flowyml run pipeline.py --config staging.yaml --stack staging
 
 # Production
-uniflow run pipeline.py --config prod.yaml --stack production
+flowyml run pipeline.py --config prod.yaml --stack production
 ```
 
 ### Custom Components
 
 ```bash
 # 1. List current components
-uniflow component list
+flowyml component list
 
 # 2. Load custom component
-uniflow component load my_custom_components
+flowyml component load my_custom_components
 
 # 3. Verify it's loaded
-uniflow component list
+flowyml component list
 
 # 4. Use in pipeline
-uniflow run pipeline.py --stack custom_stack
+flowyml run pipeline.py --stack custom_stack
 ```
 
 ### GPU Training
 
 ```bash
 # Train with single GPU
-uniflow run train.py --resources gpu_small
+flowyml run train.py --resources gpu_small
 
 # Train with multiple GPUs
-uniflow run train.py --resources gpu_large
+flowyml run train.py --resources gpu_large
 
 # Large-scale training with A100s
-uniflow run train.py \
+flowyml run train.py \
   --stack production \
   --resources gpu_xlarge \
   --context batch_size=512 \
@@ -356,13 +356,13 @@ uniflow run train.py \
 
 ```bash
 # Dry run to see configuration
-uniflow run pipeline.py --stack production --dry-run
+flowyml run pipeline.py --stack production --dry-run
 
 # Show stack details
-uniflow stack show production
+flowyml stack show production
 
 # Validate configuration
-python -c "from uniflow.utils.stack_config import load_config; load_config().load()"
+python -c "from flowyml.utils.stack_config import load_config; load_config().load()"
 ```
 
 ## Exit Codes
@@ -377,19 +377,19 @@ python -c "from uniflow.utils.stack_config import load_config; load_config().loa
 ### Bash
 
 ```bash
-echo 'eval "$(_UNIFLOW_COMPLETE=bash_source uniflow)"' >> ~/.bashrc
+echo 'eval "$(_flowyml_COMPLETE=bash_source flowyml)"' >> ~/.bashrc
 ```
 
 ### Zsh
 
 ```bash
-echo 'eval "$(_UNIFLOW_COMPLETE=zsh_source uniflow)"' >> ~/.zshrc
+echo 'eval "$(_flowyml_COMPLETE=zsh_source flowyml)"' >> ~/.zshrc
 ```
 
 ### Fish
 
 ```bash
-echo '_UNIFLOW_COMPLETE=fish_source uniflow | source' >> ~/.config/fish/completions/uniflow.fish
+echo '_flowyml_COMPLETE=fish_source flowyml | source' >> ~/.config/fish/completions/flowyml.fish
 ```
 
 ## Tips & Tricks
@@ -398,10 +398,10 @@ echo '_UNIFLOW_COMPLETE=fish_source uniflow | source' >> ~/.config/fish/completi
 
 ```bash
 # .bashrc or .zshrc
-alias uf='uniflow'
-alias ufr='uniflow run'
-alias ufs='uniflow stack'
-alias ufc='uniflow component'
+alias uf='flowyml'
+alias ufr='flowyml run'
+alias ufs='flowyml stack'
+alias ufc='flowyml component'
 
 # Usage
 ufr pipeline.py -s production
@@ -411,14 +411,14 @@ ufc list
 
 ### Default Stack
 
-Set in `uniflow.yaml`:
+Set in `flowyml.yaml`:
 ```yaml
 default_stack: production
 ```
 
 Then run without specifying stack:
 ```bash
-uniflow run pipeline.py
+flowyml run pipeline.py
 # Uses production stack
 ```
 
@@ -426,13 +426,13 @@ uniflow run pipeline.py
 
 ```bash
 # Development
-alias uf-dev='uniflow run --config dev.yaml'
+alias uf-dev='flowyml run --config dev.yaml'
 
 # Staging
-alias uf-stage='uniflow run --config staging.yaml --stack staging'
+alias uf-stage='flowyml run --config staging.yaml --stack staging'
 
 # Production
-alias uf-prod='uniflow run --config prod.yaml --stack production'
+alias uf-prod='flowyml run --config prod.yaml --stack production'
 
 # Usage
 uf-dev pipeline.py
@@ -463,7 +463,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install uniflow[gcp]
+          pip install flowyml[gcp]
 
       - name: Run pipeline
         env:
@@ -471,7 +471,7 @@ jobs:
           GCP_BUCKET: ${{ secrets.GCP_BUCKET }}
           GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
         run: |
-          uniflow run training_pipeline.py \
+          flowyml run training_pipeline.py \
             --stack production \
             --resources gpu_training \
             --context experiment_name=github-${{ github.run_id }}
@@ -483,31 +483,31 @@ jobs:
 
 ```bash
 # Check installation
-pip show uniflow
+pip show flowyml
 
 # Reinstall
-pip install --force-reinstall uniflow
+pip install --force-reinstall flowyml
 ```
 
 ### Configuration Not Found
 
 ```bash
 # Specify custom path
-uniflow run pipeline.py --config /full/path/to/uniflow.yaml
+flowyml run pipeline.py --config /full/path/to/flowyml.yaml
 
 # Check current directory
 pwd
-ls -la uniflow.yaml
+ls -la flowyml.yaml
 ```
 
 ### Component Not Found
 
 ```bash
 # List what's registered
-uniflow component list
+flowyml component list
 
 # Load explicitly
-uniflow component load my_components
+flowyml component load my_components
 
 # Check Python path
 python -c "import my_components"
@@ -517,10 +517,10 @@ python -c "import my_components"
 
 ```bash
 # Show stack configuration
-uniflow stack show STACK_NAME
+flowyml stack show STACK_NAME
 
 # Dry run
-uniflow run pipeline.py --stack STACK_NAME --dry-run
+flowyml run pipeline.py --stack STACK_NAME --dry-run
 ```
 
 ## See Also

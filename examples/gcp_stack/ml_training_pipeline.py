@@ -5,10 +5,10 @@ This example demonstrates running a full machine learning training
 pipeline on Google Cloud Platform using Vertex AI.
 """
 
-from uniflow import Pipeline, step, Dataset, Model, Metrics
-from uniflow.stacks.gcp import GCPStack
-from uniflow.stacks.components import ResourceConfig, DockerConfig
-from uniflow.stacks.registry import StackRegistry
+from flowyml import Pipeline, step, Dataset, Model, Metrics
+from flowyml.stacks.gcp import GCPStack
+from flowyml.stacks.components import ResourceConfig, DockerConfig
+from flowyml.stacks.registry import StackRegistry
 import pandas as pd
 
 # Setup GCP stack

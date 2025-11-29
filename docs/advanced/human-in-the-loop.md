@@ -24,7 +24,7 @@ You can insert an `approval` step anywhere in your pipeline.
 The classic MLOps pattern: Train automatically, deploy manually.
 
 ```python
-from uniflow import Pipeline, step, approval
+from flowyml import Pipeline, step, approval
 
 pipeline = Pipeline("deployment_pipeline")
 
@@ -54,7 +54,7 @@ pipeline.add_step(deploy)
 When running locally (CLI), the pipeline will pause and prompt the user:
 
 ```bash
-$ uniflow run deployment_pipeline
+$ flowyml run deployment_pipeline
 
 ...
 [INFO] Step 'train' completed.

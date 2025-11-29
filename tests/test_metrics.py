@@ -1,7 +1,7 @@
 """Tests for metrics asset functionality."""
 
 import unittest
-from uniflow import Metrics
+from flowyml import Metrics
 from tests.base import BaseTestCase
 
 
@@ -61,7 +61,7 @@ class TestMetrics(BaseTestCase):
 
     def test_metrics_lineage(self):
         """Test metrics lineage from model."""
-        from uniflow import Model
+        from flowyml import Model
 
         model = Model.create(data={"weights": []}, name="test_model")
         metrics = Metrics.create(

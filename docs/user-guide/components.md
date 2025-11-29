@@ -2,7 +2,7 @@
 
 ## Overview
 
-UniFlow's stack system is built on a powerful plugin architecture that makes it easy to extend with custom components, integrate with existing tools, and even reuse components from the ZenML ecosystem.
+flowyml's stack system is built on a powerful plugin architecture that makes it easy to extend with custom components, integrate with existing tools, and even reuse components from the ZenML ecosystem.
 
 ## 📚 Table of Contents
 
@@ -95,16 +95,16 @@ Every component must:
 ### Example: Custom Orchestrator
 
 ```python
-from uniflow.stacks.components import Orchestrator, ResourceConfig, DockerConfig
-from uniflow.stacks.plugins import register_component
+from flowyml.stacks.components import Orchestrator, ResourceConfig, DockerConfig
+from flowyml.stacks.plugins import register_component
 from typing import Any
 
 @register_component
 class AirflowOrchestrator(Orchestrator):
     """
-    Apache Airflow orchestrator for UniFlow.
+    Apache Airflow orchestrator for flowyml.
 
-    Converts UniFlow pipelines to Airflow DAGs and manages execution.
+    Converts flowyml pipelines to Airflow DAGs and manages execution.
     """
 
     def __init__(
@@ -147,7 +147,7 @@ class AirflowOrchestrator(Orchestrator):
         Convert pipeline to Airflow DAG and execute.
 
         Args:
-            pipeline: UniFlow pipeline to execute
+            pipeline: flowyml pipeline to execute
             resources: Resource configuration (optional)
             docker_config: Docker configuration (optional)
             **kwargs: Additional arguments
@@ -162,7 +162,7 @@ class AirflowOrchestrator(Orchestrator):
         # Create Airflow DAG
         dag = DAG(
             dag_id=pipeline.name,
-            default_args={'owner': 'uniflow'},
+            default_args={'owner': 'flowyml'},
             start_date=datetime.now(),
             schedule_interval=None,
         )
@@ -182,7 +182,7 @@ class AirflowOrchestrator(Orchestrator):
             tasks[pipeline.steps[i].name] >> tasks[pipeline.steps[i+1].name]
 
         # Trigger DAG run
-        run_id = f"uniflow_{pipeline.run_id}"
+        run_id = f"flowyml_{pipeline.run_id}"
         dag.create_dagrun(run_id=run_id, state='running')
 
         return run_id
@@ -206,8 +206,8 @@ class AirflowOrchestrator(Orchestrator):
 ### Example: Custom Artifact Store
 
 ```python
-from uniflow.stacks.components import ArtifactStore
-from uniflow.stacks.plugins import register_component
+from flowyml.stacks.components import ArtifactStore
+from flowyml.stacks.plugins import register_component
 from typing import Any
 
 @register_component
@@ -223,7 +223,7 @@ class MinIOArtifactStore(ArtifactStore):
         self,
         name: str = "minio",
         endpoint: str = "localhost:9000",
-        bucket: str = "uniflow",
+        bucket: str = "flowyml",
         access_key: str = "",
         secret_key: str = "",
         secure: bool = False,
@@ -358,7 +358,7 @@ For **ContainerRegistry**:
 ### Method 1: Decorator (Recommended)
 
 ```python
-from uniflow.stacks.plugins import register_component
+from flowyml.stacks.plugins import register_component
 
 @register_component
 class MyComponent(Orchestrator):
@@ -378,7 +378,7 @@ class MyComponent(Orchestrator):
 ### Method 2: Manual Registration
 
 ```python
-from uniflow.stacks.plugins import get_component_registry
+from flowyml.stacks.plugins import get_component_registry
 
 class MyComponent(Orchestrator):
     pass
@@ -397,7 +397,7 @@ registry.register(MyComponent, "my_component")
 
 ```toml
 # pyproject.toml
-[project.entry-points."uniflow.stack_components"]
+[project.entry-points."flowyml.stack_components"]
 my_orchestrator = "my_package.components:MyOrchestrator"
 my_store = "my_package.stores:MyArtifactStore"
 ```
@@ -411,7 +411,7 @@ my_store = "my_package.stores:MyArtifactStore"
 ### Method 4: Dynamic Loading
 
 ```python
-from uniflow.stacks.plugins import load_component
+from flowyml.stacks.plugins import load_component
 
 # From module
 load_component("my_package.components")
@@ -434,7 +434,7 @@ load_component("zenml:zenml.orchestrators.kubernetes.KubernetesOrchestrator")
 ### In Configuration Files
 
 ```yaml
-# uniflow.yaml
+# flowyml.yaml
 stacks:
   custom_stack:
     type: local
@@ -459,8 +459,8 @@ resources:
 
 ```python
 from my_components import AirflowOrchestrator, MinIOArtifactStore
-from uniflow.stacks import Stack
-from uniflow.storage.metadata import SQLiteMetadataStore
+from flowyml.stacks import Stack
+from flowyml.storage.metadata import SQLiteMetadataStore
 
 # Create components
 orchestrator = AirflowOrchestrator(dag_folder="~/airflow/dags")
@@ -480,7 +480,7 @@ stack = Stack(
 )
 
 # Use with pipeline
-from uniflow import Pipeline
+from flowyml import Pipeline
 
 pipeline = Pipeline("my_pipeline", stack=stack)
 result = pipeline.run()
@@ -490,13 +490,13 @@ result = pipeline.run()
 
 ```bash
 # Load custom component
-uniflow component load my_components
+flowyml component load my_components
 
 # List available
-uniflow component list
+flowyml component list
 
 # Run with custom stack
-uniflow run pipeline.py --stack custom_stack
+flowyml run pipeline.py --stack custom_stack
 ```
 
 ## Publishing Components
@@ -504,13 +504,13 @@ uniflow run pipeline.py --stack custom_stack
 ### Package Structure
 
 ```
-uniflow-airflow/
+flowyml-airflow/
 ├── pyproject.toml
 ├── README.md
 ├── LICENSE
 ├── tests/
 │   └── test_orchestrator.py
-└── uniflow_airflow/
+└── flowyml_airflow/
     ├── __init__.py
     └── orchestrator.py
 ```
@@ -523,19 +523,19 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "uniflow-airflow"
+name = "flowyml-airflow"
 version = "0.1.0"
-description = "Apache Airflow orchestrator for UniFlow"
+description = "Apache Airflow orchestrator for flowyml"
 authors = [{name = "Your Name", email = "you@example.com"}]
 readme = "README.md"
 license = {text = "Apache-2.0"}
 requires-python = ">=3.8"
 dependencies = [
-    "uniflow>=0.1.0",
+    "flowyml>=0.1.0",
     "apache-airflow>=2.5.0",
 ]
 
-keywords = ["uniflow", "airflow", "ml", "orchestration", "plugin"]
+keywords = ["flowyml", "airflow", "ml", "orchestration", "plugin"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -543,15 +543,15 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/yourusername/uniflow-airflow"
-Documentation = "https://uniflow-airflow.readthedocs.io"
+Homepage = "https://github.com/yourusername/flowyml-airflow"
+Documentation = "https://flowyml-airflow.readthedocs.io"
 
 # Entry point registration
-[project.entry-points."uniflow.stack_components"]
-airflow = "uniflow_airflow.orchestrator:AirflowOrchestrator"
+[project.entry-points."flowyml.stack_components"]
+airflow = "flowyml_airflow.orchestrator:AirflowOrchestrator"
 
 [tool.hatch.build.targets.wheel]
-packages = ["uniflow_airflow"]
+packages = ["flowyml_airflow"]
 ```
 
 ### Publishing Workflow
@@ -564,7 +564,7 @@ python -m build
 2. **Test locally:**
 ```bash
 pip install -e .
-uniflow component list  # Should show your component
+flowyml component list  # Should show your component
 ```
 
 3. **Upload to PyPI:**
@@ -574,27 +574,27 @@ python -m twine upload dist/*
 
 4. **Users install:**
 ```bash
-pip install uniflow-airflow
+pip install flowyml-airflow
 # Component auto-available!
 ```
 
 ### README Template
 
 ```markdown
-# UniFlow Airflow Orchestrator
+# flowyml Airflow Orchestrator
 
-Apache Airflow orchestrator plugin for UniFlow.
+Apache Airflow orchestrator plugin for flowyml.
 
 ## Installation
 
 ```bash
-pip install uniflow-airflow
+pip install flowyml-airflow
 ```
 
 ## Usage
 
 ```yaml
-# uniflow.yaml
+# flowyml.yaml
 stacks:
   airflow_stack:
     orchestrator:
@@ -603,7 +603,7 @@ stacks:
 ```
 
 ```bash
-uniflow run pipeline.py --stack airflow_stack
+flowyml run pipeline.py --stack airflow_stack
 ```
 
 ## Configuration
@@ -621,7 +621,7 @@ Apache-2.0
 ### Wrapping ZenML Components
 
 ```python
-from uniflow.stacks.plugins import get_component_registry
+from flowyml.stacks.plugins import get_component_registry
 
 # Import ZenML component
 from zenml.integrations.kubernetes.orchestrators import KubernetesOrchestrator
@@ -639,7 +639,7 @@ registry.wrap_zenml_component(
 ### Via Configuration
 
 ```yaml
-# uniflow.yaml
+# flowyml.yaml
 components:
   - zenml: zenml.integrations.kubernetes.orchestrators.KubernetesOrchestrator
     name: k8s
@@ -659,8 +659,8 @@ stacks:
 
 ```python
 from zenml.client import Client
-from uniflow.stacks.plugins import get_component_registry
-from uniflow.stacks import Stack
+from flowyml.stacks.plugins import get_component_registry
+from flowyml.stacks import Stack
 
 # Get ZenML stack
 zenml_client = Client()
@@ -671,15 +671,15 @@ registry = get_component_registry()
 registry.wrap_zenml_component(zenml_stack.orchestrator, "orch")
 registry.wrap_zenml_component(zenml_stack.artifact_store, "store")
 
-# Create UniFlow stack
-uniflow_stack = Stack(
+# Create flowyml stack
+flowyml_stack = Stack(
     name=f"migrated_{zenml_stack.name}",
     orchestrator=registry.get_orchestrator("orch"),
     artifact_store=registry.get_artifact_store("store"),
     metadata_store=None,  # Use local
 )
 
-# Use with UniFlow pipelines!
+# Use with flowyml pipelines!
 ```
 
 ## API Reference
@@ -702,7 +702,7 @@ List all registered components.
 Load all components from a module.
 
 **`wrap_zenml_component(zenml_class, name)`**
-Wrap a ZenML component for UniFlow.
+Wrap a ZenML component for flowyml.
 
 ### Decorators
 
@@ -739,10 +739,10 @@ Load component from various sources.
 
 ```bash
 # List registered components
-uniflow component list
+flowyml component list
 
 # Load explicitly
-uniflow component load my_package.components
+flowyml component load my_package.components
 ```
 
 ### Import Errors
@@ -752,7 +752,7 @@ uniflow component load my_package.components
 python -c "import my_package.components"
 
 # Check entry points
-python -c "from importlib.metadata import entry_points; print(entry_points(group='uniflow.stack_components'))"
+python -c "from importlib.metadata import entry_points; print(entry_points(group='flowyml.stack_components'))"
 ```
 
 ### Validation Failures
@@ -772,9 +772,9 @@ except Exception as e:
 ## Examples
 
 See:
-- [`examples/custom_components/my_components.py`](https://github.com/UnicoLab/UniFlow/blob/main/examples/custom_components/my_components.py)
-- [`examples/custom_components/zenml_integration.py`](https://github.com/UnicoLab/UniFlow/blob/main/examples/custom_components/zenml_integration.py)
-- [`examples/custom_components/PACKAGE_TEMPLATE.md`](https://github.com/UnicoLab/UniFlow/blob/main/examples/custom_components/PACKAGE_TEMPLATE.md)
+- [`examples/custom_components/my_components.py`](https://github.com/UnicoLab/FlowyML/blob/main/examples/custom_components/my_components.py)
+- [`examples/custom_components/zenml_integration.py`](https://github.com/UnicoLab/FlowyML/blob/main/examples/custom_components/zenml_integration.py)
+- [`examples/custom_components/PACKAGE_TEMPLATE.md`](https://github.com/UnicoLab/FlowyML/blob/main/examples/custom_components/PACKAGE_TEMPLATE.md)
 
 ## Next Steps
 

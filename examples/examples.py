@@ -7,7 +7,7 @@
 
 def example_basic_pipeline():
     """Simple pipeline with automatic context injection."""
-    from uniflow import Pipeline, step, context
+    from flowyml import Pipeline, step, context
 
     # Define context
     ctx = context(
@@ -50,8 +50,8 @@ def example_basic_pipeline():
 
 def example_asset_pipeline():
     """Pipeline demonstrating asset-centric design."""
-    from uniflow import Pipeline, step, context
-    from uniflow.assets import Dataset, Model, Metrics
+    from flowyml import Pipeline, step, context
+    from flowyml.assets import Dataset, Model, Metrics
 
     ctx = context(
         data_path="./data/train.csv",
@@ -133,7 +133,7 @@ def example_asset_pipeline():
 
 def example_caching():
     """Demonstrate intelligent caching."""
-    from uniflow import Pipeline, step, context
+    from flowyml import Pipeline, step, context
     import time
 
     ctx = context(data_size=1000, threshold=0.5)
@@ -180,7 +180,7 @@ def example_caching():
 
 def example_experiment_tracking():
     """Demonstrate experiment tracking."""
-    from uniflow import Pipeline, step, context, Experiment
+    from flowyml import Pipeline, step, context, Experiment
 
     # Run multiple experiments with different parameters
     experiments_data = []
@@ -247,7 +247,7 @@ def example_experiment_tracking():
 
 def example_complex_pipeline():
     """Complex pipeline with multiple branches and assets."""
-    from uniflow import Pipeline, step, context, Dataset, Model
+    from flowyml import Pipeline, step, context, Dataset, Model
 
     ctx = context(
         data_path="./data",

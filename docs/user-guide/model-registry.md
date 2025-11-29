@@ -15,7 +15,7 @@ The **Model Registry** is a centralized repository for managing the lifecycle of
 You can register a model directly from your pipeline or script.
 
 ```python
-from uniflow import ModelRegistry, ModelStage
+from flowyml import ModelRegistry, ModelStage
 
 registry = ModelRegistry()
 
@@ -75,21 +75,21 @@ You can also manage models via the CLI:
 
 ```bash
 # List all models
-uniflow models list
+flowyml models list
 
 # List versions of a model
-uniflow models list sentiment_classifier
+flowyml models list sentiment_classifier
 
 # Promote a model
-uniflow models promote sentiment_classifier v1.0.0 --to production
+flowyml models promote sentiment_classifier v1.0.0 --to production
 ```
 
 ## Integration with Pipelines 🔌
 
-The Model Registry integrates seamlessly with UniFlow pipelines. You can use the `Model` asset type to automatically register models produced by steps.
+The Model Registry integrates seamlessly with flowyml pipelines. You can use the `Model` asset type to automatically register models produced by steps.
 
 ```python
-from uniflow import step, Model
+from flowyml import step, Model
 
 @step
 def train():

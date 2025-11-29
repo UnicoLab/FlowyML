@@ -1,6 +1,6 @@
-# Contributing to UniFlow 🤝
+# Contributing to flowyml 🤝
 
-We welcome contributions to UniFlow! Whether it's reporting a bug, improving documentation, or adding a new feature, your help is appreciated.
+We welcome contributions to flowyml! Whether it's reporting a bug, improving documentation, or adding a new feature, your help is appreciated.
 
 ## Development Setup 🛠️
 
@@ -13,8 +13,8 @@ We welcome contributions to UniFlow! Whether it's reporting a bug, improving doc
 
 1.  **Clone the repository**:
     ```bash
-    git clone https://github.com/uniflow-ai/uniflow.git
-    cd uniflow
+    git clone https://github.com/flowyml-ai/flowyml.git
+    cd flowyml
     ```
 
 2.  **Install dependencies**:
@@ -40,14 +40,14 @@ The UI consists of a FastAPI backend and a React frontend.
 1.  **Start the Backend**:
     ```bash
     # In one terminal
-    uniflow ui start --dev
+    flowyml ui start --dev
     ```
     This starts the FastAPI server on port 8000 with auto-reload.
 
 2.  **Start the Frontend**:
     ```bash
     # In another terminal
-    cd uniflow/ui/frontend
+    cd flowyml/ui/frontend
     npm install
     npm run dev
     ```
@@ -60,11 +60,11 @@ The frontend proxies API requests to the backend at `http://localhost:8000`.
 To build the frontend for production distribution:
 
 ```bash
-cd uniflow/ui/frontend
+cd flowyml/ui/frontend
 npm run build
 ```
 
-This generates static assets in `uniflow/ui/frontend/dist`, which are served by the Python backend in production mode.
+This generates static assets in `flowyml/ui/frontend/dist`, which are served by the Python backend in production mode.
 
 ## Testing 🧪
 
@@ -94,10 +94,10 @@ We follow PEP 8 and use `black` for formatting.
 
 ```bash
 # Format code
-black uniflow tests
+black flowyml tests
 
 # Check style
-flake8 uniflow tests
+flake8 flowyml tests
 ```
 
 ## Pull Request Process 🔀

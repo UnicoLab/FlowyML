@@ -1,6 +1,6 @@
 # Architecture 🏗️
 
-UniFlow is designed as a modular, layered system that separates pipeline definition, execution, storage, and visualization.
+flowyml is designed as a modular, layered system that separates pipeline definition, execution, storage, and visualization.
 
 ## High-Level Architecture 🗺️
 
@@ -60,7 +60,7 @@ The UI follows a decoupled client-server architecture.
 ## Data Flow 🔄
 
 1.  **Definition**: User defines `@pipeline` and `@step` functions.
-2.  **Compilation**: When `pipeline()` is called, UniFlow builds a DAG based on data dependencies.
+2.  **Compilation**: When `pipeline()` is called, flowyml builds a DAG based on data dependencies.
 3.  **Execution**:
     - Executor traverses the DAG topologically.
     - For each step:

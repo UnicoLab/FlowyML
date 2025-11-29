@@ -1,7 +1,7 @@
-# 🚀 UniFlow Quick Reference
+# 🚀 FlowyML Quick Reference
 
 > [!NOTE]
-> **What this page is**: A cheat sheet for common UniFlow commands and patterns. Perfect for bookmarking.
+> **What this page is**: A cheat sheet for common FlowyML commands and patterns. Perfect for bookmarking.
 >
 > **When to use it**: You know what you want to do, you just need the syntax.
 
@@ -9,14 +9,14 @@
 
 | I want to...  | Use this command |
 |---------------|------------------|
-| Create a new project | `uniflow init` |
-| Run a pipeline locally | `python pipeline.py` or `uniflow run pipeline.py` |
-| Run with different config | `uniflow run pipeline.py --context key=value` |
-| Deploy to production | `uniflow run pipeline.py --stack production` |
-| Use GPUs | `uniflow run pipeline.py --resources gpu_training` |
-| See what would run | `uniflow run pipeline.py --dry-run` |
-| List available stacks | `uniflow stack list` |
-| Start the web UI | `uniflow ui start` |
+| Create a new project | `flowyml init` |
+| Run a pipeline locally | `python pipeline.py` or `flowyml run pipeline.py` |
+| Run with different config | `flowyml run pipeline.py --context key=value` |
+| Deploy to production | `flowyml run pipeline.py --stack production` |
+| Use GPUs | `flowyml run pipeline.py --resources gpu_training` |
+| See what would run | `flowyml run pipeline.py --dry-run` |
+| List available stacks | `flowyml stack list` |
+| Start the web UI | `flowyml ui start` |
 
 ---
 
@@ -25,52 +25,52 @@
 ### Initialize Project
 
 ```bash
-uniflow init                    # Create uniflow.yaml in current directory
+flowyml init                    # Create flowyml.yaml in current directory
 ```
 
-**When to use**: Starting a new UniFlow project. Creates configuration scaffolding.
+**When to use**: Starting a new FlowyML project. Creates configuration scaffolding.
 
 ### Stack Management
 
 ```bash
-uniflow stack list             # List all configured stacks
-uniflow stack show STACK_NAME  # Show detailed stack configuration
-uniflow stack set-default NAME # Set which stack runs by default
+flowyml stack list             # List all configured stacks
+flowyml stack show STACK_NAME  # Show detailed stack configuration
+flowyml stack set-default NAME # Set which stack runs by default
 ```
 
 **When to use**: Managing multiple deployment targets (local, staging, production).
 
 > [!TIP]
-> **Pro tip**: Run `uniflow stack list` to verify your configuration before deploying to production.
+> **Pro tip**: Run `flowyml stack list` to verify your configuration before deploying to production.
 
 ### Run Pipelines
 
 ```bash
-# Basic run (uses default stack from uniflow.yaml)
-uniflow run pipeline.py
+# Basic run (uses default stack from flowyml.yaml)
+flowyml run pipeline.py
 
 # Specify stack
-uniflow run pipeline.py --stack production
-uniflow run pipeline.py -s production
+flowyml run pipeline.py --stack production
+flowyml run pipeline.py -s production
 
 # Specify resources
-uniflow run pipeline.py --resources gpu_training
-uniflow run pipeline.py -r gpu_training
+flowyml run pipeline.py --resources gpu_training
+flowyml run pipeline.py -r gpu_training
 
 # Pass context variables
-uniflow run pipeline.py --context data_path=/path/to/data
-uniflow run pipeline.py --context key1=val1 --context key2=val2
-uniflow run pipeline.py -ctx data_path=/path -ctx model_id=123
+flowyml run pipeline.py --context data_path=/path/to/data
+flowyml run pipeline.py --context key1=val1 --context key2=val2
+flowyml run pipeline.py -ctx data_path=/path -ctx model_id=123
 
 # Custom config file
-uniflow run pipeline.py --config custom.yaml
-uniflow run pipeline.py -c custom.yaml
+flowyml run pipeline.py --config custom.yaml
+flowyml run pipeline.py -c custom.yaml
 
 # Dry run (show what would be executed)
-uniflow run pipeline.py --stack production --dry-run
+flowyml run pipeline.py --stack production --dry-run
 
 # Combined example
-uniflow run pipeline.py --stack production --resources gpu_training --context data_path=gs://bucket/data.csv
+flowyml run pipeline.py --stack production --resources gpu_training --context data_path=gs://bucket/data.csv
 ```
 
 **Decision guide**:
@@ -79,7 +79,7 @@ uniflow run pipeline.py --stack production --resources gpu_training --context da
 - Use `--context` to override parameters without changing code
 - Use `--dry-run` to verify configuration before expensive runs
 
-## Configuration File (uniflow.yaml)
+## Configuration File (flowyml.yaml)
 
 ### Minimal Configuration
 ```yaml
@@ -97,9 +97,9 @@ stacks:
   local:
     type: local
     artifact_store:
-      path: .uniflow/artifacts
+      path: .flowyml/artifacts
     metadata_store:
-      path: .uniflow/metadata.db
+      path: .flowyml/metadata.db
 
   production:
     type: gcp
@@ -148,7 +148,7 @@ GCP_BUCKET=my-artifacts
 GCP_SERVICE_ACCOUNT=my-sa@project.iam.gserviceaccount.com
 ```
 
-Reference in `uniflow.yaml`:
+Reference in `flowyml.yaml`:
 ```yaml
 stacks:
   production:
@@ -158,7 +158,7 @@ stacks:
 ## Pipeline Code (Clean & Simple)
 
 ```python
-from uniflow import Pipeline, step, context
+from flowyml import Pipeline, step, context
 
 @step(outputs=["result"])
 def my_step(input_data: str):
@@ -181,19 +181,19 @@ if __name__ == "__main__":
 
 ```bash
 # 1. Develop locally
-uniflow run train.py
+flowyml run train.py
 
 # 2. Test on staging
-uniflow run train.py --stack staging
+flowyml run train.py --stack staging
 
 # 3. Deploy to production
-uniflow run train.py --stack production --resources gpu_training
+flowyml run train.py --stack production --resources gpu_training
 ```
 
 ### Different Regions
 
 ```yaml
-# uniflow.yaml
+# flowyml.yaml
 stacks:
   us-prod:
     type: gcp
@@ -206,16 +206,16 @@ stacks:
 
 ```bash
 # Deploy to US
-uniflow run pipeline.py --stack us-prod
+flowyml run pipeline.py --stack us-prod
 
 # Deploy to EU
-uniflow run pipeline.py --stack eu-prod
+flowyml run pipeline.py --stack eu-prod
 ```
 
 ### GPU vs CPU Workloads
 
 ```yaml
-# uniflow.yaml
+# flowyml.yaml
 resources:
   cpu_only:
     cpu: "4"
@@ -230,10 +230,10 @@ resources:
 
 ```bash
 # CPU workload
-uniflow run preprocess.py --resources cpu_only
+flowyml run preprocess.py --resources cpu_only
 
 # GPU training
-uniflow run train.py --resources gpu_large
+flowyml run train.py --resources gpu_large
 ```
 
 ## Docker Patterns
@@ -272,17 +272,17 @@ docker:
 
 ```bash
 # Basic
-pip install uniflow
+pip install flowyml
 
 # With GCP support
-pip install uniflow[gcp]
+pip install flowyml[gcp]
 
 # With ML frameworks
-pip install uniflow[tensorflow]
-pip install uniflow[pytorch]
+pip install flowyml[tensorflow]
+pip install flowyml[pytorch]
 
 # Everything
-pip install uniflow[all]
+pip install flowyml[all]
 ```
 
 ## Troubleshooting
@@ -290,16 +290,16 @@ pip install uniflow[all]
 ### "Stack not found"
 ```bash
 # Check available stacks
-uniflow stack list
+flowyml stack list
 
 # Verify config file
-cat uniflow.yaml
+cat flowyml.yaml
 ```
 
 ### "Missing dependencies"
 ```bash
 # Install required extras
-pip install uniflow[gcp]
+pip install flowyml[gcp]
 ```
 
 ---
@@ -312,13 +312,13 @@ pip install uniflow[gcp]
 
 ```bash
 # 1. Develop and test locally
-uniflow run train.py
+flowyml run train.py
 
 # 2. Verify on staging with production-like resources
-uniflow run train.py --stack staging --resources gpu_small
+flowyml run train.py --stack staging --resources gpu_small
 
 # 3. Deploy to production with full resources
-uniflow run train.py --stack production --resources gpu_large
+flowyml run train.py --stack production --resources gpu_large
 ```
 
 **Why this pattern works**: Same code, different infrastructure. Zero rewrites.
@@ -328,7 +328,7 @@ uniflow run train.py --stack production --resources gpu_large
 **Goal**: Deploy the same pipeline to different cloud regions.
 
 ```yaml
-# uniflow.yaml
+# flowyml.yaml
 stacks:
   us-prod:
     type: gcp
@@ -340,10 +340,10 @@ stacks:
 
 ```bash
 # Deploy to US region
-uniflow run pipeline.py --stack us-prod
+flowyml run pipeline.py --stack us-prod
 
 # Deploy to EU region
-uniflow run pipeline.py --stack eu-prod
+flowyml run pipeline.py --stack eu-prod
 ```
 
 **Why this pattern works**: Data residency compliance, latency optimization, disaster recovery.
@@ -353,7 +353,7 @@ uniflow run pipeline.py --stack eu-prod
 **Goal**: Run preprocessing on CPU, training on GPU.
 
 ```yaml
-# uniflow.yaml
+# flowyml.yaml
 resources:
   cpu_only:
     cpu: "4"
@@ -367,10 +367,10 @@ resources:
 
 ```bash
 # Step 1: Preprocess data (CPU only)
-uniflow run preprocess.py --resources cpu_only
+flowyml run preprocess.py --resources cpu_only
 
 # Step 2: Train model (GPU required)
-uniflow run train.py --resources gpu_large
+flowyml run train.py --resources gpu_large
 ```
 
 **Why this pattern works**: Optimize costs — only pay for GPUs when you actually need them.
@@ -438,23 +438,23 @@ docker:
 
 ```bash
 # Check what stacks you have
-uniflow stack list
+flowyml stack list
 
 # Verify config file exists and is valid
-cat uniflow.yaml
+cat flowyml.yaml
 
 # Set a default stack if none is set
-uniflow stack set-default local
+flowyml stack set-default local
 ```
 
 ### "Missing dependencies"
 
 ```bash
 # Install required extras for GCP
-pip install "uniflow[gcp]"
+pip install "flowyml[gcp]"
 
 # Or install everything
-pip install "uniflow[all]"
+pip install "flowyml[all]"
 ```
 
 ### "Permission denied" on GCP
@@ -479,10 +479,10 @@ gcloud auth list
 **Solution pattern**:
 ```bash
 # Test with dry-run first
-uniflow run pipeline.py --stack production --dry-run
+flowyml run pipeline.py --stack production --dry-run
 
 # Check the generated Docker image
-docker images | grep uniflow
+docker images | grep flowyml
 
 # Test the Docker image locally
 docker run -it <image-id> /bin/bash
@@ -492,8 +492,8 @@ docker run -it <image-id> /bin/bash
 
 ## ✅ Pro Tips
 
-1. **Use `uniflow init` to start new projects** — Creates proper structure
-2. **Store `uniflow.yaml` in version control** — Reproducible deployments
+1. **Use `flowyml init` to start new projects** — Creates proper structure
+2. **Store `flowyml.yaml` in version control** — Reproducible deployments
 3. **Use `.env` for secrets** — Never commit credentials!
 4. **Define resource presets for common workloads** — Consistency across team
 5. **Use `--dry-run` to verify configuration** — Catch errors before expensive runs

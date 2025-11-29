@@ -1,10 +1,10 @@
 """Tests for step grouping functionality."""
 
 import pytest
-from uniflow.core.step import step
-from uniflow.core.pipeline import Pipeline
-from uniflow.core.resources import ResourceRequirements, GPUConfig
-from uniflow.core.step_grouping import StepGroupAnalyzer, get_execution_units
+from flowyml.core.step import step
+from flowyml.core.pipeline import Pipeline
+from flowyml.core.resources import ResourceRequirements, GPUConfig
+from flowyml.core.step_grouping import StepGroupAnalyzer, get_execution_units
 
 
 class TestStepGrouping:
@@ -347,7 +347,7 @@ class TestExecutionUnits:
         # Should have 2 units: 1 group + 1 ungrouped step
         assert len(units) == 2
 
-        from uniflow.core.step_grouping import StepGroup
+        from flowyml.core.step_grouping import StepGroup
 
         assert isinstance(units[0], StepGroup)
         assert isinstance(units[1], type(step_c))

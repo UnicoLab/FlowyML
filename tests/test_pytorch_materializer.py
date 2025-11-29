@@ -10,7 +10,7 @@ try:
     import torch
     import torch.nn as nn
     import torch.nn.functional as F
-    from uniflow.storage.materializers.pytorch import PyTorchMaterializer
+    from flowyml.storage.materializers.pytorch import PyTorchMaterializer
 
     HAS_PYTORCH = True
 except ImportError:

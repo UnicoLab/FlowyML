@@ -2,13 +2,13 @@
 
 ## Overview
 
-UniFlow now supports **complete separation** between pipeline logic and infrastructure configuration. Your pipeline code remains clean and infrastructure-agnostic.
+flowyml now supports **complete separation** between pipeline logic and infrastructure configuration. Your pipeline code remains clean and infrastructure-agnostic.
 
 ## Key Improvements
 
 ### ✨ Configuration-Driven
 
-All infrastructure is defined in `uniflow.yaml`:
+All infrastructure is defined in `flowyml.yaml`:
 
 ```yaml
 stacks:
@@ -33,18 +33,18 @@ Run the same pipeline on different stacks without code changes:
 
 ```bash
 # Development
-uniflow run pipeline.py
+flowyml run pipeline.py
 
 # Production
-uniflow run pipeline.py --stack production
+flowyml run pipeline.py --stack production
 
 # With GPU resources
-uniflow run pipeline.py --stack production --resources gpu_training
+flowyml run pipeline.py --stack production --resources gpu_training
 ```
 
 ### 📦 Auto-Detection
 
-UniFlow automatically detects:
+flowyml automatically detects:
 - ✅ Existing `Dockerfile`
 - ✅ `pyproject.toml` for Poetry
 - ✅ `requirements.txt`
@@ -54,8 +54,8 @@ UniFlow automatically detects:
 
 **Before (Tightly Coupled):**
 ```python
-from uniflow.stacks.gcp import GCPStack
-from uniflow.stacks.components import ResourceConfig, DockerConfig
+from flowyml.stacks.gcp import GCPStack
+from flowyml.stacks.components import ResourceConfig, DockerConfig
 
 # Infrastructure hardcoded in pipeline!
 stack = GCPStack(project_id="...", bucket_name="...")
@@ -73,7 +73,7 @@ pipeline = Pipeline("my_pipeline")
 result = pipeline.run()
 
 # Infrastructure configured externally via:
-# - uniflow.yaml
+# - flowyml.yaml
 # - CLI flags
 # - Environment variables
 ```
@@ -83,14 +83,14 @@ result = pipeline.run()
 ### 1. Initialize Configuration
 
 ```bash
-uniflow init
+flowyml init
 ```
 
-Creates `uniflow.yaml` with sensible defaults.
+Creates `flowyml.yaml` with sensible defaults.
 
 ### 2. Configure Stacks
 
-Edit `uniflow.yaml`:
+Edit `flowyml.yaml`:
 
 ```yaml
 stacks:
@@ -112,7 +112,7 @@ stacks:
 
 ```python
 # pipeline.py
-from uniflow import Pipeline, step
+from flowyml import Pipeline, step
 
 @step
 def process_data(input_path: str):
@@ -127,13 +127,13 @@ pipeline.add_step(process_data)
 
 ```bash
 # Development
-uniflow run pipeline.py --context input_path=local/data.csv
+flowyml run pipeline.py --context input_path=local/data.csv
 
 # Staging
-uniflow run pipeline.py --stack staging --context input_path=gs://staging/data.csv
+flowyml run pipeline.py --stack staging --context input_path=gs://staging/data.csv
 
 # Production
-uniflow run pipeline.py --stack production --context input_path=gs://prod/data.csv
+flowyml run pipeline.py --stack production --context input_path=gs://prod/data.csv
 ```
 
 ## Environment Variables
@@ -147,7 +147,7 @@ GCP_BUCKET=my-artifacts
 GCP_SERVICE_ACCOUNT=my-sa@project.iam.gserviceaccount.com
 ```
 
-Reference in `uniflow.yaml`:
+Reference in `flowyml.yaml`:
 
 ```yaml
 stacks:
@@ -160,7 +160,7 @@ stacks:
 
 ### Option 1: Existing Dockerfile
 
-UniFlow automatically uses it:
+flowyml automatically uses it:
 
 ```yaml
 docker:
@@ -192,35 +192,35 @@ docker:
 
 ```bash
 # List configured stacks
-uniflow stack list
+flowyml stack list
 
 # Show stack details
-uniflow stack show production
+flowyml stack show production
 
 # Set default stack
-uniflow stack set-default production
+flowyml stack set-default production
 ```
 
 ### Running Pipelines
 
 ```bash
 # Basic run
-uniflow run pipeline.py
+flowyml run pipeline.py
 
 # Specify stack
-uniflow run pipeline.py --stack production
+flowyml run pipeline.py --stack production
 
 # Specify resources
-uniflow run pipeline.py --resources gpu_training
+flowyml run pipeline.py --resources gpu_training
 
 # Pass context
-uniflow run pipeline.py --context key1=value1 --context key2=value2
+flowyml run pipeline.py --context key1=value1 --context key2=value2
 
 # Dry run (show configuration)
-uniflow run pipeline.py --stack production --dry-run
+flowyml run pipeline.py --stack production --dry-run
 
 # Custom config file
-uniflow run pipeline.py --config custom.yaml
+flowyml run pipeline.py --config custom.yaml
 ```
 
 ## Benefits
@@ -248,8 +248,8 @@ uniflow run pipeline.py --config custom.yaml
 ### Old Style (Coupled)
 
 ```python
-from uniflow import Pipeline
-from uniflow.stacks.gcp import GCPStack
+from flowyml import Pipeline
+from flowyml.stacks.gcp import GCPStack
 
 stack = GCPStack(
     project_id="my-project",
@@ -261,7 +261,7 @@ pipeline = Pipeline("my_pipeline", stack=stack)
 
 ### New Style (Decoupled)
 
-1. Create `uniflow.yaml`:
+1. Create `flowyml.yaml`:
 ```yaml
 stacks:
   production:
@@ -272,15 +272,15 @@ stacks:
 
 2. Simplify pipeline:
 ```python
-from uniflow import Pipeline
+from flowyml import Pipeline
 
 pipeline = Pipeline("my_pipeline")
-# Stack loaded from uniflow.yaml
+# Stack loaded from flowyml.yaml
 ```
 
 3. Run with CLI:
 ```bash
-uniflow run pipeline.py --stack production
+flowyml run pipeline.py --stack production
 ```
 
 ## Advanced Patterns
@@ -334,24 +334,24 @@ stacks:
 
 ```bash
 # Development
-uniflow run pipeline.py --config dev.yaml
+flowyml run pipeline.py --config dev.yaml
 
 # Production
-uniflow run pipeline.py --config prod.yaml
+flowyml run pipeline.py --config prod.yaml
 ```
 
 ## Best Practices
 
 1. ✅ **Never hardcode infrastructure in pipeline code**
-2. ✅ **Use uniflow.yaml for all stack configuration**
+2. ✅ **Use flowyml.yaml for all stack configuration**
 3. ✅ **Use environment variables for secrets**
 4. ✅ **Define resource presets for common workloads**
-5. ✅ **Version control uniflow.yaml (without secrets)**
+5. ✅ **Version control flowyml.yaml (without secrets)**
 6. ✅ **Use .env for local development secrets**
 7. ✅ **Document required environment variables**
 
 ## Next Steps
 
-- See [examples/clean_pipeline.py](https://github.com/UnicoLab/UniFlow/blob/main/examples/clean_pipeline.py) for a complete example
+- See [examples/clean_pipeline.py](https://github.com/UnicoLab/FlowyML/blob/main/examples/clean_pipeline.py) for a complete example
 - Read [Stack Architecture](../architecture/stacks.md) for deep dive
-- Check [GCP Stack Guide](https://github.com/UnicoLab/UniFlow/tree/main/examples/gcp_stack/README.md) for cloud deployment
+- Check [GCP Stack Guide](https://github.com/UnicoLab/FlowyML/tree/main/examples/gcp_stack/README.md) for cloud deployment

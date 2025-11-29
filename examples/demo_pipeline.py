@@ -1,7 +1,7 @@
 """
-UniFlow Comprehensive Demo Pipeline.
+flowyml Comprehensive Demo Pipeline.
 
-This example demonstrates the core features of UniFlow:
+This example demonstrates the core features of flowyml:
 - Pipeline creation and execution
 - Step definition with @step decorator
 - Automatic context injection
@@ -12,7 +12,7 @@ This example demonstrates the core features of UniFlow:
 
 Usage:
     1. Ensure the UI server is running (optional but recommended):
-       $ uniflow ui start
+       $ flowyml ui start
 
     2. Run this script:
        $ python examples/demo_pipeline.py
@@ -24,16 +24,16 @@ import time
 import random
 import logging
 
-from uniflow import Pipeline, step, context
-from uniflow.assets.dataset import Dataset
-from uniflow.assets.model import Model
-from uniflow.assets.metrics import Metrics
-from uniflow.assets.featureset import FeatureSet
-from uniflow.monitoring.alerts import alert_manager, AlertLevel
+from flowyml import Pipeline, step, context
+from flowyml.assets.dataset import Dataset
+from flowyml.assets.model import Model
+from flowyml.assets.metrics import Metrics
+from flowyml.assets.featureset import FeatureSet
+from flowyml.monitoring.alerts import alert_manager, AlertLevel
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("uniflow.demo")
+logger = logging.getLogger("flowyml.demo")
 
 # 1. Define Context
 # These parameters will be automatically injected into steps that request them
@@ -181,12 +181,12 @@ def deploy_model(model: Model, min_accuracy: float):
 
 
 def main():
-    print("🌊 Initializing UniFlow Demo Pipeline...")
+    print("🌊 Initializing flowyml Demo Pipeline...")
 
     # Create pipeline with context
     pipeline = Pipeline("churn_prediction_demo", context=ctx)
 
-    # Add steps (order doesn't matter, UniFlow builds the DAG based on inputs/outputs)
+    # Add steps (order doesn't matter, flowyml builds the DAG based on inputs/outputs)
     pipeline.add_step(load_data)
     pipeline.add_step(preprocess)
     pipeline.add_step(train_model)

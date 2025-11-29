@@ -2,19 +2,19 @@
 
 # Add this section to your custom component package's pyproject.toml
 
-[project.entry-points."uniflow.stack_components"]
+[project.entry-points."flowyml.stack_components"]
 # Format: component_name = "module.path:ClassName"
 
 # Example orchestrators
-airflow = "uniflow_airflow:AirflowOrchestrator"
-kubeflow = "uniflow_kubeflow:KubeflowOrchestrator"
+airflow = "flowyml_airflow:AirflowOrchestrator"
+kubeflow = "flowyml_kubeflow:KubeflowOrchestrator"
 
 # Example artifact stores
-minio = "uniflow_minio:MinIOArtifactStore"
-azure_blob = "uniflow_azure:AzureBlobStore"
+minio = "flowyml_minio:MinIOArtifactStore"
+azure_blob = "flowyml_azure:AzureBlobStore"
 
 # Example container registries
-docker_hub = "uniflow_docker:DockerHubRegistry"
+docker_hub = "flowyml_docker:DockerHubRegistry"
 
 # Your custom components
 # my_component = "my_package.components:MyComponent"

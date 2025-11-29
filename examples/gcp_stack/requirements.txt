@@ -1,5 +1,7 @@
 # GCP Stack Example Requirements
 
+# Core flowyml with GCP support
+flowyml[gcp]
 numpy>=1.24.0
 # OR
 # torch>=2.0.0
@@ -11,5 +13,3 @@ pandas>=2.0.0
 
 # ML frameworks (choose what you need)
 tensorflow>=2.12.0
-# Core UniFlow with GCP support
-uniflow[gcp]

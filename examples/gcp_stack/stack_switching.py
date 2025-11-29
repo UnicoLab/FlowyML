@@ -5,10 +5,10 @@ This example shows how to easily switch between local development
 and cloud production environments.
 """
 
-from uniflow import Pipeline, step
-from uniflow.stacks import LocalStack
-from uniflow.stacks.gcp import GCPStack
-from uniflow.stacks.registry import StackRegistry
+from flowyml import Pipeline, step
+from flowyml.stacks import LocalStack
+from flowyml.stacks.gcp import GCPStack
+from flowyml.stacks.registry import StackRegistry
 import os
 
 # Create registry

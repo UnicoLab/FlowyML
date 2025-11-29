@@ -2,8 +2,8 @@
 
 import unittest
 from datetime import datetime
-from uniflow import Dataset, Model, Metrics
-from uniflow.assets.base import Asset, AssetMetadata
+from flowyml import Dataset, Model, Metrics
+from flowyml.assets.base import Asset, AssetMetadata
 from tests.base import BaseTestCase
 
 

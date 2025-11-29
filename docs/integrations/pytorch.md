@@ -1,13 +1,13 @@
 # PyTorch Integration 🔥
 
-Dynamic neural networks, orchestrated by UniFlow.
+Dynamic neural networks, orchestrated by flowyml.
 
 > [!NOTE]
 > **What you'll learn**: How to manage PyTorch training loops and models
 >
-> **Key insight**: UniFlow handles the artifacts so you can focus on the gradients.
+> **Key insight**: flowyml handles the artifacts so you can focus on the gradients.
 
-## Why PyTorch + UniFlow?
+## Why PyTorch + flowyml?
 
 - **Custom Materializers**: Save/load models and DataLoaders automatically.
 - **Reproducibility**: Track random seeds and hyperparameters.
@@ -19,7 +19,7 @@ Wrap your training loop in a step.
 
 ```python
 import torch
-from uniflow import step
+from flowyml import step
 
 @step
 def train(dataloader, model, epochs):
@@ -37,7 +37,7 @@ def train(dataloader, model, epochs):
 
 ## 💾 Saving Models
 
-UniFlow automatically uses `torch.save` when you return a `nn.Module`.
+flowyml automatically uses `torch.save` when you return a `nn.Module`.
 
 ```python
 # In your materializer config (auto-detected usually)

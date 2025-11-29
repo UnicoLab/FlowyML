@@ -1,6 +1,6 @@
 # Examples 📚
 
-This page provides comprehensive working examples showcasing UniFlow's features. All examples are available in the [`examples/`](https://github.com/uniflow/uniflow/tree/main/examples) directory.
+This page provides comprehensive working examples showcasing flowyml's features. All examples are available in the [`examples/`](https://github.com/flowyml/flowyml/tree/main/examples) directory.
 
 ## Quick Start Examples
 
@@ -9,7 +9,7 @@ This page provides comprehensive working examples showcasing UniFlow's features.
 A minimal pipeline demonstrating the basics:
 
 ```python
-from uniflow import Pipeline, step
+from flowyml import Pipeline, step
 
 @step(outputs=["numbers"])
 def generate_numbers():
@@ -28,14 +28,14 @@ result = pipeline.run()
 print(f"Result: {result.outputs['doubled']}")
 ```
 
-📄 **Full example**: [`examples/simple_pipeline.py`](https://github.com/uniflow/uniflow/blob/main/examples/simple_pipeline.py)
+📄 **Full example**: [`examples/simple_pipeline.py`](https://github.com/flowyml/flowyml/blob/main/examples/simple_pipeline.py)
 
 ### ETL Pipeline
 
 Extract, Transform, Load pattern with caching:
 
 ```python
-from uniflow import Pipeline, step, context
+from flowyml import Pipeline, step, context
 import pandas as pd
 
 @step(outputs=["raw_data"], cache="code_hash")
@@ -63,14 +63,14 @@ pipeline.add_step(load)
 result = pipeline.run()
 ```
 
-📄 **Full example**: [`examples/clean_pipeline.py`](https://github.com/uniflow/uniflow/blob/main/examples/clean_pipeline.py)
+📄 **Full example**: [`examples/clean_pipeline.py`](https://github.com/flowyml/flowyml/blob/main/examples/clean_pipeline.py)
 
 ## Machine Learning Examples
 
 ### Training Pipeline with Context
 
 ```python
-from uniflow import Pipeline, step, context
+from flowyml import Pipeline, step, context
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 
@@ -123,7 +123,7 @@ print(f"Model accuracy: {result.outputs['metrics']['accuracy']:.2%}")
 Demonstrates intelligent caching strategies:
 
 ```python
-from uniflow import Pipeline, step
+from flowyml import Pipeline, step
 import time
 
 @step(cache="code_hash")
@@ -154,14 +154,14 @@ result1 = pipeline.run()
 result2 = pipeline.run()
 ```
 
-📄 **Full example**: [`examples/caching_pipeline.py`](https://github.com/uniflow/uniflow/blob/main/examples/caching_pipeline.py)
+📄 **Full example**: [`examples/caching_pipeline.py`](https://github.com/flowyml/flowyml/blob/main/examples/caching_pipeline.py)
 
 ### Conditional Pipeline
 
 Use conditional execution based on runtime data:
 
 ```python
-from uniflow import Pipeline, step, when, unless
+from flowyml import Pipeline, step, when, unless
 
 @step(outputs=["data_quality"])
 def check_quality():
@@ -187,14 +187,14 @@ pipeline.add_step(log_issues)
 result = pipeline.run()
 ```
 
-📄 **Full example**: [`examples/conditional_pipeline.py`](https://github.com/uniflow/uniflow/blob/main/examples/conditional_pipeline.py)
+📄 **Full example**: [`examples/conditional_pipeline.py`](https://github.com/flowyml/flowyml/blob/main/examples/conditional_pipeline.py)
 
 ## Working with Stacks
 
 ### Local Stack Example
 
 ```python
-from uniflow import Pipeline, step, LocalStack
+from flowyml import Pipeline, step, LocalStack
 
 # Create a local stack with custom paths
 stack = LocalStack(
@@ -217,8 +217,8 @@ result = pipeline.run()
 ### GCP Stack Example
 
 ```python
-from uniflow import Pipeline, step
-from uniflow.stacks.gcp import GCPStack
+from flowyml import Pipeline, step
+from flowyml.stacks.gcp import GCPStack
 
 # Configure GCP stack
 stack = GCPStack(
@@ -242,14 +242,14 @@ pipeline.add_step(train_on_gcp)
 result = pipeline.run()
 ```
 
-📂 **Full example**: [`examples/gcp_stack/`](https://github.com/uniflow/uniflow/tree/main/examples/gcp_stack)
+📂 **Full example**: [`examples/gcp_stack/`](https://github.com/flowyml/flowyml/tree/main/examples/gcp_stack)
 
 ## UI Integration
 
 ### Real-time Monitoring
 
 ```python
-from uniflow import Pipeline, step
+from flowyml import Pipeline, step
 import time
 
 @step(outputs=["data"])
@@ -262,7 +262,7 @@ def process(data):
     time.sleep(3)  # Simulate work
     return [x * 2 for x in data]
 
-# Start UI first: uniflow ui start
+# Start UI first: flowyml ui start
 pipeline = Pipeline("ui_demo")
 pipeline.add_step(load_data)
 pipeline.add_step(process)
@@ -271,20 +271,20 @@ pipeline.add_step(process)
 result = pipeline.run(debug=True)
 ```
 
-📄 **Full example**: [`examples/simple_pipeline_ui.py`](https://github.com/uniflow/uniflow/blob/main/examples/simple_pipeline_ui.py)
+📄 **Full example**: [`examples/simple_pipeline_ui.py`](https://github.com/flowyml/flowyml/blob/main/examples/simple_pipeline_ui.py)
 
 ### Complete UI Integration
 
 Full-featured example with metrics, artifacts, and visualization:
 
-📄 **Full example**: [`examples/ui_integration_example.py`](https://github.com/uniflow/uniflow/blob/main/examples/ui_integration_example.py)
+📄 **Full example**: [`examples/ui_integration_example.py`](https://github.com/flowyml/flowyml/blob/main/examples/ui_integration_example.py)
 
 ## Custom Components
 
 ### Custom Executor
 
 ```python
-from uniflow import Executor, ExecutionResult
+from flowyml import Executor, ExecutionResult
 
 class BatchExecutor(Executor):
     """Custom executor that batches operations."""
@@ -303,7 +303,7 @@ class BatchExecutor(Executor):
 pipeline = Pipeline("custom", executor=BatchExecutor())
 ```
 
-📂 **Full example**: [`examples/custom_components/`](https://github.com/uniflow/uniflow/tree/main/examples/custom_components)
+📂 **Full example**: [`examples/custom_components/`](https://github.com/flowyml/flowyml/tree/main/examples/custom_components)
 
 ## Production Patterns
 
@@ -312,8 +312,8 @@ pipeline = Pipeline("custom", executor=BatchExecutor())
 End-to-end machine learning workflow with all features:
 
 ```python
-from uniflow import Pipeline, step, context, LocalStack
-from uniflow import Dataset, Model, Metrics
+from flowyml import Pipeline, step, context, LocalStack
+from flowyml import Dataset, Model, Metrics
 
 ctx = context(
     data_path="data/training.csv",
@@ -377,7 +377,7 @@ if result.success:
     print(f"  Accuracy: {result.outputs['metrics'].accuracy:.2%}")
 ```
 
-📄 **Full example**: [`examples/demo_pipeline.py`](https://github.com/uniflow/uniflow/blob/main/examples/demo_pipeline.py)
+📄 **Full example**: [`examples/demo_pipeline.py`](https://github.com/flowyml/flowyml/blob/main/examples/demo_pipeline.py)
 
 ## Running Examples
 
@@ -385,8 +385,8 @@ if result.success:
 
 ```bash
 # Clone repository
-git clone https://github.com/uniflow/uniflow.git
-cd uniflow
+git clone https://github.com/flowyml/flowyml.git
+cd flowyml
 
 # Install with examples dependencies
 pip install -e ".[examples]"
@@ -402,7 +402,7 @@ poetry install --extras examples
 python examples/simple_pipeline.py
 
 # Run with UI
-uniflow ui start  # In one terminal
+flowyml ui start  # In one terminal
 python examples/simple_pipeline_ui.py  # In another
 ```
 
@@ -435,4 +435,4 @@ All examples are designed to be modified and extended. Try:
 - **[API Reference](api/core.md)**: Explore all available APIs
 - **[Contributing](contributing.md)**: Add your own examples!
 
-Have questions? [Open an issue](https://github.com/uniflow/uniflow/issues) or join our community!
+Have questions? [Open an issue](https://github.com/flowyml/flowyml/issues) or join our community!

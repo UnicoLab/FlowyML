@@ -3,8 +3,8 @@
 import sys
 from unittest.mock import MagicMock
 
-from uniflow.stacks.components import Orchestrator
-from uniflow.stacks.plugins import get_component_registry
+from flowyml.stacks.components import Orchestrator
+from flowyml.stacks.plugins import get_component_registry
 
 # Mock Airflow modules
 mock_airflow = MagicMock()

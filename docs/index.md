@@ -1,21 +1,21 @@
-# Welcome to UniFlow 🌊
+# Welcome to FlowyML 🌊
 
 <p align="center">
-  <img src="logo.png" width="350" alt="UniFlow Logo"/>
+  <img src="logo.png" width="350" alt="flowyml Logo"/>
   <br>
   <em>The Enterprise-Grade ML Pipeline Framework for Humans</em>
 </p>
 
 ---
 
-**UniFlow** is a production-ready ML pipeline orchestration framework that bridges the gap between rapid experimentation and enterprise deployment. Write pipelines as simple Python scripts, then scale them to production without rewriting a single line.
+**FlowyML** is a production-ready ML pipeline orchestration framework that bridges the gap between rapid experimentation and enterprise deployment. Write pipelines as simple Python scripts, then scale them to production without rewriting a single line.
 
 > [!TIP]
-> **The promise**: Go from notebook to production in hours, not weeks. UniFlow handles orchestration, caching, versioning, and monitoring — so you can focus on ML, not infrastructure.
+> **The promise**: Go from notebook to production in hours, not weeks. FlowyML handles orchestration, caching, versioning, and monitoring — so you can focus on ML, not infrastructure.
 
-## 🎯 Why UniFlow?
+## 🎯 Why FlowyML?
 
-### The Problem UniFlow Solves
+### The Problem FlowyML Solves
 
 Most ML teams face the same painful trade-offs:
 
@@ -24,9 +24,9 @@ Most ML teams face the same painful trade-offs:
 - **Orchestration frameworks** force you into rigid patterns or obscure DSLs
 - **Experiment tracking** is disconnected from execution and deployment
 
-**UniFlow eliminates these trade-offs.** It's designed for the way data scientists actually work — with pure Python — while providing enterprise-grade capabilities when you need them.
+**FlowyML eliminates these trade-offs.** It's designed for the way data scientists actually work — with pure Python — while providing enterprise-grade capabilities when you need them.
 
-### What Makes UniFlow Different
+### What Makes FlowyML Different
 
 <div class="grid cards" markdown>
 
@@ -58,9 +58,9 @@ Most ML teams face the same painful trade-offs:
 
 ## 💡 Real-World Impact
 
-Here's what UniFlow delivers in practice:
+Here's what FlowyML delivers in practice:
 
-| Challenge | Without UniFlow | With UniFlow |
+| Challenge | Without FlowyML | With FlowyML |
 |-----------|----------------|--------------|
 | **Dev → Production** | 4-8 weeks of rewriting | Hours using same code |
 | **Pipeline iteration** | Full re-runs (hours) | Cached steps (minutes) |
@@ -70,11 +70,11 @@ Here's what UniFlow delivers in practice:
 | **Experiment tracking** | Manual logging | Automatic lineage + versioning |
 
 > [!IMPORTANT]
-> **Production-Ready from Day One**: UniFlow isn't just for prototypes. It's built for regulated industries, multi-tenant deployments, and enterprise scale. But you can start simple and grow into those features.
+> **Production-Ready from Day One**: FlowyML isn't just for prototypes. It's built for regulated industries, multi-tenant deployments, and enterprise scale. But you can start simple and grow into those features.
 
 ## 🚀 Feature Showcase
 
-UniFlow isn't just another orchestrator. It's a complete toolkit for building, debugging, and deploying ML applications.
+FlowyML isn't just another orchestrator. It's a complete toolkit for building, debugging, and deploying ML applications.
 
 ### 1. Zero-Boilerplate Orchestration
 Write pipelines as standard Python functions. No YAML, no DSLs, no complex wiring.
@@ -94,7 +94,7 @@ pipeline.run()
 ```
 
 ### 2. 🧠 Intelligent Caching
-Don't waste time re-running successful steps. UniFlow's multi-strategy caching understands your code and data.
+Don't waste time re-running successful steps. FlowyML's multi-strategy caching understands your code and data.
 
 - **Code Hash**: Re-runs only when you change the code.
 - **Input Hash**: Re-runs only when input data changes.
@@ -111,12 +111,12 @@ def expensive_processing(data):
 Built-in tools for the new era of AI. Trace token usage, latency, and costs automatically.
 
 ```python
-from uniflow import trace_llm
+from flowyml import trace_llm
 
 @step
 @trace_llm(model="gpt-4", tags=["production"])
 def generate_summary(text: str):
-    # UniFlow automatically tracks tokens, cost, and latency
+    # flowyml automatically tracks tokens, cost, and latency
     return openai.ChatCompletion.create(...)
 ```
 
@@ -124,7 +124,7 @@ def generate_summary(text: str):
 Group consecutive steps to run in the same container/executor. Perfect for reducing overhead while maintaining clear step boundaries.
 
 ```python
-from uniflow.core.resources import ResourceRequirements, GPUConfig
+from flowyml.core.resources import ResourceRequirements, GPUConfig
 
 # Group preprocessing steps - they'll share the same container
 @step(outputs=["raw"], execution_group="preprocessing",
@@ -137,20 +137,20 @@ def load_data():
 def clean_data(raw):
     return preprocess(raw)
 
-# UniFlow automatically:
+# FlowyML automatically:
 # ✅ Analyzes DAG for consecutive steps
 # ✅ Aggregates resources (cpu="4", memory="8Gi")
 # ✅ Executes in same environment (no container restart)
 ```
 
 > [!TIP]
-> **Why this matters**: Traditional frameworks (like ZenML) run each step in a separate container, creating unnecessary overhead. UniFlow's intelligent grouping lets you maintain clean step separation while optimizing execution.
+> **Why this matters**: Traditional frameworks (like ZenML) run each step in a separate container, creating unnecessary overhead. FlowyML's intelligent grouping lets you maintain clean step separation while optimizing execution.
 
 ### 5. 🔀 Dynamic Workflows
 Real-world ML isn't linear. Build complex, adaptive workflows with conditional logic and branching.
 
 ```python
-from uniflow import If, Switch
+from flowyml import If, Switch
 
 # Run 'deploy' only if model accuracy > 0.9
 pipeline.add_step(
@@ -172,7 +172,7 @@ pipeline.add_step(
 Extend with any tool. Even wrap and reuse ZenML components!
 
 ```python
-from uniflow.stacks.plugins import load_component
+from flowyml.stacks.plugins import load_component
 
 # Load any ZenML orchestrator
 k8s_orch = load_component(
@@ -185,13 +185,13 @@ great_expectations = load_component("zenml:zenml.integrations.great_expectations
 ```
 
 > [!IMPORTANT]
-> **Best of Both Worlds**: UniFlow's plugin system gives you access to ZenML's entire ecosystem while maintaining UniFlow's superior developer experience.
+> **Best of Both Worlds**: FlowyML's plugin system gives you access to ZenML's entire ecosystem while maintaining FlowyML's superior developer experience.
 
 ### 7. 👤 Human-in-the-Loop
 Pause pipelines for manual approval, review, or intervention.
 
 ```python
-from uniflow import approval
+from flowyml import approval
 
 pipeline.add_step(train_model)
 pipeline.add_step(
@@ -209,7 +209,7 @@ pipeline.add_step(deploy_model)
 No external tools needed. Tracking is built-in and automatic.
 
 ```python
-from uniflow.tracking import Experiment
+from flowyml.tracking import Experiment
 
 exp = Experiment(
     name="baseline_training",
@@ -231,8 +231,8 @@ best = exp.get_best_run("accuracy", maximize=True)
 Track, compare, version, and stage your models.
 
 ```python
-from uniflow import ModelLeaderboard
-from uniflow.core import Model
+from flowyml import ModelLeaderboard
+from flowyml.core import Model
 
 # Leaderboard for model comparison
 leaderboard = ModelLeaderboard(metric="accuracy", higher_is_better=True)
@@ -248,7 +248,7 @@ model.register(name="text_classifier", stage="production", version="v1.2.0")
 Schedule recurring jobs without external orchestrators.
 
 ```python
-from uniflow import PipelineScheduler
+from flowyml import PipelineScheduler
 
 scheduler = PipelineScheduler()
 
@@ -273,7 +273,7 @@ scheduler.start()  # Non-blocking
 Slack, Email, and custom alerts. All built-in.
 
 ```python
-from uniflow import configure_notifications, get_notifier
+from flowyml import configure_notifications, get_notifier
 
 configure_notifications(
     console=True,
@@ -294,7 +294,7 @@ notifier.notify("Model deployed!", level="success")
 Set breakpoints, inspect state, and debug like regular Python code.
 
 ```python
-from uniflow import StepDebugger
+from flowyml import StepDebugger
 
 debugger = StepDebugger()
 debugger.set_breakpoint("train_model")
@@ -312,7 +312,7 @@ pipeline.run(debug=True)
 Specialized types for ML workflows. Not just generic files.
 
 ```python
-from uniflow.core import Dataset, Model, Metrics, FeatureSet
+from flowyml.core import Dataset, Model, Metrics, FeatureSet
 
 # Type-safe ML assets with metadata
 dataset = Dataset.create(
@@ -347,7 +347,7 @@ def flaky_api_call():
 Monitor distribution shifts. Trigger retraining automatically.
 
 ```python
-from uniflow import detect_drift
+from flowyml import detect_drift
 
 drift_result = detect_drift(
     reference_data=train_feature,
@@ -364,7 +364,7 @@ if drift_result['drift_detected']:
 Git-like versioning for pipelines. Track changes, compare, rollback.
 
 ```python
-from uniflow import VersionedPipeline
+from flowyml import VersionedPipeline
 
 pipeline = VersionedPipeline("training", version="v1.0.0")
 pipeline.add_step(load_data)
@@ -400,7 +400,7 @@ Works with your existing stack.
 See how simple it is — this is a complete, runnable ML pipeline:
 
 ```python
-from uniflow import Pipeline, step, context
+from flowyml import Pipeline, step, context
 
 @step(outputs=["dataset"])
 def load_data():
@@ -433,7 +433,7 @@ That's it. No YAML. No config files. No boilerplate. Just Python.
 
 -   :book: **[Core Concepts](core/pipelines.md)**
     ---
-    Understand pipelines, steps, context, and assets — the building blocks of UniFlow.
+    Understand pipelines, steps, context, and assets — the building blocks of FlowyML.
 
 -   :zap: **[Advanced Features](advanced/caching.md)**
     ---
@@ -455,4 +455,4 @@ That's it. No YAML. No config files. No boilerplate. Just Python.
 
 ---
 
-**Questions? Issues?** [Open an issue on GitHub](https://github.com/UnicoLab/UniFlow/issues) or check out the [Resources](resources.md) page for community links.
+**Questions? Issues?** [Open an issue on GitHub](https://github.com/UnicoLab/FlowyML/issues) or check out the [Resources](resources.md) page for community links.

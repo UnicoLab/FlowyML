@@ -14,7 +14,7 @@ Know when pipelines fail before your users do.
 - **Resource waste**: Pipelines consume 100% CPU and you don't know why
 - **Slow debugging**: "When did this start failing?"
 
-**With UniFlow monitoring**:
+**With flowyml monitoring**:
 - **Instant alerts**: Slack notification the moment a pipeline fails
 - **Resource visibility**: See CPU/memory usage in real-time
 - **Historical data**: Track success rates and failure patterns
@@ -24,7 +24,7 @@ Know when pipelines fail before your users do.
 The `SystemMonitor` tracks CPU and memory usage.
 
 ```python
-from uniflow.monitoring.monitor import SystemMonitor
+from flowyml.monitoring.monitor import SystemMonitor
 
 monitor = SystemMonitor("sys_mon")
 
@@ -40,7 +40,7 @@ if not is_healthy:
 The `PipelineMonitor` tracks the health of your pipelines, such as consecutive failures.
 
 ```python
-from uniflow.monitoring.monitor import PipelineMonitor
+from flowyml.monitoring.monitor import PipelineMonitor
 
 monitor = PipelineMonitor("training_pipeline")
 monitor.check()
@@ -48,12 +48,12 @@ monitor.check()
 
 ## Alerting 🔔
 
-UniFlow uses an `AlertManager` to dispatch alerts to configured handlers. By default, alerts are printed to the console, but you can add custom handlers (e.g., Slack, Email).
+flowyml uses an `AlertManager` to dispatch alerts to configured handlers. By default, alerts are printed to the console, but you can add custom handlers (e.g., Slack, Email).
 
 ### Sending Alerts
 
 ```python
-from uniflow.monitoring.alerts import alert_manager, AlertLevel
+from flowyml.monitoring.alerts import alert_manager, AlertLevel
 
 alert_manager.send_alert(
     title="Model Drift Detected",
@@ -67,7 +67,7 @@ alert_manager.send_alert(
 Send critical alerts to Slack, warnings to email.
 
 ```python
-from uniflow.monitoring.alerts import AlertHandler, Alert, AlertLevel
+from flowyml.monitoring.alerts import AlertHandler, Alert, AlertLevel
 import requests
 
 class SlackAlertHandler(AlertHandler):
@@ -93,7 +93,7 @@ alert_manager.add_handler(SlackAlertHandler())
 You can check system status via the CLI:
 
 ```bash
-uniflow monitor status
+flowyml monitor status
 ```
 
 !!! note "Beta Feature"

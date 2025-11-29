@@ -1,6 +1,6 @@
-# UniFlow UI Guide 🖥️
+# flowyml UI Guide 🖥️
 
-The UniFlow UI provides a real-time, interactive dashboard for monitoring and managing your ML pipelines. It offers a beautiful, modern interface to visualize execution graphs, inspect artifacts, and track metrics.
+The flowyml UI provides a real-time, interactive dashboard for monitoring and managing your ML pipelines. It offers a beautiful, modern interface to visualize execution graphs, inspect artifacts, and track metrics.
 
 ## Overview
 
@@ -12,10 +12,10 @@ The UI consists of two main components:
 
 ### Prerequisites
 
-Ensure you have installed UniFlow with UI support:
+Ensure you have installed flowyml with UI support:
 
 ```bash
-pip install "uniflow[ui]"
+pip install "flowyml[ui]"
 ```
 
 ### Starting the UI
@@ -23,7 +23,7 @@ pip install "uniflow[ui]"
 To start the UI server, run:
 
 ```bash
-uniflow ui start
+flowyml ui start
 ```
 
 This will:
@@ -36,7 +36,7 @@ This will:
 To stop the UI server:
 
 ```bash
-uniflow ui stop
+flowyml ui stop
 ```
 
 ## Features ✨
@@ -63,18 +63,18 @@ The main dashboard provides a high-level view of your system:
 
 ## Integration with Pipelines 🔌
 
-UniFlow pipelines automatically integrate with the UI when it is running. No special code is required!
+flowyml pipelines automatically integrate with the UI when it is running. No special code is required!
 
 ### Automatic Registration
 
 When you run a pipeline in your Python script:
 
 ```python
-from uniflow import Pipeline, step
+from flowyml import Pipeline, step
 
 @step
 def my_step():
-    return "Hello UniFlow"
+    return "Hello flowyml"
 
 pipeline = Pipeline("my_pipeline")
 pipeline.add_step(my_step)
@@ -91,7 +91,7 @@ If the UI server is running, the pipeline will automatically:
 You can log custom metrics from your steps to appear in the UI:
 
 ```python
-from uniflow import step, context
+from flowyml import step, context
 
 @step
 def train_model(epochs: int):
@@ -105,23 +105,23 @@ def train_model(epochs: int):
 ## Troubleshooting 🔧
 
 ### UI Not Showing Runs
-1.  Ensure the UI server is running: `uniflow ui status`
-2.  Check if your pipeline script has access to the `.uniflow` directory.
+1.  Ensure the UI server is running: `flowyml ui status`
+2.  Check if your pipeline script has access to the `.flowyml` directory.
 3.  Verify that `enable_cache` is not preventing re-execution if you expect new runs.
 
 ### Port Conflicts
 If port 8080 is in use, you can specify a different port:
 
 ```bash
-uniflow ui start --port 8081
+flowyml ui start --port 8081
 ```
 
 ## Configuration ⚙️
 
-You can configure UI settings in your `uniflow.yaml` or `pyproject.toml`:
+You can configure UI settings in your `flowyml.yaml` or `pyproject.toml`:
 
 ```yaml
-# uniflow.yaml
+# flowyml.yaml
 ui:
   host: "0.0.0.0"
   port: 8080

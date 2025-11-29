@@ -1,10 +1,10 @@
 # Deployment Guide
 
-UniFlow is designed to be flexible, supporting both local execution and centralized deployment for teams. This guide covers how to deploy UniFlow as a centralized hub using Docker.
+flowyml is designed to be flexible, supporting both local execution and centralized deployment for teams. This guide covers how to deploy flowyml as a centralized hub using Docker.
 
 ## Centralized Hub Deployment
 
-A centralized hub allows your team to share pipelines, runs, and artifacts. It consists of the UniFlow backend (API & Orchestrator) and the frontend (UI).
+A centralized hub allows your team to share pipelines, runs, and artifacts. It consists of the flowyml backend (API & Orchestrator) and the frontend (UI).
 
 ### Prerequisites
 
@@ -15,8 +15,8 @@ A centralized hub allows your team to share pipelines, runs, and artifacts. It c
 
 1. **Clone the repository** (or use your fork):
    ```bash
-   git clone https://github.com/unicolab/uniflow.git
-   cd uniflow
+   git clone https://github.com/unicolab/flowyml.git
+   cd flowyml
    ```
 
 2. **Start the services**:
@@ -37,39 +37,39 @@ You can configure the deployment by setting environment variables in `docker-com
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `UNIFLOW_HOME` | Path to UniFlow data directory | `/root/.uniflow` |
-| `UNIFLOW_UI_HOST` | Host to bind the backend to | `0.0.0.0` |
-| `UNIFLOW_UI_PORT` | Port for the backend API | `8000` |
+| `flowyml_HOME` | Path to flowyml data directory | `/root/.flowyml` |
+| `flowyml_UI_HOST` | Host to bind the backend to | `0.0.0.0` |
+| `flowyml_UI_PORT` | Port for the backend API | `8000` |
 
 ### Data Persistence
 
 The `docker-compose.yml` mounts a volume for data persistence:
 ```yaml
 volumes:
-  - ./.uniflow:/root/.uniflow
+  - ./.flowyml:/root/.flowyml
 ```
 This ensures that your metadata database, artifacts, and logs are preserved across restarts.
 
 ## Client Configuration
 
-To connect your local UniFlow CLI or UI to the centralized hub, you need to configure the execution mode.
+To connect your local flowyml CLI or UI to the centralized hub, you need to configure the execution mode.
 
 ### Using the CLI
 
 1. **Set the execution mode to remote**:
    ```bash
-   uniflow config set-mode remote
+   flowyml config set-mode remote
    ```
 
 2. **Set the remote server URL**:
    ```bash
-   uniflow config set-url --server http://<hub-ip>:8000 --ui http://<hub-ip>:8080
+   flowyml config set-url --server http://<hub-ip>:8000 --ui http://<hub-ip>:8080
    ```
    Replace `<hub-ip>` with the IP address or hostname of your centralized hub.
 
 3. **Verify configuration**:
    ```bash
-   uniflow config show
+   flowyml config show
    ```
 
 ### Using Environment Variables
@@ -77,9 +77,9 @@ To connect your local UniFlow CLI or UI to the centralized hub, you need to conf
 You can also configure the client using environment variables:
 
 ```bash
-export UNIFLOW_EXECUTION_MODE=remote
-export UNIFLOW_REMOTE_SERVER_URL=http://<hub-ip>:8000
-export UNIFLOW_REMOTE_UI_URL=http://<hub-ip>:8080
+export flowyml_EXECUTION_MODE=remote
+export flowyml_REMOTE_SERVER_URL=http://<hub-ip>:8000
+export flowyml_REMOTE_UI_URL=http://<hub-ip>:8080
 ```
 
 ## Production Considerations

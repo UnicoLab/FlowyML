@@ -5,7 +5,7 @@ Access runtime information, parameters, and configuration within a step.
 ## Usage
 
 ```python
-from uniflow import step, get_context
+from flowyml import step, get_context
 
 @step
 def my_step():
@@ -15,6 +15,6 @@ def my_step():
 
 ## Class `Context`
 
-::: uniflow.core.context.Context
+::: flowyml.core.context.Context
     options:
         show_root_heading: false

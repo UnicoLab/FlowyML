@@ -1,0 +1,764 @@
+"""Pipeline Module - Main orchestration for ML pipelines."""
+
+import json
+from typing import Any
+from datetime import datetime
+from pathlib import Path
+
+from flowyml.core.context import Context
+from flowyml.core.step import Step
+from flowyml.core.graph import DAG, Node
+from flowyml.core.executor import Executor, LocalExecutor, ExecutionResult
+from flowyml.core.cache import CacheStore
+
+
+class PipelineResult:
+    """Result of pipeline execution."""
+
+    def __init__(self, run_id: str, pipeline_name: str):
+        self.run_id = run_id
+        self.pipeline_name = pipeline_name
+        self.success = False
+        self.step_results: dict[str, ExecutionResult] = {}
+        self.outputs: dict[str, Any] = {}
+        self.start_time = datetime.now()
+        self.end_time: datetime | None = None
+        self.duration_seconds: float = 0.0
+
+    def add_step_result(self, result: ExecutionResult) -> None:
+        """Add result from a step execution."""
+        self.step_results[result.step_name] = result
+
+        # Track outputs
+        if result.success and result.output is not None:
+            # Assuming single output for simplicity
+            self.outputs[result.step_name] = result.output
+
+    def finalize(self, success: bool) -> None:
+        """Mark pipeline as complete."""
+        self.success = success
+        self.end_time = datetime.now()
+        self.duration_seconds = (self.end_time - self.start_time).total_seconds()
+
+    def __getitem__(self, key: str) -> Any:
+        """Allow dict-style access to outputs."""
+        return self.outputs.get(key)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            "run_id": self.run_id,
+            "pipeline_name": self.pipeline_name,
+            "success": self.success,
+            "start_time": self.start_time.isoformat(),
+            "end_time": self.end_time.isoformat() if self.end_time else None,
+            "duration_seconds": self.duration_seconds,
+            "steps": {
+                name: {
+                    "success": result.success,
+                    "duration": result.duration_seconds,
+                    "cached": result.cached,
+                    "retries": result.retries,
+                    "error": result.error,
+                }
+                for name, result in self.step_results.items()
+            },
+        }
+
+    def summary(self) -> str:
+        """Generate execution summary."""
+        lines = [
+            f"Pipeline: {self.pipeline_name}",
+            f"Run ID: {self.run_id}",
+            f"Status: {'✓ SUCCESS' if self.success else '✗ FAILED'}",
+            f"Duration: {self.duration_seconds:.2f}s",
+            "",
+            "Steps:",
+        ]
+
+        for name, result in self.step_results.items():
+            status = "✓" if result.success else "✗"
+            cached = " (cached)" if result.cached else ""
+            retries = f" [{result.retries} retries]" if result.retries > 0 else ""
+            lines.append(
+                f"  {status} {name}: {result.duration_seconds:.2f}s{cached}{retries}",
+            )
+            if result.error:
+                lines.append(f"     Error: {result.error.split(chr(10))[0]}")
+
+        return "\n".join(lines)
+
+
+class Pipeline:
+    """Main pipeline class for orchestrating ML workflows.
+
+    Example:
+        >>> from flowyml import Pipeline, step, context
+        >>> ctx = context(learning_rate=0.001, epochs=10)
+        >>> @step(outputs=["model/trained"])
+        ... def train(learning_rate: float, epochs: int):
+        ...     return train_model(learning_rate, epochs)
+        >>> pipeline = Pipeline("my_pipeline", context=ctx)
+        >>> pipeline.add_step(train)
+        >>> result = pipeline.run()
+    """
+
+    def __init__(
+        self,
+        name: str,
+        context: Context | None = None,
+        executor: Executor | None = None,
+        enable_cache: bool = True,
+        cache_dir: str | None = None,
+        stack: Any | None = None,  # Stack instance
+        project: str | None = None,  # Project name to attach to
+    ):
+        """Initialize pipeline.
+
+        Args:
+            name: Name of the pipeline
+            context: Optional context for parameter injection
+            executor: Optional executor (defaults to LocalExecutor)
+            enable_cache: Whether to enable caching
+            cache_dir: Optional directory for cache
+            stack: Optional stack instance to run on
+            project: Optional project name to attach this pipeline to.
+        """
+        self.name = name
+        self.context = context or Context()
+        self.enable_cache = enable_cache
+        self.stack = stack  # Store stack instance
+
+        self.steps: list[Step] = []
+        self.dag = DAG()
+
+        # Storage
+        if cache_dir is None:
+            from flowyml.utils.config import get_config
+
+            cache_dir = str(get_config().cache_dir)
+
+        self.cache_store = CacheStore(cache_dir) if enable_cache else None
+
+        from flowyml.utils.config import get_config
+
+        self.runs_dir = get_config().runs_dir
+        self.runs_dir.mkdir(parents=True, exist_ok=True)
+
+        # Initialize components from stack or defaults
+        if self.stack:
+            self.executor = executor or self.stack.executor
+            self.metadata_store = self.stack.metadata_store
+        else:
+            self.executor = executor or LocalExecutor()
+            # Metadata store for UI integration
+            from flowyml.storage.metadata import SQLiteMetadataStore
+
+            self.metadata_store = SQLiteMetadataStore()
+
+        # Handle Project Attachment
+        if project:
+            from flowyml.core.project import ProjectManager
+
+            manager = ProjectManager()
+            # Get or create project
+            proj = manager.get_project(project)
+            if not proj:
+                proj = manager.create_project(project)
+
+            # Configure pipeline with project settings
+            self.runs_dir = proj.runs_dir
+            self.metadata_store = proj.metadata_store
+
+            # Register pipeline with project
+            if name not in proj.metadata["pipelines"]:
+                proj.metadata["pipelines"].append(name)
+                proj._save_metadata()
+
+        # State
+        self._built = False
+        self.step_groups: list[Any] = []  # Will hold StepGroup objects
+
+    def add_step(self, step: Step) -> "Pipeline":
+        """Add a step to the pipeline.
+
+        Args:
+            step: Step to add
+
+        Returns:
+            Self for chaining
+        """
+        self.steps.append(step)
+        self._built = False
+        return self
+
+    def build(self) -> None:
+        """Build the execution DAG."""
+        if self._built:
+            return
+
+        # Clear previous DAG
+        self.dag = DAG()
+
+        # Add nodes
+        for step in self.steps:
+            node = Node(
+                name=step.name,
+                step=step,
+                inputs=step.inputs,
+                outputs=step.outputs,
+            )
+            self.dag.add_node(node)
+
+        # Build edges
+        self.dag.build_edges()
+
+        # Validate
+        errors = self.dag.validate()
+        if errors:
+            raise ValueError("Pipeline validation failed:\n" + "\n".join(errors))
+
+        # Analyze step groups
+        from flowyml.core.step_grouping import StepGroupAnalyzer
+
+        analyzer = StepGroupAnalyzer()
+        self.step_groups = analyzer.analyze_groups(self.dag, self.steps)
+
+        self._built = True
+
+    def run(
+        self,
+        inputs: dict[str, Any] | None = None,
+        debug: bool = False,
+        stack: Any | None = None,  # Stack override
+        resources: Any | None = None,  # ResourceConfig
+        docker_config: Any | None = None,  # DockerConfig
+        context: dict[str, Any] | None = None,  # Context vars override
+    ) -> PipelineResult:
+        """Execute the pipeline.
+
+        Args:
+            inputs: Optional input data for the pipeline
+            debug: Enable debug mode with detailed logging
+            stack: Stack override (uses self.stack if not provided)
+            resources: Resource configuration for execution
+            docker_config: Docker configuration for containerized execution
+            context: Context variables override
+
+        Returns:
+            PipelineResult with outputs and execution info
+        """
+        import uuid
+
+        run_id = str(uuid.uuid4())
+
+        # Use provided stack or instance stack
+        if stack is not None:
+            self.stack = stack
+            # Update components from new stack
+            self.executor = self.stack.executor
+            self.metadata_store = self.stack.metadata_store
+
+        # Determine artifact store
+        artifact_store = None
+        if self.stack:
+            artifact_store = self.stack.artifact_store
+
+        # Update context with provided values
+        if context:
+            self.context.update(context)
+
+        # Build DAG if needed
+        if not self._built:
+            self.build()
+
+        # Initialize result
+        result = PipelineResult(run_id, self.name)
+        step_outputs = inputs or {}
+
+        # Map step names to step objects for easier lookup
+        self.steps_dict = {step.name: step for step in self.steps}
+        if debug:
+            pass
+        else:
+            # Always print the run URL for better UX
+            pass
+
+        # Get execution units (individual steps or groups)
+        from flowyml.core.step_grouping import get_execution_units
+
+        execution_units = get_execution_units(self.dag, self.steps)
+
+        # Execute steps/groups in order
+        for unit in execution_units:
+            # Check if unit is a group or individual step
+            from flowyml.core.step_grouping import StepGroup
+
+            if isinstance(unit, StepGroup):
+                # Execute entire group
+                if debug:
+                    pass
+
+                # Get context parameters (use first step's function as representative)
+                first_step = unit.steps[0]
+                context_params = self.context.inject_params(first_step.func)
+
+                # Execute the group
+                group_results = self.executor.execute_step_group(
+                    step_group=unit,
+                    inputs=step_outputs,
+                    context_params=context_params,
+                    cache_store=self.cache_store,
+                    artifact_store=artifact_store,
+                    run_id=run_id,
+                    project_name=self.name,
+                )
+
+                # Process each step result
+                for step_result in group_results:
+                    result.add_step_result(step_result)
+
+                    if debug:
+                        pass
+
+                    # Handle failure
+                    if not step_result.success and not step_result.skipped:
+                        result.finalize(success=False)
+                        self._save_run(result)
+                        return result
+
+                    # Store outputs for next steps/groups
+                    if step_result.output is not None:
+                        # Find step definition to get output names
+                        step_def = next((s for s in self.steps if s.name == step_result.step_name), None)
+                        if step_def:
+                            if len(step_def.outputs) == 1:
+                                step_outputs[step_def.outputs[0]] = step_result.output
+                                result.outputs[step_def.outputs[0]] = step_result.output
+                            elif isinstance(step_result.output, (list, tuple)) and len(step_result.output) == len(
+                                step_def.outputs,
+                            ):
+                                for name, val in zip(step_def.outputs, step_result.output, strict=False):
+                                    step_outputs[name] = val
+                                    result.outputs[name] = val
+                            elif isinstance(step_result.output, dict):
+                                for name in step_def.outputs:
+                                    if name in step_result.output:
+                                        step_outputs[name] = step_result.output[name]
+                                        result.outputs[name] = step_result.output[name]
+                            else:
+                                if step_def.outputs:
+                                    step_outputs[step_def.outputs[0]] = step_result.output
+                                    result.outputs[step_def.outputs[0]] = step_result.output
+
+            else:
+                # Execute single ungrouped step
+                step = unit
+
+                if debug:
+                    pass
+
+                # Prepare step inputs
+                step_inputs = {}
+
+                # Get function signature to map inputs to parameters
+                import inspect
+
+                sig = inspect.signature(step.func)
+                params = list(sig.parameters.values())
+
+                # Filter out self/cls
+                params = [p for p in params if p.name not in ("self", "cls")]
+
+                # Strategy:
+                # 1. Map inputs to parameters
+                #    - If input name matches param name, use it
+                #    - If not, use positional mapping (input[i] -> param[i])
+
+                # Track which parameters have been assigned
+                assigned_params = set()
+
+                if step.inputs:
+                    for i, input_name in enumerate(step.inputs):
+                        if input_name not in step_outputs:
+                            continue
+
+                        val = step_outputs[input_name]
+
+                        # Check if input name matches a parameter
+                        param_match = next((p for p in params if p.name == input_name), None)
+
+                        if param_match:
+                            step_inputs[param_match.name] = val
+                            assigned_params.add(param_match.name)
+                        elif i < len(params):
+                            # Positional fallback
+                            # Only if this parameter hasn't been assigned yet
+                            target_param = params[i]
+                            if target_param.name not in assigned_params:
+                                step_inputs[target_param.name] = val
+                                assigned_params.add(target_param.name)
+
+                # Auto-map parameters from available outputs if they match function signature
+                # This allows passing inputs to run() without declaring them as asset dependencies
+                for param in params:
+                    if param.name in step_outputs and param.name not in step_inputs:
+                        step_inputs[param.name] = step_outputs[param.name]
+                        assigned_params.add(param.name)
+
+                # Validate context parameters
+                # Exclude parameters that are already provided in step_inputs
+                exclude_params = list(step.inputs) + list(step_inputs.keys())
+                missing_params = self.context.validate_for_step(step.func, exclude=exclude_params)
+                if missing_params:
+                    if debug:
+                        pass
+
+                    error_msg = f"Missing required parameters: {missing_params}"
+                    step_result = ExecutionResult(
+                        step_name=step.name,
+                        success=False,
+                        error=error_msg,
+                    )
+                    result.add_step_result(step_result)
+                    result.finalize(success=False)
+                    self._save_run(result)  # Save run before returning
+                    self._save_pipeline_definition()  # Save definition even on failure
+                    print("DEBUG: Pipeline failed at step execution")
+                    return result
+
+                # Get context parameters for this step
+                context_params = self.context.inject_params(step.func)
+
+                # Execute step
+                step_result = self.executor.execute_step(
+                    step,
+                    step_inputs,
+                    context_params,
+                    self.cache_store,
+                    artifact_store=artifact_store,
+                    run_id=run_id,
+                    project_name=self.name,
+                )
+
+                result.add_step_result(step_result)
+
+                if debug:
+                    pass
+
+                # Handle failure
+                if not step_result.success:
+                    if debug and not step_result.error:
+                        pass
+                    result.finalize(success=False)
+                    self._save_run(result)
+                    self._save_pipeline_definition()  # Save definition even on failure
+                    print("DEBUG: Pipeline failed at step execution")
+                    return result
+
+                # Store outputs for next steps
+                if step_result.output is not None:
+                    if len(step.outputs) == 1:
+                        step_outputs[step.outputs[0]] = step_result.output
+                        result.outputs[step.outputs[0]] = step_result.output
+                    elif isinstance(step_result.output, (list, tuple)) and len(step_result.output) == len(step.outputs):
+                        for name, val in zip(step.outputs, step_result.output, strict=False):
+                            step_outputs[name] = val
+                            result.outputs[name] = val
+                    elif isinstance(step_result.output, dict):
+                        for name in step.outputs:
+                            if name in step_result.output:
+                                step_outputs[name] = step_result.output[name]
+                                result.outputs[name] = step_result.output[name]
+                    else:
+                        # Fallback: assign to first output if available
+                        if step.outputs:
+                            step_outputs[step.outputs[0]] = step_result.output
+                            result.outputs[step.outputs[0]] = step_result.output
+
+        # Success!
+        result.finalize(success=True)
+
+        if debug:
+            pass
+
+        self._save_run(result)
+        self._save_pipeline_definition()  # Save pipeline structure for scheduling
+        return result
+
+    def to_definition(self) -> dict:
+        """Serialize pipeline to definition for storage and reconstruction."""
+        if not self._built:
+            self.build()
+
+        return {
+            "name": self.name,
+            "steps": [
+                {
+                    "name": step.name,
+                    "inputs": step.inputs,
+                    "outputs": step.outputs,
+                    "source_code": step.source_code,
+                    "tags": step.tags,
+                }
+                for step in self.steps
+            ],
+            "dag": {
+                "nodes": [
+                    {
+                        "name": node.name,
+                        "inputs": node.inputs,
+                        "outputs": node.outputs,
+                    }
+                    for node in self.dag.nodes.values()
+                ],
+                "edges": [
+                    {"source": dep, "target": node_name} for node_name, deps in self.dag.edges.items() for dep in deps
+                ],
+            },
+        }
+
+    def _save_pipeline_definition(self) -> None:
+        """Save pipeline definition to metadata store for scheduling."""
+        try:
+            definition = self.to_definition()
+            self.metadata_store.save_pipeline_definition(self.name, definition)
+        except Exception as e:
+            # Don't fail the run if definition saving fails
+            print(f"Warning: Failed to save pipeline definition: {e}")
+
+    def _save_run(self, result: PipelineResult) -> None:
+        """Save run results to disk and metadata database."""
+        # Save to JSON file
+        run_file = self.runs_dir / f"{result.run_id}.json"
+        with open(run_file, "w") as f:
+            json.dump(result.to_dict(), f, indent=2)
+
+        # Serialize DAG structure for UI
+        dag_data = {
+            "nodes": [
+                {
+                    "id": node.name,
+                    "name": node.name,
+                    "inputs": node.inputs,
+                    "outputs": node.outputs,
+                }
+                for node in self.dag.nodes.values()
+            ],
+            "edges": [
+                {
+                    "source": dep,
+                    "target": node_name,
+                }
+                for node_name, deps in self.dag.edges.items()
+                for dep in deps
+            ],
+        }
+
+        # Collect step metadata including source code
+        steps_metadata = {}
+        for step in self.steps:
+            step_result = result.step_results.get(step.name)
+            steps_metadata[step.name] = {
+                "success": step_result.success if step_result else False,
+                "duration": step_result.duration_seconds if step_result else 0,
+                "cached": step_result.cached if step_result else False,
+                "retries": step_result.retries if step_result else 0,
+                "error": step_result.error if step_result else None,
+                "source_code": step.source_code,
+                "inputs": step.inputs,
+                "outputs": step.outputs,
+                "tags": step.tags,
+                "resources": step.resources.to_dict() if hasattr(step.resources, "to_dict") else step.resources,
+            }
+
+        # Save to metadata database for UI
+        metadata = {
+            "run_id": result.run_id,
+            "pipeline_name": result.pipeline_name,
+            "status": "completed" if result.success else "failed",
+            "start_time": result.start_time.isoformat(),
+            "end_time": result.end_time.isoformat() if result.end_time else None,
+            "duration": result.duration_seconds,
+            "success": result.success,
+            "context": self.context._params if hasattr(self.context, "_params") else {},
+            "steps": steps_metadata,
+            "dag": dag_data,
+        }
+        self.metadata_store.save_run(result.run_id, metadata)
+
+        # Save artifacts and metrics
+        for step_name, step_result in result.step_results.items():
+            if step_result.success and step_result.output is not None:
+                # Find step definition to get output names
+                step_def = next((s for s in self.steps if s.name == step_name), None)
+                output_names = step_def.outputs if step_def else []
+
+                # Normalize outputs to a dictionary
+                outputs_to_save = {}
+
+                # Case 1: Dictionary output (common for metrics)
+                if isinstance(step_result.output, dict):
+                    # If step has defined outputs, try to map them
+                    if output_names and len(output_names) == 1:
+                        outputs_to_save[output_names[0]] = step_result.output
+                    else:
+                        # Otherwise treat keys as output names if they match, or just save whole dict
+                        outputs_to_save[f"{step_name}_output"] = step_result.output
+
+                    # Also save individual numeric values as metrics
+                    for k, v in step_result.output.items():
+                        if isinstance(v, (int, float)):
+                            self.metadata_store.save_metric(result.run_id, k, float(v))
+
+                # Case 2: Tuple/List output matching output names
+                elif isinstance(step_result.output, (list, tuple)) and len(output_names) == len(step_result.output):
+                    for name, val in zip(output_names, step_result.output, strict=False):
+                        outputs_to_save[name] = val
+
+                # Case 3: Single output
+                else:
+                    name = output_names[0] if output_names else f"{step_name}_output"
+                    outputs_to_save[name] = step_result.output
+
+                # Save artifacts
+                for name, value in outputs_to_save.items():
+                    artifact_id = f"{result.run_id}_{step_name}_{name}"
+
+                    # Check if it's a flowyml Asset
+                    is_asset = hasattr(value, "metadata") and hasattr(value, "data")
+
+                    if is_asset:
+                        # Handle flowyml Asset
+                        asset_type = value.__class__.__name__
+                        artifact_metadata = {
+                            "artifact_id": artifact_id,
+                            "name": value.name,
+                            "type": asset_type,
+                            "run_id": result.run_id,
+                            "step": step_name,
+                            "path": None,
+                            "value": str(value.data)[:1000] if value.data else None,
+                            "created_at": datetime.now().isoformat(),
+                            "properties": self._sanitize_for_json(value.metadata.properties)
+                            if hasattr(value.metadata, "properties")
+                            else {},
+                        }
+                        self.metadata_store.save_artifact(artifact_id, artifact_metadata)
+
+                        # Special handling for Metrics asset
+                        if asset_type == "Metrics" and isinstance(value.data, dict):
+                            for k, v in value.data.items():
+                                if isinstance(v, (int, float)):
+                                    self.metadata_store.save_metric(result.run_id, k, float(v))
+                    else:
+                        # Handle standard Python objects
+                        artifact_metadata = {
+                            "artifact_id": artifact_id,
+                            "name": name,
+                            "type": type(value).__name__,
+                            "run_id": result.run_id,
+                            "step": step_name,
+                            "path": str(value) if isinstance(value, (str, Path)) and len(str(value)) < 255 else None,
+                            "value": str(value)[:1000],  # Preview
+                            "created_at": datetime.now().isoformat(),
+                        }
+                        self.metadata_store.save_artifact(artifact_id, artifact_metadata)
+
+                        # Save single value metric if applicable
+                        if isinstance(value, (int, float)):
+                            self.metadata_store.save_metric(result.run_id, name, float(value))
+
+    def _sanitize_for_json(self, obj: Any) -> Any:
+        """Helper to make objects JSON serializable."""
+        if hasattr(obj, "id") and hasattr(obj, "name"):  # Asset-like
+            return {"type": obj.__class__.__name__, "id": obj.id, "name": obj.name}
+        if isinstance(obj, dict):
+            return {k: self._sanitize_for_json(v) for k, v in obj.items()}
+        if isinstance(obj, (list, tuple)):
+            return [self._sanitize_for_json(v) for v in obj]
+        if isinstance(obj, (str, int, float, bool, type(None))):
+            return obj
+        return str(obj)
+
+    def cache_stats(self) -> dict[str, Any]:
+        """Get cache statistics."""
+        if self.cache_store:
+            return self.cache_store.stats()
+        return {}
+
+    def invalidate_cache(
+        self,
+        step: str | None = None,
+        before: str | None = None,
+    ) -> None:
+        """Invalidate cache entries.
+
+        Args:
+            step: Invalidate cache for specific step
+            before: Invalidate cache entries before date
+        """
+        if self.cache_store:
+            if step:
+                self.cache_store.invalidate(step_name=step)
+            else:
+                self.cache_store.clear()
+
+    def visualize(self) -> str:
+        """Generate pipeline visualization."""
+        if not self._built:
+            self.build()
+        return self.dag.visualize()
+
+    @classmethod
+    def from_definition(cls, definition: dict, context: Context | None = None) -> "Pipeline":
+        """Reconstruct pipeline from stored definition.
+
+        This creates a "ghost" pipeline that can be executed but uses
+        the stored step structure. Actual step logic must still be
+        available in the codebase.
+
+        Args:
+            definition: Pipeline definition from to_definition()
+            context: Optional context for execution
+
+        Returns:
+            Reconstructed Pipeline instance
+        """
+        from flowyml.core.step import step as step_decorator
+
+        # Create pipeline instance
+        pipeline = cls(
+            name=definition["name"],
+            context=context or Context(),
+        )
+
+        # Reconstruct steps
+        for step_def in definition["steps"]:
+            # Create a generic step function that can be called
+            # In a real implementation, we'd need to either:
+            # 1. Store serialized functions (using cloudpickle)
+            # 2. Import functions by name from codebase
+            # 3. Use placeholder functions
+
+            # For now, we'll create a placeholder that logs execution
+            def generic_step_func(*args, **kwargs):
+                """Generic step function for reconstructed pipeline."""
+                print(f"Executing reconstructed step with args={args}, kwargs={kwargs}")
+                return
+
+            # Apply step decorator with stored metadata
+            decorated = step_decorator(
+                name=step_def["name"],
+                inputs=step_def["inputs"],
+                outputs=step_def["outputs"],
+                tags=step_def.get("tags", []),
+            )(generic_step_func)
+
+            # Add to pipeline
+            pipeline.add_step(decorated)
+
+        return pipeline
+
+    def __repr__(self) -> str:
+        return f"Pipeline(name='{self.name}', steps={len(self.steps)})"

@@ -5,8 +5,8 @@ from unittest.mock import MagicMock, patch, mock_open
 import sys
 from typing import Any
 
-from uniflow.stacks.plugins import get_component_registry, ComponentRegistry
-from uniflow.stacks.components import ComponentType, Orchestrator
+from flowyml.stacks.plugins import get_component_registry, ComponentRegistry
+from flowyml.stacks.components import ComponentType, Orchestrator
 
 
 # Mock external component
@@ -20,9 +20,9 @@ class ConfigurableOrchestrator:
 
 @pytest.fixture
 def registry():
-    import uniflow.stacks.plugins
+    import flowyml.stacks.plugins
 
-    uniflow.stacks.plugins._global_component_registry = None
+    flowyml.stacks.plugins._global_component_registry = None
     return get_component_registry()
 
 

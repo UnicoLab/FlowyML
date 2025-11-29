@@ -1,24 +1,24 @@
-# Getting Started with UniFlow 🚀
+# Getting Started with FlowyML 🚀
 
-Welcome to UniFlow! In the next 5-10 minutes, you'll go from zero to running your first production-ready pipeline. No prior MLOps experience required.
+Welcome to FlowyML! In the next 5-10 minutes, you'll go from zero to running your first production-ready pipeline. No prior MLOps experience required.
 
 ## What You'll Learn & Why
 
 > [!NOTE]
 > **What you'll build**: A complete ML pipeline with data loading, training, and real-time monitoring.
 >
-> **What you'll master**: The core concepts that make UniFlow powerful: steps, pipelines, context injection, and the visual UI.
+> **What you'll master**: The core concepts that make FlowyML powerful: steps, pipelines, context injection, and the visual UI.
 >
 > **Why this matters**: These same patterns scale from quick prototypes to enterprise deployments serving millions of predictions.
 
 ## Installation 📦
 
-UniFlow requires Python 3.9 or higher.
+FlowyML requires Python 3.9 or higher.
 
 ### Basic Installation
 
 ```bash
-pip install uniflow
+pip install flowyml
 ```
 
 > [!TIP]
@@ -29,7 +29,7 @@ pip install uniflow
 Includes UI support and common ML dependencies:
 
 ```bash
-pip install "uniflow[all]"
+pip install "flowyml[all]"
 ```
 
 **What this gets you**: The web dashboard, Keras integration, cloud storage backends, and everything you need for production deployments. Start with this unless you have size constraints.
@@ -37,7 +37,7 @@ pip install "uniflow[all]"
 ### Verify Installation
 
 ```bash
-uniflow --version
+flowyml --version
 ```
 
 You should see the version number. If not, check that your Python PATH is configured correctly.
@@ -47,7 +47,7 @@ You should see the version number. If not, check that your Python PATH is config
 Let's create a new project using the CLI.
 
 ```bash
-uniflow init my-first-project
+flowyml init my-first-project
 cd my-first-project
 ```
 
@@ -55,7 +55,7 @@ This creates a directory structure like this:
 
 ```
 my-first-project/
-├── uniflow.yaml         # Project configuration
+├── flowyml.yaml         # Project configuration
 ├── README.md            # Project documentation
 ├── requirements.txt     # Python dependencies
 └── src/
@@ -63,14 +63,14 @@ my-first-project/
 ```
 
 > [!TIP]
-> **Why this structure?** It separates code (`src/`), configuration (`uniflow.yaml`), and dependencies (`requirements.txt`) — exactly what you need for clean version control and team collaboration.
+> **Why this structure?** It separates code (`src/`), configuration (`flowyml.yaml`), and dependencies (`requirements.txt`) — exactly what you need for clean version control and team collaboration.
 
 ## Creating a Pipeline 🧪
 
 Open `src/pipeline.py` and replace its content with this simple example:
 
 ```python
-from uniflow import Pipeline, step, context
+from flowyml import Pipeline, step, context
 
 # 1. Define Steps
 @step(outputs=["data"])
@@ -107,11 +107,11 @@ if __name__ == "__main__":
 
 Let's break down the key concepts:
 
-1. **`@step` decorator**: Turns any Python function into a pipeline step. The `outputs=["data"]` tells UniFlow what this step produces.
+1. **`@step` decorator**: Turns any Python function into a pipeline step. The `outputs=["data"]` tells FlowyML what this step produces.
 
 2. **Data flow**: The `@step(inputs=["data"], ...)` on `process_data` automatically connects it to `fetch_data`'s output. No manual wiring needed.
 
-3. **Pipeline assembly**: `pipeline.add_step()` builds your DAG. UniFlow figures out the execution order based on data dependencies.
+3. **Pipeline assembly**: `pipeline.add_step()` builds your DAG. FlowyML figures out the execution order based on data dependencies.
 
 4. **Execution**: `pipeline.run()` executes all steps in the right order and returns a result object with status and outputs.
 
@@ -140,17 +140,17 @@ Result: {'processed': [2, 4, 6, 8, 10]}
 
 ## Visualizing with the UI 🖥️
 
-Now, let's see your pipeline in the UniFlow UI — this is where the magic happens for debugging and monitoring.
+Now, let's see your pipeline in the FlowyML UI — this is where the magic happens for debugging and monitoring.
 
 **Step 1: Start the UI server**
 
 ```bash
-uniflow ui start
+flowyml ui start
 ```
 
 You'll see:
 ```
-🌊 UniFlow UI server started
+🌊 FlowyML UI server started
 📊 Dashboard: http://localhost:8080
 🔌 API: http://localhost:8080/api
 ```
@@ -181,12 +181,12 @@ Open your browser to `http://localhost:8080`. You'll see:
 
 ## Adding Context & Parameters 🎛️
 
-Let's make the pipeline configurable using **context** — one of UniFlow's killer features.
+Let's make the pipeline configurable using **context** — one of FlowyML's killer features.
 
 Update your pipeline:
 
 ```python
-from uniflow import Pipeline, step, context
+from flowyml import Pipeline, step, context
 
 @step(outputs=["data"])
 def fetch_data(dataset_size: int = 5):  # ← Parameter with default
@@ -279,7 +279,7 @@ Congratulations! You've built a complete pipeline with monitoring. Here's where 
 
 → **[GCP Integration](integrations/gcp.md)**: Deploy to Google Cloud Platform
 
-→ **[Custom Components](guides/custom-components.md)**: Extend UniFlow for your needs
+→ **[Custom Components](guides/custom-components.md)**: Extend FlowyML for your needs
 
 ---
 

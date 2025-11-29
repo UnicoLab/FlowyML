@@ -1,1 +1,1 @@
-"""Tests for UniFlow package."""
+"""Tests for flowyml package."""

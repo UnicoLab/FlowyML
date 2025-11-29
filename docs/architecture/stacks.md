@@ -2,7 +2,7 @@
 
 ## Overview
 
-UniFlow's stack system provides a flexible, modular architecture for running pipelines across different infrastructure environments. Similar to ZenML, stacks are composable collections of components that define where and how your pipelines execute.
+flowyml's stack system provides a flexible, modular architecture for running pipelines across different infrastructure environments. Similar to ZenML, stacks are composable collections of components that define where and how your pipelines execute.
 
 ## Core Concepts
 
@@ -12,7 +12,7 @@ A **Stack** is composed of several components:
 
 ```
 ┌─────────────────────────────────────┐
-│           UniFlow Stack             │
+│           flowyml Stack             │
 ├─────────────────────────────────────┤
 │ ▸ Orchestrator (optional)           │
 │   - Vertex AI, Kubeflow, Airflow   │
@@ -78,12 +78,12 @@ Manages Docker images for containerized execution.
 For development and testing:
 
 ```python
-from uniflow.stacks import LocalStack
+from flowyml.stacks import LocalStack
 
 stack = LocalStack(
     name="local",
-    artifact_path=".uniflow/artifacts",
-    metadata_path=".uniflow/metadata.db"
+    artifact_path=".flowyml/artifacts",
+    metadata_path=".flowyml/metadata.db"
 )
 ```
 
@@ -98,7 +98,7 @@ stack = LocalStack(
 For production on Google Cloud Platform:
 
 ```python
-from uniflow.stacks.gcp import GCPStack
+from flowyml.stacks.gcp import GCPStack
 
 stack = GCPStack(
     name="production",
@@ -118,7 +118,7 @@ stack = GCPStack(
 ### AWS Stack (Coming Soon)
 
 ```python
-from uniflow.stacks.aws import AWSStack
+from flowyml.stacks.aws import AWSStack
 
 stack = AWSStack(
     name="aws-prod",
@@ -131,11 +131,11 @@ stack = AWSStack(
 ### Kubernetes Stack (Coming Soon)
 
 ```python
-from uniflow.stacks.k8s import KubernetesStack
+from flowyml.stacks.k8s import KubernetesStack
 
 stack = KubernetesStack(
     name="k8s-cluster",
-    namespace="uniflow",
+    namespace="flowyml",
     storage_class="standard"
 )
 ```
@@ -145,7 +145,7 @@ stack = KubernetesStack(
 Define compute resources for your pipelines:
 
 ```python
-from uniflow.stacks.components import ResourceConfig
+from flowyml.stacks.components import ResourceConfig
 
 # CPU-intensive workload
 cpu_config = ResourceConfig(
@@ -176,7 +176,7 @@ memory_config = ResourceConfig(
 Containerize your pipelines:
 
 ```python
-from uniflow.stacks.components import DockerConfig
+from flowyml.stacks.components import DockerConfig
 
 # Pre-built image
 docker_config = DockerConfig(
@@ -209,7 +209,7 @@ docker_config = DockerConfig(
 Manage multiple stacks and switch seamlessly:
 
 ```python
-from uniflow.stacks.registry import StackRegistry
+from flowyml.stacks.registry import StackRegistry
 
 # Create registry
 registry = StackRegistry()
@@ -236,8 +236,8 @@ active = registry.get_active_stack()
 ### Method 1: Direct Assignment
 
 ```python
-from uniflow import Pipeline
-from uniflow.stacks.gcp import GCPStack
+from flowyml import Pipeline
+from flowyml.stacks.gcp import GCPStack
 
 stack = GCPStack(...)
 pipeline = Pipeline("my_pipeline", stack=stack)
@@ -246,8 +246,8 @@ pipeline = Pipeline("my_pipeline", stack=stack)
 ### Method 2: Global Registry
 
 ```python
-from uniflow import Pipeline
-from uniflow.stacks.registry import set_active_stack
+from flowyml import Pipeline
+from flowyml.stacks.registry import set_active_stack
 
 # Set active stack globally
 set_active_stack("production")
@@ -274,8 +274,8 @@ pipeline.run(stack=gcp_stack)
 
 ```python
 import os
-from uniflow.stacks import LocalStack
-from uniflow.stacks.gcp import GCPStack
+from flowyml.stacks import LocalStack
+from flowyml.stacks.gcp import GCPStack
 
 env = os.getenv("ENVIRONMENT", "local")
 
@@ -290,11 +290,11 @@ else:
 ### 2. **Configuration Files**
 
 ```yaml
-# uniflow.yaml
+# flowyml.yaml
 stacks:
   local:
     type: local
-    artifact_path: .uniflow/artifacts
+    artifact_path: .flowyml/artifacts
 
   production:
     type: gcp
@@ -387,6 +387,6 @@ def evaluate():
 
 ## Next Steps
 
-- [GCP Stack Guide](https://github.com/UnicoLab/UniFlow/tree/main/examples/gcp_stack/README.md)
-- [Resource Optimization](https://github.com/UnicoLab/UniFlow/tree/main/docs/architecture/resource-optimization.md)
-- [CI/CD Integration](https://github.com/UnicoLab/UniFlow/tree/main/docs/architecture/cicd.md)
+- [GCP Stack Guide](https://github.com/UnicoLab/FlowyML/tree/main/examples/gcp_stack/README.md)
+- [Resource Optimization](https://github.com/UnicoLab/FlowyML/tree/main/docs/architecture/resource-optimization.md)
+- [CI/CD Integration](https://github.com/UnicoLab/FlowyML/tree/main/docs/architecture/cicd.md)

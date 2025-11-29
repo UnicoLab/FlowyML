@@ -14,7 +14,7 @@ Track changes to your pipelines like you track code with Git.
 - **Risky deployments**: You don't know what changed
 - **Lost history**: Can't rollback to a working version
 
-**With UniFlow versioning**:
+**With flowyml versioning**:
 - **Full history**: See exactly what changed and when
 - **Safe releases**: Compare new version with production before deploying
 - **Easy rollback**: Restore a previous version instantly
@@ -39,7 +39,7 @@ The `VersionedPipeline` class provides:
 ## Basic Usage 🚀
 
 ```python
-from uniflow import VersionedPipeline, step
+from flowyml import VersionedPipeline, step
 
 # Create a versioned pipeline
 pipeline = VersionedPipeline("training_pipeline")
@@ -107,7 +107,7 @@ print(version_info.metadata)
 
 ## Version Storage 💾
 
-Versions are stored as JSON files in `.uniflow/versions/{pipeline_name}/` by default. You can customize the storage location:
+Versions are stored as JSON files in `.flowyml/versions/{pipeline_name}/` by default. You can customize the storage location:
 
 ```python
 pipeline = VersionedPipeline(
@@ -167,7 +167,7 @@ pipeline.save_version()
 Changes to context parameters are automatically tracked:
 
 ```python
-from uniflow import context
+from flowyml import context
 
 ctx1 = context(learning_rate=0.001)
 pipeline = VersionedPipeline("training", context=ctx1)
@@ -215,7 +215,7 @@ def verify_version_changes():
 VersionedPipeline(
     name: str,
     version: str = "v0.1.0",
-    versions_dir: str = ".uniflow/versions"
+    versions_dir: str = ".flowyml/versions"
 )
 ```
 

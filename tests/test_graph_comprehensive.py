@@ -1,8 +1,8 @@
 """Comprehensive test suite for graph/DAG functionality."""
 
 import unittest
-from uniflow.core.graph import DAG, Node
-from uniflow import Pipeline, step
+from flowyml.core.graph import DAG, Node
+from flowyml import Pipeline, step
 from tests.base import BaseTestCase
 
 

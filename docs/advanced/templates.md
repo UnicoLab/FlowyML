@@ -14,17 +14,17 @@ Standardize your ML workflows with reusable templates. Define the "Golden Path" 
 - **Boilerplate**: Rewriting the same setup code for every new project
 - **Maintenance nightmare**: Updating a best practice requires editing 50 repos
 
-**With UniFlow templates**:
+**With flowyml templates**:
 - **Standardization**: "Use the `training_template`" ensures everyone logs metrics the same way
 - **Speed**: Start a new project in seconds, not hours
 - **Governance**: Bake compliance checks into the base template
 
 ## 📋 Using Built-in Templates
 
-UniFlow comes with several built-in templates for common ML patterns.
+flowyml comes with several built-in templates for common ML patterns.
 
 ```python
-from uniflow import create_from_template
+from flowyml import create_from_template
 
 # Create a standard training pipeline
 pipeline = create_from_template(
@@ -45,7 +45,7 @@ You can define your own templates by creating a function that returns a `Pipelin
 Create a standard ETL pipeline that enforces your team's best practices (e.g., always validating data).
 
 ```python
-from uniflow import Pipeline, step
+from flowyml import Pipeline, step
 
 def create_standard_etl(name, source_config, dest_config):
     """

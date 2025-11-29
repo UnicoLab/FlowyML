@@ -1,13 +1,13 @@
 # Hugging Face Integration 🤗
 
-Build state-of-the-art NLP and Vision pipelines with Transformers and UniFlow.
+Build state-of-the-art NLP and Vision pipelines with Transformers and flowyml.
 
 > [!NOTE]
 > **What you'll learn**: How to manage Transformers models and datasets
 >
 > **Key insight**: Treat Hugging Face models as first-class citizens in your pipeline.
 
-## Why Hugging Face + UniFlow?
+## Why Hugging Face + flowyml?
 
 - **Model Management**: Version control large Transformer models efficiently.
 - **Dataset Lineage**: Track exactly which version of a dataset was used for fine-tuning.
@@ -18,7 +18,7 @@ Build state-of-the-art NLP and Vision pipelines with Transformers and UniFlow.
 Fine-tune models with full lineage tracking.
 
 ```python
-from uniflow import step
+from flowyml import step
 from transformers import Trainer, TrainingArguments
 
 @step
@@ -41,7 +41,7 @@ Load and version datasets.
 
 ```python
 from datasets import load_dataset
-from uniflow import step
+from flowyml import step
 
 @step
 def get_data():

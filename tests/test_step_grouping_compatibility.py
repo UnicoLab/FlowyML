@@ -1,9 +1,9 @@
 """Test step grouping compatibility with versioned pipelines and resource configs."""
 
 import pytest
-from uniflow.core.step import step
-from uniflow.core.versioning import VersionedPipeline
-from uniflow.core.resources import ResourceRequirements, GPUConfig
+from flowyml.core.step import step
+from flowyml.core.versioning import VersionedPipeline
+from flowyml.core.resources import ResourceRequirements, GPUConfig
 
 
 class TestVersionedPipelineGrouping:
@@ -105,7 +105,7 @@ class TestResourceConfigGrouping:
         def step_b(a: int):
             return a + 1
 
-        from uniflow.core.pipeline import Pipeline
+        from flowyml.core.pipeline import Pipeline
 
         pipeline = Pipeline("test")
         pipeline.add_step(step_a)
@@ -135,7 +135,7 @@ class TestResourceConfigGrouping:
         def step_b(a: int):
             return a + 1
 
-        from uniflow.core.pipeline import Pipeline
+        from flowyml.core.pipeline import Pipeline
 
         pipeline = Pipeline("test")
         pipeline.add_step(step_a)
@@ -188,7 +188,7 @@ class TestResourceConfigGrouping:
         def evaluate(b: str):
             return f"{b}_evaluated"
 
-        from uniflow.core.pipeline import Pipeline
+        from flowyml.core.pipeline import Pipeline
 
         pipeline = Pipeline("test")
         pipeline.add_step(prepare)
@@ -210,7 +210,7 @@ class TestResourceConfigGrouping:
 
 
 class TestAllFeaturesIntegration:
-    """Test step grouping works with all UniFlow features."""
+    """Test step grouping works with all flowyml features."""
 
     def test_grouping_with_caching(self):
         """Test groups work with caching strategies."""
@@ -232,7 +232,7 @@ class TestAllFeaturesIntegration:
         def step_b(a: int):
             return a + 1
 
-        from uniflow.core.pipeline import Pipeline
+        from flowyml.core.pipeline import Pipeline
 
         pipeline = Pipeline("test", enable_cache=True)
         pipeline.add_step(step_a)
@@ -266,7 +266,7 @@ class TestAllFeaturesIntegration:
                 raise ValueError("Intentional failure")
             return a + 1
 
-        from uniflow.core.pipeline import Pipeline
+        from flowyml.core.pipeline import Pipeline
 
         pipeline = Pipeline("test")
         pipeline.add_step(step_a)
@@ -301,7 +301,7 @@ class TestAllFeaturesIntegration:
         def step_b(a: str):
             return f"{a}_b"
 
-        from uniflow.core.pipeline import Pipeline
+        from flowyml.core.pipeline import Pipeline
 
         pipeline = Pipeline("test")
         pipeline.add_step(check)

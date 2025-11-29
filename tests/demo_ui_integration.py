@@ -5,12 +5,12 @@ This script directly saves a pipeline run to the database
 to demonstrate the UI functionality.
 """
 
-from uniflow.storage.metadata import SQLiteMetadataStore
+from flowyml.storage.metadata import SQLiteMetadataStore
 from datetime import datetime
 import time
 
 print("\n" + "=" * 70)
-print("🌊 UniFlow UI Integration - Direct Database Example")
+print("🌊 flowyml UI Integration - Direct Database Example")
 print("=" * 70 + "\n")
 
 # Initialize metadata store

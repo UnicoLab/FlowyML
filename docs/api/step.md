@@ -1,11 +1,11 @@
 # Step API 👣
 
-Steps are the building blocks of UniFlow pipelines.
+Steps are the building blocks of flowyml pipelines.
 
 ## Usage
 
 ```python
-from uniflow import step
+from flowyml import step
 
 @step(cache=True)
 def my_step(data):
@@ -14,12 +14,12 @@ def my_step(data):
 
 ## Decorator `@step`
 
-::: uniflow.core.step.step
+::: flowyml.core.step.step
     options:
         show_root_heading: false
 
 ## Class `Step`
 
-::: uniflow.core.step.Step
+::: flowyml.core.step.Step
     options:
         show_root_heading: false

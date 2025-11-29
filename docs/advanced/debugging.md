@@ -1,11 +1,11 @@
 # Debugging Tools 🐛
 
-UniFlow provides interactive debugging tools that let you pause pipelines, inspect state, and fix issues without restarting from scratch.
+flowyml provides interactive debugging tools that let you pause pipelines, inspect state, and fix issues without restarting from scratch.
 
 > [!NOTE]
 > **What you'll learn**: How to debug pipelines like standard Python code
 >
-> **Key insight**: Distributed pipelines are notoriously hard to debug. UniFlow brings the "IDE experience" to pipelines.
+> **Key insight**: Distributed pipelines are notoriously hard to debug. flowyml brings the "IDE experience" to pipelines.
 
 ## Why Interactive Debugging Matters
 
@@ -16,7 +16,7 @@ UniFlow provides interactive debugging tools that let you pause pipelines, inspe
 4. Read logs: `KeyError: 'x'`
 5. Add print statement, repeat
 
-**The UniFlow way**:
+**The flowyml way**:
 1. Set a breakpoint: `debugger.add_breakpoint(...)`
 2. Run pipeline locally
 3. Execution pauses at the error
@@ -32,7 +32,7 @@ UniFlow provides interactive debugging tools that let you pause pipelines, inspe
 
 ## Overview ℹ️
 
-UniFlow provides comprehensive debugging tools:
+flowyml provides comprehensive debugging tools:
 - **StepDebugger**: Debug individual steps with breakpoints and inspection
 - **PipelineDebugger**: Debug entire pipelines with execution tracing
 - **Utility Functions**: Quick debugging helpers
@@ -42,7 +42,7 @@ UniFlow provides comprehensive debugging tools:
 ### Basic Usage
 
 ```python
-from uniflow import StepDebugger, step
+from flowyml import StepDebugger, step
 
 @step(outputs=["result"])
 def process_data(data):
@@ -62,7 +62,7 @@ debugger.add_breakpoint(
 Stop execution only when data looks weird.
 
 ```python
-from uniflow import StepDebugger, step
+from flowyml import StepDebugger, step
 
 @step
 def process_data(batch):
@@ -137,7 +137,7 @@ except Exception as e:
 ### Tracing Execution
 
 ```python
-from uniflow import PipelineDebugger, Pipeline
+from flowyml import PipelineDebugger, Pipeline
 
 pipeline = Pipeline("my_pipeline")
 pipeline.add_step(load)
@@ -216,7 +216,7 @@ debugger.replay_execution(
 ### debug_step
 
 ```python
-from uniflow.utils.debug import debug_step
+from flowyml.utils.debug import debug_step
 
 @step(outputs=["result"])
 def my_step(data):
@@ -234,7 +234,7 @@ result = debug_step(my_step, data=[1, 2, 3])
 ### trace_step
 
 ```python
-from uniflow.utils.debug import trace_step
+from flowyml.utils.debug import trace_step
 
 # Trace step execution
 @trace_step
@@ -250,7 +250,7 @@ def traced_step(data):
 ### profile_step
 
 ```python
-from uniflow.utils.debug import profile_step
+from flowyml.utils.debug import profile_step
 
 # Profile step performance
 stats = profile_step(my_step, data=[1, 2, 3])

@@ -5,7 +5,7 @@ Visualize your training runs and track artifacts with W&B.
 > [!NOTE]
 > **What you'll learn**: How to integrate W&B for rich experiment visualization
 >
-> **Key insight**: Beautiful dashboards for your UniFlow pipelines.
+> **Key insight**: Beautiful dashboards for your flowyml pipelines.
 
 ## Why Weights & Biases?
 
@@ -18,11 +18,11 @@ Visualize your training runs and track artifacts with W&B.
 Enable W&B tracking for your pipeline run.
 
 ```python
-from uniflow.integrations.wandb import WandBTracker
+from flowyml.integrations.wandb import WandBTracker
 
 pipeline.run(
     tracker=WandBTracker(
-        project="uniflow-demo",
+        project="flowyml-demo",
         entity="my-team"
     )
 )
@@ -30,11 +30,11 @@ pipeline.run(
 
 ## 📊 Logging Metrics
 
-UniFlow automatically captures step inputs/outputs, but you can add custom logs.
+flowyml automatically captures step inputs/outputs, but you can add custom logs.
 
 ```python
 import wandb
-from uniflow import step
+from flowyml import step
 
 @step
 def train(data):

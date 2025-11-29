@@ -2,7 +2,7 @@
 
 import unittest
 import pandas as pd
-from uniflow import Dataset
+from flowyml import Dataset
 from tests.base import BaseTestCase
 
 

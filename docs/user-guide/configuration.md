@@ -1,15 +1,15 @@
 # Configuration: YAML vs. Class-Based ⚙️
 
-UniFlow offers flexible configuration options to suit different development styles and deployment needs. You can define your pipelines and settings using either Python classes (for maximum flexibility and IDE support) or YAML files (for separation of concerns and easy modification without code changes).
+flowyml offers flexible configuration options to suit different development styles and deployment needs. You can define your pipelines and settings using either Python classes (for maximum flexibility and IDE support) or YAML files (for separation of concerns and easy modification without code changes).
 
 ## 🐍 Class-Based Configuration (Python)
 
-This is the default and most powerful way to configure UniFlow. It leverages Python's type system and allows for dynamic configuration logic.
+This is the default and most powerful way to configure flowyml. It leverages Python's type system and allows for dynamic configuration logic.
 
 ### Example
 
 ```python
-from uniflow import context, Pipeline
+from flowyml import context, Pipeline
 
 # Define configuration using Python objects
 ctx = context(
@@ -56,7 +56,7 @@ steps:
 ### Loading YAML Configuration
 
 ```python
-from uniflow import Pipeline
+from flowyml import Pipeline
 
 # Load pipeline from YAML
 pipeline = Pipeline.from_yaml("pipeline.yaml")
@@ -76,7 +76,7 @@ You can also mix both approaches. For example, define the pipeline structure in 
 
 ```python
 import yaml
-from uniflow import context, Pipeline
+from flowyml import context, Pipeline
 
 # Load params
 with open("config.yaml") as f:

@@ -1,4 +1,4 @@
-# UniFlow CI/CD Workflows - Quick Reference
+# flowyml CI/CD Workflows - Quick Reference
 
 ## Available Workflows
 

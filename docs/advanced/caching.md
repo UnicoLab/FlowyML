@@ -1,11 +1,11 @@
 # Caching ⚡
 
-UniFlow's intelligent caching system eliminates redundant work, saving you time and compute costs.
+flowyml's intelligent caching system eliminates redundant work, saving you time and compute costs.
 
 > [!NOTE]
 > **What you'll learn**: How to skip expensive steps that have already run
 >
-> **Key insight**: The fastest code is the code you don't run. UniFlow automatically detects when inputs and code haven't changed.
+> **Key insight**: The fastest code is the code you don't run. flowyml automatically detects when inputs and code haven't changed.
 
 ## Why Caching Matters
 
@@ -14,14 +14,14 @@ UniFlow's intelligent caching system eliminates redundant work, saving you time 
 - **Wasted money**: Retraining models (GPU hours) when only the evaluation metric changed
 - **Slow iteration**: Feedback loops take hours instead of seconds
 
-**With UniFlow caching**:
+**With flowyml caching**:
 - **Instant feedback**: Skip straight to the step you're working on
 - **Cost savings**: Reduce cloud compute bills by 40-60%
 - **Resume capability**: Crash in step 5? Fix it and resume instantly; steps 1-4 are cached
 
 ## How Caching Works
 
-UniFlow calculates a **Cache Key** for every step before it runs. If a matching key exists, the step is skipped.
+flowyml calculates a **Cache Key** for every step before it runs. If a matching key exists, the step is skipped.
 
 The key combines:
 1. **Code Hash**: The source code of the function
@@ -45,7 +45,7 @@ graph TD
 Enable or disable caching for an entire pipeline:
 
 ```python
-from uniflow import Pipeline
+from flowyml import Pipeline
 
 # Enable caching (default)
 pipeline = Pipeline("my_pipeline", enable_cache=True)
@@ -62,7 +62,7 @@ pipeline = Pipeline("my_pipeline", cache_dir="./custom_cache")
 Control caching for individual steps:
 
 ```python
-from uniflow import step
+from flowyml import step
 
 # Use default caching (code_hash)
 @step(outputs=["result"])
@@ -107,7 +107,7 @@ def train_model(dataset, epochs):
 ```
 
 > [!WARNING]
-> Use `input_hash` carefully! If you change the logic (e.g., fix a bug) but inputs stay the same, UniFlow won't know to re-run it. You'll get the old, buggy result.
+> Use `input_hash` carefully! If you change the logic (e.g., fix a bug) but inputs stay the same, flowyml won't know to re-run it. You'll get the old, buggy result.
 
 ### 3. `cache=False` (Side Effects)
 
@@ -125,7 +125,7 @@ def send_slack_alert(metrics):
 ### Example 1: Data Pipeline with Mixed Caching
 
 ```python
-from uniflow import Pipeline, step
+from flowyml import Pipeline, step
 
 @step(cache="code_hash", outputs=["raw"])
 def load_data(file_path: str):
@@ -226,10 +226,10 @@ for step_name, step_result in result.step_results.items():
 
 ### Default Location
 
-By default, cache is stored in `.uniflow/cache`:
+By default, cache is stored in `.flowyml/cache`:
 
 ```
-.uniflow/
+.flowyml/
 ├── cache/
 │   ├── cache.db       # SQLite database tracking cache entries
 │   └── objects/       # Pickled cached objects
@@ -260,9 +260,9 @@ Each cache entry contains:
 ### Clear Cache via Code
 
 ```python
-from uniflow.core.cache import CacheStore
+from flowyml.core.cache import CacheStore
 
-cache = CacheStore(".uniflow/cache")
+cache = CacheStore(".flowyml/cache")
 
 # Clear all cache
 cache.clear()
@@ -415,7 +415,7 @@ def train_model(data, hyperparams):
 cache_store.clear()
 
 # Or via CLI
-# uniflow cache clear
+# flowyml cache clear
 ```
 
 ### 5. Monitor Cache Hit Rates

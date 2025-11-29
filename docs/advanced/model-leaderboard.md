@@ -1,6 +1,6 @@
 # Model Leaderboard 🏆
 
-UniFlow automatically tracks and ranks your models, so you always know which one performs best.
+flowyml automatically tracks and ranks your models, so you always know which one performs best.
 
 > [!NOTE]
 > **What you'll learn**: How to compare models across experiments and automatically pick the winner
@@ -14,7 +14,7 @@ UniFlow automatically tracks and ranks your models, so you always know which one
 - **Lost history**: "What hyperparameters did we use for the best model last month?"
 - **Subjective choices**: Picking models based on gut feeling rather than metrics
 
-**With UniFlow leaderboard**:
+**With flowyml leaderboard**:
 - **Automated ranking**: Always know the SOTA model for your task
 - **Metric-driven**: Compare on accuracy, F1, latency, or custom metrics
 - **Full lineage**: Click any score to see the exact code and data that produced it
@@ -24,7 +24,7 @@ UniFlow automatically tracks and ranks your models, so you always know which one
 The `ModelLeaderboard` class allows you to rank models based on specific metrics.
 
 ```python
-from uniflow.tracking import ModelLeaderboard
+from flowyml.tracking import ModelLeaderboard
 
 # Initialize leaderboard for 'accuracy'
 leaderboard = ModelLeaderboard(metric="accuracy", higher_is_better=True)
@@ -42,7 +42,7 @@ leaderboard.add_score(
 Automatically fetch the best model from history to use as a baseline or for deployment.
 
 ```python
-from uniflow.tracking import ModelLeaderboard
+from flowyml.tracking import ModelLeaderboard
 
 # 1. Get the current champion
 leaderboard = ModelLeaderboard(metric="accuracy")
@@ -63,7 +63,7 @@ else:
 You can also compare specific runs side-by-side.
 
 ```python
-from uniflow.tracking import compare_runs
+from flowyml.tracking import compare_runs
 
 diff = compare_runs(["run_1", "run_2"])
 print(diff)
@@ -71,7 +71,7 @@ print(diff)
 
 ## 🖥️ UI View
 
-The UniFlow Dashboard provides a rich interactive leaderboard where you can:
+The flowyml Dashboard provides a rich interactive leaderboard where you can:
 - Sort by any metric.
 - Filter by tags or date.
 - Click to see detailed run configuration.

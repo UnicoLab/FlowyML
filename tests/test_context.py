@@ -1,8 +1,8 @@
 """Test suite for context and parameter injection."""
 
 import unittest
-from uniflow.core.context import Context
-from uniflow import Pipeline, step
+from flowyml.core.context import Context
+from flowyml import Pipeline, step
 from tests.base import BaseTestCase
 
 

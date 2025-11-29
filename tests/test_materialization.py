@@ -8,9 +8,9 @@ from datetime import datetime
 import pandas as pd
 import numpy as np
 
-from uniflow import Pipeline, step, context
-from uniflow.stacks.local import LocalStack
-from uniflow.storage.artifacts import LocalArtifactStore
+from flowyml import Pipeline, step, context
+from flowyml.stacks.local import LocalStack
+from flowyml.storage.artifacts import LocalArtifactStore
 
 
 class TestArtifactMaterialization(unittest.TestCase):
@@ -47,9 +47,10 @@ class TestArtifactMaterialization(unittest.TestCase):
         # Verify directory exists
         self.assertTrue(Path(path).exists())
 
-        # Verify data file exists
-        data_file = Path(path) / "data.csv"
-        self.assertTrue(data_file.exists())
+        # Verify data file exists (could be csv, parquet, or other format)
+        path_obj = Path(path)
+        data_files = list(path_obj.glob("data.*"))
+        self.assertTrue(len(data_files) > 0, f"Should have at least one data file in {path}")
 
     def test_materialize_numpy_array(self):
         """Test materialization of numpy array."""
@@ -222,7 +223,7 @@ class TestMaterializerRegistry(unittest.TestCase):
 
     def test_pandas_materializer_selected(self):
         """Test that PandasMaterializer is selected for DataFrames."""
-        from uniflow.storage.materializers.base import get_materializer
+        from flowyml.storage.materializers.base import get_materializer
 
         df = pd.DataFrame({"a": [1, 2, 3]})
         materializer = get_materializer(df)
@@ -232,7 +233,7 @@ class TestMaterializerRegistry(unittest.TestCase):
 
     def test_numpy_materializer_selected(self):
         """Test that NumPyMaterializer is selected for numpy arrays."""
-        from uniflow.storage.materializers.base import get_materializer
+        from flowyml.storage.materializers.base import get_materializer
 
         arr = np.array([1, 2, 3])
         materializer = get_materializer(arr)
@@ -242,7 +243,7 @@ class TestMaterializerRegistry(unittest.TestCase):
 
     def test_no_materializer_for_unknown_type(self):
         """Test that get_materializer returns None for unknown types."""
-        from uniflow.storage.materializers.base import get_materializer
+        from flowyml.storage.materializers.base import get_materializer
 
         custom_obj = type("CustomClass", (), {})()
         materializer = get_materializer(custom_obj)

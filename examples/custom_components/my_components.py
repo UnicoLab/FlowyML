@@ -2,23 +2,23 @@
 Example: Custom Orchestrator Component.
 
 This example shows how to create a custom stack component
-that can be used in uniflow.yaml or registered programmatically.
+that can be used in flowyml.yaml or registered programmatically.
 """
 
 from typing import Any
 import importlib.util
-from uniflow.stacks.components import Orchestrator, ResourceConfig, DockerConfig
-from uniflow.stacks.plugins import register_component, get_component_registry
+from flowyml.stacks.components import Orchestrator, ResourceConfig, DockerConfig
+from flowyml.stacks.plugins import register_component, get_component_registry
 
 
 @register_component
 class AirflowOrchestrator(Orchestrator):
     """
-    Custom Airflow orchestrator for UniFlow.
+    Custom Airflow orchestrator for flowyml.
 
-    This orchestrator converts UniFlow pipelines to Airflow DAGs.
+    This orchestrator converts flowyml pipelines to Airflow DAGs.
 
-    Configuration in uniflow.yaml:
+    Configuration in flowyml.yaml:
     ```yaml
     stacks:
       airflow_stack:
@@ -32,7 +32,7 @@ class AirflowOrchestrator(Orchestrator):
     Or programmatically:
     ```python
     from my_components import AirflowOrchestrator
-    from uniflow.stacks import Stack
+    from flowyml.stacks import Stack
 
     orchestrator = AirflowOrchestrator(
         airflow_home="/path/to/airflow",
@@ -85,10 +85,10 @@ class AirflowOrchestrator(Orchestrator):
         **kwargs,
     ) -> str:
         """
-        Convert UniFlow pipeline to Airflow DAG and execute.
+        Convert flowyml pipeline to Airflow DAG and execute.
 
         Args:
-            pipeline: UniFlow pipeline
+            pipeline: flowyml pipeline
             resources: Resource configuration
             docker_config: Docker configuration
             **kwargs: Additional arguments
@@ -104,7 +104,7 @@ class AirflowOrchestrator(Orchestrator):
         dag = DAG(
             dag_id=pipeline.name,
             default_args={
-                "owner": "uniflow",
+                "owner": "flowyml",
                 "start_date": datetime.now() - timedelta(days=1),
                 "retries": 1,
                 **self.default_args,
@@ -113,7 +113,7 @@ class AirflowOrchestrator(Orchestrator):
             catchup=False,
         )
 
-        # Convert UniFlow steps to Airflow tasks
+        # Convert flowyml steps to Airflow tasks
         tasks = {}
         for step in pipeline.steps:
 
@@ -146,7 +146,7 @@ class AirflowOrchestrator(Orchestrator):
 
         # Trigger execution
         dag.create_dagrun(
-            run_id=f"uniflow_{pipeline.run_id}",
+            run_id=f"flowyml_{pipeline.run_id}",
             state="running",
             execution_date=datetime.now(),
         )
@@ -161,7 +161,7 @@ class AirflowOrchestrator(Orchestrator):
         dagrun_id = run_id.replace("airflow_run_", "")
 
         # Query Airflow database
-        dagrun = DagRun.find(run_id=f"uniflow_{dagrun_id}")
+        dagrun = DagRun.find(run_id=f"flowyml_{dagrun_id}")
 
         if dagrun:
             return dagrun[0].state
@@ -183,7 +183,7 @@ class MinIOArtifactStore:
     """
     Custom MinIO artifact store.
 
-    Example usage in uniflow.yaml:
+    Example usage in flowyml.yaml:
     ```yaml
     stacks:
       minio_stack:
@@ -191,7 +191,7 @@ class MinIOArtifactStore:
         artifact_store:
           type: minio
           endpoint: localhost:9000
-          bucket: uniflow-artifacts
+          bucket: flowyml-artifacts
           access_key: ${MINIO_ACCESS_KEY}
           secret_key: ${MINIO_SECRET_KEY}
     ```
@@ -201,7 +201,7 @@ class MinIOArtifactStore:
         self,
         name: str = "minio",
         endpoint: str = "localhost:9000",
-        bucket: str = "uniflow",
+        bucket: str = "flowyml",
         access_key: str = "",
         secret_key: str = "",
         secure: bool = False,

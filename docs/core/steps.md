@@ -1,6 +1,6 @@
 # Steps 👣
 
-Steps are the atomic units of work in UniFlow pipelines. They transform regular Python functions into tracked, cacheable, retriable building blocks.
+Steps are the atomic units of work in flowyml pipelines. They transform regular Python functions into tracked, cacheable, retriable building blocks.
 
 > [!NOTE]
 > **What you'll learn**: How to design reusable, testable steps that compose into production pipelines
@@ -15,8 +15,8 @@ Steps are the atomic units of work in UniFlow pipelines. They transform regular 
 - Manual error handling and retries
 - No visibility into what's running or failed
 
-**With UniFlow steps**, you get:
-- **Automatic dependency tracking**: UniFlow knows execution order
+**With flowyml steps**, you get:
+- **Automatic dependency tracking**: flowyml knows execution order
 - **Intelligent caching**: Skip redundant computation automatically
 - **Built-in retry logic**: Handle transient failures gracefully
 - **Full observability**: See inputs, outputs, duration for every execution
@@ -71,7 +71,7 @@ def split_and_train_and_evaluate(data):
 def clean(raw_data):
     return process(raw_data)
 
-# ⚠️ Less clear: UniFlow can't validate dependencies
+# ⚠️ Less clear: flowyml can't validate dependencies
 @step
 def clean(data):
     return process(data)
@@ -84,7 +84,7 @@ def clean(data):
 A step is a Python function with the `@step` decorator:
 
 ```python
-from uniflow import step
+from flowyml import step
 
 @step(outputs=["result"])
 def my_step(input_data):
@@ -140,7 +140,7 @@ def load():
 def process(data):
     return [x * 2 for x in data]
 
-# UniFlow automatically determines execution order
+# flowyml automatically determines execution order
 pipeline = Pipeline("etl")
 pipeline.add_step(load)
 pipeline.add_step(process)  # Runs after load()
@@ -149,7 +149,7 @@ pipeline.add_step(process)  # Runs after load()
 ### How Wiring Works
 
 1. **Step Outputs**: When a step completes, its output is stored with the name specified in `outputs`
-2. **Step Inputs**: When aFor the next step, UniFlow matches `inputs` names to stored outputs
+2. **Step Inputs**: When aFor the next step, flowyml matches `inputs` names to stored outputs
 3. **Auto-Injection**: The values are automatically passed as function arguments
 
 ```python
@@ -193,7 +193,7 @@ def combine(data, labels):
 Steps can automatically receive parameters from the pipeline's context:
 
 ```python
-from uniflow import Pipeline, context
+from flowyml import Pipeline, context
 
 ctx = context(
     learning_rate=0.001,
@@ -212,7 +212,7 @@ pipeline = Pipeline("training", context=ctx)
 
 ### Type Hints
 
-Type hints help UniFlow match parameters correctly:
+Type hints help flowyml match parameters correctly:
 
 ```python
 @step
@@ -221,7 +221,7 @@ def process(
     threshold: float,     # From context
     normalize: bool = True  # From context (with default)
 ):
-    # UniFlow injects context parameters based on names and types
+    # flowyml injects context parameters based on names and types
     ...
 ```
 
@@ -229,7 +229,7 @@ See [Context & Parameters](context.md) for detailed information.
 
 ## Caching Strategies 💾
 
-UniFlow supports intelligent caching to avoid re-running expensive steps:
+flowyml supports intelligent caching to avoid re-running expensive steps:
 
 ### `cache="code_hash"` (Default)
 
@@ -296,7 +296,7 @@ def long_running_task():
 Use decorators for sophisticated error handling:
 
 ```python
-from uniflow import retry, on_failure, CircuitBreaker
+from flowyml import retry, on_failure, CircuitBreaker
 
 def fallback_data():
     return {"status": "unavailable"}
@@ -383,7 +383,7 @@ def test_train_model():
 
 ```python
 def test_pipeline_integration():
-    from uniflow import Pipeline, context
+    from flowyml import Pipeline, context
 
     ctx = context(learning_rate=0.01)
     pipeline = Pipeline("test_pipeline", context=ctx)
@@ -513,7 +513,7 @@ def predict(features: pd.DataFrame, threshold: float = 0.5) -> pd.Series:
 ### Conditional Execution
 
 ```python
-from uniflow import when, unless
+from flowyml import when, unless
 
 @step
 @when(lambda x: x > 100)
@@ -531,7 +531,7 @@ def process_if_exists(data):
 ### Parallel Processing
 
 ```python
-from uniflow import parallel_map
+from flowyml import parallel_map
 
 @step
 def process_items(items: List):

@@ -1,10 +1,10 @@
 # Creating Custom Plugins
 
-UniFlow's plugin system is designed to be extensible. You can integrate any Python class as a UniFlow component using the **Generic Bridge** and a simple YAML configuration.
+flowyml's plugin system is designed to be extensible. You can integrate any Python class as a flowyml component using the **Generic Bridge** and a simple YAML configuration.
 
 ## Configuration Structure
 
-Plugins are defined in a `plugins` list within your `uniflow.yaml` or a dedicated config file.
+Plugins are defined in a `plugins` list within your `flowyml.yaml` or a dedicated config file.
 
 ```yaml
 plugins:
@@ -13,28 +13,28 @@ plugins:
     type: <component_type>
     adaptation:
       method_mapping:
-        <uniflow_method>: <external_method>
+        <flowyml_method>: <external_method>
       attribute_mapping:
-        <uniflow_attribute>: <external_attribute>
+        <flowyml_attribute>: <external_attribute>
 ```
 
 ### Fields
 
 -   **`name`**: A unique identifier for the plugin (e.g., `my_custom_orchestrator`).
 -   **`source`**: The full Python import path to the class (e.g., `airflow.providers.google.cloud.operators.bigquery.BigQueryExecuteQueryOperator`).
--   **`type`**: The UniFlow component type. Supported values:
+-   **`type`**: The flowyml component type. Supported values:
     -   `orchestrator`
     -   `artifact_store`
     -   `container_registry`
--   **`adaptation`**: (Optional) Rules for adapting the external class to UniFlow's interface.
+-   **`adaptation`**: (Optional) Rules for adapting the external class to flowyml's interface.
 
 ## Adaptation Rules
 
 ### Method Mapping
 
-Map UniFlow's standard methods to the methods of your external class.
+Map flowyml's standard methods to the methods of your external class.
 
-**Example:** Mapping UniFlow's `run_pipeline` to Airflow's `execute`:
+**Example:** Mapping flowyml's `run_pipeline` to Airflow's `execute`:
 
 ```yaml
 adaptation:
@@ -44,7 +44,7 @@ adaptation:
 
 ### Attribute Mapping
 
-Map UniFlow's expected attributes to the attributes of your external class.
+Map flowyml's expected attributes to the attributes of your external class.
 
 **Example:** Mapping `config` to `params`:
 
@@ -56,7 +56,7 @@ adaptation:
 
 ## Example: Airflow Operator
 
-Here is how you can wrap an Airflow BigQuery operator as a UniFlow orchestrator:
+Here is how you can wrap an Airflow BigQuery operator as a flowyml orchestrator:
 
 ```yaml
 plugins:
@@ -70,14 +70,14 @@ plugins:
         config: params
 ```
 
-Once defined, you can load and use this component in your UniFlow code:
+Once defined, you can load and use this component in your flowyml code:
 
 ```python
-from uniflow.stacks.plugins import get_component_registry
+from flowyml.stacks.plugins import get_component_registry
 
 registry = get_component_registry()
-registry.load_plugins_from_config("uniflow.yaml")
+registry.load_plugins_from_config("flowyml.yaml")
 
 bq_operator = registry.get_orchestrator("airflow_bigquery")
-# Now use it like any UniFlow orchestrator!
+# Now use it like any flowyml orchestrator!
 ```

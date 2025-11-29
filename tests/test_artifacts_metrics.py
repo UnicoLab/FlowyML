@@ -1,7 +1,7 @@
 """
 Test script to verify artifacts and metrics saving.
 """
-from uniflow.storage.metadata import SQLiteMetadataStore
+from flowyml.storage.metadata import SQLiteMetadataStore
 from datetime import datetime
 import json
 

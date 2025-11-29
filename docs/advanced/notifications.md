@@ -14,7 +14,7 @@ Know immediately when pipelines succeed, fail, or detect issues.
 - **Dashboard fatigue**: Constantly refreshing the UI to check status
 - **Delayed response**: Critical production issues persist for hours
 
-**With UniFlow alerts**:
+**With flowyml alerts**:
 - **Instant notification**: Slack ping the moment an exception is thrown
 - **Contextual info**: "Pipeline X failed at step Y with error Z"
 - **Multi-channel**: Email for summaries, Slack for urgent issues
@@ -24,7 +24,7 @@ Know immediately when pipelines succeed, fail, or detect issues.
 Configure notifications globally or per-pipeline.
 
 ```python
-from uniflow import configure_notifications
+from flowyml import configure_notifications
 
 configure_notifications(
     console=True,
@@ -47,7 +47,7 @@ You can send manual notifications from any step.
 Notify the team when a long training run finishes successfully.
 
 ```python
-from uniflow import step, get_notifier
+from flowyml import step, get_notifier
 
 @step
 def notify_success(metrics):
@@ -76,7 +76,7 @@ notifier.on_drift_detected("feature_x", psi=0.45)
 Implement `NotificationChannel` to support other services (Discord, PagerDuty, etc.).
 
 ```python
-from uniflow.monitoring.notifications import NotificationChannel, Notification
+from flowyml.monitoring.notifications import NotificationChannel, Notification
 
 class DiscordChannel(NotificationChannel):
     def send(self, notification: Notification) -> bool:

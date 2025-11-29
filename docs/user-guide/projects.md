@@ -13,7 +13,7 @@ The `Project` and `ProjectManager` classes provide:
 ## Quick Start 🚀
 
 ```python
-from uniflow import Project
+from flowyml import Project
 
 # Create a project
 project = Project("recommendation_system")
@@ -37,7 +37,7 @@ print(f"Total artifacts: {stats['total_artifacts']}")
 ### Creating Projects
 
 ```python
-from uniflow import ProjectManager
+from flowyml import ProjectManager
 
 manager = ProjectManager()
 
@@ -208,7 +208,7 @@ pipelines = project.get_pipelines()
 ### With Versioning
 
 ```python
-from uniflow import VersionedPipeline
+from flowyml import VersionedPipeline
 
 project = Project("ml_prod")
 
@@ -229,7 +229,7 @@ versioned.run()
 ### With Scheduling
 
 ```python
-from uniflow import PipelineScheduler
+from flowyml import PipelineScheduler
 
 project = Project("automated_ml")
 scheduler = PipelineScheduler()
@@ -255,7 +255,7 @@ scheduler.schedule_daily(
 Project(
     name: str,
     description: str = "",
-    projects_dir: str = ".uniflow/projects"
+    projects_dir: str = ".flowyml/projects"
 )
 ```
 
@@ -281,7 +281,7 @@ Project(
 A: Currently, pipelines are tied to their project's metadata store. You would need to export/import the pipeline definition manually.
 
 **Q: How do I backup a project?**
-A: Use `project.export_metadata()` and copy the entire project directory from `.uniflow/projects/{project_name}/`.
+A: Use `project.export_metadata()` and copy the entire project directory from `.flowyml/projects/{project_name}/`.
 
 **Q: What happens when I delete a project?**
 A: All pipelines, runs, and artifacts associated with the project are removed. Always export metadata first!

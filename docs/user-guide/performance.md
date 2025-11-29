@@ -4,7 +4,7 @@ Tools and techniques for optimizing pipeline performance.
 
 ## Overview
 
-UniFlow provides several performance optimization utilities:
+flowyml provides several performance optimization utilities:
 - **Lazy Evaluation**: Defer computations until needed
 - **Parallel Execution**: Run steps concurrently
 - **Incremental Computation**: Recompute only what changed
@@ -16,7 +16,7 @@ UniFlow provides several performance optimization utilities:
 Defer expensive computations until their results are actually needed.
 
 ```python
-from uniflow.utils.performance import LazyValue, lazy_property
+from flowyml.utils.performance import LazyValue, lazy_property
 
 # Lazy value
 expensive_data = LazyValue(lambda: load_huge_dataset())
@@ -62,7 +62,7 @@ stats2 = processor.statistics  # Uses cached value
 Execute independent steps concurrently for faster pipelines.
 
 ```python
-from uniflow.utils.performance import ParallelExecutor
+from flowyml.utils.performance import ParallelExecutor
 
 executor = ParallelExecutor(max_workers=4)
 
@@ -86,7 +86,7 @@ results = executor.wait_all(futures)
 ### Parallel Pipeline Steps
 
 ```python
-from uniflow import Pipeline, step
+from flowyml import Pipeline, step
 
 @step(outputs=["chunk1"])
 def process_chunk1(data):
@@ -116,7 +116,7 @@ result = pipeline.run(executor=executor)
 Recompute only what changed, not everything.
 
 ```python
-from uniflow.utils.performance import IncrementalComputation
+from flowyml.utils.performance import IncrementalComputation
 
 # Track dependencies
 inc = IncrementalComputation()
@@ -160,7 +160,7 @@ inc.compute_all()
 Efficiently manage GPU memory and allocation.
 
 ```python
-from uniflow.utils.performance import GPUResourceManager
+from flowyml.utils.performance import GPUResourceManager
 
 gpu = GPUResourceManager()
 
@@ -202,7 +202,7 @@ def train_on_best_gpu(data):
 Reduce pandas DataFrame memory usage.
 
 ```python
-from uniflow.utils.performance import optimize_dataframe
+from flowyml.utils.performance import optimize_dataframe
 
 # Original DataFrame
 df = pd.read_csv("large_file.csv")
@@ -229,7 +229,7 @@ df['float_col'] = pd.to_numeric(df['float_col'], downcast='float')  # float64 â†
 Process large datasets in batches.
 
 ```python
-from uniflow.utils.performance import batch_iterator
+from flowyml.utils.performance import batch_iterator
 
 # Process in batches
 for batch in batch_iterator(large_dataset, batch_size=1000):
@@ -344,7 +344,7 @@ class DataPipeline:
 ### Pattern 2: Parallel + Batch
 
 ```python
-from uniflow.utils.performance import ParallelExecutor, batch_iterator
+from flowyml.utils.performance import ParallelExecutor, batch_iterator
 
 executor = ParallelExecutor(max_workers=4)
 
@@ -356,8 +356,8 @@ results = executor.map(process_batch, [[b] for b in batches])
 ### Pattern 3: Incremental + Cache
 
 ```python
-from uniflow.utils.performance import IncrementalComputation
-from uniflow import SmartCache
+from flowyml.utils.performance import IncrementalComputation
+from flowyml import SmartCache
 
 cache = SmartCache(ttl_seconds=3600)
 inc = IncrementalComputation()

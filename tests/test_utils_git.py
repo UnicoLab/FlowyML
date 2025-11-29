@@ -1,9 +1,9 @@
-"""Tests for uniflow.utils.git."""
+"""Tests for flowyml.utils.git."""
 
 import unittest
 from unittest.mock import patch, MagicMock
 from pathlib import Path
-from uniflow.utils.git import (
+from flowyml.utils.git import (
     run_git_command,
     is_git_repo,
     get_commit_hash,
@@ -34,7 +34,7 @@ class TestGitUtils(unittest.TestCase):
         output = run_git_command(["status"])
         self.assertIsNone(output)
 
-    @patch("uniflow.utils.git.run_git_command")
+    @patch("flowyml.utils.git.run_git_command")
     def test_is_git_repo(self, mock_run):
         """Test checking if directory is git repo."""
         mock_run.return_value = ".git"
@@ -43,19 +43,19 @@ class TestGitUtils(unittest.TestCase):
         mock_run.return_value = None
         self.assertFalse(is_git_repo())
 
-    @patch("uniflow.utils.git.run_git_command")
+    @patch("flowyml.utils.git.run_git_command")
     def test_get_commit_hash(self, mock_run):
         """Test getting commit hash."""
         mock_run.return_value = "abcdef123456"
         self.assertEqual(get_commit_hash(), "abcdef123456")
 
-    @patch("uniflow.utils.git.run_git_command")
+    @patch("flowyml.utils.git.run_git_command")
     def test_get_branch_name(self, mock_run):
         """Test getting branch name."""
         mock_run.return_value = "main"
         self.assertEqual(get_branch_name(), "main")
 
-    @patch("uniflow.utils.git.run_git_command")
+    @patch("flowyml.utils.git.run_git_command")
     def test_is_dirty(self, mock_run):
         """Test checking if repo is dirty."""
         mock_run.return_value = "M file.py"
@@ -67,9 +67,9 @@ class TestGitUtils(unittest.TestCase):
         mock_run.return_value = None
         self.assertFalse(is_dirty())
 
-    @patch("uniflow.utils.git.is_git_repo")
-    @patch("uniflow.utils.git.get_commit_hash")
-    @patch("uniflow.utils.git.get_branch_name")
+    @patch("flowyml.utils.git.is_git_repo")
+    @patch("flowyml.utils.git.get_commit_hash")
+    @patch("flowyml.utils.git.get_branch_name")
     def test_get_git_info(self, mock_branch, mock_hash, mock_is_repo):
         """Test getting full git info."""
         mock_is_repo.return_value = True

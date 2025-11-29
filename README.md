@@ -1,14 +1,14 @@
-# 🌊 UniFlow
+# 🌊 flowyml
 
 <p align="center">
-  <img src="docs/logo.png" width="350" alt="UniFlow Logo"/>
+  <img src="docs/logo.png" width="350" alt="flowyml Logo"/>
   <br>
   <em>The Enterprise-Grade ML Pipeline Framework for Humans</em>
   <br>
   <br>
   <p align="center">
-    <a href="https://github.com/UnicoLab/UniFlow/actions"><img src="https://img.shields.io/github/actions/workflow/status/UnicoLab/UniFlow/ci.yml?branch=main" alt="CI Status"></a>
-    <a href="https://pypi.org/project/uniflow/"><img src="https://img.shields.io/pypi/v/uniflow" alt="PyPI Version"></a>
+    <a href="https://github.com/UnicoLab/FlowyML/actions"><img src="https://img.shields.io/github/actions/workflow/status/UnicoLab/FlowyML/ci.yml?branch=main" alt="CI Status"></a>
+    <a href="https://pypi.org/project/flowyml/"><img src="https://img.shields.io/pypi/v/flowyml" alt="PyPI Version"></a>
     <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.10+-blue.svg" alt="Python 3.10+"></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License"></a>
     <a href="https://unicolab.ai"><img src="https://img.shields.io/badge/UnicoLab-ai-red.svg" alt="UnicoLab"></a>
@@ -17,11 +17,11 @@
 
 ---
 
-**UniFlow** is the comprehensive ML pipeline framework that combines the **simplicity of a Python script** with the **power of an enterprise MLOps platform**.
+**flowyml** is the comprehensive ML pipeline framework that combines the **simplicity of a Python script** with the **power of an enterprise MLOps platform**.
 
-## 🚀 Why UniFlow?
+## 🚀 Why flowyml?
 
-| Feature | UniFlow | Traditional Orchestrators |
+| Feature | flowyml | Traditional Orchestrators |
 |---------|---------|---------------------------|
 | **Developer Experience** | 🐍 **Native Python** - No DSLs, no YAML hell. | 📜 Complex YAML or rigid DSLs. |
 | **Context Awareness** | 🧠 **Auto-Injection** - Params are just function args. | 🔌 Manual wiring of every parameter. |
@@ -31,7 +31,7 @@
 
 ## 🚀 Feature Showcase
 
-UniFlow is a complete toolkit for building, debugging, and deploying ML applications.
+flowyml is a complete toolkit for building, debugging, and deploying ML applications.
 
 ### 1. Zero-Boilerplate Orchestration
 Write pipelines as standard Python functions. No YAML, no DSLs.
@@ -67,7 +67,7 @@ Trace token usage, latency, and costs automatically.
 @step
 @trace_llm(model="gpt-4", tags=["production"])
 def generate_summary(text: str):
-    # UniFlow automatically tracks tokens, cost, and latency
+    # flowyml automatically tracks tokens, cost, and latency
     return openai.ChatCompletion.create(...)
 ```
 
@@ -82,7 +82,7 @@ def load(): return fetch_data()
 @step(inputs=["raw"], outputs=["clean"], execution_group="preprocessing")
 def clean(raw): return preprocess(raw)
 
-# UniFlow automatically aggregates resources (max CPU, memory, best GPU)
+# flowyml automatically aggregates resources (max CPU, memory, best GPU)
 # and executes consecutively in same environment
 ```
 
@@ -99,10 +99,10 @@ pipeline.add_step(
 ```
 
 ### 6. 🧩 Universal Plugin System
-Extend UniFlow with any tool - even wrap ZenML components!
+Extend flowyml with any tool - even wrap ZenML components!
 
 ```python
-from uniflow.stacks.plugins import load_component
+from flowyml.stacks.plugins import load_component
 
 # Use any ZenML orchestrator, artifact store, or integration
 k8s_orch = load_component("zenml:zenml.integrations.kubernetes.orchestrators.KubernetesOrchestrator")
@@ -113,7 +113,7 @@ mlflow = load_component("zenml:zenml.integrations.mlflow.MLflowExperimentTracker
 Pause pipelines for manual approval or review.
 
 ```python
-from uniflow import approval
+from flowyml import approval
 
 approval_step = approval(
     name="approve_deployment",
@@ -126,7 +126,7 @@ approval_step = approval(
 No external tools needed - tracking is built-in.
 
 ```python
-from uniflow.tracking import Experiment
+from flowyml.tracking import Experiment
 
 exp = Experiment("baseline_training")
 exp.log_run(run_id="run_001", metrics={"accuracy": 0.95}, parameters={"lr": 0.01})
@@ -137,8 +137,8 @@ best = exp.get_best_run("accuracy", maximize=True)
 Track, compare, and version your models.
 
 ```python
-from uniflow import ModelLeaderboard
-from uniflow.core import Model
+from flowyml import ModelLeaderboard
+from flowyml.core import Model
 
 # Track performance
 leaderboard = ModelLeaderboard(metric="accuracy")
@@ -153,7 +153,7 @@ model.register(name="text_classifier", stage="production")
 Schedule recurring jobs without external orchestrators.
 
 ```python
-from uniflow import PipelineScheduler
+from flowyml import PipelineScheduler
 
 scheduler = PipelineScheduler()
 scheduler.schedule_daily(
@@ -168,7 +168,7 @@ scheduler.start()
 Slack, Email, and custom alerts built-in.
 
 ```python
-from uniflow import configure_notifications
+from flowyml import configure_notifications
 
 configure_notifications(
     slack_webhook="https://hooks.slack.com/...",
@@ -181,7 +181,7 @@ configure_notifications(
 Set breakpoints and inspect state mid-pipeline.
 
 ```python
-from uniflow import StepDebugger
+from flowyml import StepDebugger
 
 debugger = StepDebugger()
 debugger.set_breakpoint("train_model")
@@ -192,7 +192,7 @@ pipeline.run(debug=True)  # Pauses at breakpoint
 Specialized types for ML workflows.
 
 ```python
-from uniflow.core import Dataset, Model, Metrics, FeatureSet
+from flowyml.core import Dataset, Model, Metrics, FeatureSet
 
 dataset = Dataset.create(data=df, name="training_data")
 model = Model.create(artifact=trained_model, score=0.95)
@@ -214,7 +214,7 @@ def flaky_api_call():
 Monitor distribution shifts automatically.
 
 ```python
-from uniflow import detect_drift
+from flowyml import detect_drift
 
 drift = detect_drift(
     reference_data=train_feature,
@@ -245,19 +245,19 @@ if drift['drift_detected']:
 
 ```bash
 # Install core
-poetry add uniflow
+pip install flowyml
 
 # Install with UI support
-poetry add "uniflow[ui]"
+pip install "flowyml[ui]"
 
 # Install with all features (recommended for dev)
-poetry add "uniflow[all]"
+pip install "flowyml[all]"
 ```
 
 ## ⚡ Quick Start
 
 ```python
-from uniflow import Pipeline, step, context, Dataset, Model
+from flowyml import Pipeline, step, context, Dataset, Model
 
 # 1. Define your configuration (Auto-injected!)
 ctx = context(
@@ -290,20 +290,20 @@ print(f"Run ID: {result.run_id}")
 print(f"Model Score: {result.outputs['model'].score}")
 ```
 
-## 🖥️ The UniFlow UI
+## 🖥️ The flowyml UI
 
 Visualize your workflows, inspect artifacts, and monitor runs in real-time.
 
 ```bash
 # Start the UI server
-uniflow ui start --open-browser
+flowyml ui start --open-browser
 ```
 
 Visit **http://localhost:8080** to access the dashboard.
 
 ## 📚 Documentation
 
-- **[Getting Started](docs/getting-started.md)**: Your first 5 minutes with UniFlow.
+- **[Getting Started](docs/getting-started.md)**: Your first 5 minutes with flowyml.
 - **[Core Concepts](docs/core/pipelines.md)**: Deep dive into Pipelines, Steps, and Context.
 - **[Advanced Features](docs/advanced/caching.md)**: Learn about Caching, Parallelism, and Conditional Execution.
 - **[API Reference](docs/api/core.md)**: Detailed class and function documentation.

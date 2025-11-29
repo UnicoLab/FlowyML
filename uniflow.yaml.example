@@ -1,5 +1,5 @@
-# UniFlow Configuration Example
-# Save this as uniflow.yaml in your project root
+# flowyml Configuration Example
+# Save this as flowyml.yaml in your project root
 
 # Define multiple stacks for different environments
 stacks:
@@ -7,9 +7,9 @@ stacks:
   local:
     type: local
     artifact_store:
-      path: .uniflow/artifacts
+      path: .flowyml/artifacts
     metadata_store:
-      path: .uniflow/metadata.db
+      path: .flowyml/metadata.db
 
   # Staging environment on GCP
   staging:

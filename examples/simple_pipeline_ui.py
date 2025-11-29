@@ -1,14 +1,14 @@
 """
-Simple UniFlow Pipeline Example with UI Integration.
+Simple flowyml Pipeline Example with UI Integration.
 
-This demonstrates the simplest possible UniFlow pipeline with UI visibility.
+This demonstrates the simplest possible flowyml pipeline with UI visibility.
 
 Usage:
     $ python examples/simple_pipeline_ui.py
 """
 
-from uniflow import Pipeline, step, context
-from uniflow.storage.metadata import SQLiteMetadataStore
+from flowyml import Pipeline, step, context
+from flowyml.storage.metadata import SQLiteMetadataStore
 import time
 
 # Define context with parameters
@@ -38,7 +38,7 @@ def train_model(data, learning_rate: float, epochs: int):
 
 # Create and run pipeline
 print("\n" + "=" * 70)
-print("🌊 Running UniFlow Pipeline with UI Integration")
+print("🌊 Running flowyml Pipeline with UI Integration")
 print("=" * 70 + "\n")
 
 pipeline = Pipeline("simple_example_ui", context=ctx)

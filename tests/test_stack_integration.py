@@ -9,10 +9,10 @@ import tempfile
 import shutil
 from pathlib import Path
 
-from uniflow import Pipeline, step
-from uniflow.stacks import LocalStack
-from uniflow.stacks.components import ResourceConfig, DockerConfig
-from uniflow.stacks.registry import StackRegistry, get_registry
+from flowyml import Pipeline, step
+from flowyml.stacks import LocalStack
+from flowyml.stacks.components import ResourceConfig, DockerConfig
+from flowyml.stacks.registry import StackRegistry, get_registry
 
 
 class TestStackIntegration(unittest.TestCase):

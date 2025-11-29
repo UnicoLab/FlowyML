@@ -1,7 +1,7 @@
 """Test suite for error handling."""
 
 import unittest
-from uniflow import Pipeline, step
+from flowyml import Pipeline, step
 from tests.base import BaseTestCase
 
 

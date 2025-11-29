@@ -1,28 +1,28 @@
-# UniFlow Cheatsheet 📝
+# flowyml Cheatsheet 📝
 
-A quick reference guide for common UniFlow commands and patterns.
+A quick reference guide for common flowyml commands and patterns.
 
 ## CLI Commands 💻
 
 ### Project Management
 ```bash
 # Initialize a new project
-uniflow init my-project
+flowyml init my-project
 
 # Initialize with a specific template
-uniflow init my-project --template basic
+flowyml init my-project --template basic
 ```
 
 ### UI Management
 ```bash
 # Start the UI server
-uniflow ui start
+flowyml ui start
 
 # Stop the UI server
-uniflow ui stop
+flowyml ui stop
 
 # Check UI status
-uniflow ui status
+flowyml ui status
 ```
 
 ### Pipeline Execution
@@ -31,23 +31,23 @@ uniflow ui status
 python my_pipeline.py
 
 # Run with specific configuration
-UNIFLOW_ENV=production python my_pipeline.py
+flowyml_ENV=production python my_pipeline.py
 ```
 
 ### Cache Management
 ```bash
 # Clear all cache
-uniflow cache clear
+flowyml cache clear
 
 # Clear cache for specific pipeline
-uniflow cache clear --pipeline my_pipeline
+flowyml cache clear --pipeline my_pipeline
 ```
 
 ## Python API 🐍
 
 ### Basic Pipeline
 ```python
-from uniflow import Pipeline, step
+from flowyml import Pipeline, step
 
 @step
 def step_one():
@@ -68,7 +68,7 @@ run = my_pipeline()
 
 ### Explicit Pipeline Construction
 ```python
-from uniflow import Pipeline, step
+from flowyml import Pipeline, step
 
 p = Pipeline("explicit_pipeline")
 p.add_step(step_one)
@@ -92,7 +92,7 @@ def train(raw_data):
 
 ### Context & Parameters
 ```python
-from uniflow import context, pipeline
+from flowyml import context, pipeline
 
 # Define context with parameters
 ctx = context(
@@ -113,7 +113,7 @@ def train_pipeline():
 
 ### Assets
 ```python
-from uniflow import Dataset, Model, Metrics
+from flowyml import Dataset, Model, Metrics
 
 # Create a dataset
 ds = Dataset.create(
@@ -133,8 +133,8 @@ metrics = Metrics.create(
 
 ```
 my-project/
-├── uniflow.yaml         # Project configuration
-├── .uniflow/            # Internal storage
+├── flowyml.yaml         # Project configuration
+├── .flowyml/            # Internal storage
 │   ├── artifacts/       # Stored assets
 │   ├── cache/           # Execution cache
 │   └── runs/            # Run metadata

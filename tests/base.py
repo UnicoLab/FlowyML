@@ -3,11 +3,11 @@ import tempfile
 import shutil
 import os
 from pathlib import Path
-from uniflow.utils.config import reset_config, update_config, get_config
+from flowyml.utils.config import reset_config, update_config, get_config
 
 
 class BaseTestCase(unittest.TestCase):
-    """Base test class for UniFlow tests."""
+    """Base test class for flowyml tests."""
 
     def setUp(self):
         """Set up test environment."""
@@ -20,12 +20,12 @@ class BaseTestCase(unittest.TestCase):
 
         # Update config to use temporary directory
         update_config(
-            uniflow_home=self.test_path / ".uniflow",
-            artifacts_dir=self.test_path / ".uniflow/artifacts",
-            metadata_db=self.test_path / ".uniflow/metadata.db",
-            cache_dir=self.test_path / ".uniflow/cache",
-            runs_dir=self.test_path / ".uniflow/runs",
-            experiments_dir=self.test_path / ".uniflow/experiments",
+            flowyml_home=self.test_path / ".flowyml",
+            artifacts_dir=self.test_path / ".flowyml/artifacts",
+            metadata_db=self.test_path / ".flowyml/metadata.db",
+            cache_dir=self.test_path / ".flowyml/cache",
+            runs_dir=self.test_path / ".flowyml/runs",
+            experiments_dir=self.test_path / ".flowyml/experiments",
             enable_ui=False,
         )
 

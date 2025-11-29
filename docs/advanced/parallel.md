@@ -1,6 +1,6 @@
 # Parallel Execution 🚀
 
-UniFlow allows you to execute independent steps concurrently, slashing pipeline runtime by running tasks in parallel.
+flowyml allows you to execute independent steps concurrently, slashing pipeline runtime by running tasks in parallel.
 
 > [!NOTE]
 > **What you'll learn**: How to run multiple steps at once to speed up execution
@@ -14,7 +14,7 @@ UniFlow allows you to execute independent steps concurrently, slashing pipeline 
 - **Idle resources**: CPU cores sit idle while one core works
 - **Long feedback loops**: Waiting hours for independent tasks
 
-**With UniFlow parallelism**:
+**With flowyml parallelism**:
 - **Faster results**: Run A, B, and C at the same time
 - **Resource efficiency**: Utilize all CPU cores
 - **Scalability**: Process 10x data in the same amount of time
@@ -26,7 +26,7 @@ You can enable parallel execution by using the `ParallelExecutor`. It automatica
 ### Basic Usage
 
 ```python
-from uniflow import Pipeline, ParallelExecutor, step
+from flowyml import Pipeline, ParallelExecutor, step
 
 @step
 def process_chunk(chunk_id):
@@ -48,10 +48,10 @@ pipeline.run(executor=executor)
 
 ### In-Step Parallelism
 
-You can also parallelize work *within* a single step using standard Python libraries or UniFlow's utilities.
+You can also parallelize work *within* a single step using standard Python libraries or flowyml's utilities.
 
 ```python
-from uniflow.utils.parallel import parallel_map
+from flowyml.utils.parallel import parallel_map
 
 @step
 def batch_process(items):
@@ -82,7 +82,7 @@ def batch_process(items):
 Process a large dataset by splitting it into chunks and processing them in parallel.
 
 ```python
-from uniflow import Pipeline, ParallelExecutor, step
+from flowyml import Pipeline, ParallelExecutor, step
 
 @step
 def process_chunk(chunk_path):

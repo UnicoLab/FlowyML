@@ -1,8 +1,8 @@
 """Test suite for stack functionality."""
 
 import unittest
-from uniflow.stacks.base import Stack
-from uniflow.stacks.local import LocalStack
+from flowyml.stacks.base import Stack
+from flowyml.stacks.local import LocalStack
 
 
 class TestStacks(unittest.TestCase):

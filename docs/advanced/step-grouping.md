@@ -13,8 +13,8 @@ Step grouping allows you to run multiple pipeline steps within the same Docker c
 ## Quick Start
 
 ```python
-from uniflow import step, Pipeline
-from uniflow.core.resources import ResourceRequirements, GPUConfig
+from flowyml import step, Pipeline
+from flowyml.core.resources import ResourceRequirements, GPUConfig
 
 # Define steps with the same execution_group
 @step(outputs=["raw_data"], execution_group="preprocessing")
@@ -59,7 +59,7 @@ def step_2(data: str):
 
 ### 2. Automatic Analysis
 
-UniFlow automatically:
+flowyml automatically:
 - ✅ Analyzes the pipeline DAG
 - ✅ Groups consecutive steps with the same `execution_group`
 - ✅ Splits non-consecutive steps into subgroups

@@ -7,7 +7,7 @@ Classic ML pipelines made robust and reproducible.
 >
 > **Key insight**: Turn your notebook scripts into production pipelines.
 
-## Why Scikit-Learn + UniFlow?
+## Why Scikit-Learn + flowyml?
 
 - **Pipeline Versioning**: Version the entire preprocessing + model chain.
 - **Model Registry**: Promote the best Random Forest to production.
@@ -21,7 +21,7 @@ Return a `sklearn.pipeline.Pipeline` object for automatic serialization.
 from sklearn.pipeline import Pipeline as SkPipeline
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import StandardScaler
-from uniflow import step
+from flowyml import step
 
 @step
 def build_pipeline():

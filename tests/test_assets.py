@@ -6,9 +6,9 @@ import shutil
 from pathlib import Path
 import pandas as pd
 
-from uniflow import Dataset, Model, Metrics
-from uniflow.assets.base import Asset
-from uniflow.core.context import Context
+from flowyml import Dataset, Model, Metrics
+from flowyml.assets.base import Asset
+from flowyml.core.context import Context
 
 
 class TestAssets(unittest.TestCase):

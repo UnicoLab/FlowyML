@@ -3,11 +3,11 @@
 Enterprise-grade ML pipelines on Azure.
 
 > [!NOTE]
-> **What you'll learn**: How to integrate UniFlow with Azure Blob Storage and Azure ML
+> **What you'll learn**: How to integrate flowyml with Azure Blob Storage and Azure ML
 >
 > **Key insight**: Seamlessly move from local development to Azure's secure cloud environment.
 
-## Why Use Azure with UniFlow?
+## Why Use Azure with flowyml?
 
 - **Enterprise Security**: Integrate with Azure Active Directory.
 - **Blob Storage**: Cost-effective storage for massive datasets.
@@ -21,9 +21,9 @@ Store artifacts in Azure Blob Storage containers.
 
 ```bash
 # Register an Azure stack
-uniflow stack register azure-prod \
-    --artifact-store az://my-container/uniflow-artifacts \
-    --metadata-store sqlite:///uniflow.db
+flowyml stack register azure-prod \
+    --artifact-store az://my-container/flowyml-artifacts \
+    --metadata-store sqlite:///flowyml.db
 ```
 
 ## 🚀 Azure ML Execution
@@ -33,8 +33,8 @@ Execute steps as Azure ML Jobs.
 ### Real-World Pattern: Cloud Training
 
 ```python
-from uniflow import Pipeline
-from uniflow.integrations.azure import AzureMLOrchestrator
+from flowyml import Pipeline
+from flowyml.integrations.azure import AzureMLOrchestrator
 
 pipeline = Pipeline("azure_pipeline")
 
@@ -51,6 +51,6 @@ pipeline.run(
 
 ## 🔐 Authentication
 
-UniFlow supports:
+flowyml supports:
 1. `DefaultAzureCredential` (Environment vars, Managed Identity, CLI)
 2. Service Principal authentication

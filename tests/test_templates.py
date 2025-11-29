@@ -3,7 +3,7 @@ Tests for pipeline templates.
 """
 
 import unittest
-from uniflow.core.templates import (
+from flowyml.core.templates import (
     create_from_template,
     list_templates,
     MLTrainingTemplate,
@@ -11,7 +11,7 @@ from uniflow.core.templates import (
     ABTestPipelineTemplate,
     TEMPLATES,
 )
-from uniflow.core.pipeline import Pipeline
+from flowyml.core.pipeline import Pipeline
 
 
 class TestPipelineTemplates(unittest.TestCase):

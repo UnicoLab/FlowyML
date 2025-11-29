@@ -19,7 +19,7 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-.uniflow/
+.flowyml/
 .claude/
 
 # docs
@@ -60,4 +60,4 @@ docs/_build/
 .ipynb_checkpoints/
 
 node_modules/
-.uniflow_scheduler.db
+.flowyml_scheduler.db

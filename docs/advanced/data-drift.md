@@ -1,6 +1,6 @@
 # Data Drift Detection 📉
 
-UniFlow ensures your models don't rot in production by detecting when live data diverges from training data.
+flowyml ensures your models don't rot in production by detecting when live data diverges from training data.
 
 > [!NOTE]
 > **What you'll learn**: How to catch "silent failures" where models degrade because the world changed
@@ -14,25 +14,25 @@ UniFlow ensures your models don't rot in production by detecting when live data 
 - **Reactive debugging**: Users complain about bad predictions weeks later
 - **Blind retraining**: Retraining on schedule regardless of need
 
-**With UniFlow drift detection**:
+**With flowyml drift detection**:
 - **Proactive alerts**: Know immediately when data distribution shifts
 - **Targeted retraining**: Retrain only when necessary
 - **Root cause analysis**: See exactly which features drifted (e.g., "Age distribution shifted older")
 
 ## 📉 Concept
 
-Data drift occurs when the statistical properties of the target variable or input features change over time. UniFlow uses the **Population Stability Index (PSI)** to quantify this shift.
+Data drift occurs when the statistical properties of the target variable or input features change over time. flowyml uses the **Population Stability Index (PSI)** to quantify this shift.
 
 ## 📉 Concept
 
-Data drift occurs when the statistical properties of the target variable or input features change over time. UniFlow uses the **Population Stability Index (PSI)** to quantify this shift.
+Data drift occurs when the statistical properties of the target variable or input features change over time. flowyml uses the **Population Stability Index (PSI)** to quantify this shift.
 
 ## 🕵️ Detecting Drift
 
 Use the `detect_drift` function to compare two datasets.
 
 ```python
-from uniflow.monitoring.data import detect_drift
+from flowyml.monitoring.data import detect_drift
 import numpy as np
 
 # Reference data (e.g., training set)
@@ -61,7 +61,7 @@ else:
 You can also compute basic statistics for any dataset using `compute_stats`.
 
 ```python
-from uniflow.monitoring.data import compute_stats
+from flowyml.monitoring.data import compute_stats
 
 stats = compute_stats(prod_data)
 print(stats)
@@ -73,7 +73,7 @@ print(stats)
 Stop a pipeline if drift is detected, preventing bad models from being deployed or bad predictions from being served.
 
 ```python
-from uniflow import step, get_notifier, If
+from flowyml import step, get_notifier, If
 
 @step(outputs=["drift_result"])
 def check_drift(new_batch):

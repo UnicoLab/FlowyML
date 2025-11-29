@@ -6,7 +6,7 @@ Tests context inheritance, validation, and injection.
 
 import unittest
 from typing import Optional
-from uniflow.core.context import Context
+from flowyml.core.context import Context
 
 
 class TestAdvancedContext(unittest.TestCase):

@@ -15,12 +15,12 @@ Containerize your pipelines for reproducible execution anywhere.
 
 ## 🐳 Running on Docker
 
-UniFlow can automatically build and run your steps in Docker containers.
+flowyml can automatically build and run your steps in Docker containers.
 
 ### Configuration
 
 ```python
-from uniflow.integrations.docker import DockerOrchestrator
+from flowyml.integrations.docker import DockerOrchestrator
 
 # Run pipeline in Docker
 pipeline.run(

@@ -1,19 +1,19 @@
-"""Unit tests for the UniFlow plugin system."""
+"""Unit tests for the flowyml plugin system."""
 
 import pytest
 from unittest.mock import MagicMock, patch, Mock
 import sys
 from typing import Any, Dict, Optional, Type
 
-from uniflow.stacks.plugins import (
+from flowyml.stacks.plugins import (
     ComponentRegistry,
     PluginInfo,
     PluginBridge,
     load_component,
     get_component_registry,
 )
-from uniflow.stacks.bridge import GenericBridge
-from uniflow.stacks.components import StackComponent, ComponentType
+from flowyml.stacks.bridge import GenericBridge
+from flowyml.stacks.components import StackComponent, ComponentType
 
 
 class MockBridge:
@@ -34,7 +34,7 @@ class MockBridge:
         self.wrap_called = True
 
         # Return a mock component class
-        from uniflow.stacks.components import Orchestrator
+        from flowyml.stacks.components import Orchestrator
 
         class MockWrapper(Orchestrator):
             def __init__(self, **kwargs):
@@ -63,9 +63,9 @@ class MockBridge:
 def registry():
     """Create a fresh registry for each test."""
     # Reset global registry
-    import uniflow.stacks.plugins
+    import flowyml.stacks.plugins
 
-    uniflow.stacks.plugins._global_component_registry = None
+    flowyml.stacks.plugins._global_component_registry = None
     return get_component_registry()
 
 
@@ -118,9 +118,9 @@ def test_load_via_bridge(registry):
 def test_load_component_helper():
     """Test the global load_component helper."""
     # Reset registry
-    import uniflow.stacks.plugins
+    import flowyml.stacks.plugins
 
-    uniflow.stacks.plugins._global_component_registry = None
+    flowyml.stacks.plugins._global_component_registry = None
     registry = get_component_registry()
 
     mock_bridge = MockBridge()

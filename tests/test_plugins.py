@@ -10,7 +10,7 @@ import shutil
 from pathlib import Path
 from typing import Any, Dict
 
-from uniflow.stacks.components import (
+from flowyml.stacks.components import (
     Orchestrator,
     ArtifactStore,
     ContainerRegistry,
@@ -18,7 +18,7 @@ from uniflow.stacks.components import (
     ResourceConfig,
     DockerConfig,
 )
-from uniflow.stacks.plugins import (
+from flowyml.stacks.plugins import (
     ComponentRegistry,
     get_component_registry,
     register_component,
@@ -348,7 +348,7 @@ class TestDynamicComponentLoading(unittest.TestCase):
         component_file = Path(self.test_dir) / "test_component.py"
         component_file.write_text(
             """
-from uniflow.stacks.components import Orchestrator
+from flowyml.stacks.components import Orchestrator
 
 class FileOrchestrator(Orchestrator):
     def validate(self): return True

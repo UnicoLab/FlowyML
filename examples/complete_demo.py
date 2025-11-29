@@ -1,4 +1,4 @@
-"""Comprehensive example demonstrating all UniFlow features."""
+"""Comprehensive example demonstrating all flowyml features."""
 
 import numpy as np
 import time
@@ -8,7 +8,7 @@ from pathlib import Path
 # Add project root to path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from uniflow import (  # noqa: E402
+from flowyml import (  # noqa: E402
     Pipeline,
     step,
     context,
@@ -190,7 +190,7 @@ print("\n" + "=" * 80)
 print("PART 6: Pipeline Templates")
 print("=" * 80)
 
-# from uniflow import list_templates  # Moved to top
+# from flowyml import list_templates  # Moved to top
 
 print(f"Available templates: {list_templates()}")
 
@@ -305,4 +305,4 @@ print("   ✓ Pipeline templates")
 print("   ✓ Advanced caching")
 print("   ✓ Data drift detection")
 print("   ✓ Pipeline scheduling")
-print("\n🌊 UniFlow - Next-Generation ML Pipeline Framework")
+print("\n🌊 flowyml - Next-Generation ML Pipeline Framework")

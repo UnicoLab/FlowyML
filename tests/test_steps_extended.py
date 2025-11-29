@@ -1,8 +1,8 @@
 """Extended test suite for step functionality."""
 
 import unittest
-from uniflow import step, Pipeline
-from uniflow.core.context import Context
+from flowyml import step, Pipeline
+from flowyml.core.context import Context
 from tests.base import BaseTestCase
 
 

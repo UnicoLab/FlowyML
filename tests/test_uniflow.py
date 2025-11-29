@@ -1,14 +1,14 @@
 """
-Test suite for UniFlow package.
+Test suite for flowyml package.
 """
 
 import pytest
-from uniflow import Pipeline, step, context, Dataset, Model, Metrics
+from flowyml import Pipeline, step, context, Dataset, Model, Metrics
 from tests.base import BaseTestCase
 
 
-class TestUniFlow(BaseTestCase):
-    """Test suite for UniFlow package."""
+class Testflowyml(BaseTestCase):
+    """Test suite for flowyml package."""
 
     def test_context_creation(self):
         """Test context creation and parameter access."""

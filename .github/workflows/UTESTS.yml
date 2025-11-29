@@ -157,7 +157,7 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          poetry run pytest --cov=uniflow --cov-report=xml --cov-report=html --cov-report=term-missing -v
+          poetry run pytest --cov=flowyml --cov-report=xml --cov-report=html --cov-report=term-missing -v
         timeout-minutes: 20
 
       - name: Upload coverage to Codecov

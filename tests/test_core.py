@@ -1,5 +1,5 @@
 import unittest
-from uniflow import Pipeline, step, context
+from flowyml import Pipeline, step, context
 from tests.base import BaseTestCase
 
 

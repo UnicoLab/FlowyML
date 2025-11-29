@@ -1,6 +1,6 @@
 # Pipelines 🚀
 
-Pipelines are the core abstraction in UniFlow — they represent workflows that orchestrate your ML operations from data to deployment.
+Pipelines are the core abstraction in flowyml — they represent workflows that orchestrate your ML operations from data to deployment.
 
 > [!NOTE]
 > **What you'll learn**: How to design, build, and run production-grade pipelines
@@ -15,7 +15,7 @@ Without pipelines, ML workflows are often:
 - **Manually orchestrated** — Prone to human error, doesn't scale
 - **Opaque** — Can't see what's running, debug failures, or track lineage
 
-**UniFlow pipelines solve this** by providing:
+**flowyml pipelines solve this** by providing:
 - **Declarative workflows** — Define what to do, not how to execute it
 - **Automatic dependency resolution** — Steps run in the right order
 - **Built-in observability** — Track every run, inspect every artifact
@@ -89,7 +89,7 @@ def train(data):
 Here's a complete, runnable example:
 
 ```python
-from uniflow import Pipeline, step, context
+from flowyml import Pipeline, step, context
 
 # Define steps
 @step(outputs=["raw_data"])
@@ -114,14 +114,14 @@ if result.success:
     print(f"✓ Processed data: {result.outputs['processed_data']}")
 ```
 
-**What just happened**: UniFlow built a DAG, determined execution order, and ran your steps. No Airflow DAG files, no Kubeflow YAML, just Python.
+**What just happened**: flowyml built a DAG, determined execution order, and ran your steps. No Airflow DAG files, no Kubeflow YAML, just Python.
 
 ## Pipeline Configuration ⚙️
 
 The `Pipeline` class accepts several configuration options:
 
 ```python
-from uniflow import Pipeline, context
+from flowyml import Pipeline, context
 
 ctx = context(
     learning_rate=0.001,
@@ -145,17 +145,17 @@ pipeline = Pipeline(
 | `context` | `Context` | Context object for parameter injection | `Context()` |
 | `executor` | `Executor` | Custom executor | `LocalExecutor()` |
 | `enable_cache` | `bool` | Enable step caching | `True` |
-| `cache_dir` | `str` | Cache storage directory | `.uniflow/cache` |
+| `cache_dir` | `str` | Cache storage directory | `.flowyml/cache` |
 | `stack` | `Stack` | Execution stack (local/cloud) | `None` |
 
 ## Execution Graph (DAG) 🕸️
 
-When you add steps to a pipeline, UniFlow builds a **Directed Acyclic Graph (DAG)**:
+When you add steps to a pipeline, flowyml builds a **Directed Acyclic Graph (DAG)**:
 
 - **Nodes**: Steps in the pipeline
 - **Edges**: Data dependencies between steps
 
-UniFlow analyzes the `inputs` and `outputs` of each step to determine the execution order automatically.
+flowyml analyzes the `inputs` and `outputs` of each step to determine the execution order automatically.
 
 ```python
 @step(outputs=["data"])
@@ -166,7 +166,7 @@ def step_a():
 def step_b(data):
     return sum(data)
 
-# UniFlow automatically determines step_a must run before step_b
+# flowyml automatically determines step_a must run before step_b
 ```
 
 ## Running Pipelines ▶️
@@ -285,12 +285,12 @@ Step Execution Order:
 Stacks define where and how your pipeline executes:
 
 ```python
-from uniflow import LocalStack
+from flowyml import LocalStack
 
 # Create a local stack with custom paths
 stack = LocalStack(
-    artifact_path=".uniflow/artifacts",
-    metadata_path=".uniflow/metadata.db"
+    artifact_path=".flowyml/artifacts",
+    metadata_path=".flowyml/metadata.db"
 )
 
 # Use stack in pipeline
@@ -307,7 +307,7 @@ See the [Stack Architecture](../architecture/stacks.md) guide for more details o
 ### Conditional Execution
 
 ```python
-from uniflow import when
+from flowyml import when
 
 @step(outputs=["data"])
 def load():
@@ -324,7 +324,7 @@ def train(data):
 ### Parallel Execution
 
 ```python
-from uniflow import parallel_map
+from flowyml import parallel_map
 
 @step
 def process_batch(items):
@@ -334,7 +334,7 @@ def process_batch(items):
 ### Error Handling
 
 ```python
-from uniflow import retry, on_failure
+from flowyml import retry, on_failure
 
 @step
 @retry(max_attempts=3, backoff=2.0)
@@ -461,7 +461,7 @@ def train_model(data):
 ### ML Training Pipeline
 
 ```python
-from uniflow import Pipeline, step, context
+from flowyml import Pipeline, step, context
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 

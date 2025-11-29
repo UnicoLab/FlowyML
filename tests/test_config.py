@@ -11,14 +11,14 @@ import shutil
 import os
 from pathlib import Path
 
-from uniflow.utils.stack_config import (
+from flowyml.utils.stack_config import (
     ConfigLoader,
     load_config,
     create_stack_from_config,
     create_resource_config_from_dict,
     create_docker_config_from_dict,
 )
-from uniflow.stacks.components import ResourceConfig, DockerConfig
+from flowyml.stacks.components import ResourceConfig, DockerConfig
 
 
 class TestConfigLoader(unittest.TestCase):
@@ -31,14 +31,14 @@ class TestConfigLoader(unittest.TestCase):
 
     def test_load_basic_config(self):
         """Test loading basic configuration."""
-        config_path = Path(self.test_dir) / "uniflow.yaml"
+        config_path = Path(self.test_dir) / "flowyml.yaml"
         config_path.write_text(
             """
 stacks:
   local:
     type: local
     artifact_store:
-      path: .uniflow/artifacts
+      path: .flowyml/artifacts
 
 default_stack: local
 """,
@@ -55,7 +55,7 @@ default_stack: local
         os.environ["TEST_PROJECT_ID"] = "test-project"
         os.environ["TEST_BUCKET"] = "test-bucket"
 
-        config_path = Path(self.test_dir) / "uniflow.yaml"
+        config_path = Path(self.test_dir) / "flowyml.yaml"
         config_path.write_text(
             """
 stacks:
@@ -85,7 +85,7 @@ stacks:
 
     def test_resources_configuration(self):
         """Test loading resource configurations."""
-        config_path = Path(self.test_dir) / "uniflow.yaml"
+        config_path = Path(self.test_dir) / "flowyml.yaml"
         config_path.write_text(
             """
 resources:
@@ -111,7 +111,7 @@ resources:
 
     def test_docker_configuration(self):
         """Test loading Docker configurations."""
-        config_path = Path(self.test_dir) / "uniflow.yaml"
+        config_path = Path(self.test_dir) / "flowyml.yaml"
         config_path.write_text(
             """
 docker:
@@ -131,7 +131,7 @@ docker:
 
     def test_get_stack_config(self):
         """Test retrieving specific stack configuration."""
-        config_path = Path(self.test_dir) / "uniflow.yaml"
+        config_path = Path(self.test_dir) / "flowyml.yaml"
         config_path.write_text(
             """
 stacks:
@@ -154,7 +154,7 @@ stacks:
 
     def test_list_stacks(self):
         """Test listing configured stacks."""
-        config_path = Path(self.test_dir) / "uniflow.yaml"
+        config_path = Path(self.test_dir) / "flowyml.yaml"
         config_path.write_text(
             """
 stacks:
@@ -178,7 +178,7 @@ stacks:
 
     def test_get_default_stack(self):
         """Test getting default stack."""
-        config_path = Path(self.test_dir) / "uniflow.yaml"
+        config_path = Path(self.test_dir) / "flowyml.yaml"
         config_path.write_text(
             """
 stacks:

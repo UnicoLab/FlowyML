@@ -9,7 +9,7 @@ import numpy as np
 try:
     import tensorflow as tf
     from tensorflow import keras
-    from uniflow.storage.materializers.keras import KerasMaterializer
+    from flowyml.storage.materializers.keras import KerasMaterializer
 
     HAS_KERAS = True
 except ImportError:

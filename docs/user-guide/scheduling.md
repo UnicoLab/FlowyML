@@ -14,7 +14,7 @@ Automate pipeline execution so you never miss a deadline.
 - **Missed deadlines**: Forgetting to run the weekly report
 - **No reliability**: Pipelines run only when someone remembers
 
-**With UniFlow scheduling**:
+**With flowyml scheduling**:
 - **Zero manual work**: Pipelines run automatically
 - **Multi-timezone**: Run at 9 AM local time for each region
 - **Fault-tolerant**: Survives restarts, prevents duplicate runs
@@ -42,7 +42,7 @@ The `PipelineScheduler` provides:
 ## Quick Start 🚀
 
 ```python
-from uniflow import Pipeline, PipelineScheduler, step
+from flowyml import Pipeline, PipelineScheduler, step
 
 # Define pipeline
 @step(outputs=["data"])
@@ -135,12 +135,12 @@ scheduler.schedule_interval(
 
 ### Persistence
 
-Schedules are automatically persisted to a local SQLite database (`.uniflow_scheduler.db`). This ensures that schedules are not lost if the application restarts.
+Schedules are automatically persisted to a local SQLite database (`.flowyml_scheduler.db`). This ensures that schedules are not lost if the application restarts.
 
 To configure persistence:
 
 ```python
-from uniflow.core.scheduler_config import SchedulerConfig
+from flowyml.core.scheduler_config import SchedulerConfig
 
 config = SchedulerConfig(
     persist_schedules=True,
@@ -151,7 +151,7 @@ scheduler = PipelineScheduler(config=config)
 
 ### Distributed Scheduling
 
-For multi-server deployments, UniFlow supports distributed locking to prevent duplicate executions.
+For multi-server deployments, flowyml supports distributed locking to prevent duplicate executions.
 
 **File-based Locking (Default)**: Good for single-machine, multi-process setups.
 **Redis Locking**: Recommended for multi-server setups.
@@ -221,7 +221,7 @@ scheduler.clear()
 
 ## API Integration 🔌
 
-The scheduler is fully integrated with the UniFlow Backend API.
+The scheduler is fully integrated with the flowyml Backend API.
 
 **Endpoints**:
 - `GET /api/schedules`: List all schedules
@@ -238,7 +238,7 @@ The scheduler is fully integrated with the UniFlow Backend API.
 Mount a volume to persist the scheduler database.
 
 ```dockerfile
-VOLUME /app/.uniflow_scheduler.db
+VOLUME /app/.flowyml_scheduler.db
 CMD ["python", "scheduler.py"]
 ```
 
@@ -246,11 +246,11 @@ CMD ["python", "scheduler.py"]
 
 Configure the scheduler via environment variables:
 
-- `UNIFLOW_SCHEDULER_PERSIST`: "true"/"false"
-- `UNIFLOW_SCHEDULER_DB_PATH`: Path to SQLite DB
-- `UNIFLOW_SCHEDULER_DISTRIBUTED`: "true"/"false"
-- `UNIFLOW_SCHEDULER_REDIS_URL`: Redis connection string
-- `UNIFLOW_SCHEDULER_TIMEZONE`: Default timezone
+- `flowyml_SCHEDULER_PERSIST`: "true"/"false"
+- `flowyml_SCHEDULER_DB_PATH`: Path to SQLite DB
+- `flowyml_SCHEDULER_DISTRIBUTED`: "true"/"false"
+- `flowyml_SCHEDULER_REDIS_URL`: Redis connection string
+- `flowyml_SCHEDULER_TIMEZONE`: Default timezone
 
 ## API Reference 📚
 

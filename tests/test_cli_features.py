@@ -8,9 +8,9 @@ import shutil
 import os
 from pathlib import Path
 from click.testing import CliRunner
-from uniflow.cli.stack_cli import cli
-from uniflow.stacks.registry import get_registry
-from uniflow.stacks.local import LocalStack
+from flowyml.cli.stack_cli import cli
+from flowyml.stacks.registry import get_registry
+from flowyml.stacks.local import LocalStack
 
 
 class TestCLIFeatures(unittest.TestCase):
@@ -24,10 +24,10 @@ class TestCLIFeatures(unittest.TestCase):
         os.chdir(self.test_dir)
 
         # Reset global registry to force re-initialization in new CWD
-        from uniflow.stacks import registry
+        from flowyml.stacks import registry
 
         registry._global_registry = None
-        get_registry()  # This will create .uniflow directory in new CWD
+        get_registry()  # This will create .flowyml directory in new CWD
 
     def tearDown(self):
         """Clean up."""
@@ -36,11 +36,11 @@ class TestCLIFeatures(unittest.TestCase):
         get_registry().clear()
 
     def test_init_command(self):
-        """Test 'init' command creates uniflow.yaml."""
+        """Test 'init' command creates flowyml.yaml."""
         result = self.runner.invoke(cli, ["init"])
         self.assertEqual(result.exit_code, 0)
-        self.assertTrue(Path("uniflow.yaml").exists())
-        self.assertIn("Created uniflow.yaml", result.output)
+        self.assertTrue(Path("flowyml.yaml").exists())
+        self.assertIn("Created flowyml.yaml", result.output)
 
     def test_stack_list_empty(self):
         """Test 'stack list' with no config."""
@@ -51,7 +51,7 @@ class TestCLIFeatures(unittest.TestCase):
     def test_stack_list_with_config(self):
         """Test 'stack list' with configuration."""
         # Create config
-        Path("uniflow.yaml").write_text(
+        Path("flowyml.yaml").write_text(
             """
 stacks:
   dev:
@@ -68,7 +68,7 @@ default_stack: dev
 
     def test_stack_show(self):
         """Test 'stack show' command."""
-        Path("uniflow.yaml").write_text(
+        Path("flowyml.yaml").write_text(
             """
 stacks:
   dev:
@@ -111,7 +111,7 @@ stacks:
         # Create dummy pipeline
         Path("pipeline.py").write_text(
             """
-from uniflow import Pipeline, step
+from flowyml import Pipeline, step
 @step
 def task(): pass
 pipeline = Pipeline("test")
@@ -119,7 +119,7 @@ pipeline.add_step(task)
 """,
         )
         # Create config
-        Path("uniflow.yaml").write_text(
+        Path("flowyml.yaml").write_text(
             """
 stacks:
   local:
@@ -136,14 +136,14 @@ stacks:
         """Test 'run' command with context and resources flags."""
         Path("pipeline.py").write_text(
             """
-from uniflow import Pipeline, step
+from flowyml import Pipeline, step
 @step
 def task(): pass
 pipeline = Pipeline("test")
 pipeline.add_step(task)
 """,
         )
-        Path("uniflow.yaml").write_text(
+        Path("flowyml.yaml").write_text(
             """
 stacks:
   local:

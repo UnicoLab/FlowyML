@@ -2,7 +2,7 @@
 
 import pytest
 from pathlib import Path
-from uniflow.ui.backend.auth import TokenManager
+from flowyml.ui.backend.auth import TokenManager
 
 
 def test_token_creation_and_verification(tmp_path):

@@ -1,9 +1,9 @@
 """Test suite for executor functionality."""
 
 import unittest
-from uniflow import Pipeline, step
-from uniflow.core.executor import LocalExecutor
-from uniflow.core.context import Context
+from flowyml import Pipeline, step
+from flowyml.core.executor import LocalExecutor
+from flowyml.core.context import Context
 from tests.base import BaseTestCase
 
 

@@ -16,10 +16,10 @@ Get notified where you work. Receive alerts for pipeline successes, failures, an
 ## 💬 Configuration
 
 1. Create a Slack App and get a Webhook URL.
-2. Configure UniFlow to use it.
+2. Configure flowyml to use it.
 
 ```python
-from uniflow import configure_notifications
+from flowyml import configure_notifications
 
 configure_notifications(
     slack_webhook="https://hooks.slack.com/services/T000/B000/XXXX"
@@ -31,7 +31,7 @@ configure_notifications(
 Send alerts from any step.
 
 ```python
-from uniflow import get_notifier, step
+from flowyml import get_notifier, step
 
 @step
 def notify_team(metrics):

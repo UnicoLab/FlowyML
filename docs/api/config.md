@@ -1,15 +1,15 @@
 # Configuration API ⚙️
 
-Reference for `uniflow.yaml` and environment variables.
+Reference for `flowyml.yaml` and environment variables.
 
 ## Stack Configuration
 
-::: uniflow.utils.stack_config.StackConfig
+::: flowyml.utils.stack_config.StackConfig
     options:
         show_root_heading: false
 
 ## General Configuration
 
-::: uniflow.utils.config
+::: flowyml.utils.config
     options:
         show_root_heading: false
