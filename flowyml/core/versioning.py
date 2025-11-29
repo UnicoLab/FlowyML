@@ -3,7 +3,7 @@
 import json
 import hashlib
 from pathlib import Path
-from typing import Any, Never
+from typing import Any, NoReturn
 from datetime import datetime
 from dataclasses import dataclass, asdict
 
@@ -204,7 +204,7 @@ class VersionedPipeline:
             if changes["modified"]:
                 pass
 
-    def rollback(self, version: str) -> Never:
+    def rollback(self, version: str) -> NoReturn:
         """Rollback to a previous version (not implemented - would need to reconstruct pipeline)."""
         raise NotImplementedError("Rollback requires pipeline reconstruction from saved state")
 
