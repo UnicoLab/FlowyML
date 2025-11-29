@@ -8,7 +8,7 @@
 
 ---
 
-**FlowyML** is a production-ready ML pipeline orchestration framework that bridges the gap between rapid experimentation and enterprise deployment. Write pipelines as simple Python scripts, then scale them to production without rewriting a single line.
+**FlowyML** is a production-ready ML pipeline orchestration framework that bridges the gap between rapid experimentation and enterprise deployment where assets are first-class citizens. Write pipelines as simple Python scripts, then scale them to production without rewriting a single line.
 
 > [!TIP]
 > **The promise**: Go from notebook to production in hours, not weeks. FlowyML handles orchestration, caching, versioning, and monitoring — so you can focus on ML, not infrastructure.
@@ -20,11 +20,11 @@
 Most ML teams face the same painful trade-offs:
 
 - **Quick prototyping tools** (notebooks, scripts) don't scale to production
-- **Enterprise MLOps platforms** require steep learning curves and complex configuration
+- **Enterprise MLOps platforms** require steep learning curves and complex configuration or is vendor locked
 - **Orchestration frameworks** force you into rigid patterns or obscure DSLs
 - **Experiment tracking** is disconnected from execution and deployment
 
-**FlowyML eliminates these trade-offs.** It's designed for the way data scientists actually work — with pure Python — while providing enterprise-grade capabilities when you need them.
+**FlowyML eliminates these trade-offs.** It's designed for the way data scientists actually work — with pure Python — while providing enterprise-grade capabilities when you need them, extensible with plugins, assets are first-class citizens, experiments and storage are integrated and versioned.
 
 ### What Makes FlowyML Different
 
@@ -53,6 +53,36 @@ Most ML teams face the same painful trade-offs:
     Beautiful, dark-mode dashboard to monitor pipelines, visualize DAGs, and inspect artifacts as they execute.
 
     **Why this matters**: Debug production issues in minutes instead of hours. See exactly what's happening, when it's happening.
+
+-   :plug: **Extensive Plugin Ecosystem**
+    ---
+    FlowyML is built on top of plugins, which allows you to extend its functionality with custom plugins and components from other frameworks.
+
+    **Why this matters**: FlowyML is designed to be flexible and composable.
+
+-   :branch: **Steps Grouping, branching and conditions**
+    ---
+    FlowyML allows you to group consecutive steps to run in the same container/executor. Perfect for reducing overhead while maintaining clear step boundaries and separation of concerns with branching and conditions to incorporate logic into your pipelines natively
+
+    **Why this matters**: FlowyML allows for clear separation of concerns and composable logic into your pipelines natively.
+
+-   :office: **Centralized Hub & Docker**
+    ---
+    Run locally per project or deploy as a centralized entity for the company. Backend and Frontend are fully dockerized.
+
+    **Why this matters**: Start small on your laptop, then scale to a company-wide platform without changing your code.
+
+-   :file_folder: **Project-Based Organization**
+    ---
+    Built-in multi-tenancy for managing multiple teams and initiatives. Scoped runs, artifacts, and metadata.
+
+    **Why this matters**: Keep your work organized and secure as your team grows.
+
+-   :memo: **Pipeline Templates**
+    ---
+    Stop reinventing the wheel. Use pre-built templates for common ML patterns like Training, ETL, and A/B Testing.
+
+    **Why this matters**: Standardize your team's workflows and get started in seconds.
 
 </div>
 
@@ -108,7 +138,7 @@ def expensive_processing(data):
 ```
 
 ### 3. 🤖 LLM & GenAI Ready
-Built-in tools for the new era of AI. Trace token usage, latency, and costs automatically.
+Built-in tools for the new era of AI. Trace token usage, latency, and costs automatically with built-in observability.
 
 ```python
 from flowyml import trace_llm
@@ -116,12 +146,15 @@ from flowyml import trace_llm
 @step
 @trace_llm(model="gpt-4", tags=["production"])
 def generate_summary(text: str):
-    # flowyml automatically tracks tokens, cost, and latency
+    # flowyml automatically tracks:
+    # - Token usage (prompt/completion)
+    # - Cost estimation
+    # - Latency & Success/Failure rates
     return openai.ChatCompletion.create(...)
 ```
 
-### 4. ⚡ Efficient Step Grouping
-Group consecutive steps to run in the same container/executor. Perfect for reducing overhead while maintaining clear step boundaries.
+### 4. ⚡ Efficient Step Grouping & Separation of Concerns
+Group consecutive steps to run in the same container/executor. Perfect for reducing overhead while maintaining clear step boundaries and keeping logic separate from configuration.
 
 ```python
 from flowyml.core.resources import ResourceRequirements, GPUConfig
@@ -309,7 +342,7 @@ pipeline.run(debug=True)
 ```
 
 ### 13. 📦 First-Class Asset Types
-Specialized types for ML workflows. Not just generic files.
+Assets are not just files; they are first-class citizens with lineage, metadata, and versioning. Specialized types for ML workflows.
 
 ```python
 from flowyml.core import Dataset, Model, Metrics, FeatureSet
@@ -368,16 +401,16 @@ from flowyml import VersionedPipeline
 
 pipeline = VersionedPipeline("training", version="v1.0.0")
 pipeline.add_step(load_data)
-pipeline.add_step(train_model)
 pipeline.save_version()
 
-# Make changes
-pipeline.add_step(evaluate)
+# ... make changes ...
 pipeline.version = "v1.1.0"
 pipeline.save_version()
 
-# Compare versions
+# Compare versions to see exactly what changed (steps, code, context)
 diff = pipeline.compare_with("v1.0.0")
+print(diff["modified_steps"])  # ['train_model']
+print(diff["context_changes"]) # {'learning_rate': {'old': 0.01, 'new': 0.001}}
 ```
 
 ### 17. 🏭 Enterprise Production Features
@@ -388,12 +421,48 @@ Everything you need to run mission-critical workloads.
 - **🔔 Notifications**: Slack/Email alerts on success or failure.
 - **🛡️ Circuit Breakers**: Stop cascading failures automatically.
 
-### 18. 🔌 Universal Integrations
+### 18. 🏢 Centralized Hub & Docker
+Ready for the enterprise. Run locally per project or deploy as a centralized entity for the company.
+- **Docker Ready**: Backend and Frontend are fully dockerized.
+- **Centralized Hub**: Share pipelines, artifacts, and experiments across the team.
+
+- **Remote Execution**: Configure local clients to execute on the remote hub.
+
+### 19. 🔌 Universal Integrations
 Works with your existing stack.
 
 - **ML Frameworks**: PyTorch, TensorFlow, Keras, Scikit-learn, HuggingFace.
 - **Cloud Providers**: AWS, GCP, Azure (via plugins).
 - **Tools**: MLflow, Weights & Biases, Great Expectations.
+
+### 20. 📂 Project-Based Organization
+Built-in multi-tenancy for managing multiple teams and initiatives.
+
+```python
+from flowyml import Project
+
+project = Project("recommendation_system")
+pipeline = project.create_pipeline("training")
+
+# All runs, artifacts, and metadata are automatically scoped to the project
+runs = project.list_runs()
+stats = project.get_stats()
+```
+
+### 21. 📝 Pipeline Templates
+Stop reinventing the wheel. Use pre-built templates for common ML patterns.
+
+```python
+from flowyml.core.templates import create_from_template
+
+# Create a standard training pipeline in one line
+pipeline = create_from_template(
+    "ml_training",
+    data_loader=my_loader,
+    trainer=my_trainer,
+    evaluator=my_evaluator
+)
+```
 
 ## ⚡️ Quick Start
 
