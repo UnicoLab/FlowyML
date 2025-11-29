@@ -2,9 +2,9 @@
 
 Type definitions used in flowyml.
 
-## Resources
+## Resource Requirements
 
-::: flowyml.core.resources.Resources
+::: flowyml.core.resources.ResourceRequirements
     options:
         show_root_heading: false
 

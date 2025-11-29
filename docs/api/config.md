@@ -4,7 +4,7 @@ Reference for `flowyml.yaml` and environment variables.
 
 ## Stack Configuration
 
-::: flowyml.utils.stack_config.StackConfig
+::: flowyml.utils.validation.StackConfig
     options:
         show_root_heading: false
 
