@@ -2,7 +2,6 @@
 
 from flowyml.utils.logging import setup_logger, get_logger
 from flowyml.utils.config import (
-    flowymlConfig,
     get_config,
     set_config,
     reset_config,

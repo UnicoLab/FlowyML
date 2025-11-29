@@ -66,7 +66,7 @@ from flowyml.monitoring.notifications import (
     SlackNotifier,
     EmailNotifier,
 )
-from flowyml.integrations.keras import flowymlKerasCallback
+from flowyml.integrations.keras import FlowymlKerasCallback
 
 # Advanced Features
 from flowyml.core.scheduler import PipelineScheduler
@@ -158,7 +158,7 @@ __all__ = [
     "tracer",
     "detect_drift",
     "compute_stats",
-    "flowymlKerasCallback",
+    "FlowymlKerasCallback",
     # Advanced Features
     "PipelineScheduler",
     "approval",
