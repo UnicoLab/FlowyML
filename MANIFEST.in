@@ -1,7 +1,8 @@
 include README.md
 include LICENSE
 include pyproject.toml
-recursive-include flowy *.py
+recursive-include flowyml *.py
+recursive-include flowyml/ui/frontend/dist *
 recursive-exclude tests *
 recursive-exclude docs *
 global-exclude __pycache__
