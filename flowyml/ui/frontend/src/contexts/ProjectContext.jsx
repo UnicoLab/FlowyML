@@ -17,7 +17,7 @@ export function ProjectProvider({ children }) {
         fetch('/api/projects/')
             .then(res => res.json())
             .then(data => {
-                setProjects(data || []);
+                setProjects(data.projects || []);
                 setLoading(false);
             })
             .catch(err => {
@@ -48,7 +48,7 @@ export function ProjectProvider({ children }) {
         try {
             const res = await fetch('/api/projects/');
             const data = await res.json();
-            setProjects(data || []);
+            setProjects(data.projects || []);
         } catch (err) {
             console.error('Failed to refresh projects:', err);
         } finally {

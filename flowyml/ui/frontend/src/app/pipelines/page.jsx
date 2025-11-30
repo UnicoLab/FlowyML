@@ -84,6 +84,7 @@ export function Pipelines() {
                                 <PipelineDetailsPanel
                                     pipeline={selectedPipeline}
                                     onClose={() => setSelectedPipeline(null)}
+                                    onProjectUpdate={fetchData}
                                 />
                             ) : (
                                 <div className="h-full flex flex-col items-center justify-center text-center p-8 bg-slate-50/50 dark:bg-slate-900/50">

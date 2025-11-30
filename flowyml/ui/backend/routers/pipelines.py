@@ -39,6 +39,7 @@ async def list_pipelines(project: str = None):
                     "status": last_run.get("status", "unknown"),
                     "run_count": len(runs),
                     "last_run_id": last_run.get("run_id"),
+                    "project": last_run.get("project"),  # Include project from last run
                 },
             )
 

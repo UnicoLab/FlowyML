@@ -25,7 +25,7 @@ import { motion } from 'framer-motion';
 import { StatusBadge } from './ui/ExecutionStatus';
 import { ProjectSelector } from './ProjectSelector';
 
-export function PipelineDetailsPanel({ pipeline, onClose }) {
+export function PipelineDetailsPanel({ pipeline, onClose, onProjectUpdate }) {
     const [runs, setRuns] = useState([]);
     const [loading, setLoading] = useState(false);
     const [currentProject, setCurrentProject] = useState(pipeline?.project);
@@ -55,9 +55,16 @@ export function PipelineDetailsPanel({ pipeline, onClose }) {
         try {
             await fetchApi(`/api/pipelines/${pipeline.name}/project`, {
                 method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
                 body: JSON.stringify({ project_name: newProject })
             });
             setCurrentProject(newProject);
+            // Trigger parent component refresh to update the pipelines list
+            if (onProjectUpdate) {
+                onProjectUpdate();
+            }
         } catch (error) {
             console.error('Failed to update project:', error);
         }

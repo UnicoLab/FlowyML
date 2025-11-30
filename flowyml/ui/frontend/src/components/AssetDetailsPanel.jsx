@@ -36,6 +36,9 @@ export function AssetDetailsPanel({ asset, onClose }) {
         try {
             await fetchApi(`/api/assets/${asset.artifact_id}/project`, {
                 method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
                 body: JSON.stringify({ project_name: newProject })
             });
             setCurrentProject(newProject);

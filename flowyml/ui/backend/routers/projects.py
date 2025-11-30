@@ -17,7 +17,7 @@ async def list_projects(manager: ProjectManager = Depends(get_projects_manager))
     """List all projects."""
     try:
         projects = manager.list_projects()
-        return projects
+        return {"projects": projects}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

@@ -56,6 +56,9 @@ export function RunDetailsPanel({ run, onClose }) {
         try {
             await fetchApi(`/api/runs/${run.run_id}/project`, {
                 method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
                 body: JSON.stringify({ project_name: newProject })
             });
             setCurrentProject(newProject);
