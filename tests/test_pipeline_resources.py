@@ -4,8 +4,10 @@ from flowyml import Pipeline, step
 from flowyml.core.context import Context
 from flowyml.storage.artifacts import LocalArtifactStore
 from flowyml.storage.metadata import SQLiteMetadataStore
+from flowyml.stacks import LocalStack
 from flowyml.stacks.base import Stack
 from flowyml.stacks.components import Orchestrator, ResourceConfig, DockerConfig
+from flowyml.stacks.registry import get_registry, set_active_stack
 from tests.base import BaseTestCase
 
 
@@ -97,3 +99,37 @@ class TestPipelineResourceHandling(BaseTestCase):
         self.assertEqual(result.docker_config.image, "gcr.io/demo/test:latest")
         self.assertEqual(stack.orchestrator.last_payload["resources"].cpu, "10")
         self.assertEqual(stack.orchestrator.last_payload["docker"].image, "gcr.io/demo/test:latest")
+
+    def test_active_stack_switching_applies(self):
+        registry = get_registry()
+        registry.clear()
+
+        stack_a = LocalStack(
+            name="stack-a",
+            artifact_path=str(self.test_path / "stack_a_artifacts"),
+            metadata_path=str(self.test_path / "stack_a.db"),
+        )
+        stack_b = LocalStack(
+            name="stack-b",
+            artifact_path=str(self.test_path / "stack_b_artifacts"),
+            metadata_path=str(self.test_path / "stack_b.db"),
+        )
+
+        registry.register_stack(stack_a, set_active=True)
+        registry.register_stack(stack_b)
+
+        @step
+        def add_one(value: int):
+            return value + 1
+
+        pipeline = Pipeline("switch-test", context=Context(value=1))
+        pipeline.add_step(add_one)
+
+        result1 = pipeline.run()
+        self.assertTrue(result1.success)
+        self.assertEqual(pipeline.stack.name, "stack-a")
+
+        set_active_stack("stack-b")
+        result2 = pipeline.run()
+        self.assertTrue(result2.success)
+        self.assertEqual(pipeline.stack.name, "stack-b")

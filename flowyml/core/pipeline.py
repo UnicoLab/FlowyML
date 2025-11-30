@@ -160,7 +160,9 @@ class Pipeline:
         self.name = name
         self.context = context or Context()
         self.enable_cache = enable_cache
-        self.stack = stack  # Store stack instance
+        self.stack = None  # Will be assigned via _apply_stack
+        self._stack_locked = stack is not None
+        self._provided_executor = executor
 
         self.steps: list[Step] = []
         self.dag = DAG()
@@ -179,15 +181,14 @@ class Pipeline:
         self.runs_dir.mkdir(parents=True, exist_ok=True)
 
         # Initialize components from stack or defaults
-        if self.stack:
-            self.executor = executor or self.stack.executor
-            self.metadata_store = self.stack.metadata_store
-        else:
-            self.executor = executor or LocalExecutor()
-            # Metadata store for UI integration
-            from flowyml.storage.metadata import SQLiteMetadataStore
+        self.executor = executor or LocalExecutor()
+        # Metadata store for UI integration
+        from flowyml.storage.metadata import SQLiteMetadataStore
 
-            self.metadata_store = SQLiteMetadataStore()
+        self.metadata_store = SQLiteMetadataStore()
+
+        if stack:
+            self._apply_stack(stack, locked=True)
 
         # Handle Project Attachment
         if project:
@@ -211,6 +212,18 @@ class Pipeline:
         # State
         self._built = False
         self.step_groups: list[Any] = []  # Will hold StepGroup objects
+
+    def _apply_stack(self, stack: Any | None, locked: bool) -> None:
+        """Attach a stack and update executors/metadata."""
+        if not stack:
+            return
+        self.stack = stack
+        self._stack_locked = locked
+        if self._provided_executor:
+            self.executor = self._provided_executor
+        else:
+            self.executor = stack.executor
+        self.metadata_store = stack.metadata_store
 
     def add_step(self, step: Step) -> "Pipeline":
         """Add a step to the pipeline.
@@ -285,12 +298,19 @@ class Pipeline:
 
         run_id = str(uuid.uuid4())
 
-        # Use provided stack or instance stack
+        # Determine stack for this run
         if stack is not None:
-            self.stack = stack
-            # Update components from new stack
-            self.executor = self.stack.executor
-            self.metadata_store = self.stack.metadata_store
+            self._apply_stack(stack, locked=True)
+        elif not self._stack_locked:
+            active_stack = None
+            try:
+                from flowyml.stacks.registry import get_active_stack
+            except ImportError:
+                get_active_stack = None
+            if get_active_stack:
+                active_stack = get_active_stack()
+            if active_stack:
+                self._apply_stack(active_stack, locked=False)
 
         orchestrator = getattr(self.stack, "orchestrator", None) if self.stack else None
 
