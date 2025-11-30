@@ -9,9 +9,13 @@ from pathlib import Path
 from typing import Any
 
 from flowyml.stacks.base import Stack
-from flowyml.stacks.components import ArtifactStore, ContainerRegistry, Orchestrator, ResourceConfig, DockerConfig
+from flowyml.stacks.components import ArtifactStore, ContainerRegistry, ResourceConfig, DockerConfig
+from flowyml.core.remote_orchestrator import RemoteOrchestrator
 from flowyml.stacks.plugins import register_component
 from flowyml.storage.metadata import SQLiteMetadataStore
+from flowyml.core.submission_result import SubmissionResult
+from flowyml.core.execution_status import ExecutionStatus
+from flowyml.stacks.components import Orchestrator
 
 
 @register_component(name="s3")
@@ -150,7 +154,7 @@ class ECRContainerRegistry(ContainerRegistry):
 
 
 @register_component(name="aws_batch")
-class AWSBatchOrchestrator(Orchestrator):
+class AWSBatchOrchestrator(RemoteOrchestrator):
     """Submit Flow yML jobs to AWS Batch."""
 
     def __init__(
@@ -180,10 +184,21 @@ class AWSBatchOrchestrator(Orchestrator):
     def run_pipeline(
         self,
         pipeline: Any,
+        run_id: str,
         resources: ResourceConfig | None = None,
         docker_config: DockerConfig | None = None,
+        inputs: dict[str, Any] | None = None,
+        context: dict[str, Any] | None = None,
         **kwargs,
-    ) -> str:
+    ) -> SubmissionResult:
+        """Submit pipeline to AWS Batch.
+
+        Returns:
+            SubmissionResult with job ID and optional wait function.
+        """
+        from flowyml.core.submission_result import SubmissionResult
+        import time
+
         client = self._client()
         job_name = kwargs.get("job_name") or f"{pipeline.name}-{getattr(pipeline, 'run_id', uuid.uuid4().hex)[:8]}"
 
@@ -216,15 +231,85 @@ class AWSBatchOrchestrator(Orchestrator):
             containerOverrides=container_overrides,
             parameters=self.parameters,
         )
-        return response["jobId"]
+        job_id = response["jobId"]
 
-    def get_run_status(self, run_id: str) -> str:
+        # Create wait function
+        def wait_for_completion():
+            """Poll job status until completion."""
+            while True:
+                status = self.get_run_status(job_id)
+                if status.is_finished:
+                    if not status.is_successful:
+                        raise RuntimeError(f"AWS Batch job {job_id} failed with status: {status}")
+                    break
+                time.sleep(10)  # Poll every 10 seconds
+
+        return SubmissionResult(
+            job_id=job_id,
+            wait_for_completion=wait_for_completion,
+            metadata={
+                "platform": "aws_batch",
+                "region": self.region,
+                "job_queue": self.job_queue,
+                "job_name": job_name,
+            },
+        )
+
+    def get_run_status(self, job_id: str) -> ExecutionStatus:
+        """Get status of AWS Batch job.
+
+        Args:
+            job_id: The AWS Batch job ID.
+
+        Returns:
+            Current execution status.
+        """
+        from flowyml.core.execution_status import ExecutionStatus
+
         client = self._client()
-        resp = client.describe_jobs(jobs=[run_id])
-        jobs = resp.get("jobs", [])
-        if not jobs:
-            return "UNKNOWN"
-        return jobs[0].get("status", "UNKNOWN")
+        try:
+            response = client.describe_jobs(jobs=[job_id])
+            if not response.get("jobs"):
+                return ExecutionStatus.FAILED
+
+            job = response["jobs"][0]
+            status = job.get("status", "UNKNOWN")
+
+            # Map AWS Batch status to ExecutionStatus
+            status_map = {
+                "SUBMITTED": ExecutionStatus.PROVISIONING,
+                "PENDING": ExecutionStatus.PROVISIONING,
+                "RUNNABLE": ExecutionStatus.PROVISIONING,
+                "STARTING": ExecutionStatus.INITIALIZING,
+                "RUNNING": ExecutionStatus.RUNNING,
+                "SUCCEEDED": ExecutionStatus.COMPLETED,
+                "FAILED": ExecutionStatus.FAILED,
+            }
+            return status_map.get(status, ExecutionStatus.RUNNING)
+        except Exception as e:
+            print(f"Error fetching job status: {e}")
+            return ExecutionStatus.FAILED
+
+    def stop_run(self, job_id: str, graceful: bool = True) -> None:
+        """Stop an AWS Batch job.
+
+        Args:
+            job_id: The AWS Batch job ID.
+            graceful: If True, allow job to finish current work. If False, terminate immediately.
+        """
+        client = self._client()
+        reason = "Stopped by user"
+
+        try:
+            if graceful:
+                # Cancel the job (allows cleanup)
+                client.cancel_job(jobId=job_id, reason=reason)
+            else:
+                # Terminate immediately
+                client.terminate_job(jobId=job_id, reason=reason)
+        except Exception as e:
+            print(f"Error stopping job {job_id}: {e}")
+            raise
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -237,7 +322,7 @@ class AWSBatchOrchestrator(Orchestrator):
 
 
 @register_component(name="sagemaker")
-class SageMakerOrchestrator(Orchestrator):
+class SageMakerOrchestrator(RemoteOrchestrator):
     """Amazon SageMaker Training/Inference Orchestrator."""
 
     def __init__(
@@ -271,11 +356,14 @@ class SageMakerOrchestrator(Orchestrator):
     def run_pipeline(
         self,
         pipeline: Any,
+        run_id: str,
         resources: ResourceConfig | None = None,
         docker_config: DockerConfig | None = None,
+        inputs: dict[str, Any] | None = None,
+        context: dict[str, Any] | None = None,
         hyperparameters: dict[str, str] | None = None,
         **kwargs,
-    ) -> str:
+    ) -> SubmissionResult:
         client = self._client()
         training_image = docker_config.image if docker_config and docker_config.image else kwargs.get("training_image")
         if not training_image:
@@ -330,7 +418,34 @@ class SageMakerOrchestrator(Orchestrator):
             create_kwargs["HyperParameters"] = hyperparameters
 
         client.create_training_job(**create_kwargs)
-        return job_name
+
+        # Return Submission Result
+        from flowyml.core.submission_result import SubmissionResult
+        import time
+
+        job_id = job_name
+
+        # Create wait function
+        def wait_for_completion():
+            """Poll training job status until completion."""
+            while True:
+                status = self.get_run_status(job_id)
+                if status.is_finished:
+                    if not status.is_successful:
+                        raise RuntimeError(f"SageMaker job {job_id} failed with status: {status}")
+                    break
+                time.sleep(15)  # Poll every 15 seconds
+
+        return SubmissionResult(
+            job_id=job_id,
+            wait_for_completion=wait_for_completion,
+            metadata={
+                "platform": "sagemaker",
+                "region": self.region,
+                "instance_type": instance_type,
+                "job_name": job_name,
+            },
+        )
 
     def deploy_model(
         self,
@@ -372,10 +487,49 @@ class SageMakerOrchestrator(Orchestrator):
             waiter.wait(EndpointName=endpoint_name)
         return endpoint_name
 
-    def get_run_status(self, run_id: str) -> str:
+    def get_run_status(self, job_id: str) -> ExecutionStatus:
+        """Get status of SageMaker training job.
+
+        Args:
+            job_id: The SageMaker training job name.
+
+        Returns:
+            Current execution status.
+        """
+        from flowyml.core.execution_status import ExecutionStatus
+
         client = self._client()
-        resp = client.describe_training_job(TrainingJobName=run_id)
-        return resp.get("TrainingJobStatus", "UNKNOWN")
+        try:
+            response = client.describe_training_job(TrainingJobName=job_id)
+            status = response.get("TrainingJobStatus", "Unknown")
+
+            # Map SageMaker status to ExecutionStatus
+            status_map = {
+                "InProgress": ExecutionStatus.RUNNING,
+                "Completed": ExecutionStatus.COMPLETED,
+                "Failed": ExecutionStatus.FAILED,
+                "Stopping": ExecutionStatus.STOPPING,
+                "Stopped": ExecutionStatus.STOPPED,
+            }
+            return status_map.get(status, ExecutionStatus.RUNNING)
+        except Exception as e:
+            print(f"Error fetching training job status: {e}")
+            return ExecutionStatus.FAILED
+
+    def stop_run(self, job_id: str, graceful: bool = True) -> None:
+        """Stop a SageMaker training job.
+
+        Args:
+            job_id: The SageMaker training job name.
+            graceful: Graceful shutdown (SageMaker always stops gracefully).
+        """
+        client = self._client()
+
+        try:
+            client.stop_training_job(TrainingJobName=job_id)
+        except Exception as e:
+            print(f"Error stopping training job {job_id}: {e}")
+            raise
 
     def to_dict(self) -> dict[str, Any]:
         return {

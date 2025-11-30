@@ -99,8 +99,30 @@ class Orchestrator(StackComponent):
         return ComponentType.ORCHESTRATOR
 
     @abstractmethod
-    def run_pipeline(self, pipeline: Any, **kwargs) -> Any:
-        """Run a pipeline on this orchestrator."""
+    def run_pipeline(
+        self,
+        pipeline: Any,
+        run_id: str,
+        resources: "ResourceConfig | None" = None,
+        docker_config: "DockerConfig | None" = None,
+        inputs: dict[str, Any] | None = None,
+        context: dict[str, Any] | None = None,
+        **kwargs,
+    ) -> Any:
+        """Run a pipeline on this orchestrator.
+
+        Args:
+            pipeline: The pipeline to run.
+            run_id: The unique run identifier.
+            resources: Resource configuration.
+            docker_config: Docker configuration.
+            inputs: Input data.
+            context: Context variables.
+            **kwargs: Additional arguments.
+
+        Returns:
+            The run result or job ID.
+        """
         pass
 
     @abstractmethod

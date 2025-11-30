@@ -38,6 +38,11 @@ class TestVersionedPipelineGrouping:
         assert len(pipeline.pipeline.step_groups) == 1
         assert len(pipeline.pipeline.step_groups[0].steps) == 2
 
+        # Mock metadata store to avoid DB errors in tests
+        from unittest.mock import MagicMock
+
+        pipeline.pipeline.metadata_store = MagicMock()
+
         # Run should execute correctly
         result = pipeline.run()
         assert result.success
@@ -140,6 +145,12 @@ class TestResourceConfigGrouping:
         pipeline = Pipeline("test")
         pipeline.add_step(step_a)
         pipeline.add_step(step_b)
+
+        # Mock metadata store
+        from unittest.mock import MagicMock
+
+        pipeline.metadata_store = MagicMock()
+
         pipeline.build()
 
         # Should handle mixed types
@@ -194,6 +205,12 @@ class TestResourceConfigGrouping:
         pipeline.add_step(prepare)
         pipeline.add_step(train)
         pipeline.add_step(evaluate)
+
+        # Mock metadata store
+        from unittest.mock import MagicMock
+
+        pipeline.metadata_store = MagicMock()
+
         pipeline.build()
 
         # Verify aggregation
@@ -238,6 +255,11 @@ class TestAllFeaturesIntegration:
         pipeline.add_step(step_a)
         pipeline.add_step(step_b)
 
+        # Mock metadata store
+        from unittest.mock import MagicMock
+
+        pipeline.metadata_store = MagicMock()
+
         # First run
         result1 = pipeline.run()
         assert result1.success
@@ -271,6 +293,11 @@ class TestAllFeaturesIntegration:
         pipeline = Pipeline("test")
         pipeline.add_step(step_a)
         pipeline.add_step(step_b)
+
+        # Mock metadata store
+        from unittest.mock import MagicMock
+
+        pipeline.metadata_store = MagicMock()
 
         result = pipeline.run()
         # Note: Retry works at execute_step level, even within groups
@@ -307,6 +334,11 @@ class TestAllFeaturesIntegration:
         pipeline.add_step(check)
         pipeline.add_step(step_a)
         pipeline.add_step(step_b)
+
+        # Mock metadata store
+        from unittest.mock import MagicMock
+
+        pipeline.metadata_store = MagicMock()
 
         result = pipeline.run()
         assert result.success

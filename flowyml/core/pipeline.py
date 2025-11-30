@@ -280,6 +280,7 @@ class Pipeline:
         resources: Any | None = None,  # ResourceConfig
         docker_config: Any | None = None,  # DockerConfig
         context: dict[str, Any] | None = None,  # Context vars override
+        **kwargs,
     ) -> PipelineResult:
         """Execute the pipeline.
 
@@ -290,11 +291,13 @@ class Pipeline:
             resources: Resource configuration for execution
             docker_config: Docker configuration for containerized execution
             context: Context variables override
+            **kwargs: Additional arguments passed to the orchestrator
 
         Returns:
             PipelineResult with outputs and execution info
         """
         import uuid
+        from flowyml.core.orchestrator import LocalOrchestrator
 
         run_id = str(uuid.uuid4())
 
@@ -312,12 +315,10 @@ class Pipeline:
             if active_stack:
                 self._apply_stack(active_stack, locked=False)
 
+        # Determine orchestrator
         orchestrator = getattr(self.stack, "orchestrator", None) if self.stack else None
-
-        # Determine artifact store
-        artifact_store = None
-        if self.stack:
-            artifact_store = self.stack.artifact_store
+        if orchestrator is None:
+            orchestrator = LocalOrchestrator()
 
         # Update context with provided values
         if context:
@@ -330,240 +331,27 @@ class Pipeline:
         resource_config = self._coerce_resource_config(resources)
         docker_cfg = self._coerce_docker_config(docker_config)
 
-        # Initialize result
-        result = PipelineResult(run_id, self.name)
-        result.attach_configs(resource_config, docker_cfg)
+        # Run the pipeline via orchestrator
+        result = orchestrator.run_pipeline(
+            self,
+            run_id=run_id,
+            resources=resource_config,
+            docker_config=docker_cfg,
+            inputs=inputs,
+            context=context,
+            **kwargs,
+        )
 
-        if self.executor is None and orchestrator is not None:
-            self.run_id = run_id
-            job_id = orchestrator.run_pipeline(
-                pipeline=self,
-                resources=resource_config,
-                docker_config=docker_cfg,
-                inputs=inputs or {},
-                context=self.context.to_dict(),
-            )
-            result.mark_submitted(job_id)
-            result.outputs["job_id"] = job_id
-            self._save_run(result)
+        # If result is just a job ID (remote execution), wrap it in a basic result
+        if isinstance(result, str):
+            # Create a submitted result wrapper
+            wrapper = PipelineResult(run_id, self.name)
+            wrapper.attach_configs(resource_config, docker_cfg)
+            wrapper.mark_submitted(result)
+            self._save_run(wrapper)
             self._save_pipeline_definition()
-            return result
+            return wrapper
 
-        if self.executor is None:
-            raise RuntimeError(
-                "Pipeline has no executor configured. Provide a stack with an executor or orchestrator.",
-            )
-
-        step_outputs = inputs or {}
-
-        # Map step names to step objects for easier lookup
-        self.steps_dict = {step.name: step for step in self.steps}
-        if debug:
-            pass
-        else:
-            # Always print the run URL for better UX
-            pass
-
-        # Get execution units (individual steps or groups)
-        from flowyml.core.step_grouping import get_execution_units
-
-        execution_units = get_execution_units(self.dag, self.steps)
-
-        # Execute steps/groups in order
-        for unit in execution_units:
-            # Check if unit is a group or individual step
-            from flowyml.core.step_grouping import StepGroup
-
-            if isinstance(unit, StepGroup):
-                # Execute entire group
-                if debug:
-                    pass
-
-                # Get context parameters (use first step's function as representative)
-                first_step = unit.steps[0]
-                context_params = self.context.inject_params(first_step.func)
-
-                # Execute the group
-                group_results = self.executor.execute_step_group(
-                    step_group=unit,
-                    inputs=step_outputs,
-                    context_params=context_params,
-                    cache_store=self.cache_store,
-                    artifact_store=artifact_store,
-                    run_id=run_id,
-                    project_name=self.name,
-                )
-
-                # Process each step result
-                for step_result in group_results:
-                    result.add_step_result(step_result)
-
-                    if debug:
-                        pass
-
-                    # Handle failure
-                    if not step_result.success and not step_result.skipped:
-                        result.finalize(success=False)
-                        self._save_run(result)
-                        return result
-
-                    # Store outputs for next steps/groups
-                    if step_result.output is not None:
-                        # Find step definition to get output names
-                        step_def = next((s for s in self.steps if s.name == step_result.step_name), None)
-                        if step_def:
-                            if len(step_def.outputs) == 1:
-                                step_outputs[step_def.outputs[0]] = step_result.output
-                                result.outputs[step_def.outputs[0]] = step_result.output
-                            elif isinstance(step_result.output, (list, tuple)) and len(step_result.output) == len(
-                                step_def.outputs,
-                            ):
-                                for name, val in zip(step_def.outputs, step_result.output, strict=False):
-                                    step_outputs[name] = val
-                                    result.outputs[name] = val
-                            elif isinstance(step_result.output, dict):
-                                for name in step_def.outputs:
-                                    if name in step_result.output:
-                                        step_outputs[name] = step_result.output[name]
-                                        result.outputs[name] = step_result.output[name]
-                            else:
-                                if step_def.outputs:
-                                    step_outputs[step_def.outputs[0]] = step_result.output
-                                    result.outputs[step_def.outputs[0]] = step_result.output
-
-            else:
-                # Execute single ungrouped step
-                step = unit
-
-                if debug:
-                    pass
-
-                # Prepare step inputs
-                step_inputs = {}
-
-                # Get function signature to map inputs to parameters
-                import inspect
-
-                sig = inspect.signature(step.func)
-                params = list(sig.parameters.values())
-
-                # Filter out self/cls
-                params = [p for p in params if p.name not in ("self", "cls")]
-
-                # Strategy:
-                # 1. Map inputs to parameters
-                #    - If input name matches param name, use it
-                #    - If not, use positional mapping (input[i] -> param[i])
-
-                # Track which parameters have been assigned
-                assigned_params = set()
-
-                if step.inputs:
-                    for i, input_name in enumerate(step.inputs):
-                        if input_name not in step_outputs:
-                            continue
-
-                        val = step_outputs[input_name]
-
-                        # Check if input name matches a parameter
-                        param_match = next((p for p in params if p.name == input_name), None)
-
-                        if param_match:
-                            step_inputs[param_match.name] = val
-                            assigned_params.add(param_match.name)
-                        elif i < len(params):
-                            # Positional fallback
-                            # Only if this parameter hasn't been assigned yet
-                            target_param = params[i]
-                            if target_param.name not in assigned_params:
-                                step_inputs[target_param.name] = val
-                                assigned_params.add(target_param.name)
-
-                # Auto-map parameters from available outputs if they match function signature
-                # This allows passing inputs to run() without declaring them as asset dependencies
-                for param in params:
-                    if param.name in step_outputs and param.name not in step_inputs:
-                        step_inputs[param.name] = step_outputs[param.name]
-                        assigned_params.add(param.name)
-
-                # Validate context parameters
-                # Exclude parameters that are already provided in step_inputs
-                exclude_params = list(step.inputs) + list(step_inputs.keys())
-                missing_params = self.context.validate_for_step(step.func, exclude=exclude_params)
-                if missing_params:
-                    if debug:
-                        pass
-
-                    error_msg = f"Missing required parameters: {missing_params}"
-                    step_result = ExecutionResult(
-                        step_name=step.name,
-                        success=False,
-                        error=error_msg,
-                    )
-                    result.add_step_result(step_result)
-                    result.finalize(success=False)
-                    self._save_run(result)  # Save run before returning
-                    self._save_pipeline_definition()  # Save definition even on failure
-                    print("DEBUG: Pipeline failed at step execution")
-                    return result
-
-                # Get context parameters for this step
-                context_params = self.context.inject_params(step.func)
-
-                # Execute step
-                step_result = self.executor.execute_step(
-                    step,
-                    step_inputs,
-                    context_params,
-                    self.cache_store,
-                    artifact_store=artifact_store,
-                    run_id=run_id,
-                    project_name=self.name,
-                )
-
-                result.add_step_result(step_result)
-
-                if debug:
-                    pass
-
-                # Handle failure
-                if not step_result.success:
-                    if debug and not step_result.error:
-                        pass
-                    result.finalize(success=False)
-                    self._save_run(result)
-                    self._save_pipeline_definition()  # Save definition even on failure
-                    print("DEBUG: Pipeline failed at step execution")
-                    return result
-
-                # Store outputs for next steps
-                if step_result.output is not None:
-                    if len(step.outputs) == 1:
-                        step_outputs[step.outputs[0]] = step_result.output
-                        result.outputs[step.outputs[0]] = step_result.output
-                    elif isinstance(step_result.output, (list, tuple)) and len(step_result.output) == len(step.outputs):
-                        for name, val in zip(step.outputs, step_result.output, strict=False):
-                            step_outputs[name] = val
-                            result.outputs[name] = val
-                    elif isinstance(step_result.output, dict):
-                        for name in step.outputs:
-                            if name in step_result.output:
-                                step_outputs[name] = step_result.output[name]
-                                result.outputs[name] = step_result.output[name]
-                    else:
-                        # Fallback: assign to first output if available
-                        if step.outputs:
-                            step_outputs[step.outputs[0]] = step_result.output
-                            result.outputs[step.outputs[0]] = step_result.output
-
-        # Success!
-        result.finalize(success=True)
-
-        if debug:
-            pass
-
-        self._save_run(result)
-        self._save_pipeline_definition()  # Save pipeline structure for scheduling
         return result
 
     def to_definition(self) -> dict:
@@ -879,3 +667,60 @@ class Pipeline:
 
     def __repr__(self) -> str:
         return f"Pipeline(name='{self.name}', steps={len(self.steps)})"
+
+    def schedule(
+        self,
+        schedule_type: str,
+        value: str | int,
+        **kwargs,
+    ) -> Any:
+        """Schedule this pipeline to run automatically.
+
+        Args:
+            schedule_type: Type of schedule ('cron', 'interval', 'daily', 'hourly')
+            value: Schedule value (cron expression, seconds, 'HH:MM', or minute)
+            **kwargs: Additional arguments for scheduler
+
+        Returns:
+            Schedule object
+        """
+        from flowyml.core.scheduler import PipelineScheduler
+
+        scheduler = PipelineScheduler()
+
+        if schedule_type == "cron":
+            return scheduler.schedule_cron(self.name, self.run, str(value), **kwargs)
+        elif schedule_type == "interval":
+            return scheduler.schedule_interval(self.name, self.run, seconds=int(value), **kwargs)
+        elif schedule_type == "daily":
+            if isinstance(value, str) and ":" in value:
+                h, m = map(int, value.split(":"))
+                return scheduler.schedule_daily(self.name, self.run, hour=h, minute=m, **kwargs)
+            else:
+                raise ValueError("Daily schedule value must be 'HH:MM'")
+        elif schedule_type == "hourly":
+            return scheduler.schedule_hourly(self.name, self.run, minute=int(value), **kwargs)
+        else:
+            raise ValueError(f"Unknown schedule type: {schedule_type}")
+
+    def check_cache(self) -> dict[str, Any] | None:
+        """Check if a successful run of this pipeline already exists.
+
+        Returns:
+            Metadata of the last successful run, or None if not found.
+        """
+        # Query metadata store for successful runs of this pipeline
+        try:
+            runs = self.metadata_store.query(
+                pipeline_name=self.name,
+                status="completed",
+            )
+
+            if runs:
+                # Return the most recent one (query returns ordered by created_at DESC)
+                return runs[0]
+        except Exception as e:
+            # Don't fail if metadata store is not available or errors
+            print(f"Warning: Failed to check cache: {e}")
+
+        return None

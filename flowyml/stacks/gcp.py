@@ -9,17 +9,19 @@ from typing import Any
 import subprocess
 from flowyml.stacks.base import Stack
 from flowyml.stacks.components import (
-    Orchestrator,
     ArtifactStore,
     ContainerRegistry,
     ResourceConfig,
     DockerConfig,
 )
+from flowyml.core.remote_orchestrator import RemoteOrchestrator
 from flowyml.stacks.plugins import register_component
+from flowyml.core.submission_result import SubmissionResult
+from flowyml.core.execution_status import ExecutionStatus
 
 
 @register_component(name="vertex_ai")
-class VertexAIOrchestrator(Orchestrator):
+class VertexAIOrchestrator(RemoteOrchestrator):
     """Vertex AI orchestrator for running pipelines on Google Cloud.
 
     This orchestrator submits pipeline jobs to Vertex AI Pipelines,
@@ -79,28 +81,35 @@ class VertexAIOrchestrator(Orchestrator):
     def run_pipeline(
         self,
         pipeline: Any,
+        run_id: str,
         resources: ResourceConfig | None = None,
         docker_config: DockerConfig | None = None,
+        inputs: dict[str, Any] | None = None,
+        context: dict[str, Any] | None = None,
         **kwargs,
-    ) -> str:
+    ) -> "SubmissionResult":
         """Run pipeline on Vertex AI.
 
         Args:
             pipeline: Pipeline to run
+            run_id: Run identifier
             resources: Resource configuration
             docker_config: Docker configuration
+            inputs: Input data
+            context: Context variables
             **kwargs: Additional arguments
 
         Returns:
-            Job ID
+            SubmissionResult with job resource name
         """
         from google.cloud import aiplatform
+        import time
 
         # Initialize Vertex AI
         aiplatform.init(project=self.project_id, location=self.region)
 
         # Create custom job
-        job_display_name = f"{pipeline.name}-{pipeline.run_id}"
+        job_display_name = f"{pipeline.name}-{run_id[:8]}"
 
         # Build worker pool specs
         worker_pool_specs = self._build_worker_pool_specs(
@@ -117,16 +126,66 @@ class VertexAIOrchestrator(Orchestrator):
             encryption_spec_key_name=self.encryption_key,
         )
 
-        job.run(sync=False)
+        # Submit job asynchronously
+        job.submit()
 
-        return job.resource_name
+        job_id = job.resource_name
 
-    def get_run_status(self, run_id: str) -> str:
+        # Create wait function
+        def wait_for_completion():
+            """Poll job status until completion."""
+            while True:
+                status = self.get_run_status(job_id)
+                if status.is_finished:
+                    if not status.is_successful:
+                        raise RuntimeError(f"Vertex AI job {job_id} failed with status: {status}")
+                    break
+                time.sleep(15)  # Poll every 15 seconds
+
+        return SubmissionResult(
+            job_id=job_id,
+            wait_for_completion=wait_for_completion,
+            metadata={
+                "platform": "vertex_ai",
+                "project": self.project_id,
+                "region": self.region,
+                "job_name": job_display_name,
+            },
+        )
+
+    def get_run_status(self, job_id: str) -> "ExecutionStatus":
         """Get status of a Vertex AI job."""
         from google.cloud import aiplatform
 
-        job = aiplatform.CustomJob(run_id)
-        return job.state.name
+        try:
+            job = aiplatform.CustomJob(job_id)
+            state = job.state.name
+
+            # Map Vertex AI states to ExecutionStatus
+            status_map = {
+                "JOB_STATE_QUEUED": ExecutionStatus.PROVISIONING,
+                "JOB_STATE_PENDING": ExecutionStatus.PROVISIONING,
+                "JOB_STATE_RUNNING": ExecutionStatus.RUNNING,
+                "JOB_STATE_SUCCEEDED": ExecutionStatus.COMPLETED,
+                "JOB_STATE_FAILED": ExecutionStatus.FAILED,
+                "JOB_STATE_CANCELLING": ExecutionStatus.STOPPING,
+                "JOB_STATE_CANCELLED": ExecutionStatus.CANCELLED,
+            }
+            return status_map.get(state, ExecutionStatus.RUNNING)
+        except Exception as e:
+            print(f"Error fetching job status: {e}")
+            return ExecutionStatus.FAILED
+
+    def stop_run(self, job_id: str, graceful: bool = True) -> None:
+        """Cancel a Vertex AI job."""
+        from google.cloud import aiplatform
+
+        try:
+            job = aiplatform.CustomJob(job_id)
+            job.cancel()
+        except Exception as e:
+            print(f"Error cancelling job {job_id}: {e}")
+            raise
 
     def _build_worker_pool_specs(
         self,

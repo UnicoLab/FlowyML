@@ -48,9 +48,11 @@ def init(name: str, template: str, directory: str) -> None:
 @click.option("--stack", default="local", help="Stack to use for execution")
 @click.option("--context", "-c", multiple=True, help="Context parameters (key=value)")
 @click.option("--debug", is_flag=True, help="Enable debug mode")
-def run(pipeline_name: str, stack: str, context: tuple, debug: bool) -> None:
+@click.option("--retry", type=int, help="Number of retries for the pipeline")
+def run(pipeline_name: str, stack: str, context: tuple, debug: bool, retry: int | None) -> None:
     """Run a pipeline."""
     from flowyml.cli.run import run_pipeline
+    from flowyml.core.retry_policy import OrchestratorRetryPolicy
 
     # Parse context parameters
     ctx_params = {}
@@ -60,14 +62,118 @@ def run(pipeline_name: str, stack: str, context: tuple, debug: bool) -> None:
 
     click.echo(f"Running pipeline '{pipeline_name}' on stack '{stack}'...")
 
+    kwargs = {}
+    if retry:
+        kwargs["retry_policy"] = OrchestratorRetryPolicy(max_attempts=retry)
+        click.echo(f"  Retry policy enabled: max_attempts={retry}")
+
     try:
-        result = run_pipeline(pipeline_name, stack, ctx_params, debug)
+        result = run_pipeline(pipeline_name, stack, ctx_params, debug, **kwargs)
         click.echo("✓ Pipeline completed successfully")
         click.echo(f"  Run ID: {result.get('run_id', 'N/A')}")
         click.echo(f"  Duration: {result.get('duration', 'N/A')}")
     except Exception as e:
         click.echo(f"✗ Pipeline failed: {e}", err=True)
         raise click.Abort()
+
+
+@cli.group()
+def schedule() -> None:
+    """Schedule management commands."""
+    pass
+
+
+@schedule.command("create")
+@click.argument("pipeline_name")
+@click.argument("schedule_type", type=click.Choice(["cron", "interval", "daily", "hourly"]))
+@click.argument("value")
+@click.option("--stack", default="local", help="Stack to use for execution")
+def create_schedule(pipeline_name: str, schedule_type: str, value: str, stack: str) -> None:
+    """Create a new schedule for a pipeline.
+
+    VALUE format depends on SCHEDULE_TYPE:
+    - cron: "*/5 * * * *"
+    - interval: seconds (e.g. 60)
+    - daily: "HH:MM" (e.g. 14:30)
+    - hourly: minute (e.g. 30)
+    """
+    from flowyml.core.scheduler import PipelineScheduler
+    from flowyml.cli.run import run_pipeline
+
+    # We need a callable for the scheduler.
+    # Since CLI is stateless, we wrap the run_pipeline command.
+    # Note: In a real distributed system, this would submit to a scheduler service.
+    # Here we are just registering it in the local scheduler DB.
+
+    # For now, we'll just use the scheduler API to register the definition
+    scheduler = PipelineScheduler()
+
+    # Define a wrapper that runs the pipeline via CLI logic
+    def job_func():
+        run_pipeline(pipeline_name, stack, {}, False)
+
+    try:
+        if schedule_type == "cron":
+            scheduler.schedule_cron(pipeline_name, job_func, value)
+        elif schedule_type == "interval":
+            scheduler.schedule_interval(pipeline_name, job_func, seconds=int(value))
+        elif schedule_type == "daily":
+            if ":" in value:
+                h, m = map(int, value.split(":"))
+                scheduler.schedule_daily(pipeline_name, job_func, hour=h, minute=m)
+            else:
+                raise ValueError("Daily value must be HH:MM")
+        elif schedule_type == "hourly":
+            scheduler.schedule_hourly(pipeline_name, job_func, minute=int(value))
+
+        click.echo(f"✓ Schedule created for '{pipeline_name}' ({schedule_type}={value})")
+        click.echo("  Note: Ensure the scheduler service is running to execute this schedule.")
+    except Exception as e:
+        click.echo(f"✗ Error creating schedule: {e}", err=True)
+
+
+@schedule.command("list")
+def list_schedules() -> None:
+    """List all active schedules."""
+    from flowyml.core.scheduler import PipelineScheduler
+
+    scheduler = PipelineScheduler()
+    jobs = scheduler.get_jobs()
+
+    if not jobs:
+        click.echo("No active schedules found.")
+        return
+
+    click.echo(f"Found {len(jobs)} schedules:\n")
+    for job in jobs:
+        click.echo(f"  {job.id} - {job.name}")
+        click.echo(f"    Next run: {job.next_run_time}")
+        click.echo()
+
+
+@schedule.command("start")
+def start_scheduler() -> None:
+    """Start the scheduler service (blocking)."""
+    from flowyml.core.scheduler import PipelineScheduler
+    import time
+
+    click.echo("🚀 Starting Scheduler Service...")
+    scheduler = PipelineScheduler()
+
+    try:
+        # In a real app, this would load definitions from DB and register them
+        # For now, it just runs the scheduler loop for existing in-memory jobs
+        # (which might be empty if we restarted).
+        # To make this persistent, we'd need to serialize job definitions to DB.
+        # The current Scheduler implementation supports SQLite persistence for job state,
+        # but we need to re-register jobs on startup.
+
+        click.echo("  Scheduler running. Press Ctrl+C to stop.")
+        while True:
+            scheduler.run_pending()
+            time.sleep(1)
+    except KeyboardInterrupt:
+        click.echo("\n🛑 Scheduler stopped.")
 
 
 @cli.group()

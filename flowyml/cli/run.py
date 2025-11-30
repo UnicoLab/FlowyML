@@ -6,7 +6,13 @@ from pathlib import Path
 from typing import Any
 
 
-def run_pipeline(pipeline_name: str, stack: str, context_params: dict[str, Any], debug: bool) -> dict[str, Any]:
+def run_pipeline(
+    pipeline_name: str,
+    stack: str,
+    context_params: dict[str, Any],
+    debug: bool,
+    **kwargs,
+) -> dict[str, Any]:
     """Run a pipeline by name.
 
     Args:
@@ -14,6 +20,7 @@ def run_pipeline(pipeline_name: str, stack: str, context_params: dict[str, Any],
         stack: Stack to use for execution
         context_params: Context parameters to override
         debug: Enable debug mode
+        **kwargs: Additional arguments passed to pipeline.run
 
     Returns:
         Dictionary with run results
@@ -65,7 +72,7 @@ def run_pipeline(pipeline_name: str, stack: str, context_params: dict[str, Any],
         pipeline.set_stack(stack)
 
     # Run pipeline
-    result = pipeline.run(debug=debug)
+    result = pipeline.run(debug=debug, **kwargs)
 
     return {
         "run_id": result.run_id,

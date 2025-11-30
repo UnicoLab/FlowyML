@@ -46,12 +46,17 @@ class LocalStack(Stack):
         artifact_store = LocalArtifactStore(artifact_path)
         metadata_store = SQLiteMetadataStore(metadata_path)
 
+        from flowyml.core.orchestrator import LocalOrchestrator
+
+        orchestrator = LocalOrchestrator()
+
         # Initialize base stack
         super().__init__(
             name=name,
             executor=executor,
             artifact_store=artifact_store,
             metadata_store=metadata_store,
+            orchestrator=orchestrator,
         )
 
         # Ensure directories exist

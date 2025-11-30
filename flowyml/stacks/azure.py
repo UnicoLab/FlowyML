@@ -3,14 +3,15 @@
 from __future__ import annotations
 
 import subprocess
-import uuid
 from pathlib import Path
 from typing import Any
 
 from flowyml.stacks.base import Stack
-from flowyml.stacks.components import ArtifactStore, ContainerRegistry, Orchestrator, DockerConfig, ResourceConfig
+from flowyml.stacks.components import ArtifactStore, ContainerRegistry, DockerConfig, ResourceConfig
+from flowyml.core.remote_orchestrator import RemoteOrchestrator
 from flowyml.stacks.plugins import register_component
 from flowyml.storage.metadata import SQLiteMetadataStore
+from flowyml.core.submission_result import SubmissionResult
 
 
 @register_component(name="azure_blob")
@@ -139,7 +140,7 @@ class ACRContainerRegistry(ContainerRegistry):
 
 
 @register_component(name="azure_ml")
-class AzureMLOrchestrator(Orchestrator):
+class AzureMLOrchestrator(RemoteOrchestrator):
     """Submit pipeline runs to Azure ML managed compute."""
 
     def __init__(
@@ -182,35 +183,43 @@ class AzureMLOrchestrator(Orchestrator):
     def run_pipeline(
         self,
         pipeline: Any,
+        run_id: str,
         resources: ResourceConfig | None = None,
         docker_config: DockerConfig | None = None,
+        inputs: dict[str, Any] | None = None,
+        context: dict[str, Any] | None = None,
         **kwargs,
-    ) -> str:
-        from azure.ai.ml.entities import CommandJob, Environment
+    ) -> SubmissionResult:
+        """Submit pipeline to Azure ML.
 
-        client = self._client()
-        run_id = getattr(pipeline, "run_id", uuid.uuid4().hex)
+        Returns:
+            SubmissionResult with job name and optional wait function.
+        """
+        from azure.ai.ml import command
+
+        ml_client = self._client()
         job_name = kwargs.get("job_name") or f"{pipeline.name}-{run_id[:8]}"
-        image = (
-            docker_config.image
-            if docker_config and docker_config.image
-            else "mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu20.04"
-        )
-        env = Environment(image=image, name=f"flowyml-{pipeline.name}")
 
-        command = kwargs.get("command") or "python -m flowyml.cli.run"
-        command_job = CommandJob(
-            name=job_name,
+        # Build command job
+        job = command(
+            code=".",  # Use current directory or specify path
+            command="python -m flowyml.cli.run",
+            environment=docker_config.image if docker_config else self.environment_name,
+            compute=self.compute,
             display_name=job_name,
             experiment_name=self.experiment_name,
-            compute=self.compute,
-            environment=env,
-            command=command,
-            description="FlowyML pipeline run",
         )
 
-        submitted = client.jobs.create_or_update(command_job)
-        return submitted.name
+        submitted = ml_client.jobs.create_or_update(job)
+
+        def wait_for_completion():
+            ml_client.jobs.stream(submitted.name)
+
+        return SubmissionResult(
+            job_id=submitted.name,
+            wait_for_completion=wait_for_completion,
+            metadata={"studio_url": submitted.studio_url},
+        )
 
     def get_run_status(self, run_id: str) -> str:
         client = self._client()
