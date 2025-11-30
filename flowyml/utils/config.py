@@ -25,6 +25,7 @@ class FlowymlConfig:
     execution_mode: str = "local"  # local or remote
     remote_server_url: str = ""
     remote_ui_url: str = ""
+    remote_services: list[dict[str, str]] = field(default_factory=list)
     enable_caching: bool = True
     enable_logging: bool = True
     log_level: str = "INFO"
@@ -93,6 +94,7 @@ class FlowymlConfig:
             "execution_mode": self.execution_mode,
             "remote_server_url": self.remote_server_url,
             "remote_ui_url": self.remote_ui_url,
+            "remote_services": self.remote_services,
             "enable_caching": self.enable_caching,
             "enable_logging": self.enable_logging,
             "log_level": self.log_level,

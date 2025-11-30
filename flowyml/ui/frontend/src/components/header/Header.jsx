@@ -13,6 +13,9 @@ export function Header() {
     // Generate breadcrumbs from path
     const pathnames = location.pathname.split('/').filter((x) => x);
     const isRemoteStack = !loading && config?.execution_mode === 'remote';
+    const remoteServices = isRemoteStack && Array.isArray(config?.remote_services)
+        ? config.remote_services
+        : [];
 
     return (
         <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-4 flex items-center justify-between shadow-sm z-10">
@@ -55,30 +58,43 @@ export function Header() {
 
             <div className="flex items-center gap-4">
                 {isRemoteStack && (
-                    <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary-50 text-primary-800 border border-primary-100 dark:bg-primary-900/20 dark:text-primary-200 dark:border-primary-900/40">
-                        <span className="flex items-center gap-1 text-xs uppercase tracking-wide font-semibold">
+                    <div className="flex flex-col gap-2 px-4 py-2 rounded-xl bg-primary-50 text-primary-800 border border-primary-100 dark:bg-primary-900/20 dark:text-primary-200 dark:border-primary-900/40">
+                        <div className="flex items-center gap-2 text-xs uppercase tracking-wide font-semibold">
                             <Server size={14} /> Remote Stack
-                        </span>
-                        {config?.remote_ui_url && (
-                            <a
-                                href={config.remote_ui_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 text-xs font-medium hover:underline"
-                            >
-                                UI <ExternalLink size={12} />
-                            </a>
-                        )}
-                        {config?.remote_server_url && (
-                            <a
-                                href={config.remote_server_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 text-xs font-medium hover:underline"
-                            >
-                                API <ExternalLink size={12} />
-                            </a>
-                        )}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                            {config?.remote_ui_url && (
+                                <a
+                                    href={config.remote_ui_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 text-xs font-medium bg-white/70 dark:bg-slate-800/40 px-2 py-1 rounded-lg hover:underline"
+                                >
+                                    UI <ExternalLink size={12} />
+                                </a>
+                            )}
+                            {config?.remote_server_url && (
+                                <a
+                                    href={config.remote_server_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 text-xs font-medium bg-white/70 dark:bg-slate-800/40 px-2 py-1 rounded-lg hover:underline"
+                                >
+                                    API <ExternalLink size={12} />
+                                </a>
+                            )}
+                            {remoteServices.map((service, idx) => (
+                                <a
+                                    key={`${service?.name || service?.label || 'service'}-${idx}`}
+                                    href={service?.url || service?.link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 text-xs font-medium bg-white/70 dark:bg-slate-800/40 px-2 py-1 rounded-lg hover:underline"
+                                >
+                                    {service?.label || service?.name || 'Service'} <ExternalLink size={12} />
+                                </a>
+                            ))}
+                        </div>
                     </div>
                 )}
 

@@ -53,6 +53,7 @@ async def get_public_config():
         "remote_server_url": config.remote_server_url,
         "remote_ui_url": config.remote_ui_url,
         "enable_ui": config.enable_ui,
+        "remote_services": config.remote_services,
     }
 
 
