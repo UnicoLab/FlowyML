@@ -137,7 +137,7 @@ const TreeNode = ({
     );
 };
 
-export function AssetTreeHierarchy({ projectId, onAssetSelect }) {
+export function AssetTreeHierarchy({ projectId, onAssetSelect, compact = false }) {
     const [data, setData] = useState({ projects: [], pipelines: [], runs: [], artifacts: [] });
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -196,10 +196,10 @@ export function AssetTreeHierarchy({ projectId, onAssetSelect }) {
 
     if (loading) {
         return (
-            <div className="h-[600px] w-full bg-slate-50 dark:bg-slate-800/50 rounded-xl animate-pulse flex items-center justify-center">
+            <div className={`w-full bg-slate-50 dark:bg-slate-800/50 animate-pulse flex items-center justify-center ${compact ? 'h-full min-h-[200px]' : 'h-[600px] rounded-xl'}`}>
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-                    <p className="text-slate-600 dark:text-slate-400">Loading assets hierarchy...</p>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-3"></div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Loading...</p>
                 </div>
             </div>
         );
@@ -407,61 +407,61 @@ export function AssetTreeHierarchy({ projectId, onAssetSelect }) {
     };
 
     return (
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-            <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-slate-800 dark:to-slate-800">
-                <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                        <GitBranch className="w-4 h-4 text-blue-500" />
-                        Asset Hierarchy
-                    </h3>
-                    <span className="text-xs text-slate-500">
-                        {data.artifacts.length} asset{data.artifacts.length !== 1 ? 's' : ''}
-                    </span>
+        <div className={compact ? "h-full flex flex-col" : "bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden"}>
+            {!compact && (
+                <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-slate-800 dark:to-slate-800">
+                    <div className="flex items-center justify-between mb-3">
+                        <h3 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                            <GitBranch className="w-4 h-4 text-blue-500" />
+                            Asset Hierarchy
+                        </h3>
+                        <span className="text-xs text-slate-500">
+                            {data.artifacts.length} asset{data.artifacts.length !== 1 ? 's' : ''}
+                        </span>
+                    </div>
                 </div>
+            )}
 
-                {/* Asset Type Filters */}
-                <div className="flex gap-2">
+            {/* Filters - Simplified for compact mode */}
+            <div className={`${compact ? 'p-2 border-b border-slate-100 dark:border-slate-700' : 'p-4 border-b border-slate-200 dark:border-slate-800 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-slate-800 dark:to-slate-800'}`}>
+                <div className={`flex ${compact ? 'justify-between' : 'gap-2'}`}>
                     <button
                         onClick={() => setAssetTypeFilter('all')}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${assetTypeFilter === 'all'
-                                ? 'bg-primary-500 text-white shadow-md'
-                                : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600'
+                        title="All Assets"
+                        className={`flex items-center justify-center gap-1.5 ${compact ? 'p-1.5 rounded-md' : 'px-3 py-1.5 rounded-lg'} text-sm font-medium transition-all ${assetTypeFilter === 'all'
+                            ? 'bg-primary-500 text-white shadow-md'
+                            : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600'
                             }`}
                     >
                         <FileBox className="w-3.5 h-3.5" />
-                        All Assets
-                        <span className="text-xs opacity-75">({data.artifacts.length})</span>
+                        {!compact && <>All Assets <span className="text-xs opacity-75">({data.artifacts.length})</span></>}
                     </button>
                     <button
                         onClick={() => setAssetTypeFilter('model')}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${assetTypeFilter === 'model'
-                                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md'
-                                : 'bg-white dark:bg-slate-700 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20'
+                        title="Models"
+                        className={`flex items-center justify-center gap-1.5 ${compact ? 'p-1.5 rounded-md' : 'px-3 py-1.5 rounded-lg'} text-sm font-medium transition-all ${assetTypeFilter === 'model'
+                            ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md'
+                            : 'bg-white dark:bg-slate-700 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20'
                             }`}
                     >
                         <Box className="w-3.5 h-3.5" />
-                        Models
-                        <span className="text-xs opacity-75">
-                            ({data.artifacts.filter(a => a.type?.toLowerCase() === 'model').length})
-                        </span>
+                        {!compact && <>Models <span className="text-xs opacity-75">({data.artifacts.filter(a => a.type?.toLowerCase() === 'model').length})</span></>}
                     </button>
                     <button
                         onClick={() => setAssetTypeFilter('dataset')}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${assetTypeFilter === 'dataset'
-                                ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md'
-                                : 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20'
+                        title="Datasets"
+                        className={`flex items-center justify-center gap-1.5 ${compact ? 'p-1.5 rounded-md' : 'px-3 py-1.5 rounded-lg'} text-sm font-medium transition-all ${assetTypeFilter === 'dataset'
+                            ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md'
+                            : 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20'
                             }`}
                     >
                         <Database className="w-3.5 h-3.5" />
-                        Datasets
-                        <span className="text-xs opacity-75">
-                            ({data.artifacts.filter(a => a.type?.toLowerCase() === 'dataset').length})
-                        </span>
+                        {!compact && <>Datasets <span className="text-xs opacity-75">({data.artifacts.filter(a => a.type?.toLowerCase() === 'dataset').length})</span></>}
                     </button>
                 </div>
             </div>
 
-            <div className="p-3 max-h-[700px] overflow-y-auto">
+            <div className={compact ? "flex-1 overflow-y-auto p-2" : "p-3 max-h-[700px] overflow-y-auto"}>
                 {data.pipelines.length === 0 && data.projects.length === 0 ? (
                     <div className="p-8 text-center">
                         <Database className="h-12 w-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />

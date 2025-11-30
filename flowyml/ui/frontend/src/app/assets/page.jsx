@@ -294,7 +294,7 @@ export function Assets() {
                 <div className="h-full max-w-[1800px] mx-auto px-6 py-6">
                     <div className="h-full flex gap-6">
                         {/* Sidebar */}
-                        <div className="w-[320px] shrink-0 flex flex-col gap-4 overflow-y-auto pb-6">
+                        <div className="w-[380px] shrink-0 flex flex-col gap-4 overflow-y-auto pb-6">
                             {/* Stats */}
                             <div className="grid grid-cols-2 gap-3">
                                 <StatCardCompact
@@ -318,6 +318,7 @@ export function Assets() {
                                     <AssetTreeHierarchy
                                         projectId={selectedProject}
                                         onAssetSelect={(asset) => setSelectedAsset(asset)}
+                                        compact={true}
                                     />
                                 </div>
                             </div>
