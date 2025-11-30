@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { fetchApi } from '../../utils/api';
 import { downloadArtifactById } from '../../utils/downloads';
 import { Link } from 'react-router-dom';
-import { Database, Box, BarChart2, FileText, Search, Filter, Calendar, Package, Download, Eye, X, ArrowRight, Network, Activity } from 'lucide-react';
+import { Database, Box, BarChart2, FileText, Search, Filter, Calendar, Package, Download, Eye, X, ArrowRight, Network, Activity, HardDrive } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
@@ -22,6 +22,7 @@ export function Assets() {
     const [typeFilter, setTypeFilter] = useState('all');
     const [selectedAsset, setSelectedAsset] = useState(null);
     const [viewMode, setViewMode] = useState('grid'); // Default to grid, hierarchy is always visible in sidebar
+    const [stats, setStats] = useState(null); // For compact stats display
     const { selectedProject } = useProject();
 
     useEffect(() => {
@@ -41,6 +42,24 @@ export function Assets() {
             }
         };
         fetchAssets();
+    }, [selectedProject]);
+
+    // Fetch stats for compact display
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const url = selectedProject
+                    ? `/api/assets/stats?project=${encodeURIComponent(selectedProject)}`
+                    : '/api/assets/stats';
+                const res = await fetchApi(url);
+                const data = await res.json();
+                setStats(data);
+            } catch (err) {
+                console.error('Failed to fetch stats:', err);
+            }
+        };
+
+        fetchStats();
     }, [selectedProject]);
 
     // Get unique types
@@ -316,119 +335,176 @@ export function Assets() {
     }
 
     return (
-        <div className="p-6 max-w-[1800px] mx-auto space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Artifacts</h1>
-                    <p className="text-slate-600 dark:text-slate-400">Browse and manage pipeline artifacts and outputs</p>
-                </div>
+        <div className="h-screen flex flex-col overflow-hidden bg-slate-50 dark:bg-slate-900">
+            {/* Compact Header */}
+            <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-4">
+                <div className="flex items-center justify-between max-w-[1800px] mx-auto">
+                    <div>
+                        <h1 className="text-xl font-bold text-slate-900 dark:text-white">Assets</h1>
+                        <p className="text-sm text-slate-600 dark:text-slate-400">
+                            {assets.length} artifact{assets.length !== 1 ? 's' : ''} across your pipelines
+                        </p>
+                    </div>
 
-                {/* View Mode Switcher (for right panel only) */}
-                <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
-                    <button
-                        onClick={() => setViewMode('grid')}
-                        className={`px-3 py-1.5 rounded text-sm font-medium transition-all ${viewMode === 'grid'
-                            ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow'
-                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                            }`}
-                    >
-                        Grid
-                    </button>
-                    <button
-                        onClick={() => setViewMode('table')}
-                        className={`px-3 py-1.5 rounded text-sm font-medium transition-all ${viewMode === 'table'
-                            ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow'
-                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                            }`}
-                    >
-                        Table
-                    </button>
-                </div>
-            </div>
-
-            {/* Stats Dashboard */}
-            <AssetStatsDashboard projectId={selectedProject} />
-
-            {/* Main Layout: Sidebar + Content */}
-            <div className="flex gap-6">
-                {/* Left Sidebar - Tree Hierarchy */}
-                <div className="w-[400px] shrink-0">
-                    <AssetTreeHierarchy
-                        projectId={selectedProject}
-                        onAssetSelect={(asset) => setSelectedAsset(asset)}
-                    />
-                </div>
-
-                {/* Right Content - Details Panel or Grid/Table View */}
-                <div className="flex-1 min-w-0">
-                    {selectedAsset ? (
-                        /* Asset Details Panel */
-                        <AssetDetailsPanel
-                            asset={selectedAsset}
-                            onClose={() => setSelectedAsset(null)}
-                        />
-                    ) : (
-                        /* Grid/Table View */
-                        <>
-                            {/* Type Filter */}
-                            <div className="flex items-center gap-2 overflow-x-auto pb-4">
-                                <Filter size={16} className="text-slate-400 shrink-0" />
-                                <div className="flex gap-2">
-                                    {types.map(type => (
-                                        <button
-                                            key={type}
-                                            onClick={() => setTypeFilter(type)}
-                                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${typeFilter === type
-                                                ? 'bg-primary-500 text-white shadow-md'
-                                                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                                                }`}
-                                        >
-                                            {type === 'all' ? 'All Types' : type}
-                                            {type !== 'all' && (
-                                                <span className="ml-1.5 text-xs opacity-75">
-                                                    ({assets.filter(a => a.type === type).length})
-                                                </span>
-                                            )}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Content Area */}
-                            <DataView
-                                title=""
-                                subtitle=""
-                                items={filteredAssets}
-                                loading={loading}
-                                columns={columns}
-                                renderGrid={renderGrid}
-                                initialView={viewMode}
-                                emptyState={
-                                    <EmptyState
-                                        icon={Package}
-                                        title="No artifacts found"
-                                        description={typeFilter !== 'all'
-                                            ? 'Try adjusting your filters'
-                                            : 'Run a pipeline to generate artifacts'
-                                        }
-                                    />
-                                }
-                            />
-                        </>
+                    {/* View Mode Switcher - Only when no asset selected */}
+                    {!selectedAsset && (
+                        <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-700 p-1 rounded-lg">
+                            <button
+                                onClick={() => setViewMode('grid')}
+                                className={`px-3 py-1.5 rounded text-sm font-medium transition-all ${viewMode === 'grid'
+                                    ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow'
+                                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                                    }`}
+                            >
+                                Grid
+                            </button>
+                            <button
+                                onClick={() => setViewMode('table')}
+                                className={`px-3 py-1.5 rounded text-sm font-medium transition-all ${viewMode === 'table'
+                                    ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow'
+                                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                                    }`}
+                            >
+                                Table
+                            </button>
+                        </div>
                     )}
                 </div>
             </div>
 
-            {/* Asset Detail Modal - Keep for backwards compatibility but won't be used in sidebar layout */}
-            {!selectedAsset && (
-                <AssetDetailModal
-                    asset={null}
-                    onClose={() => setSelectedAsset(null)}
-                />
-            )}
+            {/* Main Content Area */}
+            <div className="flex-1 overflow-hidden">
+                <div className="h-full max-w-[1800px] mx-auto px-6 py-6">
+                    <div className="h-full flex gap-6">
+                        {/* Left Sidebar - Navigation & Stats */}
+                        <div className="w-[380px] shrink-0 flex flex-col gap-4 overflow-y-auto">
+                            {/* Quick Stats - Compact */}
+                            <div className="grid grid-cols-2 gap-3">
+                                <StatCardCompact
+                                    icon={Package}
+                                    label="Total"
+                                    value={stats?.total_assets || 0}
+                                    gradient="from-blue-500 to-cyan-500"
+                                />
+                                <StatCardCompact
+                                    icon={Box}
+                                    label="Models"
+                                    value={stats?.by_type?.model || stats?.by_type?.Model || 0}
+                                    gradient="from-purple-500 to-pink-500"
+                                />
+                                <StatCardCompact
+                                    icon={Database}
+                                    label="Datasets"
+                                    value={stats?.by_type?.dataset || stats?.by_type?.Dataset || 0}
+                                    gradient="from-emerald-500 to-teal-500"
+                                />
+                                <StatCardCompact
+                                    icon={HardDrive}
+                                    label="Storage"
+                                    value={formatBytes(stats?.total_storage_bytes || 0)}
+                                    gradient="from-orange-500 to-red-500"
+                                />
+                            </div>
+
+                            {/* Tree Hierarchy */}
+                            <div className="flex-1 min-h-0">
+                                <AssetTreeHierarchy
+                                    projectId={selectedProject}
+                                    onAssetSelect={(asset) => setSelectedAsset(asset)}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Right Content - Details Panel or Grid/Table View */}
+                        <div className="flex-1 min-w-0 overflow-hidden">
+                            {selectedAsset ? (
+                                /* Asset Details Panel */
+                                <AssetDetailsPanel
+                                    asset={selectedAsset}
+                                    onClose={() => setSelectedAsset(null)}
+                                />
+                            ) : (
+                                /* Grid/Table View */
+                                <div className="h-full flex flex-col">
+                                    {/* Type Filter */}
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <Filter size={16} className="text-slate-400 shrink-0" />
+                                        <div className="flex gap-2 flex-wrap">
+                                            {types.map(type => (
+                                                <button
+                                                    key={type}
+                                                    onClick={() => setTypeFilter(type)}
+                                                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${typeFilter === type
+                                                        ? 'bg-primary-500 text-white shadow-md'
+                                                        : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'
+                                                        }`}
+                                                >
+                                                    {type === 'all' ? 'All Types' : type}
+                                                    {type !== 'all' && (
+                                                        <span className="ml-1.5 text-xs opacity-75">
+                                                            ({assets.filter(a => a.type === type).length})
+                                                        </span>
+                                                    )}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Content Area */}
+                                    <div className="flex-1 min-h-0 overflow-hidden">
+                                        <DataView
+                                            title=""
+                                            subtitle=""
+                                            items={filteredAssets}
+                                            loading={loading}
+                                            columns={columns}
+                                            renderGrid={renderGrid}
+                                            initialView={viewMode}
+                                            emptyState={
+                                                <EmptyState
+                                                    icon={Package}
+                                                    title="No artifacts found"
+                                                    description={typeFilter !== 'all'
+                                                        ? 'Try adjusting your filters'
+                                                        : 'Run a pipeline to generate artifacts'
+                                                    }
+                                                />
+                                            }
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     );
+}
+
+// Compact stat card for sidebar
+function StatCardCompact({ icon: Icon, label, value, gradient }) {
+    return (
+        <div className="bg-white dark:bg-slate-800 rounded-lg p-3 border border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow group">
+            <div className="flex items-center gap-2 mb-1">
+                <div className={`p-1.5 rounded-lg bg-gradient-to-br ${gradient} text-white group-hover:scale-110 transition-transform`}>
+                    <Icon size={14} />
+                </div>
+                <span className="text-xs text-slate-500 dark:text-slate-400">{label}</span>
+            </div>
+            <p className="text-lg font-bold text-slate-900 dark:text-white">
+                {typeof value === 'number' ? value.toLocaleString() : value}
+            </p>
+        </div>
+    );
+}
+
+function formatBytes(bytes) {
+    if (!bytes || bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
 
 function AssetDetailModal({ asset, onClose }) {
