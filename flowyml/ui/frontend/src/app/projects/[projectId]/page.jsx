@@ -54,7 +54,7 @@ export function ProjectDetails() {
                 const experiments = Array.isArray(experimentsData?.experiments) ? experimentsData.experiments : [];
 
                 const pipelineNames = new Set(runs.map(r => r.pipeline_name).filter(Boolean));
-                const models = artifacts.filter(a => a.type === 'model');
+                const models = artifacts.filter(a => a.type === 'Model');
 
                 setStats({
                     runs: runs.length,
@@ -138,7 +138,7 @@ export function ProjectDetails() {
             case 'models':
                 return (
                     <ErrorBoundary>
-                        <ProjectArtifactsList projectId={projectId} type="model" />
+                        <ProjectArtifactsList projectId={projectId} type="Model" />
                     </ErrorBoundary>
                 );
             case 'artifacts':

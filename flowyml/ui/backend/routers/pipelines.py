@@ -1,48 +1,80 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from flowyml.storage.metadata import SQLiteMetadataStore
+from flowyml.core.project import ProjectManager
 from flowyml.utils.config import get_config
+from typing import Optional
 
 router = APIRouter()
 
 
 def get_store():
     get_config()
-    # Assuming default path or from config
-    # The SQLiteMetadataStore defaults to .flowyml/metadata.db which is what we want for now
     return SQLiteMetadataStore()
 
 
+def _iter_metadata_stores():
+    """Yield tuples of (project_name, store) including global and project stores."""
+    stores = [(None, SQLiteMetadataStore())]
+    try:
+        manager = ProjectManager()
+        for project_meta in manager.list_projects():
+            name = project_meta.get("name")
+            if not name:
+                continue
+            project = manager.get_project(name)
+            if project:
+                stores.append((name, project.metadata_store))
+    except Exception:
+        pass
+    return stores
+
+
 @router.get("/")
-async def list_pipelines(project: str = None):
+async def list_pipelines(project: Optional[str] = None, limit: int = 100):
     """List all unique pipelines with details, optionally filtered by project."""
     try:
-        store = get_store()
-        pipeline_names = store.list_pipelines(project=project)
+        pipeline_map = {}  # pipeline_name -> data
 
-        enriched_pipelines = []
-        for name in pipeline_names:
-            # Get runs for this pipeline (and project if specified)
-            # Note: store.query doesn't support limit, so we slice after
-            filters = {"pipeline_name": name}
-            if project:
-                filters["project"] = project
+        for project_name, store in _iter_metadata_stores():
+            # Skip other projects if filtering
+            if project and project_name and project != project_name:
+                continue
 
-            runs = store.query(**filters)
-            last_run = runs[0] if runs else {}
+            # Get pipeline names from this store
+            store_pipeline_names = store.list_pipelines()
 
-            enriched_pipelines.append(
-                {
-                    "name": name,
-                    "created": last_run.get("start_time"),  # Use last run time as proxy for now
-                    "version": last_run.get("git_sha", "latest")[:7] if last_run.get("git_sha") else "1.0",
-                    "status": last_run.get("status", "unknown"),
-                    "run_count": len(runs),
-                    "last_run_id": last_run.get("run_id"),
-                    "project": last_run.get("project"),  # Include project from last run
-                },
-            )
+            for name in store_pipeline_names:
+                # Get runs for this pipeline
+                filters = {"pipeline_name": name}
+                runs = store.query(**filters)
 
+                if not runs:
+                    continue
+
+                last_run = runs[0]
+                run_project = last_run.get("project") or project_name
+
+                # Skip if filtering by project and doesn't match
+                if project and run_project != project:
+                    continue
+
+                # Use composite key if we already have this pipeline from another project
+                key = f"{name}:{run_project}" if run_project else name
+
+                if key not in pipeline_map:
+                    pipeline_map[key] = {
+                        "name": name,
+                        "created": last_run.get("start_time"),
+                        "version": last_run.get("git_sha", "latest")[:7] if last_run.get("git_sha") else "1.0",
+                        "status": last_run.get("status", "unknown"),
+                        "run_count": len(runs),
+                        "last_run_id": last_run.get("run_id"),
+                        "project": run_project,
+                    }
+
+        # Return list of pipelines
+        enriched_pipelines = list(pipeline_map.values())[:limit]
         return {"pipelines": enriched_pipelines}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
