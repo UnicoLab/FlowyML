@@ -72,6 +72,101 @@ async def list_assets(limit: int = 50, asset_type: str = None, run_id: str = Non
         return {"assets": [], "error": str(e)}
 
 
+@router.get("/stats")
+async def get_asset_stats(project: Optional[str] = None):
+    """Get statistics about assets for the dashboard."""
+    try:
+        combined_assets = []
+        for project_name, store in _iter_metadata_stores():
+            if project and project_name and project != project_name:
+                continue
+
+            assets = store.list_assets(limit=1000)
+            for asset in assets:
+                combined_assets.append((asset, project_name))
+
+        assets = _dedupe_assets(combined_assets)
+
+        if project:
+            assets = [a for a in assets if a.get("project") == project]
+
+        # Calculate statistics
+        total_assets = len(assets)
+
+        # Count by type
+        type_counts = {}
+        for asset in assets:
+            asset_type = asset.get("type", "unknown")
+            type_counts[asset_type] = type_counts.get(asset_type, 0) + 1
+
+        # Calculate total storage (if size info available)
+        total_storage = sum(asset.get("size_bytes", 0) for asset in assets)
+
+        # Get recent assets (last 10)
+        sorted_assets = sorted(
+            assets,
+            key=lambda x: x.get("created_at", ""),
+            reverse=True,
+        )
+        recent_assets = sorted_assets[:10]
+
+        # Count by project
+        project_counts = {}
+        for asset in assets:
+            proj = asset.get("project", "default")
+            project_counts[proj] = project_counts.get(proj, 0) + 1
+
+        return {
+            "total_assets": total_assets,
+            "by_type": type_counts,
+            "total_storage_bytes": total_storage,
+            "recent_assets": recent_assets,
+            "by_project": project_counts,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get stats: {str(e)}")
+
+
+@router.get("/search")
+async def search_assets(q: str, limit: int = 50, project: Optional[str] = None):
+    """Search assets by name or properties."""
+    try:
+        combined_assets = []
+        for project_name, store in _iter_metadata_stores():
+            if project and project_name and project != project_name:
+                continue
+
+            assets = store.list_assets(limit=1000)
+            for asset in assets:
+                combined_assets.append((asset, project_name))
+
+        assets = _dedupe_assets(combined_assets)
+
+        if project:
+            assets = [a for a in assets if a.get("project") == project]
+
+        # Simple fuzzy search in name, type, and step
+        query_lower = q.lower()
+        matching_assets = []
+
+        for asset in assets:
+            name = asset.get("name", "").lower()
+            asset_type = asset.get("type", "").lower()
+            step = asset.get("step", "").lower()
+
+            # Check if query matches any field
+            if query_lower in name or query_lower in asset_type or query_lower in step:
+                matching_assets.append(asset)
+
+        return {
+            "assets": matching_assets[:limit],
+            "total": len(matching_assets),
+            "query": q,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to search: {str(e)}")
+
+
 @router.get("/lineage")
 async def get_asset_lineage(
     asset_id: Optional[str] = None,

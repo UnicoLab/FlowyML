@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { fetchApi } from '../../utils/api';
 import { downloadArtifactById } from '../../utils/downloads';
 import { Link } from 'react-router-dom';
-import { Database, Box, BarChart2, FileText, Search, Filter, Calendar, Package, Download, Eye, X, ArrowRight, Network } from 'lucide-react';
+import { Database, Box, BarChart2, FileText, Search, Filter, Calendar, Package, Download, Eye, X, ArrowRight, Network, Activity } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
@@ -12,14 +12,16 @@ import { DataView } from '../../components/ui/DataView';
 import { useProject } from '../../contexts/ProjectContext';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { KeyValue, KeyValueGrid } from '../../components/ui/KeyValue';
-import { AssetLineageGraph } from '../../components/AssetLineageGraph';
+import { AssetStatsDashboard } from '../../components/AssetStatsDashboard';
+import { AssetTreeHierarchy } from '../../components/AssetTreeHierarchy';
+import { AssetDetailsPanel } from '../../components/AssetDetailsPanel';
 
 export function Assets() {
     const [assets, setAssets] = useState([]);
     const [loading, setLoading] = useState(true);
     const [typeFilter, setTypeFilter] = useState('all');
     const [selectedAsset, setSelectedAsset] = useState(null);
-    const [viewMode, setViewMode] = useState('table'); // 'table', 'grid', or 'graph'
+    const [viewMode, setViewMode] = useState('grid'); // Default to grid, hierarchy is always visible in sidebar
     const { selectedProject } = useProject();
 
     useEffect(() => {
@@ -174,67 +176,134 @@ export function Assets() {
             slate: 'from-slate-500 to-slate-600'
         };
 
+        // Count properties
+        const propertyCount = asset.properties ? Object.keys(asset.properties).length : 0;
+
+        // Create animated property tags
+        const propertyTags = asset.properties
+            ? Object.entries(asset.properties).slice(0, 3).map(([key, value], idx) => (
+                <motion.span
+                    key={key}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: idx * 0.1 }}
+                    className="inline-flex items-center gap-1 px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded-md text-xs text-slate-600 dark:text-slate-400"
+                >
+                    <span className="font-medium">{key}:</span>
+                    <span className="font-mono">{typeof value === 'number' ? value.toFixed(2) : String(value).substring(0, 20)}</span>
+                </motion.span>
+            ))
+            : [];
+
         return (
-            <Card
-                className="group cursor-pointer hover:shadow-xl hover:border-primary-300 transition-all duration-200 overflow-hidden h-full"
-                onClick={() => setSelectedAsset(asset)}
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                whileHover={{ y: -5 }}
+                transition={{ duration: 0.2 }}
             >
-                {/* Icon Header */}
-                <div className="flex items-start justify-between mb-3">
-                    <div className={`p-3 rounded-xl bg-gradient-to-br ${colorClasses[config.color]} text-white shadow-lg group-hover:scale-110 transition-transform`}>
-                        {config.icon}
-                    </div>
-                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedAsset(asset);
-                            }}
-                        >
-                            <Eye size={16} className="text-slate-400" />
-                        </button>
-                        <button
-                            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-40"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                downloadArtifactById(asset.artifact_id);
-                            }}
-                            disabled={!asset.artifact_id}
-                        >
-                            <Download size={16} className="text-slate-400" />
-                        </button>
-                    </div>
-                </div>
+                <Card
+                    className="group cursor-pointer hover:shadow-2xl hover:border-primary-300 dark:hover:border-primary-700 transition-all duration-300 overflow-hidden h-full relative"
+                    onClick={() => setSelectedAsset(asset)}
+                >
+                    {/* Gradient background effect */}
+                    <div className={`absolute inset-0 bg-gradient-to-br ${colorClasses[config.color]} opacity-0 group-hover:opacity-10 transition-opacity duration-300`}></div>
 
-                {/* Name */}
-                <h4 className="font-bold text-slate-900 dark:text-white mb-1 truncate group-hover:text-primary-600 transition-colors">
-                    {asset.name}
-                </h4>
-
-                {/* Metadata */}
-                <div className="space-y-2 text-xs text-slate-500 dark:text-slate-400">
-                    <div className="flex items-center justify-between">
-                        <span>Step:</span>
-                        <span className="font-mono text-slate-700 dark:text-slate-300 truncate ml-2">{asset.step}</span>
-                    </div>
-                    {asset.created_at && (
-                        <div className="flex items-center justify-between">
-                            <span>Created:</span>
-                            <span className="text-slate-700 dark:text-slate-300">{format(new Date(asset.created_at), 'MMM d, HH:mm')}</span>
+                    <div className="relative">
+                        {/* Icon Header */}
+                        <div className="flex items-start justify-between mb-3">
+                            <motion.div
+                                className={`p-3 rounded-xl bg-gradient-to-br ${colorClasses[config.color]} text-white shadow-lg`}
+                                whileHover={{ scale: 1.1, rotate: 5 }}
+                                transition={{ duration: 0.2 }}
+                            >
+                                {config.icon}
+                            </motion.div>
+                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                <button
+                                    className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedAsset(asset);
+                                    }}
+                                >
+                                    <Eye size={16} className="text-slate-400" />
+                                </button>
+                                <button
+                                    className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-40"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        downloadArtifactById(asset.artifact_id);
+                                    }}
+                                    disabled={!asset.artifact_id}
+                                >
+                                    <Download size={16} className="text-slate-400" />
+                                </button>
+                            </div>
                         </div>
-                    )}
-                </div>
 
-                {/* Properties Count */}
-                {asset.properties && Object.keys(asset.properties).length > 0 && (
-                    <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700">
-                        <span className="text-xs text-slate-500">
-                            {Object.keys(asset.properties).length} properties
-                        </span>
+                        {/* Name */}
+                        <h4 className="font-bold text-slate-900 dark:text-white mb-2 truncate group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                            {asset.name}
+                        </h4>
+
+                        {/* Type Badge */}
+                        <div className="mb-3">
+                            <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium bg-gradient-to-r ${colorClasses[config.color]} text-white`}>
+                                {asset.type}
+                            </span>
+                        </div>
+
+                        {/* Metadata */}
+                        <div className="space-y-2 text-xs text-slate-500 dark:text-slate-400 mb-3">
+                            <div className="flex items-center justify-between">
+                                <span>Step:</span>
+                                <span className="font-mono text-slate-700 dark:text-slate-300 truncate ml-2">{asset.step}</span>
+                            </div>
+                            {asset.created_at && (
+                                <div className="flex items-center justify-between">
+                                    <span>Created:</span>
+                                    <span className="text-slate-700 dark:text-slate-300">{format(new Date(asset.created_at), 'MMM d, HH:mm')}</span>
+                                </div>
+                            )}
+                            {asset.pipeline_name && (
+                                <div className="flex items-center justify-between">
+                                    <span>Pipeline:</span>
+                                    <span className="text-slate-700 dark:text-slate-300 truncate ml-2">{asset.pipeline_name}</span>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Animated Property Tags */}
+                        {propertyTags.length > 0 && (
+                            <div className="pt-3 border-t border-slate-100 dark:border-slate-700">
+                                <div className="flex flex-wrap gap-1 mb-2">
+                                    {propertyTags}
+                                    {propertyCount > 3 && (
+                                        <span className="inline-flex items-center px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded-md text-xs text-slate-400">
+                                            +{propertyCount - 3} more
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Relationship Indicator (placeholder for now) */}
+                        {asset.run_id && (
+                            <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700">
+                                <Link
+                                    to={`/runs/${asset.run_id}`}
+                                    className="flex items-center gap-1 text-xs text-primary-600 dark:text-primary-400 hover:underline"
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    <Activity size={12} />
+                                    View in run
+                                </Link>
+                            </div>
+                        )}
                     </div>
-                )}
-            </Card>
+                </Card>
+            </motion.div>
         );
     };
 
@@ -247,110 +316,117 @@ export function Assets() {
     }
 
     return (
-        <div className="p-6 max-w-7xl mx-auto space-y-6">
-            {/* Header with View Mode Switcher */}
+        <div className="p-6 max-w-[1800px] mx-auto space-y-6">
+            {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Artifacts</h1>
                     <p className="text-slate-600 dark:text-slate-400">Browse and manage pipeline artifacts and outputs</p>
                 </div>
 
-                {/* View Mode Switcher */}
+                {/* View Mode Switcher (for right panel only) */}
                 <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
-                    <button
-                        onClick={() => setViewMode('table')}
-                        className={`px-3 py-1.5 rounded text-sm font-medium transition-all ${viewMode === 'table'
-                                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow'
-                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                            }`}
-                    >
-                        Table
-                    </button>
                     <button
                         onClick={() => setViewMode('grid')}
                         className={`px-3 py-1.5 rounded text-sm font-medium transition-all ${viewMode === 'grid'
-                                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow'
-                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                            ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                             }`}
                     >
                         Grid
                     </button>
                     <button
-                        onClick={() => setViewMode('graph')}
-                        className={`px-3 py-1.5 rounded text-sm font-medium transition-all flex items-center gap-1 ${viewMode === 'graph'
-                                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow'
-                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                        onClick={() => setViewMode('table')}
+                        className={`px-3 py-1.5 rounded text-sm font-medium transition-all ${viewMode === 'table'
+                            ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                             }`}
                     >
-                        <Network size={14} />
-                        Graph
+                        Table
                     </button>
                 </div>
             </div>
 
-            {/* Type Filter */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-2">
-                <Filter size={16} className="text-slate-400 shrink-0" />
-                <div className="flex gap-2">
-                    {types.map(type => (
-                        <button
-                            key={type}
-                            onClick={() => setTypeFilter(type)}
-                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${typeFilter === type
-                                ? 'bg-primary-500 text-white shadow-md'
-                                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                                }`}
-                        >
-                            {type === 'all' ? 'All Types' : type}
-                            {type !== 'all' && (
-                                <span className="ml-1.5 text-xs opacity-75">
-                                    ({assets.filter(a => a.type === type).length})
-                                </span>
-                            )}
-                        </button>
-                    ))}
+            {/* Stats Dashboard */}
+            <AssetStatsDashboard projectId={selectedProject} />
+
+            {/* Main Layout: Sidebar + Content */}
+            <div className="flex gap-6">
+                {/* Left Sidebar - Tree Hierarchy */}
+                <div className="w-[400px] shrink-0">
+                    <AssetTreeHierarchy
+                        projectId={selectedProject}
+                        onAssetSelect={(asset) => setSelectedAsset(asset)}
+                    />
+                </div>
+
+                {/* Right Content - Details Panel or Grid/Table View */}
+                <div className="flex-1 min-w-0">
+                    {selectedAsset ? (
+                        /* Asset Details Panel */
+                        <AssetDetailsPanel
+                            asset={selectedAsset}
+                            onClose={() => setSelectedAsset(null)}
+                        />
+                    ) : (
+                        /* Grid/Table View */
+                        <>
+                            {/* Type Filter */}
+                            <div className="flex items-center gap-2 overflow-x-auto pb-4">
+                                <Filter size={16} className="text-slate-400 shrink-0" />
+                                <div className="flex gap-2">
+                                    {types.map(type => (
+                                        <button
+                                            key={type}
+                                            onClick={() => setTypeFilter(type)}
+                                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${typeFilter === type
+                                                ? 'bg-primary-500 text-white shadow-md'
+                                                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                                                }`}
+                                        >
+                                            {type === 'all' ? 'All Types' : type}
+                                            {type !== 'all' && (
+                                                <span className="ml-1.5 text-xs opacity-75">
+                                                    ({assets.filter(a => a.type === type).length})
+                                                </span>
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Content Area */}
+                            <DataView
+                                title=""
+                                subtitle=""
+                                items={filteredAssets}
+                                loading={loading}
+                                columns={columns}
+                                renderGrid={renderGrid}
+                                initialView={viewMode}
+                                emptyState={
+                                    <EmptyState
+                                        icon={Package}
+                                        title="No artifacts found"
+                                        description={typeFilter !== 'all'
+                                            ? 'Try adjusting your filters'
+                                            : 'Run a pipeline to generate artifacts'
+                                        }
+                                    />
+                                }
+                            />
+                        </>
+                    )}
                 </div>
             </div>
 
-            {/* Content - Graph or DataView */}
-            {viewMode === 'graph' ? (
-                <AssetLineageGraph
-                    projectId={selectedProject}
-                    onNodeClick={(nodeData) => {
-                        // Find the asset by ID
-                        const asset = assets.find(a => a.artifact_id === nodeData.id);
-                        if (asset) {
-                            setSelectedAsset(asset);
-                        }
-                    }}
-                />
-            ) : (
-                <DataView
-                    title=""
-                    subtitle=""
-                    items={filteredAssets}
-                    loading={loading}
-                    columns={columns}
-                    renderGrid={renderGrid}
-                    initialView={viewMode}
-                    emptyState={
-                        <EmptyState
-                            icon={Package}
-                            title="No artifacts found"
-                            description={typeFilter !== 'all'
-                                ? 'Try adjusting your filters'
-                                : 'Run a pipeline to generate artifacts'
-                            }
-                        />
-                    }
+            {/* Asset Detail Modal - Keep for backwards compatibility but won't be used in sidebar layout */}
+            {!selectedAsset && (
+                <AssetDetailModal
+                    asset={null}
+                    onClose={() => setSelectedAsset(null)}
                 />
             )}
-
-            {/* Asset Detail Modal */}
-            <AssetDetailModal
-                asset={selectedAsset}
-                onClose={() => setSelectedAsset(null)}
-            />
         </div>
     );
 }
