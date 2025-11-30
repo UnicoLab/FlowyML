@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 from typing import Any, TYPE_CHECKING
 from datetime import datetime
+from flowyml.utils.config import get_config
 
 if TYPE_CHECKING:
     from flowyml.core.pipeline import Pipeline
@@ -186,6 +187,36 @@ class Project:
         with open(output_file, "w") as f:
             json.dump(export_data, f, indent=2)
 
+    def log_model_metrics(
+        self,
+        model_name: str,
+        metrics: dict[str, float],
+        run_id: str | None = None,
+        environment: str | None = None,
+        tags: dict | None = None,
+    ) -> None:
+        """Log production metrics scoped to this project."""
+        self.metadata_store.log_model_metrics(
+            project=self.name,
+            model_name=model_name,
+            metrics=metrics,
+            run_id=run_id,
+            environment=environment,
+            tags=tags,
+        )
+
+    def list_model_metrics(
+        self,
+        model_name: str | None = None,
+        limit: int = 100,
+    ) -> list[dict]:
+        """List production metrics for this project."""
+        return self.metadata_store.list_model_metrics(
+            project=self.name,
+            model_name=model_name,
+            limit=limit,
+        )
+
     def __repr__(self) -> str:
         return f"Project(name='{self.name}', pipelines={len(self.metadata['pipelines'])})"
 
@@ -205,8 +236,9 @@ class ProjectManager:
         >>> project = manager.get_project("recommendation_system")
     """
 
-    def __init__(self, projects_dir: str = ".flowyml/projects"):
-        self.projects_dir = Path(projects_dir)
+    def __init__(self, projects_dir: str | None = None):
+        config = get_config()
+        self.projects_dir = Path(projects_dir or config.projects_dir)
         self.projects_dir.mkdir(parents=True, exist_ok=True)
 
     def create_project(self, name: str, description: str = "") -> Project:

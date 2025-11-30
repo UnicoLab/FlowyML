@@ -18,6 +18,7 @@ class FlowymlConfig:
     cache_dir: Path = field(default_factory=lambda: Path(".flowyml/cache"))
     runs_dir: Path = field(default_factory=lambda: Path(".flowyml/runs"))
     experiments_dir: Path = field(default_factory=lambda: Path(".flowyml/experiments"))
+    projects_dir: Path = field(default_factory=lambda: Path(".flowyml/projects"))
 
     # Execution settings
     default_stack: str = "local"
@@ -60,6 +61,7 @@ class FlowymlConfig:
             "cache_dir",
             "runs_dir",
             "experiments_dir",
+            "projects_dir",
         ]:
             value = getattr(self, field_name)
             if not isinstance(value, Path):
@@ -72,6 +74,7 @@ class FlowymlConfig:
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.runs_dir.mkdir(parents=True, exist_ok=True)
         self.experiments_dir.mkdir(parents=True, exist_ok=True)
+        self.projects_dir.mkdir(parents=True, exist_ok=True)
 
         # Create metadata db parent dir
         self.metadata_db.parent.mkdir(parents=True, exist_ok=True)
@@ -85,6 +88,7 @@ class FlowymlConfig:
             "cache_dir": str(self.cache_dir),
             "runs_dir": str(self.runs_dir),
             "experiments_dir": str(self.experiments_dir),
+            "projects_dir": str(self.projects_dir),
             "default_stack": self.default_stack,
             "execution_mode": self.execution_mode,
             "remote_server_url": self.remote_server_url,

@@ -9,6 +9,7 @@ import { ProjectRunsList } from './_components/ProjectRunsList';
 import { ProjectArtifactsList } from './_components/ProjectArtifactsList';
 import { ProjectExperimentsList } from './_components/ProjectExperimentsList';
 import { ErrorBoundary } from '../../../components/ui/ErrorBoundary';
+import { ProjectMetricsPanel } from './_components/ProjectMetricsPanel';
 
 export function ProjectDetails() {
     const { projectId } = useParams();
@@ -102,6 +103,18 @@ export function ProjectDetails() {
                                 </section>
                             </ErrorBoundary>
                         </div>
+
+                        <ErrorBoundary>
+                            <section>
+                                <div className="flex items-center justify-between mb-4">
+                                    <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Production Metrics</h2>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                                        Live data from /api/projects/{projectId}/metrics
+                                    </p>
+                                </div>
+                                <ProjectMetricsPanel projectId={projectId} />
+                            </section>
+                        </ErrorBoundary>
                     </div>
                 );
             case 'pipelines':
@@ -132,6 +145,12 @@ export function ProjectDetails() {
                 return (
                     <ErrorBoundary>
                         <ProjectArtifactsList projectId={projectId} />
+                    </ErrorBoundary>
+                );
+            case 'metrics':
+                return (
+                    <ErrorBoundary>
+                        <ProjectMetricsPanel projectId={projectId} />
                     </ErrorBoundary>
                 );
             default:

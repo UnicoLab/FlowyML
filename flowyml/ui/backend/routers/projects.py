@@ -1,13 +1,19 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from flowyml.core.project import ProjectManager
+from flowyml.utils.config import get_config
 from pydantic import BaseModel
 
 router = APIRouter()
-manager = ProjectManager()
+
+
+def get_projects_manager() -> ProjectManager:
+    """Instantiate a ProjectManager bound to the current config."""
+    config = get_config()
+    return ProjectManager(str(config.projects_dir))
 
 
 @router.get("/")
-async def list_projects():
+async def list_projects(manager: ProjectManager = Depends(get_projects_manager)):
     """List all projects."""
     try:
         projects = manager.list_projects()
@@ -22,7 +28,7 @@ class ProjectCreate(BaseModel):
 
 
 @router.post("/")
-async def create_project(project: ProjectCreate):
+async def create_project(project: ProjectCreate, manager: ProjectManager = Depends(get_projects_manager)):
     """Create a new project."""
     created_project = manager.create_project(project.name, project.description)
     return {
@@ -33,7 +39,7 @@ async def create_project(project: ProjectCreate):
 
 
 @router.get("/{project_name}")
-async def get_project(project_name: str):
+async def get_project(project_name: str, manager: ProjectManager = Depends(get_projects_manager)):
     """Get project details."""
     project = manager.get_project(project_name)
     if not project:
@@ -53,6 +59,7 @@ async def get_project_runs(
     project_name: str,
     pipeline_name: str | None = None,
     limit: int = 100,
+    manager: ProjectManager = Depends(get_projects_manager),
 ):
     """Get runs for a project."""
     project = manager.get_project(project_name)
@@ -68,6 +75,7 @@ async def get_project_artifacts(
     project_name: str,
     artifact_type: str | None = None,
     limit: int = 100,
+    manager: ProjectManager = Depends(get_projects_manager),
 ):
     """Get artifacts for a project."""
     project = manager.get_project(project_name)
@@ -78,8 +86,26 @@ async def get_project_artifacts(
     return artifacts
 
 
+@router.get("/{project_name}/metrics")
+async def get_project_metrics(
+    project_name: str,
+    model_name: str | None = None,
+    limit: int = 100,
+    manager: ProjectManager = Depends(get_projects_manager),
+):
+    """Get logged production metrics for a project."""
+    project = manager.get_project(project_name)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    return {
+        "project": project_name,
+        "metrics": project.list_model_metrics(model_name=model_name, limit=limit),
+    }
+
+
 @router.delete("/{project_name}")
-async def delete_project(project_name: str):
+async def delete_project(project_name: str, manager: ProjectManager = Depends(get_projects_manager)):
     """Delete a project."""
     manager.delete_project(project_name, confirm=True)
     return {"deleted": True}

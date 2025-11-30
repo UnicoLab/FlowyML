@@ -432,6 +432,39 @@ docker:
 
 ---
 
+## 📈 Production Metrics API
+
+Enable digital teams to push real-time model health data straight into flowyml.
+
+### Log metrics
+
+```bash
+curl -X POST https://your-flowyml/api/metrics/log \
+  -H "Authorization: Bearer <WRITE_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "project": "fraud-monitoring",
+        "model_name": "fraud-detector-v3",
+        "environment": "prod",
+        "metrics": {"precision": 0.92, "recall": 0.87},
+        "tags": {"region": "eu-west-1"}
+      }'
+```
+
+### Query latest metrics
+
+```bash
+curl -H "Authorization: Bearer <READ_TOKEN>" \
+  "https://your-flowyml/api/metrics?project=fraud-monitoring&model_name=fraud-detector-v3&limit=20"
+```
+
+Tokens scoped to a project can only write/read metrics for that project.
+
+> [!TIP]
+> The UI and CLI also surface the same data via `/api/projects/<project>/metrics?model_name=...`, which is perfect for dashboards scoped to a single project.
+
+---
+
 ## 🛠️ Troubleshooting Quick Fixes
 
 ### "Stack not found"

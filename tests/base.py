@@ -26,6 +26,7 @@ class BaseTestCase(unittest.TestCase):
             cache_dir=self.test_path / ".flowyml/cache",
             runs_dir=self.test_path / ".flowyml/runs",
             experiments_dir=self.test_path / ".flowyml/experiments",
+            projects_dir=self.test_path / ".flowyml/projects",
             enable_ui=False,
         )
 

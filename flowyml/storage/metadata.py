@@ -129,6 +129,23 @@ class SQLiteMetadataStore(MetadataStore):
         """,
         )
 
+        # Model metrics table
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS model_metrics (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                project TEXT,
+                model_name TEXT,
+                run_id TEXT,
+                metric_name TEXT,
+                metric_value REAL,
+                environment TEXT,
+                tags TEXT,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        """,
+        )
+
         # Parameters table
         cursor.execute(
             """
@@ -557,6 +574,91 @@ class SQLiteMetadataStore(MetadataStore):
         conn.close()
 
         return [{"name": row[0], "value": row[1], "step": row[2], "timestamp": row[3]} for row in rows]
+
+    def log_model_metrics(
+        self,
+        project: str,
+        model_name: str,
+        metrics: dict[str, float],
+        run_id: str | None = None,
+        environment: str | None = None,
+        tags: dict | None = None,
+    ) -> None:
+        """Log production model metrics independent of pipeline runs."""
+        if not metrics:
+            return
+
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        tags_json = json.dumps(tags or {})
+
+        for metric_name, value in metrics.items():
+            try:
+                metric_value = float(value)
+            except (TypeError, ValueError):
+                continue
+
+            cursor.execute(
+                """
+                INSERT INTO model_metrics
+                (project, model_name, run_id, metric_name, metric_value, environment, tags)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (project, model_name, run_id, metric_name, metric_value, environment, tags_json),
+            )
+
+        conn.commit()
+        conn.close()
+
+    def list_model_metrics(
+        self,
+        project: str | None = None,
+        model_name: str | None = None,
+        limit: int = 100,
+    ) -> list[dict]:
+        """List logged model metrics."""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        query = """
+            SELECT project, model_name, run_id, metric_name, metric_value, environment, tags, created_at
+            FROM model_metrics
+        """
+        params: list = []
+        clauses = []
+
+        if project:
+            clauses.append("project = ?")
+            params.append(project)
+        if model_name:
+            clauses.append("model_name = ?")
+            params.append(model_name)
+
+        if clauses:
+            query += " WHERE " + " AND ".join(clauses)
+
+        query += " ORDER BY created_at DESC LIMIT ?"
+        params.append(limit)
+
+        cursor.execute(query, params)
+        rows = cursor.fetchall()
+        conn.close()
+
+        results = []
+        for row in rows:
+            results.append(
+                {
+                    "project": row[0],
+                    "model_name": row[1],
+                    "run_id": row[2],
+                    "metric_name": row[3],
+                    "metric_value": row[4],
+                    "environment": row[5],
+                    "tags": json.loads(row[6]) if row[6] else {},
+                    "created_at": row[7],
+                },
+            )
+        return results
 
     def save_experiment(self, experiment_id: str, name: str, description: str = "", tags: dict = None) -> None:
         """Save experiment metadata.
