@@ -102,6 +102,7 @@ nav:
     - 📦 Materializers: advanced/materializers.md
   - 🔌 Integrations:
     - 🧠 Keras: integrations/keras.md
+    - 📊 Keras Training History: integrations/keras-training-history.md
     - ☁️ GCP: integrations/gcp.md
   - 🔌 Plugins:
     - 📚 Overview: plugins/overview.md

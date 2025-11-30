@@ -25,6 +25,7 @@ wheels/
 site/
 analysis/
 zenml*
+!ZenMLIntegration.jsx
 
 # Flowy specific
 .flowy/
