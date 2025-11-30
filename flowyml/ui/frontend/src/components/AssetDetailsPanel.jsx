@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
     X,
     Download,
@@ -13,7 +13,8 @@ import {
     GitBranch,
     Layers,
     HardDrive,
-    ExternalLink
+    ExternalLink,
+    Info
 } from 'lucide-react';
 import { Card } from './ui/Card';
 import { Badge } from './ui/Badge';
@@ -22,9 +23,26 @@ import { format } from 'date-fns';
 import { downloadArtifactById } from '../utils/downloads';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { ProjectSelector } from './ProjectSelector';
+import { fetchApi } from '../utils/api';
 
 export function AssetDetailsPanel({ asset, onClose }) {
+    const [activeTab, setActiveTab] = useState('overview');
+    const [currentProject, setCurrentProject] = useState(asset?.project);
+
     if (!asset) return null;
+
+    const handleProjectUpdate = async (newProject) => {
+        try {
+            await fetchApi(`/api/assets/${asset.artifact_id}/project`, {
+                method: 'PUT',
+                body: JSON.stringify({ project_name: newProject })
+            });
+            setCurrentProject(newProject);
+        } catch (error) {
+            console.error('Failed to update project:', error);
+        }
+    };
 
     const typeConfig = {
         model: {
@@ -95,113 +113,156 @@ export function AssetDetailsPanel({ asset, onClose }) {
                         {asset.name}
                     </h2>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                         <Badge className={`bg-gradient-to-r ${config.color} text-white border-0`}>
                             {asset.type}
                         </Badge>
-                        {asset.step && (
-                            <span className="text-sm text-slate-600 dark:text-slate-400">
-                                from step: <span className="font-mono font-semibold">{asset.step}</span>
-                            </span>
-                        )}
+                        <ProjectSelector
+                            currentProject={currentProject}
+                            onUpdate={handleProjectUpdate}
+                        />
                     </div>
+                </div>
+
+                {/* Tabs */}
+                <div className="flex items-center gap-1 p-2 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+                    <TabButton
+                        active={activeTab === 'overview'}
+                        onClick={() => setActiveTab('overview')}
+                        icon={Info}
+                        label="Overview"
+                    />
+                    <TabButton
+                        active={activeTab === 'properties'}
+                        onClick={() => setActiveTab('properties')}
+                        icon={Tag}
+                        label="Properties"
+                    />
+                    <TabButton
+                        active={activeTab === 'metadata'}
+                        onClick={() => setActiveTab('metadata')}
+                        icon={FileBox}
+                        label="Metadata"
+                    />
                 </div>
 
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                    {/* Key Information */}
-                    <div>
-                        <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3 flex items-center gap-2">
-                            <FileBox size={16} />
-                            Asset Information
-                        </h3>
-                        <div className="grid grid-cols-2 gap-4">
-                            <InfoCard
-                                icon={Calendar}
-                                label="Created"
-                                value={asset.created_at ? format(new Date(asset.created_at), 'MMM d, yyyy HH:mm') : 'N/A'}
-                            />
-                            <InfoCard
-                                icon={HardDrive}
-                                label="Size"
-                                value={formatBytes(asset.size || asset.storage_bytes)}
-                            />
-                            <InfoCard
-                                icon={Tag}
-                                label="Artifact ID"
-                                value={asset.artifact_id?.slice(0, 12) + '...' || 'N/A'}
-                                mono
-                            />
-                            <InfoCard
-                                icon={Layers}
-                                label="Version"
-                                value={asset.version || 'N/A'}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Context Links */}
-                    {(asset.run_id || asset.pipeline_name || asset.project) && (
-                        <div>
-                            <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3 flex items-center gap-2">
-                                <GitBranch size={16} />
-                                Context
-                            </h3>
-                            <div className="space-y-2">
-                                {asset.project && (
-                                    <ContextLink
-                                        icon={Box}
-                                        label="Project"
-                                        value={asset.project}
-                                        to={`/projects/${asset.project}`}
+                    {activeTab === 'overview' && (
+                        <>
+                            {/* Key Information */}
+                            <div>
+                                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                    <FileBox size={16} />
+                                    Asset Information
+                                </h3>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <InfoCard
+                                        icon={Calendar}
+                                        label="Created"
+                                        value={asset.created_at ? format(new Date(asset.created_at), 'MMM d, yyyy HH:mm') : 'N/A'}
                                     />
-                                )}
-                                {asset.pipeline_name && (
-                                    <ContextLink
-                                        icon={Activity}
-                                        label="Pipeline"
-                                        value={asset.pipeline_name}
-                                        to={`/pipelines/${asset.pipeline_name}`}
+                                    <InfoCard
+                                        icon={HardDrive}
+                                        label="Size"
+                                        value={formatBytes(asset.size || asset.storage_bytes)}
                                     />
-                                )}
-                                {asset.run_id && (
-                                    <ContextLink
-                                        icon={Activity}
-                                        label="Run"
-                                        value={asset.run_id.slice(0, 12) + '...'}
-                                        to={`/runs/${asset.run_id}`}
+                                    <InfoCard
+                                        icon={Layers}
+                                        label="Step"
+                                        value={asset.step || 'N/A'}
                                     />
-                                )}
+                                    <InfoCard
+                                        icon={GitBranch}
+                                        label="Version"
+                                        value={asset.version || 'N/A'}
+                                    />
+                                </div>
                             </div>
-                        </div>
+
+                            {/* Context Links */}
+                            {(asset.run_id || asset.pipeline_name || currentProject) && (
+                                <div>
+                                    <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                        <GitBranch size={16} />
+                                        Context
+                                    </h3>
+                                    <div className="space-y-2">
+                                        {currentProject && (
+                                            <ContextLink
+                                                icon={Box}
+                                                label="Project"
+                                                value={currentProject}
+                                                to={`/assets?project=${encodeURIComponent(currentProject)}`}
+                                            />
+                                        )}
+                                        {asset.pipeline_name && (
+                                            <ContextLink
+                                                icon={Activity}
+                                                label="Pipeline"
+                                                value={asset.pipeline_name}
+                                                to={`/pipelines?project=${encodeURIComponent(currentProject || '')}`}
+                                            />
+                                        )}
+                                        {asset.run_id && (
+                                            <ContextLink
+                                                icon={Activity}
+                                                label="Run"
+                                                value={asset.run_id.slice(0, 12) + '...'}
+                                                to={`/runs/${asset.run_id}`}
+                                            />
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </>
                     )}
 
-                    {/* Properties */}
-                    {asset.properties && Object.keys(asset.properties).length > 0 && (
+                    {activeTab === 'properties' && (
                         <div>
                             <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3 flex items-center gap-2">
                                 <Tag size={16} />
-                                Properties ({Object.keys(asset.properties).length})
+                                Properties ({asset.properties ? Object.keys(asset.properties).length : 0})
                             </h3>
-                            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 space-y-2 max-h-96 overflow-y-auto">
-                                {Object.entries(asset.properties).map(([key, value]) => (
-                                    <PropertyRow key={key} name={key} value={value} />
-                                ))}
-                            </div>
+                            {asset.properties && Object.keys(asset.properties).length > 0 ? (
+                                <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 space-y-2">
+                                    {Object.entries(asset.properties).map(([key, value]) => (
+                                        <PropertyRow key={key} name={key} value={value} />
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center py-8 text-slate-500 italic">
+                                    No properties available
+                                </div>
+                            )}
                         </div>
                     )}
 
-                    {/* URI/Location */}
-                    {asset.uri && (
-                        <div>
-                            <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
-                                Location
-                            </h3>
-                            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3">
-                                <code className="text-xs text-slate-600 dark:text-slate-400 break-all">
-                                    {asset.uri}
-                                </code>
+                    {activeTab === 'metadata' && (
+                        <div className="space-y-6">
+                            <div>
+                                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+                                    Artifact ID
+                                </h3>
+                                <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3">
+                                    <code className="text-xs text-slate-600 dark:text-slate-400 font-mono break-all">
+                                        {asset.artifact_id}
+                                    </code>
+                                </div>
                             </div>
+
+                            {asset.uri && (
+                                <div>
+                                    <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+                                        Location
+                                    </h3>
+                                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3">
+                                        <code className="text-xs text-slate-600 dark:text-slate-400 break-all">
+                                            {asset.uri}
+                                        </code>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
@@ -287,5 +348,23 @@ function PropertyRow({ name, value }) {
                 {displayValue()}
             </span>
         </div>
+    );
+}
+
+function TabButton({ active, onClick, icon: Icon, label }) {
+    return (
+        <button
+            onClick={onClick}
+            className={`
+                flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all
+                ${active
+                    ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white'
+                    : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-700 dark:hover:text-slate-300'
+                }
+            `}
+        >
+            <Icon size={16} />
+            {label}
+        </button>
     );
 }

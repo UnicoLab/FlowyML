@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
+from pydantic import BaseModel
 from flowyml.storage.metadata import SQLiteMetadataStore
 from flowyml.core.project import ProjectManager
 from typing import Optional
@@ -348,6 +349,26 @@ async def download_asset(artifact_id: str):
         filename=file_path.name,
         media_type="application/octet-stream",
     )
+
+
+class ProjectUpdate(BaseModel):
+    project_name: str
+
+
+@router.put("/{artifact_id}/project")
+async def update_asset_project(artifact_id: str, update: ProjectUpdate):
+    """Update the project for an asset."""
+    try:
+        _, store = _find_asset_with_store(artifact_id)
+        if not store:
+            raise HTTPException(status_code=404, detail="Asset not found")
+
+        store.update_artifact_project(artifact_id, update.project_name)
+        return {"status": "success", "project": update.project_name}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 def _find_asset(artifact_id: str):

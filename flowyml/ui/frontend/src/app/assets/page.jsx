@@ -215,6 +215,7 @@ export function Assets() {
             : [];
 
         return (
+
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -222,104 +223,59 @@ export function Assets() {
                 transition={{ duration: 0.2 }}
             >
                 <Card
-                    className="group cursor-pointer hover:shadow-2xl hover:border-primary-300 dark:hover:border-primary-700 transition-all duration-300 overflow-hidden h-full relative"
+                    className="group cursor-pointer hover:shadow-lg hover:border-primary-300 dark:hover:border-primary-700 transition-all duration-300 h-full"
                     onClick={() => setSelectedAsset(asset)}
                 >
-                    {/* Gradient background effect */}
-                    <div className={`absolute inset-0 bg-gradient-to-br ${colorClasses[config.color]} opacity-0 group-hover:opacity-10 transition-opacity duration-300`}></div>
-
-                    <div className="relative">
-                        {/* Icon Header */}
+                    <div className="p-4">
+                        {/* Header */}
                         <div className="flex items-start justify-between mb-3">
-                            <motion.div
-                                className={`p-3 rounded-xl bg-gradient-to-br ${colorClasses[config.color]} text-white shadow-lg`}
-                                whileHover={{ scale: 1.1, rotate: 5 }}
-                                transition={{ duration: 0.2 }}
-                            >
+                            <div className={`p-2 rounded-lg ${config.bg} ${config.color}`}>
                                 {config.icon}
-                            </motion.div>
-                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            </div>
+                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button
-                                    className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSelectedAsset(asset);
-                                    }}
-                                >
-                                    <Eye size={16} className="text-slate-400" />
-                                </button>
-                                <button
-                                    className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-40"
+                                    className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         downloadArtifactById(asset.artifact_id);
                                     }}
                                     disabled={!asset.artifact_id}
                                 >
-                                    <Download size={16} className="text-slate-400" />
+                                    <Download size={14} className="text-slate-400" />
                                 </button>
                             </div>
                         </div>
 
-                        {/* Name */}
-                        <h4 className="font-bold text-slate-900 dark:text-white mb-2 truncate group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                        {/* Content */}
+                        <h4 className="font-semibold text-slate-900 dark:text-white mb-1 truncate group-hover:text-primary-600 transition-colors">
                             {asset.name}
                         </h4>
 
-                        {/* Type Badge */}
-                        <div className="mb-3">
-                            <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium bg-gradient-to-r ${colorClasses[config.color]} text-white`}>
+                        <div className="flex items-center gap-2 mb-3">
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">
                                 {asset.type}
+                            </Badge>
+                            <span className="text-xs text-slate-500 truncate max-w-[100px]">
+                                {asset.step}
                             </span>
                         </div>
 
-                        {/* Metadata */}
-                        <div className="space-y-2 text-xs text-slate-500 dark:text-slate-400 mb-3">
-                            <div className="flex items-center justify-between">
-                                <span>Step:</span>
-                                <span className="font-mono text-slate-700 dark:text-slate-300 truncate ml-2">{asset.step}</span>
-                            </div>
-                            {asset.created_at && (
-                                <div className="flex items-center justify-between">
-                                    <span>Created:</span>
-                                    <span className="text-slate-700 dark:text-slate-300">{format(new Date(asset.created_at), 'MMM d, HH:mm')}</span>
-                                </div>
-                            )}
-                            {asset.pipeline_name && (
-                                <div className="flex items-center justify-between">
-                                    <span>Pipeline:</span>
-                                    <span className="text-slate-700 dark:text-slate-300 truncate ml-2">{asset.pipeline_name}</span>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Animated Property Tags */}
-                        {propertyTags.length > 0 && (
-                            <div className="pt-3 border-t border-slate-100 dark:border-slate-700">
-                                <div className="flex flex-wrap gap-1 mb-2">
-                                    {propertyTags}
-                                    {propertyCount > 3 && (
-                                        <span className="inline-flex items-center px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded-md text-xs text-slate-400">
-                                            +{propertyCount - 3} more
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Relationship Indicator (placeholder for now) */}
-                        {asset.run_id && (
-                            <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700">
+                        {/* Footer */}
+                        <div className="pt-3 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between text-xs text-slate-500">
+                            <span className="flex items-center gap-1">
+                                <Calendar size={12} />
+                                {asset.created_at ? format(new Date(asset.created_at), 'MMM d') : '-'}
+                            </span>
+                            {asset.run_id && (
                                 <Link
                                     to={`/runs/${asset.run_id}`}
-                                    className="flex items-center gap-1 text-xs text-primary-600 dark:text-primary-400 hover:underline"
+                                    className="hover:text-primary-600 flex items-center gap-1"
                                     onClick={(e) => e.stopPropagation()}
                                 >
-                                    <Activity size={12} />
-                                    View in run
+                                    Run <ArrowRight size={10} />
                                 </Link>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
                 </Card>
             </motion.div>
