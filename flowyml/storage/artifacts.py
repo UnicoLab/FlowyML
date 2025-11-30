@@ -215,7 +215,7 @@ class LocalArtifactStore(ArtifactStore):
         from datetime import datetime
         from flowyml.storage.materializers.base import get_materializer
         import shutil
-        import pickle
+        import cloudpickle
         import json
 
         date_str = datetime.now().strftime("%Y-%m-%d")
@@ -236,11 +236,11 @@ class LocalArtifactStore(ArtifactStore):
         if materializer:
             materializer.save(obj, full_path)
         else:
-            # Fallback to pickle
-            with open(full_path / "data.pkl", "wb") as f:
-                pickle.dump(obj, f)
+            # Fallback to cloudpickle (more robust than pickle)
+            with open(full_path / "data.cloudpickle", "wb") as f:
+                cloudpickle.dump(obj, f)
             # Save metadata
             with open(full_path / "metadata.json", "w") as f:
-                json.dump({"type": "pickle", "format": "pickle"}, f, indent=2)
+                json.dump({"type": "cloudpickle", "format": "cloudpickle"}, f, indent=2)
 
         return str(full_path)

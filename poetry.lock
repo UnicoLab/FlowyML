@@ -471,6 +471,18 @@ files = [
 colorama = {version = "*", markers = "platform_system == \"Windows\""}
 
 [[package]]
+name = "cloudpickle"
+version = "3.1.2"
+description = "Pickler class to extend the standard pickle.Pickler functionality"
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+files = [
+    {file = "cloudpickle-3.1.2-py3-none-any.whl", hash = "sha256:9acb47f6afd73f60dc1df93bb801b472f05ff42fa6c84167d25cb206be1fbf4a"},
+    {file = "cloudpickle-3.1.2.tar.gz", hash = "sha256:7fda9eb655c9c230dab534f1983763de5835249750e85fbcef43aaa30a9a2414"},
+]
+
+[[package]]
 name = "colorama"
 version = "0.4.6"
 description = "Cross-platform colored terminal text."
@@ -5839,4 +5851,4 @@ ui = ["fastapi", "python-multipart", "uvicorn", "websockets"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<4.0"
-content-hash = "946e00656a05486484a6d4d62e785112b3741dec6985e5f42d01560de816c061"
+content-hash = "632c105ec614270b318f141ad351342c3a9f3b32a900e9e07f08c51fbbe6d28c"

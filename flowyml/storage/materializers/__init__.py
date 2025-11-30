@@ -7,6 +7,7 @@ from flowyml.storage.materializers.sklearn import SklearnMaterializer
 from flowyml.storage.materializers.pandas import PandasMaterializer
 from flowyml.storage.materializers.numpy import NumPyMaterializer
 from flowyml.storage.materializers.keras import KerasMaterializer
+from flowyml.storage.materializers.cloudpickle import CloudpickleMaterializer
 
 __all__ = [
     "BaseMaterializer",
@@ -17,4 +18,5 @@ __all__ = [
     "PandasMaterializer",
     "NumPyMaterializer",
     "KerasMaterializer",
+    "CloudpickleMaterializer",
 ]

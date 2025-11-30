@@ -105,9 +105,10 @@ nav:
     - 📊 Keras Training History: integrations/keras-training-history.md
     - ☁️ GCP: integrations/gcp.md
   - 🔌 Plugins:
-    - 📚 Overview: plugins/overview.md
-    - 🔧 Creating Plugins: plugins/creating-plugins.md
-    - 🔄 ZenML Integration: plugins/zenml-integration.md
+     - 📚 Overview: plugins/overview.md
+     - 🎯 Practical Examples: plugins/practical-examples.md
+     - 🔄 External Frameworks: plugins/external-frameworks.md
+     - 🔧 Creating Plugins: plugins/creating-plugins.md
   - 🎓 Tutorials:
     - 🔧 Extensible Pipeline: tutorials/extensible-pipeline.md
   - 📐 Guides:
