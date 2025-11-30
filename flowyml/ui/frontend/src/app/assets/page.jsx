@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { fetchApi } from '../../utils/api';
+import { downloadArtifactById } from '../../utils/downloads';
 import { Link } from 'react-router-dom';
 import { Database, Box, BarChart2, FileText, Search, Filter, Calendar, Package, Download, Eye, X, ArrowRight, Network } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
@@ -134,12 +135,24 @@ export function Assets() {
             header: 'Actions',
             key: 'actions',
             render: (asset) => (
-                <button
-                    onClick={() => setSelectedAsset(asset)}
-                    className="text-primary-600 hover:text-primary-700 font-medium text-sm flex items-center gap-1"
-                >
-                    View <Eye size={14} />
-                </button>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => setSelectedAsset(asset)}
+                        className="text-primary-600 hover:text-primary-700 font-medium text-sm flex items-center gap-1"
+                    >
+                        View <Eye size={14} />
+                    </button>
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            downloadArtifactById(asset.artifact_id);
+                        }}
+                        className="text-slate-600 hover:text-primary-600 font-medium text-sm flex items-center gap-1 disabled:opacity-50"
+                        disabled={!asset.artifact_id}
+                    >
+                        <Download size={14} /> Download
+                    </button>
+                </div>
             )
         }
     ];
@@ -171,9 +184,27 @@ export function Assets() {
                     <div className={`p-3 rounded-xl bg-gradient-to-br ${colorClasses[config.color]} text-white shadow-lg group-hover:scale-110 transition-transform`}>
                         {config.icon}
                     </div>
-                    <button className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors opacity-0 group-hover:opacity-100">
-                        <Eye size={16} className="text-slate-400" />
-                    </button>
+                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedAsset(asset);
+                            }}
+                        >
+                            <Eye size={16} className="text-slate-400" />
+                        </button>
+                        <button
+                            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-40"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                downloadArtifactById(asset.artifact_id);
+                            }}
+                            disabled={!asset.artifact_id}
+                        >
+                            <Download size={16} className="text-slate-400" />
+                        </button>
+                    </div>
                 </div>
 
                 {/* Name */}
@@ -363,12 +394,21 @@ function AssetDetailModal({ asset, onClose }) {
                                 <p className="text-sm text-slate-500 mt-1">{asset.type} • {asset.step}</p>
                             </div>
                         </div>
-                        <button
-                            onClick={onClose}
-                            className="p-2 hover:bg-white dark:hover:bg-slate-700 rounded-lg transition-colors"
-                        >
-                            <X size={20} className="text-slate-400" />
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => downloadArtifactById(asset.artifact_id)}
+                                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-primary-600 text-white font-medium text-sm hover:bg-primary-500 transition-colors disabled:opacity-50"
+                                disabled={!asset.artifact_id}
+                            >
+                                <Download size={16} /> Download
+                            </button>
+                            <button
+                                onClick={onClose}
+                                className="p-2 hover:bg-white dark:hover:bg-slate-700 rounded-lg transition-colors"
+                            >
+                                <X size={20} className="text-slate-400" />
+                            </button>
+                        </div>
                     </div>
 
                     {/* Content */}

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { fetchApi } from '../../../../utils/api';
 import { DataView } from '../../../../components/ui/DataView';
-import { FileBox, Database, Box, Clock, Tag } from 'lucide-react';
+import { FileBox, Database, Box, Clock, Download } from 'lucide-react';
 import { formatDate } from '../../../../utils/date';
+import { downloadArtifactById } from '../../../../utils/downloads';
 
 export function ProjectArtifactsList({ projectId, type }) {
     const [artifacts, setArtifacts] = useState([]);
@@ -77,6 +78,19 @@ export function ProjectArtifactsList({ projectId, type }) {
                     {item.path}
                 </span>
             )
+        },
+        {
+            key: 'actions',
+            label: 'Actions',
+            render: (item) => (
+                <button
+                    onClick={() => downloadArtifactById(item.artifact_id)}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 transition-colors disabled:opacity-50"
+                    disabled={!item.artifact_id}
+                >
+                    <Download size={14} /> Download
+                </button>
+            )
         }
     ];
 
@@ -111,6 +125,14 @@ export function ProjectArtifactsList({ projectId, type }) {
                             <span className="truncate font-mono text-xs">{item.path}</span>
                         </div>
                     </div>
+
+                    <button
+                        onClick={() => downloadArtifactById(item.artifact_id)}
+                        className="mt-4 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors disabled:opacity-50"
+                        disabled={!item.artifact_id}
+                    >
+                        <Download size={16} /> Download
+                    </button>
                 </div>
             )}
             emptyState={

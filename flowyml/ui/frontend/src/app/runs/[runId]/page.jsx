@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { fetchApi } from '../../../utils/api';
+import { downloadArtifactById } from '../../../utils/downloads';
 import { useParams, Link } from 'react-router-dom';
 import { CheckCircle, XCircle, Clock, Calendar, Package, ArrowRight, BarChart2, FileText, Database, Box, ChevronRight, Activity, Layers, Code2, Terminal, Info, X, Maximize2, TrendingUp, Download, ArrowDownCircle, ArrowUpCircle, Tag, Zap, AlertCircle, FolderPlus } from 'lucide-react';
 import { Card } from '../../../components/ui/Card';
@@ -480,6 +481,16 @@ function ArtifactsTab({ artifacts, onArtifactClick }) {
                                 <p className="text-xs text-slate-500 truncate">{art.type}</p>
                             </div>
                             <div className="flex items-center gap-2">
+                                <button
+                                    className="p-2 rounded-lg hover:bg-white transition-colors text-slate-400 hover:text-primary-600 disabled:opacity-40"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        downloadArtifactById(art.artifact_id);
+                                    }}
+                                    disabled={!art.artifact_id}
+                                >
+                                    <Download size={14} />
+                                </button>
                                 <Maximize2 size={14} className="text-slate-300 group-hover:text-primary-400 transition-colors" />
                                 <ArrowRight size={14} className="text-slate-300 group-hover:text-primary-400 opacity-0 group-hover:opacity-100 transition-all" />
                             </div>
@@ -526,12 +537,21 @@ function ArtifactModal({ artifact, onClose }) {
                                 <p className="text-sm text-slate-500">{artifact.type}</p>
                             </div>
                         </div>
-                        <button
-                            onClick={onClose}
-                            className="p-2 hover:bg-white rounded-lg transition-colors"
-                        >
-                            <X size={20} className="text-slate-400" />
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => downloadArtifactById(artifact.artifact_id)}
+                                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-primary-600 text-white text-sm font-semibold hover:bg-primary-500 transition-colors disabled:opacity-50"
+                                disabled={!artifact.artifact_id}
+                            >
+                                <Download size={16} /> Download
+                            </button>
+                            <button
+                                onClick={onClose}
+                                className="p-2 hover:bg-white rounded-lg transition-colors"
+                            >
+                                <X size={20} className="text-slate-400" />
+                            </button>
+                        </div>
                     </div>
 
                     {/* Content */}

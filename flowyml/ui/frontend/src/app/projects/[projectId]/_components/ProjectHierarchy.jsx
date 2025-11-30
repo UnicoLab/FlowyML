@@ -15,11 +15,13 @@ import {
     X,
     TrendingUp,
     HardDrive,
-    Info
+    Info,
+    Download
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { formatDate } from '../../../../utils/date';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { downloadArtifactById } from '../../../../utils/downloads';
 
 const StatusIcon = ({ status }) => {
     switch (status?.toLowerCase()) {
@@ -249,6 +251,16 @@ export function ProjectHierarchy({ projectId }) {
                                                                     }`}>
                                                                     {artifact.type}
                                                                 </span>
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        downloadArtifactById(artifact.artifact_id);
+                                                                    }}
+                                                                    className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-40"
+                                                                    disabled={!artifact.artifact_id}
+                                                                >
+                                                                    <Download className="w-3 h-3 text-slate-400" />
+                                                                </button>
                                                                 <Info className="w-3 h-3 text-slate-400" />
                                                             </div>
                                                         }

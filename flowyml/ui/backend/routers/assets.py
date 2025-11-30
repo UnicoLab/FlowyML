@@ -1,6 +1,9 @@
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import FileResponse
 from flowyml.storage.metadata import SQLiteMetadataStore
+from flowyml.core.project import ProjectManager
 from typing import Optional
+from pathlib import Path
 
 router = APIRouter()
 
@@ -9,27 +12,60 @@ def get_store():
     return SQLiteMetadataStore()
 
 
+def _iter_metadata_stores():
+    stores = [(None, SQLiteMetadataStore())]
+    try:
+        manager = ProjectManager()
+        for project_meta in manager.list_projects():
+            name = project_meta.get("name")
+            if not name:
+                continue
+            project = manager.get_project(name)
+            if project:
+                stores.append((name, project.metadata_store))
+    except Exception:
+        pass
+    return stores
+
+
+def _dedupe_assets(assets):
+    dedup = {}
+    for asset, project_name in assets:
+        artifact_id = asset.get("artifact_id") or f"{project_name}:{len(dedup)}"
+        if artifact_id in dedup:
+            continue
+        entry = dict(asset)
+        if project_name and not entry.get("project"):
+            entry["project"] = project_name
+        dedup[artifact_id] = entry
+    return list(dedup.values())
+
+
 @router.get("/")
 async def list_assets(limit: int = 50, asset_type: str = None, run_id: str = None, project: str = None):
     """List all assets, optionally filtered by project."""
     try:
-        store = get_store()
+        combined = []
+        for project_name, store in _iter_metadata_stores():
+            if project and project_name and project != project_name:
+                continue
 
-        # Build filters
-        filters = {}
-        if asset_type:
-            filters["type"] = asset_type
-        if run_id:
-            filters["run_id"] = run_id
+            filters = {}
+            if asset_type:
+                filters["type"] = asset_type
+            if run_id:
+                filters["run_id"] = run_id
 
-        assets = store.list_assets(limit=limit, **filters)
+            assets = store.list_assets(limit=limit, **filters)
+            for asset in assets:
+                combined.append((asset, project_name))
 
-        # Filter by project if specified
+        assets = _dedupe_assets(combined)
+
         if project:
-            # Get all runs for this project
-            all_runs = store.list_runs(limit=1000)
-            project_run_ids = {r.get("run_id") for r in all_runs if r.get("project") == project}
-            assets = [a for a in assets if a.get("run_id") in project_run_ids]
+            assets = [a for a in assets if a.get("project") == project]
+
+        assets = assets[:limit]
 
         return {"assets": assets}
     except Exception as e:
@@ -191,8 +227,44 @@ async def get_asset_lineage(
 @router.get("/{artifact_id}")
 async def get_asset(artifact_id: str):
     """Get details for a specific asset."""
-    store = get_store()
-    asset = store.load_artifact(artifact_id)
+    asset = _find_asset(artifact_id)
     if not asset:
         raise HTTPException(status_code=404, detail="Asset not found")
     return asset
+
+
+@router.get("/{artifact_id}/download")
+async def download_asset(artifact_id: str):
+    """Download the artifact file referenced by metadata."""
+    asset, _ = _find_asset_with_store(artifact_id)
+    if not asset:
+        raise HTTPException(status_code=404, detail="Asset not found")
+
+    artifact_path = asset.get("path")
+    if not artifact_path:
+        raise HTTPException(status_code=404, detail="Artifact path not available")
+
+    file_path = Path(artifact_path)
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Artifact file not found on disk")
+
+    return FileResponse(
+        path=file_path,
+        filename=file_path.name,
+        media_type="application/octet-stream",
+    )
+
+
+def _find_asset(artifact_id: str):
+    asset, _ = _find_asset_with_store(artifact_id)
+    return asset
+
+
+def _find_asset_with_store(artifact_id: str):
+    for project_name, store in _iter_metadata_stores():
+        asset = store.load_artifact(artifact_id)
+        if asset:
+            if project_name and not asset.get("project"):
+                asset["project"] = project_name
+            return asset, store
+    return None, None

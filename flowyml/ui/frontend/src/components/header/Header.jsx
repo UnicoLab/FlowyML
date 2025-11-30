@@ -1,15 +1,18 @@
 import React from 'react';
 import { useLocation, Link } from 'react-router-dom';
-import { Sun, Moon, ChevronRight, Home } from 'lucide-react';
+import { Sun, Moon, ChevronRight, Home, Server, ExternalLink } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { ProjectSelector } from '../ui/ProjectSelector';
+import { useConfig } from '../../utils/api';
 
 export function Header() {
     const { theme, toggleTheme } = useTheme();
     const location = useLocation();
+    const { config, loading } = useConfig();
 
     // Generate breadcrumbs from path
     const pathnames = location.pathname.split('/').filter((x) => x);
+    const isRemoteStack = !loading && config?.execution_mode === 'remote';
 
     return (
         <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-4 flex items-center justify-between shadow-sm z-10">
@@ -51,6 +54,34 @@ export function Header() {
             </div>
 
             <div className="flex items-center gap-4">
+                {isRemoteStack && (
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary-50 text-primary-800 border border-primary-100 dark:bg-primary-900/20 dark:text-primary-200 dark:border-primary-900/40">
+                        <span className="flex items-center gap-1 text-xs uppercase tracking-wide font-semibold">
+                            <Server size={14} /> Remote Stack
+                        </span>
+                        {config?.remote_ui_url && (
+                            <a
+                                href={config.remote_ui_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-xs font-medium hover:underline"
+                            >
+                                UI <ExternalLink size={12} />
+                            </a>
+                        )}
+                        {config?.remote_server_url && (
+                            <a
+                                href={config.remote_server_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-xs font-medium hover:underline"
+                            >
+                                API <ExternalLink size={12} />
+                            </a>
+                        )}
+                    </div>
+                )}
+
                 <ProjectSelector />
 
                 <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-2" />
