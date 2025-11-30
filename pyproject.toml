@@ -85,6 +85,8 @@ pytorch = ["torch"]
 tensorflow = ["tensorflow"]
 sklearn = ["scikit-learn"]
 gcp = ["google-cloud-aiplatform", "google-cloud-storage"]
+aws = ["boto3"]
+azure = ["azure-ai-ml", "azure-identity", "azure-storage-blob"]
 ui = ["fastapi", "uvicorn", "websockets", "python-multipart"]
 all = [
     "torch",
@@ -92,6 +94,10 @@ all = [
     "scikit-learn",
     "google-cloud-aiplatform",
     "google-cloud-storage",
+    "boto3",
+    "azure-ai-ml",
+    "azure-identity",
+    "azure-storage-blob",
     "uvicorn",
     "websockets",
     "python-multipart",

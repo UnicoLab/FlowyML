@@ -6,6 +6,7 @@ on Google Cloud Platform using Vertex AI, Cloud Storage, and Container Registry.
 
 from typing import Any
 
+import subprocess
 from flowyml.stacks.base import Stack
 from flowyml.stacks.components import (
     Orchestrator,
@@ -14,8 +15,10 @@ from flowyml.stacks.components import (
     ResourceConfig,
     DockerConfig,
 )
+from flowyml.stacks.plugins import register_component
 
 
+@register_component(name="vertex_ai")
 class VertexAIOrchestrator(Orchestrator):
     """Vertex AI orchestrator for running pipelines on Google Cloud.
 
@@ -171,6 +174,7 @@ class VertexAIOrchestrator(Orchestrator):
         }
 
 
+@register_component(name="gcs")
 class GCSArtifactStore(ArtifactStore):
     """Google Cloud Storage artifact store.
 
@@ -280,6 +284,7 @@ class GCSArtifactStore(ArtifactStore):
         }
 
 
+@register_component(name="gcr")
 class GCRContainerRegistry(ContainerRegistry):
     """Google Container Registry integration.
 
@@ -478,6 +483,8 @@ class GCPStack(Stack):
 
         self.project_id = project_id
         self.region = region
+        self.vertex_endpoints = VertexEndpointManager(project_id=project_id, region=region)
+        self.cloud_run = CloudRunDeployer(project_id=project_id, region=region)
 
     def validate(self) -> bool:
         """Validate all GCP stack components."""
@@ -497,3 +504,84 @@ class GCPStack(Stack):
             "artifact_store": self.artifact_store.to_dict(),
             "container_registry": self.container_registry.to_dict(),
         }
+
+
+class VertexEndpointManager:
+    """Deploy trained models as Vertex AI endpoints."""
+
+    def __init__(self, project_id: str | None, region: str = "us-central1"):
+        self.project_id = project_id
+        self.region = region
+
+    def deploy_model(
+        self,
+        model_display_name: str,
+        artifact_uri: str,
+        serving_image: str,
+        endpoint_display_name: str | None = None,
+        machine_type: str = "n1-standard-4",
+    ) -> str:
+        from google.cloud import aiplatform
+
+        aiplatform.init(project=self.project_id, location=self.region)
+        model = aiplatform.Model.upload(
+            display_name=model_display_name,
+            artifact_uri=artifact_uri,
+            serving_container_image_uri=serving_image,
+        )
+        endpoint = model.deploy(
+            machine_type=machine_type,
+            endpoint=aiplatform.Endpoint.create(
+                display_name=endpoint_display_name or f"{model_display_name}-endpoint",
+            ),
+        )
+        return endpoint.resource_name
+
+
+class CloudRunDeployer:
+    """Deploy container images to Cloud Run."""
+
+    def __init__(self, project_id: str | None, region: str = "us-central1"):
+        self.project_id = project_id
+        self.region = region
+
+    def deploy_service(
+        self,
+        service_name: str,
+        image: str,
+        env: dict[str, str] | None = None,
+        allow_unauthenticated: bool = True,
+    ) -> str:
+        command = [
+            "gcloud",
+            "run",
+            "deploy",
+            service_name,
+            f"--image={image}",
+            f"--region={self.region}",
+            f"--project={self.project_id}",
+        ]
+        if allow_unauthenticated:
+            command.append("--allow-unauthenticated")
+
+        env = env or {}
+        for key, value in env.items():
+            command.append(f"--set-env-vars={key}={value}")
+
+        subprocess.run(command, check=True)
+        url_result = subprocess.run(
+            [
+                "gcloud",
+                "run",
+                "services",
+                "describe",
+                service_name,
+                f"--region={self.region}",
+                f"--project={self.project_id}",
+                "--format=value(status.url)",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        return url_result.stdout.strip()

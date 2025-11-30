@@ -232,13 +232,55 @@ def create_stack_from_config(config: dict[str, Any], name: str):
     elif stack_type == "gcp":
         from flowyml.stacks.gcp import GCPStack
 
+        artifact_cfg = config.get("artifact_store", {})
+        registry_cfg = config.get("container_registry", {})
+        orchestrator_cfg = config.get("orchestrator", {})
+
         return GCPStack(
             name=name,
             project_id=config.get("project_id"),
             region=config.get("region", "us-central1"),
-            bucket_name=config.get("artifact_store", {}).get("bucket"),
-            registry_uri=config.get("container_registry", {}).get("uri"),
-            service_account=config.get("orchestrator", {}).get("service_account"),
+            bucket_name=artifact_cfg.get("bucket"),
+            registry_uri=registry_cfg.get("uri"),
+            service_account=orchestrator_cfg.get("service_account"),
+        )
+
+    elif stack_type == "aws":
+        from flowyml.stacks.aws import AWSStack
+
+        artifact_cfg = config.get("artifact_store", {})
+        registry_cfg = config.get("container_registry", {})
+        orchestrator_cfg = config.get("orchestrator", {})
+
+        return AWSStack(
+            name=name,
+            region=config.get("region", "us-east-1"),
+            bucket_name=artifact_cfg.get("bucket"),
+            account_id=registry_cfg.get("account_id"),
+            registry_alias=registry_cfg.get("registry_alias"),
+            job_queue=orchestrator_cfg.get("job_queue"),
+            job_definition=orchestrator_cfg.get("job_definition"),
+            orchestrator_type=orchestrator_cfg.get("type", "batch"),
+            role_arn=orchestrator_cfg.get("role_arn"),
+        )
+
+    elif stack_type == "azure":
+        from flowyml.stacks.azure import AzureMLStack
+
+        artifact_cfg = config.get("artifact_store", {})
+        registry_cfg = config.get("container_registry", {})
+        orchestrator_cfg = config.get("orchestrator", {})
+
+        return AzureMLStack(
+            name=name,
+            subscription_id=config.get("subscription_id"),
+            resource_group=config.get("resource_group"),
+            workspace_name=config.get("workspace_name"),
+            compute=orchestrator_cfg.get("compute"),
+            account_url=artifact_cfg.get("account_url"),
+            container_name=artifact_cfg.get("container"),
+            registry_name=registry_cfg.get("name"),
+            login_server=registry_cfg.get("login_server"),
         )
 
     else:

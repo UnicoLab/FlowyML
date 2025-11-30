@@ -432,6 +432,96 @@ docker:
 
 ---
 
+## ☁️ Cloud Stack Presets
+
+FlowyML ships with ready-to-use stacks for Google Cloud, AWS, and Azure. Install the matching optional dependency and instantiate the stack directly from Python.
+
+### Google Cloud (Vertex AI pipelines + endpoints)
+
+```bash
+pip install "flowyml[gcp]"
+```
+
+```python
+from flowyml import Pipeline, step
+from flowyml.stacks.gcp import GCPStack
+
+stack = GCPStack(
+    name="vertex-prod",
+    project_id="my-gcp-project",
+    region="us-central1",
+    bucket_name="flowyml-artifacts",
+    registry_uri="gcr.io/my-gcp-project",
+)
+
+@step
+def train():
+    ...
+
+pipeline = Pipeline("trainer", stack=stack)
+pipeline.add_step(train)
+pipeline.run()
+
+# Deploy a model artifact later
+stack.vertex_endpoints.deploy_model(
+    model_display_name="fraud-detector",
+    artifact_uri="gs://flowyml-artifacts/runs/run-123/model",
+    serving_image="gcr.io/my-gcp-project/fraud:prod",
+    endpoint_display_name="fraud-prod",
+)
+```
+
+### AWS (SageMaker or Batch)
+
+```bash
+pip install "flowyml[aws]"
+```
+
+```python
+from flowyml import Pipeline
+from flowyml.stacks.aws import AWSStack
+
+stack = AWSStack(
+    name="aws-prod",
+    region="us-east-1",
+    bucket_name="flowyml-artifacts",
+    account_id="123456789012",
+    orchestrator_type="sagemaker",  # or "batch"
+    role_arn="arn:aws:iam::123456789012:role/SageMakerExecutionRole",
+)
+
+pipeline = Pipeline("trainer-aws", stack=stack)
+pipeline.run()
+```
+
+### Azure (Azure ML + Blob + ACR + Cloud Run alternative)
+
+```bash
+pip install "flowyml[azure]"
+```
+
+```python
+from flowyml import Pipeline
+from flowyml.stacks.azure import AzureMLStack
+
+stack = AzureMLStack(
+    name="azure-prod",
+    subscription_id="00000000-0000-0000-0000-000000000000",
+    resource_group="flowyml-rg",
+    workspace_name="flowyml-ws",
+    compute="cpu-cluster",
+    account_url="https://flowymlstorage.blob.core.windows.net",
+    container_name="artifacts",
+    registry_name="flowymlacr",
+)
+
+pipeline = Pipeline("trainer-azure", stack=stack)
+pipeline.run()
+```
+
+> [!TIP]
+> Authenticate with each cloud provider (gcloud, aws configure, az login) before running remote stacks. The optional extras install the required SDKs (`google-cloud-aiplatform`, `boto3`, `azure-ai-ml`, etc.).
+
 ## 📈 Production Metrics API
 
 Enable digital teams to push real-time model health data straight into flowyml.
