@@ -28,6 +28,10 @@ install-dev: ## Install development dependencies
 install-ui: ## Install with UI dependencies
 	$(POETRY) install --extras ui
 
+seed-db: ## Seed the database with demo data
+	@echo "Seeding database..."
+	@python3 seed_data.py
+
 setup: install-dev frontend-install ## Complete setup (install + frontend deps)
 	@echo "✅ Setup complete!"
 

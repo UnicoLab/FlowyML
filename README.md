@@ -255,7 +255,41 @@ Ready for the enterprise. Run locally per project or deploy as a centralized ent
 - **Cloud Providers**: AWS, GCP, Azure (via plugins).
 - **Tools**: MLflow, Weights & Biases, Great Expectations.
 
-### 20. 📂 Project-Based Organization
+### 20. 📊 Automatic Training History Tracking
+FlowyML automatically captures and visualizes your model training progress with zero manual intervention.
+
+```python
+from flowyml.integrations.keras import FlowymlKerasCallback
+
+# Just add the callback - that's it!
+callback = FlowymlKerasCallback(
+    experiment_name="my-experiment",
+    project="my-project"
+)
+
+model.fit(
+    x_train, y_train,
+    validation_data=(x_val, y_val),
+    epochs=50,
+    callbacks=[callback]  # Auto-tracks all metrics!
+)
+```
+
+**What gets captured automatically:**
+- ✅ Loss (train & validation) per epoch
+- ✅ Accuracy (train & validation) per epoch
+- ✅ All custom metrics (F1, precision, recall, etc.)
+- ✅ Model architecture and parameters
+- ✅ Interactive charts in the UI
+
+**View beautiful training graphs in the UI:**
+1. Navigate to your project's Structure tab
+2. Click on any model artifact
+3. See interactive loss/accuracy charts over epochs!
+
+No external tools needed - all visualization built into FlowyML.
+
+### 21. 📂 Project-Based Organization
 Built-in multi-tenancy for managing multiple teams and initiatives.
 
 ```python
@@ -269,7 +303,7 @@ runs = project.list_runs()
 stats = project.get_stats()
 ```
 
-### 21. 📝 Pipeline Templates
+### 22. 📝 Pipeline Templates
 Stop reinventing the wheel. Use pre-built templates for common ML patterns.
 
 ```python
@@ -333,7 +367,7 @@ print(f"Run ID: {result.run_id}")
 print(f"Model Score: {result.outputs['model'].score}")
 ```
 
-### 16. 🌐 Pipeline Versioning
+### 23. 🌐 Pipeline Versioning
 Git-like versioning for pipelines. Track changes, compare, rollback.
 
 ```python

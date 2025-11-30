@@ -2,10 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { fetchApi } from '../../../utils/api';
 import { ProjectHeader } from './_components/ProjectHeader';
-import { ProjectRelations } from './_components/ProjectRelations';
+import { ProjectHierarchy } from './_components/ProjectHierarchy';
 import { ProjectTabs } from './_components/ProjectTabs';
 import { ProjectPipelinesList } from './_components/ProjectPipelinesList';
 import { ProjectRunsList } from './_components/ProjectRunsList';
+import { ProjectArtifactsList } from './_components/ProjectArtifactsList';
+import { ProjectExperimentsList } from './_components/ProjectExperimentsList';
+import { ErrorBoundary } from '../../../components/ui/ErrorBoundary';
 
 export function ProjectDetails() {
     const { projectId } = useParams();
@@ -18,28 +21,46 @@ export function ProjectDetails() {
         const fetchProjectDetails = async () => {
             try {
                 // Fetch project details
-                // Assuming API supports fetching by name or ID. projectId from URL might be name.
                 const response = await fetchApi(`/api/projects/${projectId}`);
                 const projectData = await response.json();
+                console.log('Project data:', projectData);
+
+                // Ensure pipelines is an array
+                if (projectData.pipelines && !Array.isArray(projectData.pipelines)) {
+                    projectData.pipelines = [];
+                }
+
                 setProject(projectData);
 
-                // Fetch stats (similar logic to Projects page)
-                // This could be optimized into a single API call in the future
-                const [runsRes, artifactsRes] = await Promise.all([
-                    fetchApi(`/api/runs?project=${projectId}`),
-                    fetchApi(`/api/assets?project=${projectId}`)
+                // Fetch stats with higher limits to get accurate counts
+                const [runsRes, artifactsRes, experimentsRes] = await Promise.all([
+                    fetchApi(`/api/runs?project=${projectId}&limit=1000`),
+                    fetchApi(`/api/assets?project=${projectId}&limit=1000`),
+                    fetchApi(`/api/experiments?project=${projectId}`)
                 ]);
 
                 const runsData = await runsRes.json();
                 const artifactsData = await artifactsRes.json();
+                const experimentsData = await experimentsRes.json();
 
-                const pipelineNames = new Set((runsData.runs || []).map(r => r.pipeline_name));
+                console.log('Runs data:', runsData);
+                console.log('Artifacts data:', artifactsData);
+                console.log('Experiments data:', experimentsData);
+
+                // Ensure we have arrays before mapping
+                const runs = Array.isArray(runsData?.runs) ? runsData.runs : (Array.isArray(runsData) ? runsData : []);
+                const artifacts = Array.isArray(artifactsData?.assets) ? artifactsData.assets : (Array.isArray(artifactsData?.artifacts) ? artifactsData.artifacts : []);
+                const experiments = Array.isArray(experimentsData?.experiments) ? experimentsData.experiments : [];
+
+                const pipelineNames = new Set(runs.map(r => r.pipeline_name).filter(Boolean));
+                const models = artifacts.filter(a => a.type === 'model');
 
                 setStats({
-                    runs: (runsData.runs || []).length,
+                    runs: runs.length,
                     pipelines: pipelineNames.size,
-                    artifacts: (artifactsData.artifacts || []).length,
-                    models: 0 // Placeholder until models API is ready
+                    artifacts: artifacts.length,
+                    models: models.length,
+                    experiments: experiments.length
                 });
 
             } catch (error) {
@@ -59,30 +80,60 @@ export function ProjectDetails() {
             case 'overview':
                 return (
                     <div className="space-y-8">
-                        <section>
-                            <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Project Relations</h2>
-                            <ProjectRelations />
-                        </section>
+                        <ErrorBoundary>
+                            <section>
+                                <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Project Structure</h2>
+                                <ProjectHierarchy projectId={projectId} />
+                            </section>
+                        </ErrorBoundary>
+
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                            <section>
-                                <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Recent Pipelines</h2>
-                                <ProjectPipelinesList projectId={projectId} />
-                            </section>
-                            <section>
-                                <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Recent Runs</h2>
-                                <ProjectRunsList projectId={projectId} />
-                            </section>
+                            <ErrorBoundary>
+                                <section>
+                                    <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Recent Pipelines</h2>
+                                    <ProjectPipelinesList projectId={projectId} />
+                                </section>
+                            </ErrorBoundary>
+
+                            <ErrorBoundary>
+                                <section>
+                                    <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Recent Runs</h2>
+                                    <ProjectRunsList projectId={projectId} />
+                                </section>
+                            </ErrorBoundary>
                         </div>
                     </div>
                 );
             case 'pipelines':
-                return <ProjectPipelinesList projectId={projectId} />;
+                return (
+                    <ErrorBoundary>
+                        <ProjectPipelinesList projectId={projectId} />
+                    </ErrorBoundary>
+                );
             case 'runs':
-                return <ProjectRunsList projectId={projectId} />;
+                return (
+                    <ErrorBoundary>
+                        <ProjectRunsList projectId={projectId} />
+                    </ErrorBoundary>
+                );
+            case 'experiments':
+                return (
+                    <ErrorBoundary>
+                        <ProjectExperimentsList projectId={projectId} />
+                    </ErrorBoundary>
+                );
             case 'models':
-                return <div className="p-8 text-center text-slate-500">Models view coming soon</div>;
+                return (
+                    <ErrorBoundary>
+                        <ProjectArtifactsList projectId={projectId} type="model" />
+                    </ErrorBoundary>
+                );
             case 'artifacts':
-                return <div className="p-8 text-center text-slate-500">Artifacts view coming soon</div>;
+                return (
+                    <ErrorBoundary>
+                        <ProjectArtifactsList projectId={projectId} />
+                    </ErrorBoundary>
+                );
             default:
                 return null;
         }
@@ -90,7 +141,9 @@ export function ProjectDetails() {
 
     return (
         <div className="p-6 max-w-7xl mx-auto space-y-8">
-            <ProjectHeader project={project} stats={stats} loading={loading} />
+            <ErrorBoundary>
+                <ProjectHeader project={project} stats={stats} loading={loading} />
+            </ErrorBoundary>
 
             <div>
                 <ProjectTabs activeTab={activeTab} onTabChange={setActiveTab} />

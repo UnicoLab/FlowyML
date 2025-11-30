@@ -632,7 +632,7 @@ class SQLiteMetadataStore(MetadataStore):
         cursor = conn.cursor()
 
         cursor.execute(
-            "SELECT experiment_id, name, description, tags, created_at FROM experiments ORDER BY created_at DESC",
+            "SELECT experiment_id, name, description, tags, created_at, project FROM experiments ORDER BY created_at DESC",
         )
         rows = cursor.fetchall()
 
@@ -649,6 +649,7 @@ class SQLiteMetadataStore(MetadataStore):
                     "description": row[2],
                     "tags": json.loads(row[3]),
                     "created_at": row[4],
+                    "project": row[5],
                     "run_count": run_count,
                 },
             )
@@ -890,15 +891,27 @@ class SQLiteMetadataStore(MetadataStore):
         cursor = conn.cursor()
 
         try:
-            # Update runs table
+            # 1. Update the project column for all runs
             cursor.execute(
                 "UPDATE runs SET project = ? WHERE pipeline_name = ?",
                 (project_name, pipeline_name),
             )
 
-            # Update artifacts table (optional, but good for consistency if artifacts store project)
-            # Currently artifacts are linked to runs, so run update might be enough
-            # But let's check if artifacts table has project column
+            # 2. Update the JSON metadata blob for each run
+            cursor.execute(
+                "SELECT run_id, metadata FROM runs WHERE pipeline_name = ?",
+                (pipeline_name,),
+            )
+            rows = cursor.fetchall()
+            for run_id, metadata_json in rows:
+                metadata = json.loads(metadata_json)
+                metadata["project"] = project_name
+                cursor.execute(
+                    "UPDATE runs SET metadata = ? WHERE run_id = ?",
+                    (json.dumps(metadata), run_id),
+                )
+
+            # 3. Update artifacts table (optional, but good for consistency if artifacts store project)
             cursor.execute("PRAGMA table_info(artifacts)")
             columns = [info[1] for info in cursor.fetchall()]
             if "project" in columns:

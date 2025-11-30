@@ -15,11 +15,34 @@ def get_store():
 
 @router.get("/")
 async def list_pipelines(project: str = None):
-    """List all unique pipelines, optionally filtered by project."""
+    """List all unique pipelines with details, optionally filtered by project."""
     try:
         store = get_store()
-        pipelines = store.list_pipelines(project=project)
-        return {"pipelines": pipelines}
+        pipeline_names = store.list_pipelines(project=project)
+
+        enriched_pipelines = []
+        for name in pipeline_names:
+            # Get runs for this pipeline (and project if specified)
+            # Note: store.query doesn't support limit, so we slice after
+            filters = {"pipeline_name": name}
+            if project:
+                filters["project"] = project
+
+            runs = store.query(**filters)
+            last_run = runs[0] if runs else {}
+
+            enriched_pipelines.append(
+                {
+                    "name": name,
+                    "created": last_run.get("start_time"),  # Use last run time as proxy for now
+                    "version": last_run.get("git_sha", "latest")[:7] if last_run.get("git_sha") else "1.0",
+                    "status": last_run.get("status", "unknown"),
+                    "run_count": len(runs),
+                    "last_run_id": last_run.get("run_id"),
+                },
+            )
+
+        return {"pipelines": enriched_pipelines}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

@@ -135,7 +135,11 @@ export function Projects() {
             header: 'Stats',
             key: 'stats',
             render: (project) => {
-                const stats = projectStats[project.name] || { runs: 0, pipelines: 0, artifacts: 0 };
+                const stats = {
+                    runs: project.runs || 0,
+                    pipelines: project.pipelines || 0,
+                    artifacts: project.artifacts || 0
+                };
                 return (
                     <div className="flex gap-4 text-sm text-slate-500">
                         <span className="flex items-center gap-1"><Activity size={14} /> {stats.pipelines || 0}</span>
@@ -160,11 +164,16 @@ export function Projects() {
     ];
 
     const renderGrid = (project) => {
-        const stats = projectStats[project.name] || { runs: 0, pipelines: 0, artifacts: 0 };
+        // Stats are already attached to the project object
+        const stats = {
+            runs: project.runs || 0,
+            pipelines: project.pipelines || 0,
+            artifacts: project.artifacts || 0
+        };
 
         return (
             <Link
-                to={`/runs?project=${encodeURIComponent(project.name)}`}
+                to={`/projects/${encodeURIComponent(project.name)}`}
                 onClick={() => setSelectedProject(project.name)}
                 className="block"
             >

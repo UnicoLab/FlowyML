@@ -2,6 +2,17 @@ import React, { useState } from 'react';
 import { Search, LayoutGrid, List, Table as TableIcon, ArrowUpDown, Filter } from 'lucide-react';
 import { Button } from './Button';
 
+// Extracted TableRow component to avoid nested map minification issues
+const TableRow = ({ item, columns }) => (
+    <tr className="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+        {columns.map((column, columnIndex) => (
+            <td key={columnIndex} className="px-6 py-4">
+                {column.render ? column.render(item) : item[column.key]}
+            </td>
+        ))}
+    </tr>
+);
+
 export function DataView({
     title,
     subtitle,
@@ -19,8 +30,21 @@ export function DataView({
     const [searchQuery, setSearchQuery] = useState('');
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
 
+    // Safety checks
+    const safeItems = Array.isArray(items) ? items : [];
+    const safeColumns = Array.isArray(columns) ? columns : [];
+
+    // Default renderers if not provided
+    const defaultRenderGrid = (item) => (
+        <div className="p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+            <pre className="text-xs overflow-auto">{JSON.stringify(item, null, 2)}</pre>
+        </div>
+    );
+    const safeRenderGrid = renderGrid || defaultRenderGrid;
+    const safeRenderList = renderList || safeRenderGrid;
+
     // Filter items
-    const filteredItems = items.filter(item => {
+    const filteredItems = safeItems.filter(item => {
         if (!searchQuery) return true;
         const searchStr = searchQuery.toLowerCase();
         return Object.values(item).some(val =>
@@ -120,7 +144,7 @@ export function DataView({
                     {view === 'grid' && (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {sortedItems.map((item, idx) => (
-                                <div key={idx}>{renderGrid(item)}</div>
+                                <div key={idx}>{safeRenderGrid(item)}</div>
                             ))}
                         </div>
                     )}
@@ -128,7 +152,7 @@ export function DataView({
                     {view === 'list' && (
                         <div className="space-y-4">
                             {sortedItems.map((item, idx) => (
-                                <div key={idx}>{renderList ? renderList(item) : renderGrid(item)}</div>
+                                <div key={idx}>{safeRenderList(item)}</div>
                             ))}
                         </div>
                     )}
@@ -139,29 +163,23 @@ export function DataView({
                                 <table className="w-full text-sm text-left">
                                     <thead className="text-xs text-slate-500 uppercase bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700">
                                         <tr>
-                                            {columns.map((col, idx) => (
+                                            {safeColumns.map((column, columnIndex) => (
                                                 <th
-                                                    key={idx}
+                                                    key={columnIndex}
                                                     className="px-6 py-3 font-medium cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                                                    onClick={() => col.sortable && handleSort(col.key)}
+                                                    onClick={() => column.sortable && handleSort(column.key)}
                                                 >
                                                     <div className="flex items-center gap-2">
-                                                        {col.header}
-                                                        {col.sortable && <ArrowUpDown size={14} className="text-slate-400" />}
+                                                        {column.header}
+                                                        {column.sortable && <ArrowUpDown size={14} className="text-slate-400" />}
                                                     </div>
                                                 </th>
                                             ))}
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-                                        {sortedItems.map((item, idx) => (
-                                            <tr key={idx} className="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
-                                                {columns.map((col, colIdx) => (
-                                                    <td key={colIdx} className="px-6 py-4">
-                                                        {col.render ? col.render(item) : item[col.key]}
-                                                    </td>
-                                                ))}
-                                            </tr>
+                                        {sortedItems.map((item, itemIndex) => (
+                                            <TableRow key={itemIndex} item={item} columns={safeColumns} />
                                         ))}
                                     </tbody>
                                 </table>
