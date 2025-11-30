@@ -18,16 +18,36 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const NAV_LINKS = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
-    { icon: FolderKanban, label: 'Projects', path: '/projects' },
-    { icon: PlayCircle, label: 'Pipelines', path: '/pipelines' },
-    { icon: Calendar, label: 'Schedules', path: '/schedules' },
-    { icon: PlayCircle, label: 'Runs', path: '/runs' },
-    { icon: Trophy, label: 'Leaderboard', path: '/leaderboard' },
-    { icon: Database, label: 'Assets', path: '/assets' },
-    { icon: FlaskConical, label: 'Experiments', path: '/experiments' },
-    { icon: MessageSquare, label: 'Traces', path: '/traces' },
+const NAV_GROUPS = [
+    {
+        title: 'Workspace',
+        items: [
+            { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
+            { icon: FolderKanban, label: 'Projects', path: '/projects' },
+        ],
+    },
+    {
+        title: 'Automation',
+        items: [
+            { icon: PlayCircle, label: 'Pipelines', path: '/pipelines' },
+            { icon: Calendar, label: 'Schedules', path: '/schedules' },
+            { icon: PlayCircle, label: 'Runs', path: '/runs' },
+        ],
+    },
+    {
+        title: 'Insights',
+        items: [
+            { icon: Trophy, label: 'Leaderboard', path: '/leaderboard' },
+            { icon: FlaskConical, label: 'Experiments', path: '/experiments' },
+        ],
+    },
+    {
+        title: 'Data & Observability',
+        items: [
+            { icon: Database, label: 'Assets', path: '/assets' },
+            { icon: MessageSquare, label: 'Traces', path: '/traces' },
+        ],
+    },
 ];
 
 const SETTINGS_LINKS = [
@@ -65,22 +85,26 @@ export function Sidebar({ collapsed, setCollapsed }) {
             </div>
 
             {/* Navigation */}
-            <nav className="flex-1 p-4 space-y-1 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
-                <div className={`px-4 py-2 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider transition-opacity duration-200 ${collapsed ? 'opacity-0 h-0' : 'opacity-100'}`}>
-                    Platform
-                </div>
-                {NAV_LINKS.map((link) => (
-                    <NavItem
-                        key={link.path}
-                        to={link.path}
-                        icon={link.icon}
-                        label={link.label}
-                        collapsed={collapsed}
-                        isActive={location.pathname === link.path}
-                    />
+            <nav className="flex-1 p-4 space-y-4 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
+                {NAV_GROUPS.map((group) => (
+                    <div key={group.title} className="space-y-1">
+                        <div className={`px-4 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider transition-opacity duration-200 ${collapsed ? 'opacity-0 h-0' : 'opacity-100'}`}>
+                            {group.title}
+                        </div>
+                        {group.items.map((link) => (
+                            <NavItem
+                                key={link.path}
+                                to={link.path}
+                                icon={link.icon}
+                                label={link.label}
+                                collapsed={collapsed}
+                                isActive={location.pathname === link.path}
+                            />
+                        ))}
+                    </div>
                 ))}
 
-                <div className={`px-4 py-2 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mt-4 transition-opacity duration-200 ${collapsed ? 'opacity-0 h-0' : 'opacity-100'}`}>
+                <div className={`px-4 py-2 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mt-2 transition-opacity duration-200 ${collapsed ? 'opacity-0 h-0' : 'opacity-100'}`}>
                     Settings
                 </div>
                 {SETTINGS_LINKS.map((link) => (
