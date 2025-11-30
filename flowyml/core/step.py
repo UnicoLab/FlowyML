@@ -1,5 +1,6 @@
 """Step Decorator - Define pipeline steps with automatic context injection."""
 
+import contextlib
 import hashlib
 import inspect
 import json
@@ -9,9 +10,10 @@ from dataclasses import dataclass, field
 
 # Import resource types
 try:
-    from flowyml.core.resources import ResourceRequirements
+    from flowyml.core.resources import ResourceRequirements, GPUConfig
 except ImportError:
     ResourceRequirements = None  # Type: ignore
+    GPUConfig = None  # Type: ignore
 
 
 @dataclass
@@ -62,6 +64,21 @@ class Step:
 
         # Store resources (accept both dict for backward compatibility and ResourceRequirements)
         self.resources = resources
+        if self.resources and ResourceRequirements and not isinstance(self.resources, ResourceRequirements):
+            if isinstance(self.resources, dict):
+                resource_kwargs = dict(self.resources)
+                gpu_value = resource_kwargs.get("gpu")
+                if GPUConfig and gpu_value is not None:
+                    if isinstance(gpu_value, dict):
+                        resource_kwargs["gpu"] = GPUConfig(
+                            gpu_type=gpu_value.get("gpu_type") or gpu_value.get("type") or "generic",
+                            count=int(gpu_value.get("count", 1)),
+                            memory=gpu_value.get("memory"),
+                        )
+                    elif isinstance(gpu_value, (int, float)):
+                        resource_kwargs["gpu"] = GPUConfig(gpu_type="generic", count=int(gpu_value))
+                with contextlib.suppress(TypeError):
+                    self.resources = ResourceRequirements(**resource_kwargs)
 
         self.tags = tags or {}
         self.condition = condition

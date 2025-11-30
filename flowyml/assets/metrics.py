@@ -89,7 +89,10 @@ class Metrics(Asset):
     def create(
         cls,
         name: str | None = None,
+        version: str | None = None,
         parent: Asset | None = None,
+        tags: dict[str, str] | None = None,
+        properties: dict[str, Any] | None = None,
         **metrics,
     ) -> "Metrics":
         """Factory method to create metrics.
@@ -99,6 +102,9 @@ class Metrics(Asset):
         """
         return cls(
             name=name or "metrics",
+            version=version,
             data=metrics,
             parent=parent,
+            tags=tags,
+            properties=properties,
         )

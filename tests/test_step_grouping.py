@@ -179,6 +179,27 @@ class TestStepGrouping:
         # A100 should be preferred over V100
         assert "a100" in group.aggregated_resources.gpu.gpu_type.lower()
 
+    def test_resource_dict_conversion(self):
+        """Resource dicts should auto-convert to ResourceRequirements."""
+
+        @step(outputs=["x"], execution_group="auto", resources={"cpu": "4", "memory": "8Gi"})
+        def step_a():
+            return "x"
+
+        @step(inputs=["x"], outputs=["y"], execution_group="auto", resources={"cpu": "8", "memory": "12Gi"})
+        def step_b(x: str):
+            return f"{x}_y"
+
+        pipeline = Pipeline("dict_resources")
+        pipeline.add_step(step_a)
+        pipeline.add_step(step_b)
+        pipeline.build()
+
+        group = pipeline.step_groups[0]
+        assert isinstance(group.aggregated_resources, ResourceRequirements)
+        assert group.aggregated_resources.cpu == "8"
+        assert group.aggregated_resources.memory == "12Gi"
+
     def test_pipeline_execution_with_groups(self):
         """Test end-to-end pipeline execution with groups."""
 

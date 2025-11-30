@@ -38,6 +38,7 @@ from flowyml.assets.registry import AssetRegistry
 # Stack imports
 from flowyml.stacks.base import Stack
 from flowyml.stacks.local import LocalStack
+from flowyml.stacks.components import ResourceConfig, DockerConfig
 
 # Tracking imports
 from flowyml.tracking.experiment import Experiment
@@ -140,6 +141,8 @@ __all__ = [
     # Stacks
     "Stack",
     "LocalStack",
+    "ResourceConfig",
+    "DockerConfig",
     # Tracking
     "Experiment",
     "Run",

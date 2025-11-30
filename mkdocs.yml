@@ -113,6 +113,7 @@ nav:
   - 📐 Guides:
     - 🛠️ Custom Components: guides/custom-components.md
     - ✨ Improved UX: guides/improved-ux.md
+    - 🧱 Pipeline Dependencies: guides/pipeline-dependencies.md
   - 📚 API Reference:
     - 🤩 Core: api/core.md
     - 📦 Assets: api/assets.md

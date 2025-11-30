@@ -39,7 +39,7 @@ class GPUConfig:
     @staticmethod
     def _is_valid_memory(memory: str) -> bool:
         """Check if memory string is valid (e.g., '16Gi', '32768Mi')."""
-        return bool(re.match(r"^\d+(\.\d+)?(Ki|Mi|Gi|Ti|K|M|G|T)$", memory))
+        return bool(re.match(r"^\d+(\.\d+)?(Ki|Mi|Gi|Ti|KB|MB|GB|TB|K|M|G|T)$", memory))
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
@@ -105,7 +105,7 @@ class GPUConfig:
         def to_bytes(mem: str) -> int:
             import re
 
-            match = re.match(r"^(\d+(?:\.\d+)?)(Ki|Mi|Gi|Ti|K|M|G|T)?$", mem)
+            match = re.match(r"^(\d+(?:\.\d+)?)(Ki|Mi|Gi|Ti|KB|MB|GB|TB|K|M|G|T)?$", mem)
             if not match:
                 return 0
             value, unit = float(match.group(1)), match.group(2) or ""
@@ -114,6 +114,10 @@ class GPUConfig:
                 "Mi": 1024**2,
                 "Gi": 1024**3,
                 "Ti": 1024**4,
+                "KB": 1000,
+                "MB": 1000**2,
+                "GB": 1000**3,
+                "TB": 1000**4,
                 "K": 1000,
                 "M": 1000**2,
                 "G": 1000**3,
@@ -236,8 +240,8 @@ class ResourceRequirements:
 
     @staticmethod
     def _is_valid_memory(memory: str) -> bool:
-        """Check if memory string is valid (e.g., '16Gi', '32768Mi')."""
-        return bool(re.match(r"^\d+(\.\d+)?(Ki|Mi|Gi|Ti|K|M|G|T|B)?$", memory))
+        """Check if memory string is valid (e.g., '16Gi', '32768Mi', '4GB')."""
+        return bool(re.match(r"^\d+(\.\d+)?(Ki|Mi|Gi|Ti|KB|MB|GB|TB|K|M|G|T|B)?$", memory))
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
@@ -257,6 +261,15 @@ class ResourceRequirements:
     def has_gpu(self) -> bool:
         """Check if GPU resources are requested."""
         return self.gpu is not None
+
+    def __getitem__(self, key: str) -> Any:
+        """Provide dict-style access for backwards compatibility."""
+        if not hasattr(self, key):
+            raise KeyError(key)
+        value = getattr(self, key)
+        if key == "gpu" and isinstance(value, GPUConfig):
+            return value.count
+        return value
 
     def get_gpu_count(self) -> int:
         """Get total number of GPUs requested."""
@@ -295,7 +308,7 @@ class ResourceRequirements:
         import re
 
         def to_bytes(mem: str) -> int:
-            match = re.match(r"^(\d+(?:\.\d+)?)(Ki|Mi|Gi|Ti|K|M|G|T|B)?$", mem)
+            match = re.match(r"^(\d+(?:\.\d+)?)(Ki|Mi|Gi|Ti|KB|MB|GB|TB|K|M|G|T|B)?$", mem)
             if not match:
                 return 0
             value, unit = float(match.group(1)), match.group(2) or "B"
@@ -304,6 +317,10 @@ class ResourceRequirements:
                 "Mi": 1024**2,
                 "Gi": 1024**3,
                 "Ti": 1024**4,
+                "KB": 1000,
+                "MB": 1000**2,
+                "GB": 1000**3,
+                "TB": 1000**4,
                 "K": 1000,
                 "M": 1000**2,
                 "G": 1000**3,

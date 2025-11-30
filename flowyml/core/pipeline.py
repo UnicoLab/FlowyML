@@ -19,11 +19,15 @@ class PipelineResult:
         self.run_id = run_id
         self.pipeline_name = pipeline_name
         self.success = False
+        self.state = "pending"
         self.step_results: dict[str, ExecutionResult] = {}
         self.outputs: dict[str, Any] = {}
         self.start_time = datetime.now()
         self.end_time: datetime | None = None
         self.duration_seconds: float = 0.0
+        self.resource_config: Any | None = None
+        self.docker_config: Any | None = None
+        self.remote_job_id: str | None = None
 
     def add_step_result(self, result: ExecutionResult) -> None:
         """Add result from a step execution."""
@@ -37,8 +41,20 @@ class PipelineResult:
     def finalize(self, success: bool) -> None:
         """Mark pipeline as complete."""
         self.success = success
+        self.state = "completed" if success else "failed"
         self.end_time = datetime.now()
         self.duration_seconds = (self.end_time - self.start_time).total_seconds()
+
+    def attach_configs(self, resource_config: Any | None, docker_config: Any | None) -> None:
+        """Store execution configs for downstream inspection."""
+        self.resource_config = resource_config
+        self.docker_config = docker_config
+
+    def mark_submitted(self, job_id: str) -> None:
+        """Mark result as remotely submitted."""
+        self.success = True
+        self.state = "submitted"
+        self.remote_job_id = job_id
 
     def __getitem__(self, key: str) -> Any:
         """Allow dict-style access to outputs."""
@@ -50,9 +66,17 @@ class PipelineResult:
             "run_id": self.run_id,
             "pipeline_name": self.pipeline_name,
             "success": self.success,
+            "state": self.state,
             "start_time": self.start_time.isoformat(),
             "end_time": self.end_time.isoformat() if self.end_time else None,
             "duration_seconds": self.duration_seconds,
+            "resource_config": self.resource_config.to_dict()
+            if hasattr(self.resource_config, "to_dict")
+            else self.resource_config,
+            "docker_config": self.docker_config.to_dict()
+            if hasattr(self.docker_config, "to_dict")
+            else self.docker_config,
+            "remote_job_id": self.remote_job_id,
             "steps": {
                 name: {
                     "success": result.success,
@@ -67,10 +91,19 @@ class PipelineResult:
 
     def summary(self) -> str:
         """Generate execution summary."""
+        if self.state == "submitted":
+            status_line = f"Status: ⏳ SUBMITTED (job: {self.remote_job_id})"
+        elif self.success:
+            status_line = "Status: ✓ SUCCESS"
+        elif self.state == "failed":
+            status_line = "Status: ✗ FAILED"
+        else:
+            status_line = f"Status: {self.state.upper()}"
+
         lines = [
             f"Pipeline: {self.pipeline_name}",
             f"Run ID: {self.run_id}",
-            f"Status: {'✓ SUCCESS' if self.success else '✗ FAILED'}",
+            status_line,
             f"Duration: {self.duration_seconds:.2f}s",
             "",
             "Steps:",
@@ -259,6 +292,8 @@ class Pipeline:
             self.executor = self.stack.executor
             self.metadata_store = self.stack.metadata_store
 
+        orchestrator = getattr(self.stack, "orchestrator", None) if self.stack else None
+
         # Determine artifact store
         artifact_store = None
         if self.stack:
@@ -272,8 +307,33 @@ class Pipeline:
         if not self._built:
             self.build()
 
+        resource_config = self._coerce_resource_config(resources)
+        docker_cfg = self._coerce_docker_config(docker_config)
+
         # Initialize result
         result = PipelineResult(run_id, self.name)
+        result.attach_configs(resource_config, docker_cfg)
+
+        if self.executor is None and orchestrator is not None:
+            self.run_id = run_id
+            job_id = orchestrator.run_pipeline(
+                pipeline=self,
+                resources=resource_config,
+                docker_config=docker_cfg,
+                inputs=inputs or {},
+                context=self.context.to_dict(),
+            )
+            result.mark_submitted(job_id)
+            result.outputs["job_id"] = job_id
+            self._save_run(result)
+            self._save_pipeline_definition()
+            return result
+
+        if self.executor is None:
+            raise RuntimeError(
+                "Pipeline has no executor configured. Provide a stack with an executor or orchestrator.",
+            )
+
         step_outputs = inputs or {}
 
         # Map step names to step objects for easier lookup
@@ -527,6 +587,36 @@ class Pipeline:
             # Don't fail the run if definition saving fails
             print(f"Warning: Failed to save pipeline definition: {e}")
 
+    def _coerce_resource_config(self, resources: Any | None):
+        """Convert resources input to ResourceConfig if necessary."""
+        if resources is None:
+            return None
+        try:
+            from flowyml.stacks.components import ResourceConfig
+        except Exception:
+            return resources
+
+        if isinstance(resources, ResourceConfig):
+            return resources
+        if isinstance(resources, dict):
+            return ResourceConfig(**resources)
+        return resources
+
+    def _coerce_docker_config(self, docker_config: Any | None):
+        """Convert docker input to DockerConfig if necessary."""
+        if docker_config is None:
+            return None
+        try:
+            from flowyml.stacks.components import DockerConfig
+        except Exception:
+            return docker_config
+
+        if isinstance(docker_config, DockerConfig):
+            return docker_config
+        if isinstance(docker_config, dict):
+            return DockerConfig(**docker_config)
+        return docker_config
+
     def _save_run(self, result: PipelineResult) -> None:
         """Save run results to disk and metadata database."""
         # Save to JSON file
@@ -576,7 +666,7 @@ class Pipeline:
         metadata = {
             "run_id": result.run_id,
             "pipeline_name": result.pipeline_name,
-            "status": "completed" if result.success else "failed",
+            "status": result.state,
             "start_time": result.start_time.isoformat(),
             "end_time": result.end_time.isoformat() if result.end_time else None,
             "duration": result.duration_seconds,
@@ -584,6 +674,13 @@ class Pipeline:
             "context": self.context._params if hasattr(self.context, "_params") else {},
             "steps": steps_metadata,
             "dag": dag_data,
+            "resources": result.resource_config.to_dict()
+            if hasattr(result.resource_config, "to_dict")
+            else result.resource_config,
+            "docker": result.docker_config.to_dict()
+            if hasattr(result.docker_config, "to_dict")
+            else result.docker_config,
+            "remote_job_id": result.remote_job_id,
         }
         self.metadata_store.save_run(result.run_id, metadata)
 

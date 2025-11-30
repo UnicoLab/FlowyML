@@ -77,6 +77,16 @@ class Asset:
         if parent:
             parent.children.append(self)
 
+    @property
+    def properties(self) -> dict[str, Any]:
+        """Expose mutable properties stored in metadata."""
+        return self.metadata.properties
+
+    @property
+    def tags(self) -> dict[str, str]:
+        """Expose mutable tags stored in metadata."""
+        return self.metadata.tags
+
     @classmethod
     def create(
         cls,
