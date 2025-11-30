@@ -1,6 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { fetchApi } from '../../utils/api';
-import { Key, Plus, Trash2, Copy, Check, Shield, Calendar, AlertCircle } from 'lucide-react';
+import {
+    Key,
+    Plus,
+    Trash2,
+    Copy,
+    Check,
+    Shield,
+    Calendar,
+    AlertCircle,
+    Eye,
+    PenTool,
+    Zap,
+    ShieldCheck
+} from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
@@ -150,6 +163,47 @@ export function TokenManagement() {
     );
 }
 
+const PERMISSION_STYLES = {
+    read: {
+        label: 'Read',
+        icon: Eye,
+        className: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-200 dark:border-blue-800'
+    },
+    write: {
+        label: 'Write',
+        icon: PenTool,
+        className: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-200 dark:border-emerald-800'
+    },
+    execute: {
+        label: 'Execute',
+        icon: Zap,
+        className: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-200 dark:border-purple-800'
+    },
+    admin: {
+        label: 'Admin',
+        icon: ShieldCheck,
+        className: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-200 dark:border-rose-800'
+    }
+};
+
+function PermissionChip({ perm }) {
+    const config = PERMISSION_STYLES[perm] || {
+        label: perm,
+        icon: Shield,
+        className: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800/60 dark:text-slate-100 dark:border-slate-700'
+    };
+    const Icon = config.icon;
+
+    return (
+        <span
+            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${config.className}`}
+        >
+            <Icon size={12} />
+            {config.label}
+        </span>
+    );
+}
+
 function TokenItem({ token, onRevoke }) {
     const [showRevoke, setShowRevoke] = useState(false);
 
@@ -165,13 +219,6 @@ function TokenItem({ token, onRevoke }) {
         }
     };
 
-    const permissionColors = {
-        read: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-        write: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
-        execute: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
-        admin: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300'
-    };
-
     return (
         <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-primary-300 dark:hover:border-primary-700 transition-colors">
             <div className="flex items-start justify-between">
@@ -185,14 +232,13 @@ function TokenItem({ token, onRevoke }) {
                         )}
                     </div>
                     <div className="flex flex-wrap gap-2 mb-3">
-                        {token.permissions?.map(perm => (
-                            <span
-                                key={perm}
-                                className={`px - 2 py - 0.5 rounded text - xs font - medium ${permissionColors[perm] || 'bg-slate-100 text-slate-700'} `}
-                            >
-                                {perm}
-                            </span>
-                        ))}
+                        {token.permissions?.length ? (
+                            token.permissions.map(perm => (
+                                <PermissionChip key={perm} perm={perm} />
+                            ))
+                        ) : (
+                            <span className="text-xs text-slate-400">No permissions assigned</span>
+                        )}
                     </div>
                     <div className="flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
                         <span className="flex items-center gap-1">
