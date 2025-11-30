@@ -186,6 +186,9 @@ class LocalOrchestrator(Orchestrator):
                 # Get context parameters for this step
                 context_params = pipeline.context.inject_params(step.func)
 
+                # Run step start hooks
+                hooks.run_step_start_hooks(step, step_inputs)
+
                 # Execute step
                 step_result = pipeline.executor.execute_step(
                     step,
@@ -196,6 +199,9 @@ class LocalOrchestrator(Orchestrator):
                     run_id=run_id,
                     project_name=pipeline.name,
                 )
+
+                # Run step end hooks
+                hooks.run_step_end_hooks(step, step_result)
 
                 result.add_step_result(step_result)
 
