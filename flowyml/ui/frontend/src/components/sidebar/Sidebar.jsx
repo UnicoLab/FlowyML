@@ -14,7 +14,8 @@ import {
     Package,
     ChevronLeft,
     ChevronRight,
-    Menu
+    Menu,
+    Activity
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -46,6 +47,7 @@ const NAV_GROUPS = [
         items: [
             { icon: Database, label: 'Assets', path: '/assets' },
             { icon: MessageSquare, label: 'Traces', path: '/traces' },
+            { icon: Activity, label: 'Observability', path: '/observability' },
         ],
     },
 ];

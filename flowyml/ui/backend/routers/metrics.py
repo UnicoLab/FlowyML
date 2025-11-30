@@ -133,3 +133,81 @@ async def list_model_metrics(
 
     records = store.list_model_metrics(project=project, model_name=model_name, limit=limit)
     return {"metrics": records}
+
+
+@router.get("/observability/orchestrator")
+async def get_orchestrator_metrics():
+    """Get orchestrator-level performance metrics."""
+    from datetime import datetime, timedelta
+    import sqlite3
+
+    store = get_global_store()
+    conn = sqlite3.connect(store.db_path)
+    cursor = conn.cursor()
+
+    thirty_days_ago = (datetime.now() - timedelta(days=30)).isoformat()
+    cursor.execute("SELECT COUNT(*) FROM runs WHERE created_at >= ?", (thirty_days_ago,))
+    total_runs = cursor.fetchone()[0]
+
+    cursor.execute(
+        "SELECT status, COUNT(*) FROM runs WHERE created_at >= ? GROUP BY status",
+        (thirty_days_ago,),
+    )
+    status_counts = dict(cursor.fetchall())
+
+    cursor.execute(
+        "SELECT AVG(duration) FROM runs WHERE created_at >= ? AND duration IS NOT NULL",
+        (thirty_days_ago,),
+    )
+    avg_duration = cursor.fetchone()[0] or 0
+
+    conn.close()
+
+    completed = status_counts.get("completed", 0)
+    success_rate = completed / total_runs if total_runs > 0 else 0
+
+    return {
+        "total_runs": total_runs,
+        "success_rate": success_rate,
+        "avg_duration_seconds": avg_duration,
+        "status_distribution": status_counts,
+        "period_days": 30,
+    }
+
+
+@router.get("/observability/cache")
+async def get_cache_metrics():
+    """Get cache performance metrics."""
+    from datetime import datetime, timedelta
+    import sqlite3
+    import json as json_lib
+
+    store = get_global_store()
+    conn = sqlite3.connect(store.db_path)
+    cursor = conn.cursor()
+
+    thirty_days_ago = (datetime.now() - timedelta(days=30)).isoformat()
+    cursor.execute("SELECT metadata FROM runs WHERE created_at >= ?", (thirty_days_ago,))
+
+    total_steps, cached_steps = 0, 0
+    for row in cursor.fetchall():
+        if not row[0]:
+            continue
+        try:
+            metadata = json_lib.loads(row[0])
+            for step_data in metadata.get("steps", {}).values():
+                total_steps += 1
+                if step_data.get("cached"):
+                    cached_steps += 1
+        except Exception:
+            continue
+
+    conn.close()
+    cache_hit_rate = cached_steps / total_steps if total_steps > 0 else 0
+
+    return {
+        "total_steps": total_steps,
+        "cached_steps": cached_steps,
+        "cache_hit_rate": cache_hit_rate,
+        "period_days": 30,
+    }

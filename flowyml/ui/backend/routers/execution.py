@@ -27,6 +27,7 @@ class PipelineExecutionRequest(BaseModel):
     parameters: dict[str, Any] = {}
     project: str | None = None
     dry_run: bool = False  # If True, validate but don't execute
+    retry_count: int = 0  # Number of retries on failure (0-5)
 
 
 class TokenRequest(BaseModel):
@@ -92,13 +93,23 @@ async def execute_pipeline(
 
         pipeline = getattr(module, request.pipeline_name)
 
-        # Execute the pipeline
-        result = pipeline.run(**request.parameters)
+        # Execute the pipeline with retry policy if specified
+        run_kwargs = request.parameters.copy()
+
+        if request.retry_count > 0:
+            from flowyml.core.retry import OrchestratorRetryPolicy
+
+            run_kwargs["retry_policy"] = OrchestratorRetryPolicy(
+                max_retries=min(request.retry_count, 5),  # Cap at 5
+            )
+
+        result = pipeline.run(**run_kwargs)
 
         return {
             "status": "completed",
             "run_id": result.run_id if hasattr(result, "run_id") else None,
             "pipeline": request.pipeline_name,
+            "retry_count": request.retry_count,
             "message": "Pipeline executed successfully",
         }
 

@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { fetchApi } from '../../../utils/api';
 import { downloadArtifactById } from '../../../utils/downloads';
 import { useParams, Link } from 'react-router-dom';
-import { CheckCircle, XCircle, Clock, Calendar, Package, ArrowRight, BarChart2, FileText, Database, Box, ChevronRight, Activity, Layers, Code2, Terminal, Info, X, Maximize2, TrendingUp, Download, ArrowDownCircle, ArrowUpCircle, Tag, Zap, AlertCircle, FolderPlus } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Calendar, Package, ArrowRight, BarChart2, FileText, Database, Box, ChevronRight, Activity, Layers, Code2, Terminal, Info, X, Maximize2, TrendingUp, Download, ArrowDownCircle, ArrowUpCircle, Tag, Zap, AlertCircle, FolderPlus, Cloud, Server } from 'lucide-react';
 import { Card } from '../../../components/ui/Card';
 import { Badge } from '../../../components/ui/Badge';
 import { Button } from '../../../components/ui/Button';
@@ -20,6 +20,43 @@ export function RunDetails() {
     const [selectedStep, setSelectedStep] = useState(null);
     const [activeTab, setActiveTab] = useState('overview');
     const [selectedArtifact, setSelectedArtifact] = useState(null);
+    const [cloudStatus, setCloudStatus] = useState(null);
+    const [isPolling, setIsPolling] = useState(false);
+
+    // Fetch cloud status for remote runs
+    useEffect(() => {
+        if (!run) return;
+
+        const fetchCloudStatus = async () => {
+            try {
+                const res = await fetchApi(`/api/runs/${runId}/cloud-status`);
+                const data = await res.json();
+                setCloudStatus(data);
+
+                // Continue polling if run is remote and not finished
+                if (data.is_remote && data.cloud_status && !data.cloud_status.is_finished) {
+                    setIsPolling(true);
+                } else {
+                    setIsPolling(false);
+                }
+            } catch (error) {
+                console.error('Failed to fetch cloud status:', error);
+                setIsPolling(false);
+            }
+        };
+
+        fetchCloudStatus();
+
+        // Poll every 5 seconds if remote and not finished
+        let interval;
+        if (isPolling) {
+            interval = setInterval(fetchCloudStatus, 5000);
+        }
+
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [runId, run, isPolling]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -95,13 +132,25 @@ export function RunDetails() {
                     <p className="text-slate-500 mt-1 flex items-center gap-2">
                         <Layers size={16} />
                         Pipeline: <span className="font-medium text-slate-700">{run.pipeline_name}</span>
+                        {cloudStatus?.is_remote && (
+                            <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-600 flex items-center gap-1">
+                                <Cloud size={12} />
+                                {cloudStatus.orchestrator_type}
+                            </Badge>
+                        )}
+                        {cloudStatus?.is_remote && isPolling && (
+                            <span className="text-xs text-amber-600 flex items-center gap-1 animate-pulse">
+                                <Activity size={12} />
+                                Live
+                            </span>
+                        )}
                     </p>
                 </div>
                 <div className="flex flex-col items-end gap-2">
                     <div className="flex items-center gap-2">
                         <SimpleProjectSelector runId={run.run_id} currentProject={run.project} />
                         <Badge variant={statusVariant} className="text-sm px-4 py-1.5 uppercase tracking-wide shadow-sm">
-                            {run.status}
+                            {cloudStatus?.cloud_status?.status || run.status}
                         </Badge>
                     </div>
                     <span className="text-xs text-slate-400 font-mono">ID: {run.run_id}</span>
@@ -683,8 +732,8 @@ function SimpleProjectSelector({ runId, currentProject }) {
                                         onClick={() => handleSelectProject(p.name)}
                                         disabled={updating}
                                         className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-colors ${p.name === currentProject
-                                                ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium'
-                                                : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
+                                            ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium'
+                                            : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
                                             }`}
                                     >
                                         {p.name} {p.name === currentProject && '✓'}

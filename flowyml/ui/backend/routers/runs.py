@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from flowyml.storage.metadata import SQLiteMetadataStore
 from flowyml.core.project import ProjectManager
 from typing import Optional
+import json
 
 router = APIRouter()
 
@@ -127,3 +128,81 @@ def _find_store_for_run(run_id: str) -> SQLiteMetadataStore:
     if store:
         return store
     raise HTTPException(status_code=404, detail="Run not found")
+
+
+@router.get("/{run_id}/cloud-status")
+async def get_cloud_status(run_id: str):
+    """Get real-time status from cloud orchestrator for remote runs.
+
+    Returns cloud provider status if the run is remote, otherwise returns
+    status from metadata store.
+    """
+    run, store = _find_run(run_id)
+    if not run:
+        raise HTTPException(status_code=404, detail="Run not found")
+
+    # Get orchestrator info from run metadata
+    metadata = run.get("metadata", {})
+    if isinstance(metadata, str):
+        try:
+            metadata = json.loads(metadata)
+        except Exception:
+            metadata = {}
+
+    orchestrator_type = metadata.get("orchestrator_type", "local")
+
+    # If local run, just return metadata store status
+    if orchestrator_type == "local":
+        return {
+            "run_id": run_id,
+            "status": run.get("status", "unknown"),
+            "orchestrator_type": "local",
+            "is_remote": False,
+            "cloud_status": None,
+        }
+
+    # For remote runs, try to query cloud orchestrator
+    cloud_status = None
+    cloud_error = None
+
+    try:
+        # Import orchestrators dynamically to avoid errors if cloud SDKs aren't installed
+        from flowyml.utils.stack_config import load_active_stack
+
+        stack = load_active_stack()
+        if not stack or not stack.orchestrator:
+            cloud_error = "No active stack or orchestrator configured"
+        else:
+            orchestrator = stack.orchestrator
+
+            # Check if orchestrator has get_run_status method
+            if hasattr(orchestrator, "get_run_status"):
+                from flowyml.core.execution_status import ExecutionStatus
+
+                status = orchestrator.get_run_status(run_id)
+
+                # Convert ExecutionStatus to dict
+                if isinstance(status, ExecutionStatus):
+                    cloud_status = {
+                        "status": status.value,
+                        "is_finished": status.is_finished,
+                        "is_successful": status.is_successful,
+                    }
+                else:
+                    cloud_status = {"status": str(status)}
+            else:
+                cloud_error = f"Orchestrator {orchestrator_type} does not support status queries"
+
+    except ImportError as e:
+        cloud_error = f"Cloud SDK not available: {str(e)}"
+    except Exception as e:
+        cloud_error = f"Error querying cloud status: {str(e)}"
+
+    return {
+        "run_id": run_id,
+        "status": run.get("status", "unknown"),
+        "orchestrator_type": orchestrator_type,
+        "is_remote": True,
+        "cloud_status": cloud_status,
+        "cloud_error": cloud_error,
+    }

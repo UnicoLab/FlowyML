@@ -11,6 +11,7 @@ import { Traces } from '../app/traces/page';
 import { Projects } from '../app/projects/page';
 import { ProjectDetails } from '../app/projects/[projectId]/page';
 import { Schedules } from '../app/schedules/page';
+import { Observability } from '../app/observability/page';
 import { Leaderboard } from '../app/leaderboard/page';
 import { Plugins } from '../app/plugins/page';
 import { Settings } from '../app/settings/page';
@@ -32,6 +33,7 @@ export const router = createBrowserRouter([
             { path: 'projects', element: <Projects /> },
             { path: 'projects/:projectId', element: <ProjectDetails /> },
             { path: 'schedules', element: <Schedules /> },
+            { path: 'observability', element: <Observability /> },
             { path: 'leaderboard', element: <Leaderboard /> },
             { path: 'plugins', element: <Plugins /> },
             { path: 'settings', element: <Settings /> },
