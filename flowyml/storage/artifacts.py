@@ -237,10 +237,20 @@ class LocalArtifactStore(ArtifactStore):
             materializer.save(obj, full_path)
         else:
             # Fallback to cloudpickle (more robust than pickle)
-            with open(full_path / "data.cloudpickle", "wb") as f:
+            fallback_file = full_path / "data.pkl"
+            with open(fallback_file, "wb") as f:
                 cloudpickle.dump(obj, f)
             # Save metadata
             with open(full_path / "metadata.json", "w") as f:
-                json.dump({"type": "cloudpickle", "format": "cloudpickle"}, f, indent=2)
+                json.dump(
+                    {
+                        "type": type(obj).__name__,
+                        "serializer": "cloudpickle",
+                        "format": "pickle",
+                        "file": fallback_file.name,
+                    },
+                    f,
+                    indent=2,
+                )
 
         return str(full_path)

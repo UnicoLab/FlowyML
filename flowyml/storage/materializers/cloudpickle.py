@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import Any
 
-from flowyml.storage.materializers.base import BaseMaterializer, register_materializer
+from flowyml.storage.materializers.base import BaseMaterializer
 
 try:
     import cloudpickle
@@ -51,15 +51,12 @@ if CLOUDPICKLE_AVAILABLE:
         def supported_types(cls) -> list[type]:
             """Return types supported by this materializer.
 
-            Cloudpickle can handle almost anything, but we don't want it to claim
-            types that have specific materializers (like DataFrame).
-            So we return object, but it should be registered with low priority
-            or used as explicit fallback.
+            Cloudpickle can handle almost anything, so we expose ``object`` here
+            for consumers that explicitly opt into this materializer as a
+            fallback, but it is not registered automatically with the global
+            registry to avoid hijacking unknown types.
             """
             return [object]
-
-    # Register it
-    register_materializer(CloudpickleMaterializer)
 
 else:
 
