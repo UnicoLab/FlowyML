@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from flowyml.storage.metadata import SQLiteMetadataStore
+from typing import Optional
 
 router = APIRouter()
 
@@ -33,6 +34,158 @@ async def list_assets(limit: int = 50, asset_type: str = None, run_id: str = Non
         return {"assets": assets}
     except Exception as e:
         return {"assets": [], "error": str(e)}
+
+
+@router.get("/lineage")
+async def get_asset_lineage(
+    asset_id: Optional[str] = None,
+    project: Optional[str] = None,
+    depth: int = 3,
+):
+    """
+    Get lineage graph for artifacts.
+
+    Returns nodes (artifacts, runs, pipelines) and edges (relationships).
+    Can be scoped to a specific asset or all assets in a project.
+    """
+    try:
+        store = get_store()
+        nodes = []
+        edges = []
+        visited_artifacts = set()
+        visited_runs = set()
+
+        # Get starting artifacts
+        if asset_id:
+            artifact = store.load_artifact(asset_id)
+            if not artifact:
+                raise HTTPException(status_code=404, detail="Asset not found")
+            starting_artifacts = [artifact]
+        elif project:
+            # Get all artifacts for project
+            all_runs = store.list_runs(limit=1000)
+            project_run_ids = {r.get("run_id") for r in all_runs if r.get("project") == project}
+            all_artifacts = store.list_assets(limit=1000)
+            starting_artifacts = [a for a in all_artifacts if a.get("run_id") in project_run_ids]
+        else:
+            # Get recent artifacts
+            starting_artifacts = store.list_assets(limit=50)
+
+        # Build graph
+        for artifact in starting_artifacts:
+            artifact_id = artifact.get("artifact_id")
+            if not artifact_id or artifact_id in visited_artifacts:
+                continue
+
+            visited_artifacts.add(artifact_id)
+
+            # Add artifact node
+            nodes.append(
+                {
+                    "id": artifact_id,
+                    "type": "artifact",
+                    "label": artifact.get("name", artifact_id),
+                    "artifact_type": artifact.get("type", "unknown"),
+                    "metadata": {
+                        "created_at": artifact.get("created_at"),
+                        "properties": artifact.get("properties", {}),
+                        "size": artifact.get("size"),
+                        "run_id": artifact.get("run_id"),
+                    },
+                },
+            )
+
+            # Add relationship to run
+            run_id = artifact.get("run_id")
+            if run_id and run_id not in visited_runs:
+                visited_runs.add(run_id)
+                run = store.load_run(run_id)
+
+                if run:
+                    # Add run node
+                    nodes.append(
+                        {
+                            "id": run_id,
+                            "type": "run",
+                            "label": run.get("run_name", run_id[:8]),
+                            "metadata": {
+                                "pipeline_name": run.get("pipeline_name"),
+                                "status": run.get("status"),
+                                "project": run.get("project"),
+                            },
+                        },
+                    )
+
+                    # Add edge: run produces artifact
+                    edges.append(
+                        {
+                            "id": f"{run_id}->{artifact_id}",
+                            "source": run_id,
+                            "target": artifact_id,
+                            "type": "produces",
+                            "label": artifact.get("step", ""),
+                        },
+                    )
+
+                    # Find input artifacts (from DAG/steps metadata)
+                    metadata = run.get("metadata", {})
+                    # dag = metadata.get("dag", {})
+                    steps = metadata.get("steps", {})
+
+                    # Get step that produced this artifact
+                    artifact_step = artifact.get("step")
+                    if artifact_step and artifact_step in steps:
+                        step_info = steps.get(artifact_step, {})
+                        inputs = step_info.get("inputs", [])
+
+                        # Find artifacts that were inputs to this step
+                        for input_name in inputs:
+                            # Search for artifact with this name from the same run
+                            input_artifacts = [
+                                a for a in all_artifacts if a.get("name") == input_name and a.get("run_id") == run_id
+                            ]
+                            for input_artifact in input_artifacts:
+                                input_id = input_artifact.get("artifact_id")
+                                if input_id and input_id not in visited_artifacts:
+                                    visited_artifacts.add(input_id)
+                                    nodes.append(
+                                        {
+                                            "id": input_id,
+                                            "type": "artifact",
+                                            "label": input_artifact.get("name", input_id),
+                                            "artifact_type": input_artifact.get("type", "unknown"),
+                                            "metadata": {
+                                                "created_at": input_artifact.get("created_at"),
+                                                "properties": input_artifact.get("properties", {}),
+                                            },
+                                        },
+                                    )
+
+                                # Add edge: input artifact consumed by run
+                                edges.append(
+                                    {
+                                        "id": f"{input_id}->{run_id}",
+                                        "source": input_id,
+                                        "target": run_id,
+                                        "type": "consumes",
+                                        "label": artifact_step,
+                                    },
+                                )
+
+        return {
+            "nodes": nodes,
+            "edges": edges,
+            "metadata": {
+                "total_artifacts": len([n for n in nodes if n["type"] == "artifact"]),
+                "total_runs": len([n for n in nodes if n["type"] == "run"]),
+                "depth_used": depth,
+            },
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to build lineage: {str(e)}")
 
 
 @router.get("/{artifact_id}")

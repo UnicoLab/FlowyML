@@ -22,7 +22,7 @@ export function DataView({
     renderGrid,
     renderList,
     searchPlaceholder = "Search...",
-    initialView = 'grid',
+    initialView = 'table',
     emptyState,
     loading = false
 }) {

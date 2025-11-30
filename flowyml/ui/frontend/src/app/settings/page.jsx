@@ -77,6 +77,7 @@ export function Settings() {
     };
 
     const maskToken = (token) => {
+        if (!token || typeof token !== 'string') return '••••••••••••••••••••••••••••••••••••••••••••••••';
         return `${token.substring(0, 8)}${'•'.repeat(32)}${token.substring(token.length - 8)}`;
     };
 

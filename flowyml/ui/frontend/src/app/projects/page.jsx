@@ -235,6 +235,7 @@ export function Projects() {
                 items={projects}
                 loading={loading}
                 columns={columns}
+                initialView="grid"
                 renderGrid={renderGrid}
                 actions={
                     <Button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2">

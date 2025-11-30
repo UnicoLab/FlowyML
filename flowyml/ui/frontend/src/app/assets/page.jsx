@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { fetchApi } from '../../utils/api';
 import { Link } from 'react-router-dom';
-import { Database, Box, BarChart2, FileText, Search, Filter, Calendar, Package, Download, Eye, X, ArrowRight } from 'lucide-react';
+import { Database, Box, BarChart2, FileText, Search, Filter, Calendar, Package, Download, Eye, X, ArrowRight, Network } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
@@ -11,12 +11,14 @@ import { DataView } from '../../components/ui/DataView';
 import { useProject } from '../../contexts/ProjectContext';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { KeyValue, KeyValueGrid } from '../../components/ui/KeyValue';
+import { AssetLineageGraph } from '../../components/AssetLineageGraph';
 
 export function Assets() {
     const [assets, setAssets] = useState([]);
     const [loading, setLoading] = useState(true);
     const [typeFilter, setTypeFilter] = useState('all');
     const [selectedAsset, setSelectedAsset] = useState(null);
+    const [viewMode, setViewMode] = useState('table'); // 'table', 'grid', or 'graph'
     const { selectedProject } = useProject();
 
     useEffect(() => {
@@ -215,6 +217,46 @@ export function Assets() {
 
     return (
         <div className="p-6 max-w-7xl mx-auto space-y-6">
+            {/* Header with View Mode Switcher */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Artifacts</h1>
+                    <p className="text-slate-600 dark:text-slate-400">Browse and manage pipeline artifacts and outputs</p>
+                </div>
+
+                {/* View Mode Switcher */}
+                <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+                    <button
+                        onClick={() => setViewMode('table')}
+                        className={`px-3 py-1.5 rounded text-sm font-medium transition-all ${viewMode === 'table'
+                                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow'
+                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                            }`}
+                    >
+                        Table
+                    </button>
+                    <button
+                        onClick={() => setViewMode('grid')}
+                        className={`px-3 py-1.5 rounded text-sm font-medium transition-all ${viewMode === 'grid'
+                                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow'
+                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                            }`}
+                    >
+                        Grid
+                    </button>
+                    <button
+                        onClick={() => setViewMode('graph')}
+                        className={`px-3 py-1.5 rounded text-sm font-medium transition-all flex items-center gap-1 ${viewMode === 'graph'
+                                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow'
+                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                            }`}
+                    >
+                        <Network size={14} />
+                        Graph
+                    </button>
+                </div>
+            </div>
+
             {/* Type Filter */}
             <div className="flex items-center gap-2 overflow-x-auto pb-2">
                 <Filter size={16} className="text-slate-400 shrink-0" />
@@ -239,24 +281,39 @@ export function Assets() {
                 </div>
             </div>
 
-            <DataView
-                title="Artifacts"
-                subtitle="Browse and manage pipeline artifacts and outputs"
-                items={filteredAssets}
-                loading={loading}
-                columns={columns}
-                renderGrid={renderGrid}
-                emptyState={
-                    <EmptyState
-                        icon={Package}
-                        title="No artifacts found"
-                        description={typeFilter !== 'all'
-                            ? 'Try adjusting your filters'
-                            : 'Run a pipeline to generate artifacts'
+            {/* Content - Graph or DataView */}
+            {viewMode === 'graph' ? (
+                <AssetLineageGraph
+                    projectId={selectedProject}
+                    onNodeClick={(nodeData) => {
+                        // Find the asset by ID
+                        const asset = assets.find(a => a.artifact_id === nodeData.id);
+                        if (asset) {
+                            setSelectedAsset(asset);
                         }
-                    />
-                }
-            />
+                    }}
+                />
+            ) : (
+                <DataView
+                    title=""
+                    subtitle=""
+                    items={filteredAssets}
+                    loading={loading}
+                    columns={columns}
+                    renderGrid={renderGrid}
+                    initialView={viewMode}
+                    emptyState={
+                        <EmptyState
+                            icon={Package}
+                            title="No artifacts found"
+                            description={typeFilter !== 'all'
+                                ? 'Try adjusting your filters'
+                                : 'Run a pipeline to generate artifacts'
+                            }
+                        />
+                    }
+                />
+            )}
 
             {/* Asset Detail Modal */}
             <AssetDetailModal

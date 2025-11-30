@@ -33,7 +33,10 @@ export function Pipelines() {
 
             // Calculate stats for each pipeline
             const pipelinesWithStats = pipelinesData.pipelines.map(pipeline => {
-                const pipelineRuns = runsData.runs.filter(r => r.pipeline_name === pipeline);
+                // pipeline is now an object {name, created, version, status, run_count, last_run_id}
+                // not just a string, so use pipeline.name for filtering
+                const pipelineName = typeof pipeline === 'string' ? pipeline : pipeline.name;
+                const pipelineRuns = runsData.runs.filter(r => r.pipeline_name === pipelineName);
                 const completedRuns = pipelineRuns.filter(r => r.status === 'completed');
                 const failedRuns = pipelineRuns.filter(r => r.status === 'failed');
                 const avgDuration = pipelineRuns.length > 0
@@ -51,7 +54,7 @@ export function Pipelines() {
                 const mostCommonProject = Object.keys(projectCounts).sort((a, b) => projectCounts[b] - projectCounts[a])[0] || null;
 
                 return {
-                    name: pipeline,
+                    name: pipelineName,
                     totalRuns: pipelineRuns.length,
                     completedRuns: completedRuns.length,
                     failedRuns: failedRuns.length,
