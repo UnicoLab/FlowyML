@@ -9,6 +9,7 @@ import { Experiments } from '../app/experiments/page';
 import { ExperimentDetails } from '../app/experiments/[experimentId]/page';
 import { Traces } from '../app/traces/page';
 import { Projects } from '../app/projects/page';
+import { ProjectDetails } from '../app/projects/[projectId]/page';
 import { Schedules } from '../app/schedules/page';
 import { Leaderboard } from '../app/leaderboard/page';
 import { Plugins } from '../app/plugins/page';
@@ -29,6 +30,7 @@ export const router = createBrowserRouter([
             { path: 'experiments/:experimentId', element: <ExperimentDetails /> },
             { path: 'traces', element: <Traces /> },
             { path: 'projects', element: <Projects /> },
+            { path: 'projects/:projectId', element: <ProjectDetails /> },
             { path: 'schedules', element: <Schedules /> },
             { path: 'leaderboard', element: <Leaderboard /> },
             { path: 'plugins', element: <Plugins /> },
