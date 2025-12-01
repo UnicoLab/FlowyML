@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Never
+from typing import Any, NoReturn
 from datetime import datetime
 import logging
 
@@ -24,7 +24,7 @@ class Alert:
 
 
 class AlertHandler:
-    def handle(self, alert: Alert) -> Never:
+    def handle(self, alert: Alert) -> NoReturn:
         raise NotImplementedError
 
 
