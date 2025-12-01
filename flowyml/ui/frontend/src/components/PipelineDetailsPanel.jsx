@@ -24,11 +24,13 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { StatusBadge } from './ui/ExecutionStatus';
 import { ProjectSelector } from './ProjectSelector';
+import { useToast } from '../contexts/ToastContext';
 
 export function PipelineDetailsPanel({ pipeline, onClose, onProjectUpdate }) {
     const [runs, setRuns] = useState([]);
     const [loading, setLoading] = useState(false);
     const [currentProject, setCurrentProject] = useState(pipeline?.project);
+    const toast = useToast();
 
     useEffect(() => {
         if (pipeline) {
@@ -46,6 +48,7 @@ export function PipelineDetailsPanel({ pipeline, onClose, onProjectUpdate }) {
             setRuns(data.runs || []);
         } catch (error) {
             console.error('Failed to fetch runs:', error);
+            toast.error(`Failed to load pipeline runs: ${error.message}`);
         } finally {
             setLoading(false);
         }
@@ -61,12 +64,14 @@ export function PipelineDetailsPanel({ pipeline, onClose, onProjectUpdate }) {
                 body: JSON.stringify({ project_name: newProject })
             });
             setCurrentProject(newProject);
+            toast.success(`Pipeline assigned to project: ${newProject}`);
             // Trigger parent component refresh to update the pipelines list
             if (onProjectUpdate) {
                 onProjectUpdate();
             }
         } catch (error) {
             console.error('Failed to update project:', error);
+            toast.error(`Failed to update project: ${error.message}`);
         }
     };
 

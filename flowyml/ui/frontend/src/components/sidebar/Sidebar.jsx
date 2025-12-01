@@ -126,7 +126,7 @@ export function Sidebar({ collapsed, setCollapsed }) {
                 <div className={`bg-slate-50 dark:bg-slate-900 rounded-lg p-4 border border-slate-100 dark:border-slate-700 transition-all duration-200 ${collapsed ? 'p-2 flex justify-center' : ''}`}>
                     {!collapsed ? (
                         <>
-                            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 whitespace-nowrap">flowyml v0.1.0</p>
+                            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 whitespace-nowrap">flowyml v1.3.0</p>
                             <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 whitespace-nowrap">Local Environment</p>
                         </>
                     ) : (

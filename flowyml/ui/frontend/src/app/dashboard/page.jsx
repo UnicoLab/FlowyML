@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { fetchApi } from '../../utils/api';
 import { Link } from 'react-router-dom';
-import { Activity, Layers, Database, TrendingUp, Clock, CheckCircle, XCircle, Zap, ArrowRight } from 'lucide-react';
+import { PlayCircle, Package, GitBranch, TrendingUp, Activity, Clock, CheckCircle, CheckCircle2, XCircle, Loader2, Zap, ArrowRight, Database, Layers } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
+import { StatusBadge } from '../../components/ui/ExecutionStatus';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import { useProject } from '../../contexts/ProjectContext';
+import { useToast } from '../../contexts/ToastContext';
 
 export function Dashboard() {
     const [stats, setStats] = useState(null);
@@ -14,6 +16,7 @@ export function Dashboard() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const { selectedProject } = useProject();
+    const toast = useToast();
 
     useEffect(() => {
         const fetchData = async () => {
@@ -43,6 +46,7 @@ export function Dashboard() {
             } catch (err) {
                 console.error(err);
                 setError(err.message);
+                toast.error(`Failed to load dashboard: ${err.message}`);
             } finally {
                 setLoading(false);
             }
