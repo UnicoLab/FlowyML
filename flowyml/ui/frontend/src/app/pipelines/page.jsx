@@ -13,22 +13,27 @@ import { PipelineDetailsPanel } from '../../components/PipelineDetailsPanel';
 export function Pipelines() {
     const [pipelines, setPipelines] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [selectedPipeline, setSelectedPipeline] = useState(null);
     const { selectedProject } = useProject();
 
     const fetchData = async () => {
         setLoading(true);
+        setError(null);
         try {
             const pipelinesUrl = selectedProject
-                ? `/api/pipelines?project=${encodeURIComponent(selectedProject)}`
-                : '/api/pipelines';
+                ? `/api/pipelines/?project=${encodeURIComponent(selectedProject)}`
+                : '/api/pipelines/';
 
             const pipelinesRes = await fetchApi(pipelinesUrl);
+            if (!pipelinesRes.ok) throw new Error(`Failed to fetch pipelines: ${pipelinesRes.statusText}`);
+
             const pipelinesData = await pipelinesRes.json();
 
             setPipelines(pipelinesData.pipelines || []);
         } catch (err) {
             console.error(err);
+            setError(err.message);
         } finally {
             setLoading(false);
         }
@@ -41,6 +46,24 @@ export function Pipelines() {
     const handlePipelineSelect = (pipeline) => {
         setSelectedPipeline(pipeline);
     };
+
+    if (error) {
+        return (
+            <div className="flex items-center justify-center h-screen bg-slate-50 dark:bg-slate-900">
+                <div className="text-center p-8 bg-red-50 dark:bg-red-900/20 rounded-2xl border border-red-100 dark:border-red-800 max-w-md">
+                    <XCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+                    <h3 className="text-lg font-bold text-red-700 dark:text-red-300 mb-2">Failed to load pipelines</h3>
+                    <p className="text-red-600 dark:text-red-400 mb-6">{error}</p>
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-slate-700 dark:text-slate-300 font-medium"
+                    >
+                        Retry Connection
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="h-screen flex flex-col overflow-hidden bg-slate-50 dark:bg-slate-900">

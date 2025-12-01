@@ -26,7 +26,7 @@ export function Runs() {
     const fetchRuns = async () => {
         setLoading(true);
         try {
-            let url = '/api/runs?limit=100';
+            let url = '/api/runs/?limit=100';
             if (selectedProject) {
                 url += `&project=${encodeURIComponent(selectedProject)}`;
             }

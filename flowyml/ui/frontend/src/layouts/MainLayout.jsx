@@ -3,6 +3,8 @@ import { Outlet } from 'react-router-dom';
 import { Sidebar } from '../components/sidebar/Sidebar';
 import { Header } from '../components/header/Header';
 
+import { ErrorBoundary } from '../components/ui/ErrorBoundary';
+
 export function MainLayout() {
     const [collapsed, setCollapsed] = useState(false);
 
@@ -14,7 +16,9 @@ export function MainLayout() {
                 <Header />
                 <main className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
                     <div className="max-w-7xl mx-auto w-full">
-                        <Outlet />
+                        <ErrorBoundary>
+                            <Outlet />
+                        </ErrorBoundary>
                     </div>
                 </main>
             </div>

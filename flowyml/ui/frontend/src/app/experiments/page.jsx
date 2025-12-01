@@ -24,8 +24,8 @@ export function Experiments() {
             setLoading(true);
             try {
                 const url = selectedProject
-                    ? `/api/experiments?project=${encodeURIComponent(selectedProject)}`
-                    : '/api/experiments';
+                    ? `/api/experiments/?project=${encodeURIComponent(selectedProject)}`
+                    : '/api/experiments/';
                 const res = await fetch(url);
                 const data = await res.json();
                 setExperiments(data.experiments || []);

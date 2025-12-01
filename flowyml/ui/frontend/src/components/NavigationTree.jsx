@@ -139,11 +139,13 @@ export function NavigationTree({
 }) {
     const [data, setData] = useState({ projects: [], items: [] });
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [filter, setFilter] = useState('');
 
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
+            setError(null);
             try {
                 let url = '';
                 let itemsKey = '';
@@ -151,20 +153,20 @@ export function NavigationTree({
                 switch (mode) {
                     case 'experiments':
                         url = projectId
-                            ? `/api/experiments?project=${encodeURIComponent(projectId)}`
-                            : '/api/experiments';
+                            ? `/api/experiments/?project=${encodeURIComponent(projectId)}`
+                            : '/api/experiments/';
                         itemsKey = 'experiments';
                         break;
                     case 'pipelines':
                         url = projectId
-                            ? `/api/pipelines?project=${encodeURIComponent(projectId)}`
-                            : '/api/pipelines';
+                            ? `/api/pipelines/?project=${encodeURIComponent(projectId)}`
+                            : '/api/pipelines/';
                         itemsKey = 'pipelines';
                         break;
                     case 'runs':
                         url = projectId
-                            ? `/api/runs?project=${encodeURIComponent(projectId)}&limit=100`
-                            : '/api/runs?limit=100';
+                            ? `/api/runs/?project=${encodeURIComponent(projectId)}&limit=100`
+                            : '/api/runs/?limit=100';
                         itemsKey = 'runs';
                         break;
                     default:
@@ -172,6 +174,9 @@ export function NavigationTree({
                 }
 
                 const res = await fetchApi(url);
+                if (!res.ok) {
+                    throw new Error(`Failed to fetch ${mode}: ${res.statusText}`);
+                }
                 const jsonData = await res.json();
 
                 // If no project selected, we might need to fetch projects to group by
@@ -189,6 +194,7 @@ export function NavigationTree({
                 });
             } catch (error) {
                 console.error('Failed to fetch navigation data:', error);
+                setError(error.message);
             } finally {
                 setLoading(false);
             }
@@ -204,6 +210,24 @@ export function NavigationTree({
                     {[1, 2, 3, 4, 5].map(i => (
                         <div key={i} className="h-8 bg-slate-100 dark:bg-slate-800 rounded-lg"></div>
                     ))}
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className={`p-4 text-center ${className}`}>
+                <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-100 dark:border-red-800">
+                    <XCircle className="w-8 h-8 text-red-500 mx-auto mb-2" />
+                    <p className="text-sm text-red-600 dark:text-red-400 font-medium">Failed to load data</p>
+                    <p className="text-xs text-red-500 dark:text-red-500/80 mt-1">{error}</p>
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="mt-3 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                    >
+                        Retry
+                    </button>
                 </div>
             </div>
         );

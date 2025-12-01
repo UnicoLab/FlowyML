@@ -12,28 +12,37 @@ export function Dashboard() {
     const [stats, setStats] = useState(null);
     const [recentRuns, setRecentRuns] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const { selectedProject } = useProject();
 
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
+            setError(null);
             try {
                 const statsUrl = selectedProject
                     ? `/api/stats?project=${encodeURIComponent(selectedProject)}`
                     : '/api/stats';
                 const runsUrl = selectedProject
-                    ? `/api/runs?limit=5&project=${encodeURIComponent(selectedProject)}`
-                    : '/api/runs?limit=5';
+                    ? `/api/runs/?limit=5&project=${encodeURIComponent(selectedProject)}`
+                    : '/api/runs/?limit=5';
 
-                const [statsData, runsData] = await Promise.all([
-                    fetchApi(statsUrl).then(res => res.json()),
-                    fetchApi(runsUrl).then(res => res.json())
+                const [statsRes, runsRes] = await Promise.all([
+                    fetchApi(statsUrl),
+                    fetchApi(runsUrl)
                 ]);
+
+                if (!statsRes.ok) throw new Error(`Failed to fetch stats: ${statsRes.statusText}`);
+                if (!runsRes.ok) throw new Error(`Failed to fetch runs: ${runsRes.statusText}`);
+
+                const statsData = await statsRes.json();
+                const runsData = await runsRes.json();
 
                 setStats(statsData);
                 setRecentRuns(runsData.runs || []);
             } catch (err) {
                 console.error(err);
+                setError(err.message);
             } finally {
                 setLoading(false);
             }
@@ -45,6 +54,24 @@ export function Dashboard() {
         return (
             <div className="flex items-center justify-center h-96">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="flex items-center justify-center h-96">
+                <div className="text-center p-8 bg-red-50 dark:bg-red-900/20 rounded-2xl border border-red-100 dark:border-red-800 max-w-md">
+                    <XCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+                    <h3 className="text-lg font-bold text-red-700 dark:text-red-300 mb-2">Failed to load dashboard</h3>
+                    <p className="text-red-600 dark:text-red-400 mb-6">{error}</p>
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-slate-700 dark:text-slate-300 font-medium"
+                    >
+                        Retry Connection
+                    </button>
+                </div>
             </div>
         );
     }

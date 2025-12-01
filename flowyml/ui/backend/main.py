@@ -1,8 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.exceptions import RequestValidationError
 import os
+import traceback
+
+from flowyml.monitoring.alerts import alert_manager, AlertLevel
 
 # Include API routers
 from flowyml.ui.backend.routers import (
@@ -18,6 +22,7 @@ from flowyml.ui.backend.routers import (
     execution,
     plugins,
     metrics,
+    client,
 )
 
 app = FastAPI(
@@ -69,6 +74,7 @@ app.include_router(leaderboard.router, prefix="/api/leaderboard", tags=["leaderb
 app.include_router(execution.router, prefix="/api/execution", tags=["execution"])
 app.include_router(metrics.router, prefix="/api/metrics", tags=["metrics"])
 app.include_router(plugins.router, prefix="/api", tags=["plugins"])
+app.include_router(client.router, prefix="/api/client", tags=["client"])
 
 
 # Stats endpoint for dashboard
@@ -188,3 +194,34 @@ else:
             "message": "flowyml API is running.",
             "detail": "Frontend not built. Run 'npm run build' in flowyml/ui/frontend to enable the UI.",
         }
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc):
+    error_msg = str(exc)
+    stack_trace = traceback.format_exc()
+
+    # Log and alert
+    alert_manager.send_alert(
+        title="Backend API Error",
+        message=f"Unhandled exception in {request.method} {request.url.path}: {error_msg}",
+        level=AlertLevel.ERROR,
+        metadata={"traceback": stack_trace, "path": request.url.path},
+    )
+
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": "Internal Server Error",
+            "message": "Something went wrong on our end. We've been notified.",
+            "detail": error_msg,  # In prod maybe hide this, but for now it's useful
+        },
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc):
+    return JSONResponse(
+        status_code=422,
+        content={"error": "Validation Error", "detail": exc.errors()},
+    )
