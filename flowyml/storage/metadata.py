@@ -1,7 +1,6 @@
 """Metadata storage backends for flowyml."""
 
 from abc import ABC, abstractmethod
-from flowyml.storage.sql import SQLMetadataStore
 
 
 class MetadataStore(ABC):
@@ -47,6 +46,8 @@ class MetadataStore(ABC):
         """Query runs with filters."""
         pass
 
+
+from flowyml.storage.sql import SQLMetadataStore  # noqa: E402
 
 # Alias for backward compatibility
 SQLiteMetadataStore = SQLMetadataStore
