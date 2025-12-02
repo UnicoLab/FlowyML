@@ -2,6 +2,30 @@
 
 <!-- version list -->
 
+## v1.4.0 (2025-12-02)
+
+### Bug Fixes
+
+- Add Python 3.10 compatibility for UTC import from datetime.
+  ([`b100fe1`](https://github.com/UnicoLab/FlowyML/commit/b100fe1d627e148965064092f0bcd95c6d987549))
+
+### Chores
+
+- Save last release version for recovery [skip ci]
+  ([`a7dfa33`](https://github.com/UnicoLab/FlowyML/commit/a7dfa333d2d5f9b24beee4ec423154396dc984c3))
+
+### Features
+
+- Add remote execution and logging, implement Docker deployment, and enhance backend API with asset
+  management and statistics.
+  ([`33fe5de`](https://github.com/UnicoLab/FlowyML/commit/33fe5de07b3753677dd71827be9a7c206eeca45b))
+
+### Refactoring
+
+- Relocate `SQLMetadataStore` import to address E402 linting.
+  ([`f754fb5`](https://github.com/UnicoLab/FlowyML/commit/f754fb5490b2d650e9c4779e9037dba12a12fbad))
+
+
 ## v1.3.0 (2025-12-01)
 
 ### Bug Fixes
