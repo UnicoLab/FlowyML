@@ -3,7 +3,13 @@
 import json
 import logging
 from pathlib import Path
-from datetime import datetime, UTC
+from datetime import datetime
+
+# Python 3.11+ has UTC, but Python 3.10 doesn't
+try:
+    from datetime import UTC
+except ImportError:
+    UTC = UTC
 
 from sqlalchemy import (
     create_engine,
