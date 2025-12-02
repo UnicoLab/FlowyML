@@ -1,7 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from flowyml.storage.metadata import SQLiteMetadataStore
-import contextlib
-import builtins
+from pydantic import BaseModel
+from flowyml.ui.backend.dependencies import get_store
 
 router = APIRouter()
 
@@ -14,61 +13,14 @@ async def list_traces(
     project: str | None = None,
 ):
     """List traces, optionally filtered by project."""
-    store = SQLiteMetadataStore()
-
-    # We need to implement list_traces in metadata store or query manually
-    # For now, let's query manually via sqlite
-    import sqlite3
-
-    conn = sqlite3.connect(store.db_path)
-    cursor = conn.cursor()
-
-    query = "SELECT * FROM traces"
-    params = []
-    conditions = []
-
-    if trace_id:
-        conditions.append("trace_id = ?")
-        params.append(trace_id)
-
-    if event_type:
-        conditions.append("event_type = ?")
-        params.append(event_type)
-
-    if project:
-        conditions.append("project = ?")
-        params.append(project)
-
-    if conditions:
-        query += " WHERE " + " AND ".join(conditions)
-
-    query += " ORDER BY start_time DESC LIMIT ?"
-    params.append(limit)
-
-    cursor.execute(query, params)
-    columns = [description[0] for description in cursor.description]
-    rows = cursor.fetchall()
-
-    traces = []
-    import json
-
-    for row in rows:
-        trace = dict(zip(columns, row, strict=False))
-        # Parse JSON fields
-        for field in ["inputs", "outputs", "metadata"]:
-            if trace[field]:
-                with contextlib.suppress(builtins.BaseException):
-                    trace[field] = json.loads(trace[field])
-        traces.append(trace)
-
-    conn.close()
-    return traces
+    store = get_store()
+    return store.list_traces(limit=limit, trace_id=trace_id, event_type=event_type, project=project)
 
 
 @router.get("/{trace_id}")
 async def get_trace(trace_id: str):
     """Get a specific trace tree."""
-    store = SQLiteMetadataStore()
+    store = get_store()
     events = store.get_trace(trace_id)
     if not events:
         raise HTTPException(status_code=404, detail="Trace not found")
@@ -82,3 +34,35 @@ async def get_trace(trace_id: str):
         return event
 
     return [build_tree(root) for root in root_events]
+
+
+class TraceEventCreate(BaseModel):
+    event_id: str
+    trace_id: str
+    parent_id: str | None = None
+    event_type: str
+    name: str
+    inputs: dict | None = None
+    outputs: dict | None = None
+    start_time: float | None = None
+    end_time: float | None = None
+    duration: float | None = None
+    status: str | None = None
+    error: str | None = None
+    metadata: dict | None = None
+    prompt_tokens: int | None = None
+    completion_tokens: int | None = None
+    total_tokens: int | None = None
+    cost: float | None = None
+    model: str | None = None
+
+
+@router.post("/")
+async def create_trace_event(event: TraceEventCreate):
+    """Create or update a trace event."""
+    try:
+        store = get_store()
+        store.save_trace_event(event.dict())
+        return {"status": "success", "event_id": event.event_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

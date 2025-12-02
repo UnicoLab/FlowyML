@@ -14,7 +14,7 @@ import inspect
 import subprocess
 import sys
 from dataclasses import dataclass, field
-from typing import Any, Optional, Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 from flowyml.stacks.components import (
     StackComponent,
@@ -48,7 +48,7 @@ class PluginBridge(Protocol):
         self,
         component_class: Any,
         name: str,
-        config: Optional[dict[str, Any]] = None,
+        config: dict[str, Any] | None = None,
     ) -> type[StackComponent]:
         """Wrap an external component class into a flowyml component."""
         ...

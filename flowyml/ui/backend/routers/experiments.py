@@ -1,13 +1,10 @@
 from fastapi import APIRouter, HTTPException
 from flowyml.storage.metadata import SQLiteMetadataStore
 from flowyml.core.project import ProjectManager
-from typing import Optional
+from flowyml.ui.backend.dependencies import get_store
+from pydantic import BaseModel
 
 router = APIRouter()
-
-
-def get_store():
-    return SQLiteMetadataStore()
 
 
 def _iter_metadata_stores():
@@ -28,7 +25,7 @@ def _iter_metadata_stores():
 
 
 @router.get("/")
-async def list_experiments(project: Optional[str] = None):
+async def list_experiments(project: str | None = None):
     """List all experiments, optionally filtered by project."""
     try:
         combined_experiments = []
@@ -81,5 +78,55 @@ async def update_experiment_project(experiment_name: str, project_update: dict):
         store.update_experiment_project(experiment_name, project_name)
 
         return {"message": f"Updated experiment {experiment_name} to project {project_name}"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class ExperimentCreate(BaseModel):
+    experiment_id: str
+    name: str
+    description: str = ""
+    tags: dict = {}
+    project: str | None = None
+
+
+@router.post("/")
+async def create_experiment(experiment: ExperimentCreate):
+    """Create or update an experiment."""
+    try:
+        store = get_store()
+        store.save_experiment(
+            experiment_id=experiment.experiment_id,
+            name=experiment.name,
+            description=experiment.description,
+            tags=experiment.tags,
+        )
+
+        if experiment.project:
+            store.update_experiment_project(experiment.name, experiment.project)
+
+        return {"status": "success", "experiment_id": experiment.experiment_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class ExperimentRunLog(BaseModel):
+    run_id: str
+    metrics: dict | None = None
+    parameters: dict | None = None
+
+
+@router.post("/{experiment_id}/runs")
+async def log_experiment_run(experiment_id: str, log: ExperimentRunLog):
+    """Log a run to an experiment."""
+    try:
+        store = get_store()
+        store.log_experiment_run(
+            experiment_id=experiment_id,
+            run_id=log.run_id,
+            metrics=log.metrics,
+            parameters=log.parameters,
+        )
+        return {"status": "success"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

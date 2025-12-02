@@ -6,7 +6,7 @@ frameworks (ZenML, Airflow, Prefect, etc.) using rule-based adaptation.
 
 import inspect
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 import logging
 
 from flowyml.stacks.components import (
@@ -25,8 +25,8 @@ class AdaptationRule:
     """Rule for adapting an external component."""
 
     # Matching criteria
-    source_type: Optional[str] = None  # e.g., "zenml.orchestrators.base.BaseOrchestrator"
-    name_pattern: Optional[str] = None  # e.g., ".*Orchestrator"
+    source_type: str | None = None  # e.g., "zenml.orchestrators.base.BaseOrchestrator"
+    name_pattern: str | None = None  # e.g., ".*Orchestrator"
     has_methods: list[str] = field(default_factory=list)  # e.g., ["run", "prepare_pipeline"]
 
     # Adaptation logic
@@ -49,7 +49,7 @@ class GenericBridge:
         self,
         external_class: Any,
         name: str,
-        config: Optional[dict[str, Any]] = None,
+        config: dict[str, Any] | None = None,
     ) -> type[StackComponent]:
         """Dynamically create a wrapper class based on rules.
 
@@ -75,7 +75,7 @@ class GenericBridge:
         else:
             return self._create_generic_wrapper(external_class, name, component_type, rule)
 
-    def _find_matching_rule(self, external_class: Any) -> Optional[AdaptationRule]:
+    def _find_matching_rule(self, external_class: Any) -> AdaptationRule | None:
         """Find the first rule that matches the external class."""
         for rule in self.rules:
             # Check source type
@@ -120,7 +120,7 @@ class GenericBridge:
         self,
         external_class: Any,
         name: str,
-        rule: Optional[AdaptationRule],
+        rule: AdaptationRule | None,
     ) -> type[Orchestrator]:
         """Create a wrapper for an Orchestrator."""
 
@@ -174,7 +174,7 @@ class GenericBridge:
         self,
         external_class: Any,
         name: str,
-        rule: Optional[AdaptationRule],
+        rule: AdaptationRule | None,
     ) -> type[ArtifactStore]:
         """Create a wrapper for an Artifact Store."""
 
@@ -216,7 +216,7 @@ class GenericBridge:
         self,
         external_class: Any,
         name: str,
-        rule: Optional[AdaptationRule],
+        rule: AdaptationRule | None,
     ) -> type[ContainerRegistry]:
         """Create a wrapper for a Container Registry."""
 
@@ -259,7 +259,7 @@ class GenericBridge:
         external_class: Any,
         name: str,
         comp_type: ComponentType,
-        rule: Optional[AdaptationRule],
+        rule: AdaptationRule | None,
     ) -> type[StackComponent]:
         """Create a generic wrapper."""
 

@@ -1,7 +1,7 @@
 .PHONY: help install install-dev install-ui clean test test-unit test-integration test-coverage \
         backend-dev backend-start frontend-dev frontend-build frontend-install \
         ui-dev ui-start ui-stop ui-status all-dev setup lint format check \
-        cache-clear cache-stats init run
+        cache-clear cache-stats init run docker-build docker-up docker-down docker-logs docker-clean
 
 # Variables
 POETRY := poetry
@@ -13,12 +13,41 @@ FRONTEND_DIR := flowyml/ui/frontend
 
 # Default target
 help: ## Show this help message
-	@echo "flowyml - Available Make Targets"
+	@echo "FlowyML - Available Make Targets"
 	@echo "================================="
 	@echo ""
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
+# =============================================================================
+# Docker Stack Management
+# =============================================================================
+
+docker-build: ## Build Docker images for backend and frontend
+	docker-compose build
+
+docker-up: ## Start Docker stack (backend + frontend)
+	docker-compose up -d
+
+docker-down: ## Stop Docker stack
+	docker-compose down
+
+docker-logs: ## View Docker logs
+	docker-compose logs -f
+
+docker-clean: ## Stop Docker stack and clean volumes
+	docker-compose down -v
+	rm -rf .flowyml/metadata.db .flowyml/artifacts
+
+docker-restart: ## Restart Docker stack
+	docker-compose restart
+
+docker-ps: ## Show running Docker containers
+	docker-compose ps
+
+# =============================================================================
 # Setup and Installation
+# =============================================================================
+
 install: ## Install flowyml package
 	$(POETRY) install
 
@@ -28,14 +57,16 @@ install-dev: ## Install development dependencies
 install-ui: ## Install with UI dependencies
 	$(POETRY) install --extras ui
 
-seed-db: ## Seed the database with demo data
-	@echo "Seeding database..."
-	@python3 seed_data.py
+install-all: ## Install all dependencies including extras
+	$(POETRY) install --all-extras
 
 setup: install-dev frontend-install ## Complete setup (install + frontend deps)
 	@echo "✅ Setup complete!"
 
+# =============================================================================
 # Frontend
+# =============================================================================
+
 frontend-install: ## Install frontend dependencies
 	cd $(FRONTEND_DIR) && npm install
 
@@ -45,14 +76,20 @@ frontend-dev: ## Start frontend development server
 frontend-build: ## Build frontend for production
 	cd $(FRONTEND_DIR) && npm run build
 
+# =============================================================================
 # Backend
+# =============================================================================
+
 backend-dev: ## Start backend development server (with auto-reload)
-	cd $(BACKEND_DIR) && $(POETRY) run uvicorn main:app --reload --host 0.0.0.0 --port 8000
+	cd $(BACKEND_DIR) && $(POETRY) run uvicorn main:app --reload --host 0.0.0.0 --port 8080
 
 backend-start: ## Start backend production server
-	cd $(BACKEND_DIR) && $(POETRY) run uvicorn main:app --host 0.0.0.0 --port 8000
+	cd $(BACKEND_DIR) && $(POETRY) run uvicorn main:app --host 0.0.0.0 --port 8080
 
-# flowyml CLI Commands
+# =============================================================================
+# FlowyML CLI Commands
+# =============================================================================
+
 ui-start: ## Start flowyml UI server
 	$(flowyml) ui start --open-browser
 
@@ -86,7 +123,10 @@ experiments: ## List experiments
 stacks: ## List available stacks
 	$(flowyml) stack list
 
+# =============================================================================
 # Testing
+# =============================================================================
+
 test: ## Run all tests
 	$(PYTEST) tests/ -v
 
@@ -102,7 +142,10 @@ test-coverage: ## Run tests with coverage report
 test-fast: ## Run tests without coverage (faster)
 	$(PYTEST) tests/ -v --tb=short
 
+# =============================================================================
 # Code Quality
+# =============================================================================
+
 lint: ## Run linters
 	@echo "Running ruff..."
 	-$(POETRY) run ruff check flowyml --fix
@@ -117,7 +160,10 @@ format-check: ## Check code formatting
 
 check: format-check lint ## Run all code quality checks
 
+# =============================================================================
 # Cleaning
+# =============================================================================
+
 clean: ## Clean build artifacts and caches
 	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 	find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
@@ -134,18 +180,24 @@ clean-frontend: ## Clean frontend build artifacts
 	cd $(FRONTEND_DIR) && rm -rf node_modules dist .vite
 	@echo "✅ Cleaned frontend artifacts"
 
-clean-all: clean clean-frontend ## Clean everything
+clean-all: clean clean-frontend docker-clean ## Clean everything including Docker
 	$(POETRY) env remove --all || true
-	@echo "✅ Cleaned everything including poetry env"
+	@echo "✅ Cleaned everything"
 
+# =============================================================================
 # Documentation
+# =============================================================================
+
 docs-serve: ## Serve documentation locally
 	$(POETRY) run mkdocs serve
 
 docs-build: ## Build documentation
 	$(POETRY) run mkdocs build
 
+# =============================================================================
 # Examples
+# =============================================================================
+
 run-demo: ## Run the complete demo
 	$(PYTHON) examples/complete_demo.py
 
@@ -155,22 +207,39 @@ run-examples: ## Run all examples
 		$(PYTHON) $$file; \
 	done
 
+# =============================================================================
 # Database
+# =============================================================================
+
 db-clean: ## Clean database and metadata
 	rm -rf .flowyml
 	@echo "✅ Cleaned database and metadata"
 
+# =============================================================================
 # Development workflow shortcuts
+# =============================================================================
+
 dev: ui-dev ## Alias for ui-dev (start UI in dev mode)
 
 build: frontend-build install ## Build everything
 
 quick-test: test-fast ## Alias for test-fast
 
+all-dev: docker-up ## Start full stack with Docker
+	@echo "✅ Docker stack running!"
+	@echo "Backend: http://localhost:8080"
+	@echo "Frontend: http://localhost:80"
+
+# =============================================================================
 # CI/CD
+# =============================================================================
+
 ci: check test-coverage ## Run CI pipeline (checks + tests with coverage)
 
+# =============================================================================
 # Poetry helpers
+# =============================================================================
+
 poetry-update: ## Update poetry dependencies
 	$(POETRY) update
 
@@ -183,14 +252,18 @@ poetry-show: ## Show installed packages
 poetry-shell: ## Open poetry shell
 	$(POETRY) shell
 
+# =============================================================================
 # Info
+# =============================================================================
+
 info: ## Show project information
-	@echo "flowyml Project Information"
+	@echo "FlowyML Project Information"
 	@echo "============================"
 	@echo "Python version:  $$(python --version)"
 	@echo "Poetry version:  $$(poetry --version)"
 	@echo "Node version:    $$(node --version 2>/dev/null || echo 'Not installed')"
 	@echo "NPM version:     $$(npm --version 2>/dev/null || echo 'Not installed')"
+	@echo "Docker version:  $$(docker --version 2>/dev/null || echo 'Not installed')"
 	@echo ""
 	@echo "Project structure:"
 	@echo "  Backend:  $(BACKEND_DIR)"
@@ -198,8 +271,8 @@ info: ## Show project information
 	@echo "  Tests:    tests/"
 	@echo "  Examples: examples/"
 	@echo ""
-	@echo "Installed packages:"
-	@$(POETRY) show --tree | head -20
+	@echo "Docker stack:"
+	@docker-compose ps 2>/dev/null || echo "  Not running"
 
 version: ## Show flowyml version
 	$(flowyml) --version

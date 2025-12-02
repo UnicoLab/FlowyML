@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request
 from pydantic import BaseModel
-from typing import Any, Optional
+from typing import Any
 from flowyml.monitoring.alerts import alert_manager, AlertLevel
 
 router = APIRouter()
@@ -8,11 +8,11 @@ router = APIRouter()
 
 class ClientError(BaseModel):
     message: str
-    stack: Optional[str] = None
-    component_stack: Optional[str] = None
-    url: Optional[str] = None
-    user_agent: Optional[str] = None
-    additional_info: Optional[dict[str, Any]] = None
+    stack: str | None = None
+    component_stack: str | None = None
+    url: str | None = None
+    user_agent: str | None = None
+    additional_info: dict[str, Any] | None = None
 
 
 @router.post("/errors")

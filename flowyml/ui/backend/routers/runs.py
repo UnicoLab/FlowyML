@@ -2,19 +2,15 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from flowyml.storage.metadata import SQLiteMetadataStore
 from flowyml.core.project import ProjectManager
-from typing import Optional
 import json
+from flowyml.ui.backend.dependencies import get_store
 
 router = APIRouter()
 
 
-def get_store():
-    return SQLiteMetadataStore()
-
-
 def _iter_metadata_stores():
     """Yield tuples of (project_name, store) including global and project stores."""
-    stores: list[tuple[Optional[str], SQLiteMetadataStore]] = [(None, SQLiteMetadataStore())]
+    stores: list[tuple[str | None, SQLiteMetadataStore]] = [(None, get_store())]
     try:
         manager = ProjectManager()
         for project_meta in manager.list_projects():
@@ -50,16 +46,43 @@ def _sort_runs(runs):
 
 
 @router.get("/")
-async def list_runs(limit: int = 20, project: str = None):
-    """List all runs, optionally filtered by project."""
+async def list_runs(
+    limit: int = 20,
+    project: str = None,
+    pipeline_name: str = None,
+    status: str = None,
+):
+    """List all runs, optionally filtered by project, pipeline_name, and status."""
     try:
         combined = []
         for project_name, store in _iter_metadata_stores():
             # Skip other projects if filtering by project name
             if project and project_name and project != project_name:
                 continue
-            store_runs = store.list_runs(limit=limit)
+
+            # Use store's query method if available for better performance, or list_runs
+            # SQLMetadataStore has query method.
+            if hasattr(store, "query"):
+                filters = {}
+                if pipeline_name:
+                    filters["pipeline_name"] = pipeline_name
+                if status:
+                    filters["status"] = status
+
+                # We can't pass limit to query easily if it doesn't support it,
+                # but SQLMetadataStore.query usually returns all matching.
+                # We'll slice later.
+                store_runs = store.query(**filters)
+            else:
+                store_runs = store.list_runs(limit=limit)
+
             for run in store_runs:
+                # Apply filters if store didn't (e.g. if we used list_runs or store doesn't support query)
+                if pipeline_name and run.get("pipeline_name") != pipeline_name:
+                    continue
+                if status and run.get("status") != status:
+                    continue
+
                 combined.append((run, project_name))
 
         runs = _deduplicate_runs(combined)
@@ -71,6 +94,50 @@ async def list_runs(limit: int = 20, project: str = None):
         return {"runs": runs}
     except Exception as e:
         return {"runs": [], "error": str(e)}
+
+
+class RunCreate(BaseModel):
+    run_id: str
+    pipeline_name: str
+    status: str = "pending"
+    start_time: str
+    end_time: str | None = None
+    duration: float | None = None
+    metadata: dict = {}
+    project: str | None = None
+    metrics: dict | None = None
+    parameters: dict | None = None
+
+
+@router.post("/")
+async def create_run(run: RunCreate):
+    """Create or update a run."""
+    try:
+        store = get_store()
+
+        # Prepare metadata dict
+        metadata = run.metadata.copy()
+        metadata.update(
+            {
+                "pipeline_name": run.pipeline_name,
+                "status": run.status,
+                "start_time": run.start_time,
+                "end_time": run.end_time,
+                "duration": run.duration,
+                "project": run.project,
+            },
+        )
+
+        if run.metrics:
+            metadata["metrics"] = run.metrics
+
+        if run.parameters:
+            metadata["parameters"] = run.parameters
+
+        store.save_run(run.run_id, metadata)
+        return {"status": "success", "run_id": run.run_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/{run_id}")

@@ -1,7 +1,6 @@
 """Scheduler configuration."""
 
 import os
-from typing import Optional
 from pydantic import BaseModel
 
 
@@ -9,10 +8,10 @@ class SchedulerConfig(BaseModel):
     """Scheduler configuration."""
 
     persist_schedules: bool = True
-    db_path: Optional[str] = None
+    db_path: str | None = None
     distributed: bool = False
     lock_backend: str = "file"  # "file", "redis"
-    redis_url: Optional[str] = None
+    redis_url: str | None = None
     check_interval_seconds: int = 10
     max_concurrent_runs: int = 5
     timezone: str = "UTC"

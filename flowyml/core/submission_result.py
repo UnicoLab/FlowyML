@@ -1,6 +1,6 @@
 """Submission result for async pipeline execution."""
 
-from typing import Any, Optional
+from typing import Any
 from collections.abc import Callable
 
 
@@ -15,8 +15,8 @@ class SubmissionResult:
     def __init__(
         self,
         job_id: str,
-        wait_for_completion: Optional[Callable[[], None]] = None,
-        metadata: Optional[dict[str, Any]] = None,
+        wait_for_completion: Callable[[], None] | None = None,
+        metadata: dict[str, Any] | None = None,
     ):
         """Initialize a submission result.
 
@@ -29,7 +29,7 @@ class SubmissionResult:
         self.wait_for_completion = wait_for_completion
         self.metadata = metadata or {}
 
-    def wait(self, timeout: Optional[int] = None) -> None:
+    def wait(self, timeout: int | None = None) -> None:
         """Wait for the pipeline run to complete.
 
         Args:

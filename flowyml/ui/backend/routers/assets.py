@@ -1,16 +1,20 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, UploadFile, File
 from fastapi.responses import FileResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from flowyml.storage.metadata import SQLiteMetadataStore
 from flowyml.core.project import ProjectManager
-from typing import Optional
 from pathlib import Path
+from flowyml.ui.backend.dependencies import get_store
+import shutil
+import asyncio
+import contextlib
 
 router = APIRouter()
 
 
-def get_store():
-    return SQLiteMetadataStore()
+def _save_file_sync(src, dst):
+    with open(dst, "wb") as buffer:
+        shutil.copyfileobj(src, buffer)
 
 
 def _iter_metadata_stores():
@@ -73,8 +77,129 @@ async def list_assets(limit: int = 50, asset_type: str = None, run_id: str = Non
         return {"assets": [], "error": str(e)}
 
 
+class AssetCreate(BaseModel):
+    artifact_id: str
+    name: str
+    asset_type: str = Field(..., alias="type")
+    run_id: str
+    step: str
+    project: str | None = None
+    metadata: dict = {}
+    value: str | None = None
+
+
+@router.post("/")
+async def create_asset(asset: AssetCreate):
+    """Create or update an asset metadata."""
+    try:
+        store = get_store()
+
+        # Prepare metadata
+        metadata = asset.metadata.copy()
+        metadata.update(
+            {
+                "name": asset.name,
+                "type": asset.asset_type,
+                "run_id": asset.run_id,
+                "step": asset.step,
+                "project": asset.project,
+                "value": asset.value,
+            },
+        )
+
+        store.save_artifact(asset.artifact_id, metadata)
+        return {"status": "success", "artifact_id": asset.artifact_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{artifact_id}/upload")
+async def upload_asset_content(artifact_id: str, file: UploadFile = File(...)):
+    """Upload content for an artifact."""
+    try:
+        store = get_store()
+
+        # Get existing metadata to find path or create a new one
+        existing = store.load_artifact(artifact_id)
+
+        if not existing:
+            raise HTTPException(status_code=404, detail="Artifact metadata not found. Create metadata first.")
+
+        # Determine storage path
+        # We use the LocalArtifactStore logic here since the backend is running locally relative to itself
+        from flowyml.storage.artifacts import LocalArtifactStore
+        from flowyml.utils.config import get_config
+
+        config = get_config()
+        artifact_store = LocalArtifactStore(base_path=config.artifacts_dir)
+
+        # Construct a path if not present
+        if not existing.get("path"):
+            # Create a path structure: project/run_id/artifact_id/filename
+            project = existing.get("project", "default")
+            run_id = existing.get("run_id", "unknown")
+            filename = file.filename or "content"
+            rel_path = f"{project}/{run_id}/{artifact_id}/{filename}"
+        else:
+            rel_path = existing.get("path")
+            # If path is absolute, make it relative to artifacts dir if possible, or just use it
+            # But LocalArtifactStore expects relative paths usually, or handles absolute ones
+
+        # Save the file
+        full_path = artifact_store.base_path / rel_path
+        full_path.parent.mkdir(parents=True, exist_ok=True)
+
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(None, _save_file_sync, file.file, full_path)
+
+        # Update metadata with path
+        existing["path"] = str(rel_path)
+        store.save_artifact(artifact_id, existing)
+
+        return {"status": "success", "path": str(rel_path)}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/{artifact_id}")
+async def delete_asset(artifact_id: str):
+    """Delete an asset and its file."""
+    try:
+        store = get_store()
+
+        # Get metadata to find path
+        asset = store.load_artifact(artifact_id)
+        if not asset:
+            raise HTTPException(status_code=404, detail="Asset not found")
+
+        # Delete file if it exists locally (since backend is local to itself)
+        path = asset.get("path")
+        if path:
+            from flowyml.storage.artifacts import LocalArtifactStore
+            from flowyml.utils.config import get_config
+
+            config = get_config()
+            artifact_store = LocalArtifactStore(base_path=config.artifacts_dir)
+
+            with contextlib.suppress(Exception):
+                artifact_store.delete(path)
+
+        # Delete metadata
+        store.delete_artifact(artifact_id)
+
+        return {"status": "success", "artifact_id": artifact_id}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/stats")
-async def get_asset_stats(project: Optional[str] = None):
+async def get_asset_stats(project: str | None = None):
     """Get statistics about assets for the dashboard."""
     try:
         combined_assets = []
@@ -129,7 +254,7 @@ async def get_asset_stats(project: Optional[str] = None):
 
 
 @router.get("/search")
-async def search_assets(q: str, limit: int = 50, project: Optional[str] = None):
+async def search_assets(q: str, limit: int = 50, project: str | None = None):
     """Search assets by name or properties."""
     try:
         combined_assets = []
@@ -170,8 +295,8 @@ async def search_assets(q: str, limit: int = 50, project: Optional[str] = None):
 
 @router.get("/lineage")
 async def get_asset_lineage(
-    asset_id: Optional[str] = None,
-    project: Optional[str] = None,
+    asset_id: str | None = None,
+    project: str | None = None,
     depth: int = 3,
 ):
     """

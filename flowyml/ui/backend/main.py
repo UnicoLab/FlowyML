@@ -23,6 +23,7 @@ from flowyml.ui.backend.routers import (
     plugins,
     metrics,
     client,
+    stats,
 )
 
 app = FastAPI(
@@ -75,85 +76,7 @@ app.include_router(execution.router, prefix="/api/execution", tags=["execution"]
 app.include_router(metrics.router, prefix="/api/metrics", tags=["metrics"])
 app.include_router(plugins.router, prefix="/api", tags=["plugins"])
 app.include_router(client.router, prefix="/api/client", tags=["client"])
-
-
-# Stats endpoint for dashboard
-@app.get("/api/stats")
-async def get_stats(project: str = None):
-    """Get overall statistics for the dashboard, optionally filtered by project."""
-    try:
-        from flowyml.storage.metadata import SQLiteMetadataStore
-
-        store = SQLiteMetadataStore()
-
-        # Get base stats
-        stats = store.get_statistics()
-
-        # Get run status counts (not in get_statistics yet)
-        # We can add this to get_statistics later, but for now let's query efficiently
-        import sqlite3
-
-        conn = sqlite3.connect(store.db_path)
-        cursor = conn.cursor()
-
-        if project:
-            cursor.execute(
-                "SELECT COUNT(*) FROM runs WHERE project = ? AND status = 'completed'",
-                [project],
-            )
-            completed_runs = cursor.fetchone()[0]
-
-            cursor.execute(
-                "SELECT COUNT(*) FROM runs WHERE project = ? AND status = 'failed'",
-                [project],
-            )
-            failed_runs = cursor.fetchone()[0]
-
-            cursor.execute(
-                "SELECT AVG(duration) FROM runs WHERE project = ? AND duration IS NOT NULL",
-                [project],
-            )
-            avg_duration = cursor.fetchone()[0] or 0
-
-            cursor.execute(
-                "SELECT COUNT(*) FROM runs WHERE project = ?",
-                [project],
-            )
-            total_runs = cursor.fetchone()[0]
-        else:
-            cursor.execute("SELECT COUNT(*) FROM runs WHERE status = 'completed'")
-            completed_runs = cursor.fetchone()[0]
-
-            cursor.execute("SELECT COUNT(*) FROM runs WHERE status = 'failed'")
-            failed_runs = cursor.fetchone()[0]
-
-            cursor.execute("SELECT AVG(duration) FROM runs WHERE duration IS NOT NULL")
-            avg_duration = cursor.fetchone()[0] or 0
-
-            cursor.execute("SELECT COUNT(*) FROM runs")
-            total_runs = cursor.fetchone()[0]
-
-        conn.close()
-
-        return {
-            "runs": total_runs if project else stats.get("total_runs", 0),
-            "completed_runs": completed_runs,
-            "failed_runs": failed_runs,
-            "pipelines": stats.get("total_pipelines", 0),  # TODO: filter by project
-            "artifacts": stats.get("total_artifacts", 0),  # TODO: filter by project
-            "avg_duration": avg_duration,
-        }
-    except Exception as e:
-        # Return default stats if there's an error
-        return {
-            "runs": 0,
-            "completed_runs": 0,
-            "failed_runs": 0,
-            "pipelines": 0,
-            "artifacts": 0,
-            "avg_duration": 0,
-            "error": str(e),
-        }
+app.include_router(stats.router, prefix="/api/stats", tags=["stats"])
 
 
 # Static file serving for frontend

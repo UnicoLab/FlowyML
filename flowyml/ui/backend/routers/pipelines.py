@@ -1,21 +1,14 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from flowyml.storage.metadata import SQLiteMetadataStore
+from flowyml.ui.backend.dependencies import get_store
 from flowyml.core.project import ProjectManager
-from flowyml.utils.config import get_config
-from typing import Optional
 
 router = APIRouter()
 
 
-def get_store():
-    get_config()
-    return SQLiteMetadataStore()
-
-
 def _iter_metadata_stores():
     """Yield tuples of (project_name, store) including global and project stores."""
-    stores = [(None, SQLiteMetadataStore())]
+    stores = [(None, get_store())]
     try:
         manager = ProjectManager()
         for project_meta in manager.list_projects():
@@ -31,7 +24,7 @@ def _iter_metadata_stores():
 
 
 @router.get("/")
-async def list_pipelines(project: Optional[str] = None, limit: int = 100):
+async def list_pipelines(project: str | None = None, limit: int = 100):
     """List all unique pipelines with details, optionally filtered by project."""
     try:
         pipeline_map = {}  # pipeline_name -> data
@@ -162,5 +155,21 @@ async def update_pipeline_project(pipeline_name: str, update: ProjectUpdate):
         # But since our "pipeline" concept is derived from runs, we update runs
         store.update_pipeline_project(pipeline_name, update.project_name)
         return {"status": "success", "project": update.project_name}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class PipelineDefinitionCreate(BaseModel):
+    pipeline_name: str
+    definition: dict
+
+
+@router.post("/")
+async def save_pipeline_definition(data: PipelineDefinitionCreate):
+    """Save a pipeline definition."""
+    try:
+        store = get_store()
+        store.save_pipeline_definition(data.pipeline_name, data.definition)
+        return {"status": "success", "pipeline_name": data.pipeline_name}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

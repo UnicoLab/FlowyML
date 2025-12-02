@@ -1,6 +1,6 @@
 """Observability hooks for monitoring and metrics collection."""
 
-from typing import Protocol, Any, Optional, TYPE_CHECKING
+from typing import Protocol, Any, TYPE_CHECKING
 from datetime import datetime
 from dataclasses import dataclass, field
 
@@ -31,8 +31,8 @@ class PipelineMetricEvent(MetricEvent):
 
     pipeline_name: str = ""
     run_id: str = ""
-    duration_seconds: Optional[float] = None
-    success: Optional[bool] = None
+    duration_seconds: float | None = None
+    success: bool | None = None
 
     def to_dict(self) -> dict[str, Any]:
         base = super().to_dict()
@@ -54,8 +54,8 @@ class StepMetricEvent(MetricEvent):
     step_name: str = ""
     pipeline_name: str = ""
     run_id: str = ""
-    duration_seconds: Optional[float] = None
-    success: Optional[bool] = None
+    duration_seconds: float | None = None
+    success: bool | None = None
     cached: bool = False
 
     def to_dict(self) -> dict[str, Any]:
@@ -196,7 +196,7 @@ class PrometheusMetricsCollector:
 
 
 # Global metrics collector
-_metrics_collector: Optional[MetricsCollector] = None
+_metrics_collector: MetricsCollector | None = None
 
 
 def set_metrics_collector(collector: MetricsCollector) -> None:
@@ -205,6 +205,6 @@ def set_metrics_collector(collector: MetricsCollector) -> None:
     _metrics_collector = collector
 
 
-def get_metrics_collector() -> Optional[MetricsCollector]:
+def get_metrics_collector() -> MetricsCollector | None:
     """Get global metrics collector."""
     return _metrics_collector

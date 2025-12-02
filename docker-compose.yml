@@ -1,26 +1,83 @@
 version: '3.8'
 
 services:
+  # PostgreSQL Database (Production-ready default)
+  postgres:
+    image: postgres:15-alpine
+    container_name: flowyml-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-flowyml}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-flowyml_secure_password}
+      POSTGRES_DB: ${POSTGRES_DB:-flowyml}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U flowyml" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # FlowyML Backend API
   backend:
     build:
       context: .
-      dockerfile: flowyml/ui/backend/Dockerfile
+      dockerfile: Dockerfile
+    container_name: flowyml-backend
     ports:
-      - "8000:8000"
-    volumes:
-      - ./.flowyml:/root/.flowyml
+      - "8080:8080"
     environment:
-      - flowyml_HOME=/root/.flowyml
-      - flowyml_UI_HOST=0.0.0.0
-      - flowyml_UI_PORT=8000
-    restart: unless-stopped
+      # Database Configuration (PostgreSQL by default)
+      FLOWYML_DATABASE_URL: ${FLOWYML_DATABASE_URL:-postgresql://flowyml:flowyml_secure_password@postgres:5432/flowyml}
 
+      # Storage Configuration
+      FLOWYML_METADATA_DB: ${FLOWYML_METADATA_DB:-/app/data/metadata.db}
+      FLOWYML_ARTIFACTS_DIR: ${FLOWYML_ARTIFACTS_DIR:-/app/artifacts}
+
+      # Remote Server URLs (for client configuration)
+      FLOWYML_REMOTE_SERVER_URL: ${FLOWYML_REMOTE_SERVER_URL:-http://localhost:8080}
+      FLOWYML_REMOTE_UI_URL: ${FLOWYML_REMOTE_UI_URL:-http://localhost:80}
+
+      # Authentication
+      FLOWYML_AUTH_SECRET: ${FLOWYML_AUTH_SECRET:-change-this-secret-in-production}
+      FLOWYML_API_TOKEN: ${FLOWYML_API_TOKEN:-}
+
+      # Environment
+      FLOWYML_ENV: ${FLOWYML_ENV:-production}
+    volumes:
+      - metadata:/app/data
+      - artifacts:/app/artifacts
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # FlowyML Frontend UI
   frontend:
     build:
       context: flowyml/ui/frontend
       dockerfile: Dockerfile
+    container_name: flowyml-frontend
     ports:
-      - "8080:80"
+      - "80:80"
+    environment:
+      VITE_API_URL: ${FLOWYML_REMOTE_SERVER_URL:-http://localhost:8080}
     depends_on:
       - backend
     restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  metadata:
+    driver: local
+  artifacts:
+    driver: local

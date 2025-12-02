@@ -214,6 +214,27 @@ def get_active_stack() -> Stack | None:
     Returns:
         Active stack or None
     """
+    # Check for remote execution mode in global config
+    from flowyml.utils.config import get_config
+
+    config = get_config()
+
+    if config.execution_mode == "remote" and config.remote_server_url:
+        # Dynamically create a remote logging stack
+        from flowyml.core.executor import LocalExecutor
+        from flowyml.storage.remote import RemoteMetadataStore, RemoteArtifactStore
+        from flowyml.stacks.base import Stack
+        import os
+
+        api_token = os.getenv("FLOWYML_API_TOKEN")
+
+        return Stack(
+            name="remote_logging",
+            executor=LocalExecutor(),
+            metadata_store=RemoteMetadataStore(api_url=config.remote_server_url, api_token=api_token),
+            artifact_store=RemoteArtifactStore(api_url=config.remote_server_url, api_token=api_token),
+        )
+
     return get_registry().get_active_stack()
 
 

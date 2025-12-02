@@ -1,7 +1,7 @@
 """Retry policies for orchestrators."""
 
 from dataclasses import dataclass
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 from flowyml.core.error_handling import RetryConfig, ExponentialBackoff, execute_with_retry
 
 if TYPE_CHECKING:
@@ -61,7 +61,7 @@ def with_retry(orchestrator_method):
             ...
     """
 
-    def wrapper(self, pipeline: "Pipeline", *args, retry_policy: Optional[OrchestratorRetryPolicy] = None, **kwargs):
+    def wrapper(self, pipeline: "Pipeline", *args, retry_policy: OrchestratorRetryPolicy | None = None, **kwargs):
         if retry_policy is None:
             # No retry policy, execute normally
             return orchestrator_method(self, pipeline, *args, **kwargs)

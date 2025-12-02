@@ -10,7 +10,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from flowyml.core.scheduler_config import SchedulerConfig
 
@@ -77,10 +77,10 @@ class ScheduleExecution:
 
     schedule_name: str
     started_at: datetime
-    completed_at: Optional[datetime] = None
+    completed_at: datetime | None = None
     success: bool = False
-    error: Optional[str] = None
-    duration_seconds: Optional[float] = None
+    error: str | None = None
+    duration_seconds: float | None = None
 
 
 class SchedulerMetrics:
@@ -121,7 +121,7 @@ class SchedulerMetrics:
 class SchedulerPersistence:
     """Persist schedules to SQLite database."""
 
-    def __init__(self, db_path: Optional[str] = None):
+    def __init__(self, db_path: str | None = None):
         self.db_path = db_path or str(Path.cwd() / ".flowyml_scheduler.db")
         self._init_db()
 
@@ -230,7 +230,7 @@ class SchedulerPersistence:
 class DistributedLock:
     """Distributed lock for coordinating multiple scheduler instances."""
 
-    def __init__(self, backend: str = "file", redis_url: Optional[str] = None):
+    def __init__(self, backend: str = "file", redis_url: str | None = None):
         self.backend = backend
         self.redis_url = redis_url
         self._redis = None
@@ -286,9 +286,9 @@ class PipelineScheduler:
 
     def __init__(
         self,
-        config: Optional[SchedulerConfig] = None,
-        on_success: Optional[Callable] = None,
-        on_failure: Optional[Callable] = None,
+        config: SchedulerConfig | None = None,
+        on_success: Callable | None = None,
+        on_failure: Callable | None = None,
     ):
         self.config = config or SchedulerConfig.from_env()
         self.schedules: dict[str, Schedule] = {}

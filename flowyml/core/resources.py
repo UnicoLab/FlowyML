@@ -5,7 +5,7 @@ including CPU, memory, GPU, storage, and node affinity requirements.
 """
 
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 import re
 
 
@@ -25,7 +25,7 @@ class GPUConfig:
 
     gpu_type: str
     count: int = 1
-    memory: Optional[str] = None
+    memory: str | None = None
 
     def __post_init__(self):
         """Validate GPU configuration."""
@@ -215,11 +215,11 @@ class ResourceRequirements:
         ... )
     """
 
-    cpu: Optional[str] = None
-    memory: Optional[str] = None
-    storage: Optional[str] = None
-    gpu: Optional[GPUConfig] = None
-    node_affinity: Optional[NodeAffinity] = None
+    cpu: str | None = None
+    memory: str | None = None
+    storage: str | None = None
+    gpu: GPUConfig | None = None
+    node_affinity: NodeAffinity | None = None
 
     def __post_init__(self):
         """Validate resource specifications."""
@@ -408,11 +408,11 @@ class ResourceRequirements:
 
 
 def resources(
-    cpu: Optional[str] = None,
-    memory: Optional[str] = None,
-    storage: Optional[str] = None,
-    gpu: Optional[GPUConfig] = None,
-    node_affinity: Optional[NodeAffinity] = None,
+    cpu: str | None = None,
+    memory: str | None = None,
+    storage: str | None = None,
+    gpu: GPUConfig | None = None,
+    node_affinity: NodeAffinity | None = None,
 ) -> ResourceRequirements:
     """Create a ResourceRequirements object with validation.
 

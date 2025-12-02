@@ -99,6 +99,27 @@ class MaterializerRegistry:
 
         return None
 
+    def get_materializer_by_type_name(self, type_name: str) -> BaseMaterializer | None:
+        """Get materializer by type name string.
+
+        Args:
+            type_name: Full type name (e.g. 'pandas.core.frame.DataFrame')
+
+        Returns:
+            Materializer instance or None
+        """
+        # Check if we have a direct mapping
+        if type_name in self._materializers:
+            return self._materializers[type_name]()
+
+        # Try to find by just class name if full path fails (less reliable but useful fallback)
+        simple_name = type_name.split(".")[-1]
+        for key, materializer_cls in self._materializers.items():
+            if key.split(".")[-1] == simple_name:
+                return materializer_cls()
+
+        return None
+
     def list_materializers(self) -> dict[str, type[BaseMaterializer]]:
         """List all registered materializers.
 
@@ -131,3 +152,15 @@ def get_materializer(obj: Any) -> BaseMaterializer | None:
         Materializer instance or None
     """
     return materializer_registry.get_materializer(obj)
+
+
+def get_materializer_by_type_name(type_name: str) -> BaseMaterializer | None:
+    """Get materializer by type name string from global registry.
+
+    Args:
+        type_name: Full type name (e.g. 'pandas.core.frame.DataFrame')
+
+    Returns:
+        Materializer instance or None
+    """
+    return materializer_registry.get_materializer_by_type_name(type_name)

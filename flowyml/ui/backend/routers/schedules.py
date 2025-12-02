@@ -71,16 +71,13 @@ async def create_schedule(schedule: ScheduleRequest):
         else:
             # Check if it's a historical pipeline (in metadata but not registry)
             # This means we can't run it because we don't have the code loaded
-            from flowyml.storage.metadata import SQLiteMetadataStore
+            from flowyml.ui.backend.dependencies import get_store
 
-            store = SQLiteMetadataStore()
+            store = get_store()
             pipelines = store.list_pipelines()
 
             if schedule.pipeline_name in pipelines:
                 # Try to load pipeline definition
-                from flowyml.storage.metadata import SQLiteMetadataStore
-
-                store = SQLiteMetadataStore()
                 pipeline_def = store.get_pipeline_definition(schedule.pipeline_name)
 
                 if pipeline_def:
@@ -188,7 +185,6 @@ async def get_schedule_history(schedule_name: str, limit: int = 50):
 async def list_registered_pipelines(project: str = None):
     """List all pipelines available for scheduling."""
     from flowyml.core.templates import list_templates
-    from flowyml.storage.metadata import SQLiteMetadataStore
 
     registered = pipeline_registry.list_pipelines()
     templates = list_templates()
@@ -196,22 +192,10 @@ async def list_registered_pipelines(project: str = None):
     # Also get pipelines from metadata store (historical runs)
     metadata_pipelines = []
     try:
-        store = SQLiteMetadataStore()
-        import sqlite3
+        from flowyml.ui.backend.dependencies import get_store
 
-        conn = sqlite3.connect(store.db_path)
-        cursor = conn.cursor()
-
-        if project:
-            cursor.execute(
-                "SELECT DISTINCT pipeline_name FROM runs WHERE project = ? ORDER BY pipeline_name",
-                (project,),
-            )
-        else:
-            cursor.execute("SELECT DISTINCT pipeline_name FROM runs ORDER BY pipeline_name")
-
-        metadata_pipelines = [row[0] for row in cursor.fetchall()]
-        conn.close()
+        store = get_store()
+        metadata_pipelines = store.list_pipelines(project=project)
     except Exception as e:
         print(f"Failed to fetch pipelines from metadata store: {e}")
 
