@@ -280,6 +280,52 @@ class HeartbeatRequest(BaseModel):
     status: str = "running"
 
 
+# In-memory storage for heartbeat timestamps
+# Format: {run_id: {step_name: last_heartbeat_timestamp}}
+_heartbeat_timestamps: dict[str, dict[str, float]] = {}
+_heartbeat_lock = __import__("threading").Lock()
+
+# Heartbeat interval in seconds (should match executor's interval)
+HEARTBEAT_INTERVAL = 5
+# Number of missed heartbeats before marking step as dead
+DEAD_THRESHOLD = 3
+
+
+def _record_heartbeat(run_id: str, step_name: str) -> None:
+    """Record heartbeat timestamp for a step."""
+    import time
+
+    with _heartbeat_lock:
+        if run_id not in _heartbeat_timestamps:
+            _heartbeat_timestamps[run_id] = {}
+        _heartbeat_timestamps[run_id][step_name] = time.time()
+
+
+def _get_dead_steps(run_id: str) -> list[str]:
+    """Get list of steps that have missed too many heartbeats."""
+    import time
+
+    dead_steps = []
+    timeout = HEARTBEAT_INTERVAL * DEAD_THRESHOLD
+
+    with _heartbeat_lock:
+        if run_id not in _heartbeat_timestamps:
+            return []
+
+        current_time = time.time()
+        for step_name, last_heartbeat in _heartbeat_timestamps[run_id].items():
+            if current_time - last_heartbeat > timeout:
+                dead_steps.append(step_name)
+
+    return dead_steps
+
+
+def _cleanup_heartbeats(run_id: str) -> None:
+    """Remove heartbeat tracking for a completed run."""
+    with _heartbeat_lock:
+        _heartbeat_timestamps.pop(run_id, None)
+
+
 @router.post("/{run_id}/steps/{step_name}/heartbeat")
 async def step_heartbeat(run_id: str, step_name: str, heartbeat: HeartbeatRequest):
     """Receive heartbeat from a running step.
@@ -289,19 +335,26 @@ async def step_heartbeat(run_id: str, step_name: str, heartbeat: HeartbeatReques
     """
     store = _find_store_for_run(run_id)
 
+    # Record heartbeat timestamp
+    _record_heartbeat(run_id, step_name)
+
     # Check if run is marked for stopping
     run = store.load_run(run_id)
     if not run:
         raise HTTPException(status_code=404, detail="Run not found")
-
-    # Update step status/heartbeat timestamp in store (if store supports it)
-    # For now, we just check the run status to see if we should stop
 
     run_status = run.get("status")
     if run_status in ["stopping", "stopped", "cancelled", "cancelling"]:
         return {"action": "stop"}
 
     return {"action": "continue"}
+
+
+@router.get("/{run_id}/dead-steps")
+async def get_dead_steps(run_id: str):
+    """Get list of steps that appear to be dead (missed heartbeats)."""
+    dead_steps = _get_dead_steps(run_id)
+    return {"dead_steps": dead_steps}
 
 
 @router.post("/{run_id}/stop")
@@ -347,6 +400,14 @@ async def post_step_logs(run_id: str, step_name: str, log_chunk: LogChunk):
             f.write(line)
 
     await anyio.to_thread.run_sync(write_log)
+
+    # Broadcast to WebSocket clients
+    try:
+        from flowyml.ui.backend.routers.websocket import manager
+
+        await manager.broadcast_log(run_id, step_name, log_chunk.content)
+    except Exception:
+        pass  # Ignore WebSocket broadcast failures
 
     return {"status": "success"}
 

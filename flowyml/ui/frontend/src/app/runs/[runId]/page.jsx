@@ -796,21 +796,40 @@ function SimpleProjectSelector({ runId, currentProject }) {
 function LogsViewer({ runId, stepName, isRunning }) {
     const [logs, setLogs] = useState('');
     const [loading, setLoading] = useState(true);
-    const [offset, setOffset] = useState(0);
+    const [useWebSocket, setUseWebSocket] = useState(true);
+    const wsRef = React.useRef(null);
+    const logsEndRef = React.useRef(null);
 
+    // Auto-scroll to bottom when new logs arrive
+    useEffect(() => {
+        if (logsEndRef.current) {
+            logsEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [logs]);
+
+    // Reset logs when step changes
+    useEffect(() => {
+        setLogs('');
+        setLoading(true);
+
+        // Close existing WebSocket
+        if (wsRef.current) {
+            wsRef.current.close();
+            wsRef.current = null;
+        }
+    }, [stepName]);
+
+    // Fetch initial logs and set up WebSocket
     useEffect(() => {
         let isMounted = true;
 
-        const fetchLogs = async () => {
+        // Fetch initial logs
+        const fetchInitialLogs = async () => {
             try {
-                const res = await fetchApi(`/api/runs/${runId}/steps/${stepName}/logs?offset=${offset}`);
+                const res = await fetchApi(`/api/runs/${runId}/steps/${stepName}/logs`);
                 const data = await res.json();
-
                 if (isMounted && data.logs) {
-                    setLogs(prev => prev + data.logs);
-                    if (data.offset > offset) {
-                        setOffset(data.offset);
-                    }
+                    setLogs(data.logs);
                 }
             } catch (error) {
                 console.error('Failed to fetch logs:', error);
@@ -819,26 +838,76 @@ function LogsViewer({ runId, stepName, isRunning }) {
             }
         };
 
-        fetchLogs();
+        fetchInitialLogs();
 
-        // Poll for new logs if run is still running
+        // Set up WebSocket for live updates if running
+        if (isRunning && useWebSocket) {
+            try {
+                const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const wsUrl = `${wsProtocol}//${window.location.host}/ws/runs/${runId}/steps/${stepName}/logs`;
+                const ws = new WebSocket(wsUrl);
+
+                ws.onopen = () => {
+                    console.log('WebSocket connected for logs');
+                };
+
+                ws.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        if (data.type === 'log' && isMounted) {
+                            setLogs(prev => prev + data.content + '\n');
+                        }
+                    } catch (e) {
+                        // Plain text message
+                        if (isMounted && event.data !== 'pong') {
+                            setLogs(prev => prev + event.data + '\n');
+                        }
+                    }
+                };
+
+                ws.onerror = () => {
+                    console.log('WebSocket error, falling back to polling');
+                    setUseWebSocket(false);
+                };
+
+                ws.onclose = () => {
+                    console.log('WebSocket closed');
+                };
+
+                wsRef.current = ws;
+            } catch (error) {
+                console.error('Failed to create WebSocket:', error);
+                setUseWebSocket(false);
+            }
+        }
+
+        // Fallback to polling if WebSocket not available
         let interval;
-        if (isRunning) {
-            interval = setInterval(fetchLogs, 2000);
+        if (isRunning && !useWebSocket) {
+            let currentOffset = 0;
+            interval = setInterval(async () => {
+                try {
+                    const res = await fetchApi(`/api/runs/${runId}/steps/${stepName}/logs?offset=${currentOffset}`);
+                    const data = await res.json();
+                    if (isMounted && data.logs) {
+                        setLogs(prev => prev + data.logs);
+                        currentOffset = data.offset;
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch logs:', error);
+                }
+            }, 2000);
         }
 
         return () => {
             isMounted = false;
+            if (wsRef.current) {
+                wsRef.current.close();
+                wsRef.current = null;
+            }
             if (interval) clearInterval(interval);
         };
-    }, [runId, stepName, isRunning, offset]);
-
-    // Reset logs when step changes
-    useEffect(() => {
-        setLogs('');
-        setOffset(0);
-        setLoading(true);
-    }, [stepName]);
+    }, [runId, stepName, isRunning, useWebSocket]);
 
     if (loading && !logs) {
         return (
@@ -849,15 +918,19 @@ function LogsViewer({ runId, stepName, isRunning }) {
     }
 
     return (
-        <div className="bg-slate-900 rounded-lg p-4 font-mono text-sm overflow-x-auto">
+        <div className="bg-slate-900 rounded-lg p-4 font-mono text-sm overflow-x-auto max-h-96 overflow-y-auto">
             {logs ? (
-                <pre className="text-green-400 whitespace-pre-wrap break-words">{logs}</pre>
+                <>
+                    <pre className="text-green-400 whitespace-pre-wrap break-words">{logs}</pre>
+                    <div ref={logsEndRef} />
+                </>
             ) : (
                 <div className="text-slate-500 italic">No logs available for this step.</div>
             )}
             {isRunning && (
                 <div className="mt-2 text-amber-500 flex items-center gap-2 animate-pulse">
-                    <Activity size={14} /> Streaming logs...
+                    <Activity size={14} />
+                    {useWebSocket ? 'Live streaming...' : 'Polling for logs...'}
                 </div>
             )}
         </div>

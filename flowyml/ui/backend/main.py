@@ -24,6 +24,7 @@ from flowyml.ui.backend.routers import (
     metrics,
     client,
     stats,
+    websocket,
 )
 
 app = FastAPI(
@@ -77,6 +78,7 @@ app.include_router(metrics.router, prefix="/api/metrics", tags=["metrics"])
 app.include_router(plugins.router, prefix="/api", tags=["plugins"])
 app.include_router(client.router, prefix="/api/client", tags=["client"])
 app.include_router(stats.router, prefix="/api/stats", tags=["stats"])
+app.include_router(websocket.router, tags=["websocket"])
 
 
 # Static file serving for frontend
