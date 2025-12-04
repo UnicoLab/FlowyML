@@ -22,6 +22,28 @@ export function RunDetails() {
     const [selectedArtifact, setSelectedArtifact] = useState(null);
     const [cloudStatus, setCloudStatus] = useState(null);
     const [isPolling, setIsPolling] = useState(false);
+    const [stopping, setStopping] = useState(false);
+    const [stepLogs, setStepLogs] = useState({});
+
+    const handleStopRun = async () => {
+        if (!confirm('Are you sure you want to stop this run?')) return;
+
+        setStopping(true);
+        try {
+            await fetchApi(`/api/runs/${runId}/stop`, {
+                method: 'POST'
+            });
+            // Refresh run data
+            const res = await fetchApi(`/api/runs/${runId}`);
+            const data = await res.json();
+            setRun(data);
+        } catch (error) {
+            console.error('Failed to stop run:', error);
+            alert('Failed to stop run');
+        } finally {
+            setStopping(false);
+        }
+    };
 
     // Fetch cloud status for remote runs
     useEffect(() => {
@@ -154,6 +176,17 @@ export function RunDetails() {
                         </Badge>
                     </div>
                     <span className="text-xs text-slate-400 font-mono">ID: {run.run_id}</span>
+                    {run.status === 'running' && (
+                        <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={handleStopRun}
+                            disabled={stopping}
+                            className="mt-2"
+                        >
+                            {stopping ? 'Stopping...' : 'Stop Run'}
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -239,6 +272,9 @@ export function RunDetails() {
                                 <TabButton active={activeTab === 'artifacts'} onClick={() => setActiveTab('artifacts')}>
                                     <Package size={16} /> Artifacts
                                 </TabButton>
+                                <TabButton active={activeTab === 'logs'} onClick={() => setActiveTab('logs')}>
+                                    <Terminal size={16} /> Logs
+                                </TabButton>
                             </div>
 
                             {/* Tab Content */}
@@ -253,6 +289,13 @@ export function RunDetails() {
                                     <ArtifactsTab
                                         artifacts={selectedStepArtifacts}
                                         onArtifactClick={setSelectedArtifact}
+                                    />
+                                )}
+                                {activeTab === 'logs' && (
+                                    <LogsViewer
+                                        runId={runId}
+                                        stepName={selectedStep}
+                                        isRunning={run.status === 'running'}
                                     />
                                 )}
                             </div>
@@ -745,6 +788,77 @@ function SimpleProjectSelector({ runId, currentProject }) {
                         </div>
                     </div>
                 </>
+            )}
+        </div>
+    );
+}
+
+function LogsViewer({ runId, stepName, isRunning }) {
+    const [logs, setLogs] = useState('');
+    const [loading, setLoading] = useState(true);
+    const [offset, setOffset] = useState(0);
+
+    useEffect(() => {
+        let isMounted = true;
+
+        const fetchLogs = async () => {
+            try {
+                const res = await fetchApi(`/api/runs/${runId}/steps/${stepName}/logs?offset=${offset}`);
+                const data = await res.json();
+
+                if (isMounted && data.logs) {
+                    setLogs(prev => prev + data.logs);
+                    if (data.offset > offset) {
+                        setOffset(data.offset);
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to fetch logs:', error);
+            } finally {
+                if (isMounted) setLoading(false);
+            }
+        };
+
+        fetchLogs();
+
+        // Poll for new logs if run is still running
+        let interval;
+        if (isRunning) {
+            interval = setInterval(fetchLogs, 2000);
+        }
+
+        return () => {
+            isMounted = false;
+            if (interval) clearInterval(interval);
+        };
+    }, [runId, stepName, isRunning, offset]);
+
+    // Reset logs when step changes
+    useEffect(() => {
+        setLogs('');
+        setOffset(0);
+        setLoading(true);
+    }, [stepName]);
+
+    if (loading && !logs) {
+        return (
+            <div className="flex items-center justify-center h-40">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="bg-slate-900 rounded-lg p-4 font-mono text-sm overflow-x-auto">
+            {logs ? (
+                <pre className="text-green-400 whitespace-pre-wrap break-words">{logs}</pre>
+            ) : (
+                <div className="text-slate-500 italic">No logs available for this step.</div>
+            )}
+            {isRunning && (
+                <div className="mt-2 text-amber-500 flex items-center gap-2 animate-pulse">
+                    <Activity size={14} /> Streaming logs...
+                </div>
             )}
         </div>
     );

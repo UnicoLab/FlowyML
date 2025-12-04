@@ -25,6 +25,7 @@ class ExecutionStatus(str, Enum):
     # Intermediate states
     STOPPING = "stopping"
     CANCELLING = "cancelling"
+    DEAD = "dead"
 
     @property
     def is_finished(self) -> bool:

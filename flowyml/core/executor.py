@@ -7,6 +7,133 @@ from typing import Any
 from dataclasses import dataclass
 from datetime import datetime
 
+import threading
+import ctypes
+import requests
+import os
+import inspect
+
+
+class StopExecutionError(Exception):
+    """Exception raised when execution is stopped externally."""
+
+    pass
+
+
+# Alias for backwards compatibility
+StopExecution = StopExecutionError
+
+
+def _async_raise(tid, exctype):
+    """Raises an exception in the threads with id tid"""
+    if not inspect.isclass(exctype):
+        raise TypeError("Only types can be raised (not instances)")
+    res = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid), ctypes.py_object(exctype))
+    if res == 0:
+        raise ValueError("invalid thread id")
+    if res != 1:
+        # """if it returns a number greater than one, you're in trouble,
+        # and you should call it again with exc=NULL to revert the effect"""
+        ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid), None)
+        raise SystemError("PyThreadState_SetAsyncExc failed")
+
+
+class LogCapture:
+    """Context manager to capture stdout/stderr for streaming to the server."""
+
+    def __init__(self):
+        self._buffer = []
+        self._lock = threading.Lock()
+
+    def write(self, text):
+        if text.strip():
+            with self._lock:
+                self._buffer.append(text)
+
+    def flush(self):
+        pass
+
+    def get_and_clear(self) -> list[str]:
+        with self._lock:
+            lines = self._buffer[:]
+            self._buffer.clear()
+            return lines
+
+
+class MonitorThread(threading.Thread):
+    """Background thread that sends heartbeats and flushes logs to the server."""
+
+    def __init__(
+        self,
+        run_id: str,
+        step_name: str,
+        target_tid: int,
+        log_capture: LogCapture | None = None,
+        interval: int = 5,
+    ):
+        super().__init__()
+        self.run_id = run_id
+        self.step_name = step_name
+        self.target_tid = target_tid
+        self.log_capture = log_capture
+        self.interval = interval
+        self._stop_event = threading.Event()
+        self.api_url = os.getenv("FLOWYML_SERVER_URL", "http://localhost:8000")
+
+    def stop(self):
+        self._stop_event.set()
+
+    def _flush_logs(self):
+        """Send captured logs to the server."""
+        if not self.log_capture:
+            return
+
+        lines = self.log_capture.get_and_clear()
+        if not lines:
+            return
+
+        content = "".join(lines)
+        with contextlib.suppress(Exception):
+            requests.post(
+                f"{self.api_url}/api/runs/{self.run_id}/steps/{self.step_name}/logs",
+                json={
+                    "content": content,
+                    "level": "INFO",
+                    "timestamp": datetime.now().isoformat(),
+                },
+                timeout=2,
+            )
+
+    def run(self):
+        while not self._stop_event.is_set():
+            try:
+                # Send heartbeat
+                response = requests.post(
+                    f"{self.api_url}/api/runs/{self.run_id}/steps/{self.step_name}/heartbeat",
+                    json={"step_name": self.step_name, "status": "running"},
+                    timeout=2,
+                )
+                if response.status_code == 200:
+                    data = response.json()
+                    if data.get("action") == "stop":
+                        print(f"Received stop signal for step {self.step_name}")
+                        _async_raise(self.target_tid, StopExecution)
+                        break
+            except Exception:
+                pass  # Ignore heartbeat failures
+
+            # Flush logs
+            self._flush_logs()
+
+            self._stop_event.wait(self.interval)
+
+        # Final log flush
+        self._flush_logs()
+
+
+# Keep HeartbeatThread as an alias for backwards compatibility
+HeartbeatThread = MonitorThread
+
 
 @dataclass
 class ExecutionResult:
@@ -103,8 +230,6 @@ class LocalExecutor(Executor):
                 # or just pass what we can.
                 # A simple approach: pass nothing if it takes no args, or kwargs if it does.
                 # But inspect is safer.
-                import inspect
-
                 sig = inspect.signature(step.condition)
                 kwargs = {**inputs, **context_params}
 
@@ -157,7 +282,54 @@ class LocalExecutor(Executor):
                 kwargs = {**inputs, **context_params}
 
                 # Execute step
-                result = step.func(**kwargs)
+                monitor_thread = None
+                log_capture = None
+                original_stdout = None
+                original_stderr = None
+                try:
+                    # Start monitoring thread with log capture if run_id is present
+                    if run_id:
+                        import sys
+
+                        log_capture = LogCapture()
+                        original_stdout = sys.stdout
+                        original_stderr = sys.stderr
+                        sys.stdout = log_capture
+                        sys.stderr = log_capture
+
+                        monitor_thread = MonitorThread(
+                            run_id=run_id,
+                            step_name=step.name,
+                            target_tid=threading.get_ident(),
+                            log_capture=log_capture,
+                        )
+                        monitor_thread.start()
+
+                    result = step.func(**kwargs)
+                except StopExecution:
+                    duration = time.time() - start_time
+                    return ExecutionResult(
+                        step_name=step.name,
+                        success=False,
+                        error="Execution stopped by user",
+                        duration_seconds=duration,
+                        retries=retries,
+                    )
+                finally:
+                    # Restore stdout/stderr
+                    if original_stdout:
+                        import sys
+
+                        sys.stdout = original_stdout
+                    if original_stderr:
+                        import sys
+
+                        sys.stderr = original_stderr
+
+                    # Stop monitor thread
+                    if monitor_thread:
+                        monitor_thread.stop()
+                        monitor_thread.join()
 
                 # Materialize output if artifact store is available
                 artifact_uri = None

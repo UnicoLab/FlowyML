@@ -273,3 +273,135 @@ async def get_cloud_status(run_id: str):
         "cloud_status": cloud_status,
         "cloud_error": cloud_error,
     }
+
+
+class HeartbeatRequest(BaseModel):
+    step_name: str
+    status: str = "running"
+
+
+@router.post("/{run_id}/steps/{step_name}/heartbeat")
+async def step_heartbeat(run_id: str, step_name: str, heartbeat: HeartbeatRequest):
+    """Receive heartbeat from a running step.
+
+    Returns:
+        dict: Instructions for the step (e.g., {"action": "continue"} or {"action": "stop"})
+    """
+    store = _find_store_for_run(run_id)
+
+    # Check if run is marked for stopping
+    run = store.load_run(run_id)
+    if not run:
+        raise HTTPException(status_code=404, detail="Run not found")
+
+    # Update step status/heartbeat timestamp in store (if store supports it)
+    # For now, we just check the run status to see if we should stop
+
+    run_status = run.get("status")
+    if run_status in ["stopping", "stopped", "cancelled", "cancelling"]:
+        return {"action": "stop"}
+
+    return {"action": "continue"}
+
+
+@router.post("/{run_id}/stop")
+async def stop_run(run_id: str):
+    """Signal a run to stop."""
+    store = _find_store_for_run(run_id)
+
+    try:
+        # Update run status to STOPPING
+        # This will be picked up by the next heartbeat
+        store.update_run_status(run_id, "stopping")
+        return {"status": "success", "message": "Stop signal sent"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class LogChunk(BaseModel):
+    content: str
+    level: str = "INFO"
+    timestamp: str | None = None
+
+
+@router.post("/{run_id}/steps/{step_name}/logs")
+async def post_step_logs(run_id: str, step_name: str, log_chunk: LogChunk):
+    """Receive log chunk from a running step."""
+    import anyio
+
+    from flowyml.utils.config import get_config
+
+    # Store logs in the runs directory
+    runs_dir = get_config().runs_dir
+    log_dir = runs_dir / run_id / "logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+
+    log_file = log_dir / f"{step_name}.log"
+
+    # Append log content
+    timestamp = log_chunk.timestamp or ""
+    line = f"[{timestamp}] [{log_chunk.level}] {log_chunk.content}\n"
+
+    def write_log():
+        with open(log_file, "a") as f:
+            f.write(line)
+
+    await anyio.to_thread.run_sync(write_log)
+
+    return {"status": "success"}
+
+
+@router.get("/{run_id}/steps/{step_name}/logs")
+async def get_step_logs(run_id: str, step_name: str, offset: int = 0):
+    """Get logs for a specific step."""
+    import anyio
+
+    from flowyml.utils.config import get_config
+
+    runs_dir = get_config().runs_dir
+    log_file = runs_dir / run_id / "logs" / f"{step_name}.log"
+
+    if not log_file.exists():
+        return {"logs": "", "offset": 0, "has_more": False}
+
+    def read_log():
+        with open(log_file) as f:
+            return f.read()
+
+    content = await anyio.to_thread.run_sync(read_log)
+
+    # Return content from offset
+    if offset > 0 and offset < len(content):
+        content = content[offset:]
+
+    return {
+        "logs": content,
+        "offset": offset + len(content),
+        "has_more": False,  # For now, always return all available
+    }
+
+
+@router.get("/{run_id}/logs")
+async def get_run_logs(run_id: str):
+    """Get all logs for a run."""
+    import anyio
+
+    from flowyml.utils.config import get_config
+
+    runs_dir = get_config().runs_dir
+    log_dir = runs_dir / run_id / "logs"
+
+    if not log_dir.exists():
+        return {"logs": {}}
+
+    def read_all_logs():
+        logs = {}
+        for log_file in log_dir.glob("*.log"):
+            step_name = log_file.stem
+            with open(log_file) as f:
+                logs[step_name] = f.read()
+        return logs
+
+    logs = await anyio.to_thread.run_sync(read_all_logs)
+
+    return {"logs": logs}
