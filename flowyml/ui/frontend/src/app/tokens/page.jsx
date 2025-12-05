@@ -42,6 +42,7 @@ export function TokenManagement() {
                 return;
             }
             const data = await res.json();
+            console.log("Tokens fetched:", data);
             setTokens(data.tokens || []);
         } catch (err) {
             console.error('Failed to fetch tokens:', err);
@@ -127,7 +128,7 @@ export function TokenManagement() {
             )}
 
             {/* Tokens List */}
-            {tokens.length > 0 && (
+            {Array.isArray(tokens) && tokens.length > 0 && (
                 <Card>
                     <CardHeader>
                         <div className="flex items-center justify-between">
@@ -210,7 +211,7 @@ function TokenItem({ token, onRevoke }) {
     const handleRevoke = async () => {
         try {
             // This would need to be implemented in the backend
-            await fetch(`/ api / execution / tokens / ${token.name} `, {
+            await fetchApi(`/api/execution/tokens/${token.name}`, {
                 method: 'DELETE'
             });
             onRevoke();
@@ -232,7 +233,7 @@ function TokenItem({ token, onRevoke }) {
                         )}
                     </div>
                     <div className="flex flex-wrap gap-2 mb-3">
-                        {token.permissions?.length ? (
+                        {Array.isArray(token.permissions) && token.permissions.length > 0 ? (
                             token.permissions.map(perm => (
                                 <PermissionChip key={perm} perm={perm} />
                             ))
@@ -347,9 +348,10 @@ function CreateTokenModal({ onClose, onCreate }) {
         try {
             const res = await fetchApi('/api/projects/');
             const data = await res.json();
-            setProjects(data || []);
+            setProjects(data.projects || []);
         } catch (err) {
             console.error('Failed to fetch projects:', err);
+            setProjects([]);
         } finally {
             setLoadingProjects(false);
         }
@@ -364,7 +366,7 @@ function CreateTokenModal({ onClose, onCreate }) {
         setLoading(true);
         setError(null);
         try {
-            const res = await fetch('/api/execution/tokens', {
+            const res = await fetchApi('/api/execution/tokens', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -448,7 +450,7 @@ function CreateTokenModal({ onClose, onCreate }) {
                                 className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
                             >
                                 <option value="">All Projects</option>
-                                {projects.map(proj => (
+                                {Array.isArray(projects) && projects.map(proj => (
                                     <option key={proj.name} value={proj.name}>
                                         {proj.name}
                                     </option>

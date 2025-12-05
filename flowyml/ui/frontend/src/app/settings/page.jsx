@@ -146,7 +146,7 @@ export function Settings() {
                         </Button>
                     </Card>
                 ) : (
-                    tokens.map((token) => (
+                    Array.isArray(tokens) && tokens.map((token) => (
                         <Card key={token.id} className="hover:shadow-lg transition-all duration-200">
                             <div className="flex items-center justify-between gap-4">
                                 <div className="flex-1 min-w-0">

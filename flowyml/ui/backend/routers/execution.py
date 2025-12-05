@@ -97,10 +97,10 @@ async def execute_pipeline(
         run_kwargs = request.parameters.copy()
 
         if request.retry_count > 0:
-            from flowyml.core.retry import OrchestratorRetryPolicy
+            from flowyml.core.retry_policy import OrchestratorRetryPolicy
 
             run_kwargs["retry_policy"] = OrchestratorRetryPolicy(
-                max_retries=min(request.retry_count, 5),  # Cap at 5
+                max_attempts=min(request.retry_count, 5),  # Cap at 5
             )
 
         result = pipeline.run(**run_kwargs)

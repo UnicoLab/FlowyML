@@ -146,6 +146,17 @@ async def get_run(run_id: str):
     run, _ = _find_run(run_id)
     if not run:
         raise HTTPException(status_code=404, detail="Run not found")
+
+    # Mark dead steps
+    dead_steps = _get_dead_steps(run_id)
+    if dead_steps and "steps" in run:
+        for step_name in dead_steps:
+            if step_name in run["steps"]:
+                # Only mark as dead if it was running
+                if run["steps"][step_name].get("status") == "running":
+                    run["steps"][step_name]["status"] = "dead"
+                    run["steps"][step_name]["success"] = False
+
     return run
 
 
