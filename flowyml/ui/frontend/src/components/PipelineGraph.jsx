@@ -170,7 +170,7 @@ export function PipelineGraph({ dag, steps, selectedStep, onStepSelect, onArtifa
     }), []);
 
     return (
-        <div className="w-full h-full bg-slate-50/50 rounded-xl border border-slate-200 overflow-hidden">
+        <div className="w-full h-full bg-slate-50/50 dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
             <ReactFlow
                 nodes={nodes}
                 edges={edges}
@@ -201,35 +201,35 @@ function CustomStepNode({ data }) {
     const statusConfig = {
         success: {
             icon: <CheckCircle size={18} />,
-            color: 'text-emerald-600',
-            bg: 'bg-white',
-            border: 'border-emerald-500',
-            ring: 'ring-emerald-200',
-            shadow: 'shadow-emerald-100'
+            color: 'text-emerald-600 dark:text-emerald-400',
+            bg: 'bg-white dark:bg-slate-800',
+            border: 'border-emerald-500 dark:border-emerald-500',
+            ring: 'ring-emerald-200 dark:ring-emerald-900',
+            shadow: 'shadow-emerald-100 dark:shadow-none'
         },
         failed: {
             icon: <XCircle size={18} />,
-            color: 'text-rose-600',
-            bg: 'bg-white',
-            border: 'border-rose-500',
-            ring: 'ring-rose-200',
-            shadow: 'shadow-rose-100'
+            color: 'text-rose-600 dark:text-rose-400',
+            bg: 'bg-white dark:bg-slate-800',
+            border: 'border-rose-500 dark:border-rose-500',
+            ring: 'ring-rose-200 dark:ring-rose-900',
+            shadow: 'shadow-rose-100 dark:shadow-none'
         },
         running: {
             icon: <Loader size={18} className="animate-spin" />,
-            color: 'text-amber-600',
-            bg: 'bg-white',
-            border: 'border-amber-500',
-            ring: 'ring-amber-200',
-            shadow: 'shadow-amber-100'
+            color: 'text-amber-600 dark:text-amber-400',
+            bg: 'bg-white dark:bg-slate-800',
+            border: 'border-amber-500 dark:border-amber-500',
+            ring: 'ring-amber-200 dark:ring-amber-900',
+            shadow: 'shadow-amber-100 dark:shadow-none'
         },
         pending: {
             icon: <Clock size={18} />,
-            color: 'text-slate-400',
-            bg: 'bg-slate-50',
-            border: 'border-slate-300',
-            ring: 'ring-slate-200',
-            shadow: 'shadow-slate-100'
+            color: 'text-slate-400 dark:text-slate-500',
+            bg: 'bg-slate-50 dark:bg-slate-800/50',
+            border: 'border-slate-300 dark:border-slate-700',
+            ring: 'ring-slate-200 dark:ring-slate-800',
+            shadow: 'shadow-slate-100 dark:shadow-none'
         }
     };
 

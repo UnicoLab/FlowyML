@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArtifactViewer } from '../../../components/ArtifactViewer';
 import { PipelineGraph } from '../../../components/PipelineGraph';
+import { ProjectSelector } from '../../../components/ProjectSelector';
 import { CodeSnippet } from '../../../components/ui/CodeSnippet';
 
 export function RunDetails() {
@@ -43,6 +44,19 @@ export function RunDetails() {
             alert('Failed to stop run');
         } finally {
             setStopping(false);
+        }
+    };
+
+    const handleProjectUpdate = async (newProject) => {
+        try {
+            await fetchApi(`/api/runs/${runId}/project`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ project_name: newProject })
+            });
+            setRun(prev => ({ ...prev, project: newProject }));
+        } catch (error) {
+            console.error('Failed to update project:', error);
         }
     };
 
@@ -171,7 +185,7 @@ export function RunDetails() {
                 </div>
                 <div className="flex flex-col items-end gap-2">
                     <div className="flex items-center gap-2">
-                        <SimpleProjectSelector runId={run.run_id} currentProject={run.project} />
+                        <ProjectSelector currentProject={run.project} onUpdate={handleProjectUpdate} />
                         <Badge variant={statusVariant} className="text-sm px-4 py-1.5 uppercase tracking-wide shadow-sm">
                             {cloudStatus?.cloud_status?.status || run.status}
                         </Badge>
@@ -220,7 +234,7 @@ export function RunDetails() {
                     <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
                         <Activity className="text-primary-500" /> Pipeline Execution Graph
                     </h3>
-                    <div className="h-[600px]">
+                    <div className="h-[calc(100vh-240px)] min-h-[600px]">
                         {run.dag ? (
                             <PipelineGraph
                                 dag={run.dag}
@@ -274,6 +288,29 @@ export function RunDetails() {
                                 </div>
                             </div>
 
+                            {/* Live Heartbeat Indicator (Header) */}
+                            {selectedStepData.status === 'running' && (
+                                <div className="px-4 py-2 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-100 dark:border-blue-800 flex items-center justify-between">
+                                    <div className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300">
+                                        <Activity size={14} className="animate-pulse" />
+                                        <span>Step is running</span>
+                                    </div>
+                                    {selectedStepData.last_heartbeat && (
+                                        <span className="text-xs text-blue-600 dark:text-blue-400 font-mono">
+                                            Last heartbeat: {((Date.now() / 1000) - selectedStepData.last_heartbeat).toFixed(1)}s ago
+                                        </span>
+                                    )}
+                                </div>
+                            )}
+                            {selectedStepData.status === 'dead' && (
+                                <div className="px-4 py-2 bg-rose-50 dark:bg-rose-900/20 border-b border-rose-100 dark:border-rose-800 flex items-center gap-2">
+                                    <AlertCircle size={14} className="text-rose-600 dark:text-rose-400" />
+                                    <span className="text-sm font-medium text-rose-700 dark:text-rose-300">
+                                        Step detected as DEAD (missed heartbeats)
+                                    </span>
+                                </div>
+                            )}
+
                             {/* Tabs */}
                             <div className="flex gap-2 border-b border-slate-100 dark:border-slate-700 mt-4">
                                 <TabButton active={activeTab === 'overview'} onClick={() => setActiveTab('overview')}>
@@ -285,7 +322,7 @@ export function RunDetails() {
                                 <TabButton active={activeTab === 'artifacts'} onClick={() => setActiveTab('artifacts')}>
                                     <Package size={16} /> Artifacts
                                 </TabButton>
-                                <TabButton active={activeTab === 'logs'} onClick={() => setActiveTab('logs')}>
+                                <TabButton active={activeTab === 'logs'} onClick={() => setActiveTab('logs')} data-tab="logs">
                                     <Terminal size={16} /> Logs
                                 </TabButton>
                             </div>
@@ -293,7 +330,12 @@ export function RunDetails() {
                             {/* Tab Content */}
                             <div className="mt-4 max-h-[450px] overflow-y-auto">
                                 {activeTab === 'overview' && (
-                                    <OverviewTab stepData={selectedStepData} metrics={selectedStepMetrics} />
+                                    <OverviewTab
+                                        stepData={selectedStepData}
+                                        metrics={selectedStepMetrics}
+                                        runId={runId}
+                                        stepName={selectedStep}
+                                    />
                                 )}
                                 {activeTab === 'code' && (
                                     <CodeTab sourceCode={selectedStepData.source_code} />
@@ -352,15 +394,16 @@ function StatsCard({ icon, label, value, color }) {
     );
 }
 
-function TabButton({ active, onClick, children }) {
+function TabButton({ active, onClick, children, ...props }) {
     return (
         <button
             onClick={onClick}
+            {...props}
             className={`
-                flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors
+                flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors border-b-2
                 ${active
-                    ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                    ? 'text-primary-600 dark:text-primary-400 border-primary-600 dark:border-primary-400'
+                    : 'text-slate-500 dark:text-slate-400 border-transparent hover:text-slate-700 dark:hover:text-slate-200'
                 }
             `}
         >
@@ -369,7 +412,7 @@ function TabButton({ active, onClick, children }) {
     );
 }
 
-function OverviewTab({ stepData, metrics }) {
+function OverviewTab({ stepData, metrics, runId, stepName }) {
     const formatDuration = (seconds) => {
         if (!seconds) return 'N/A';
         if (seconds < 1) return `${(seconds * 1000).toFixed(0)}ms`;
@@ -398,7 +441,12 @@ function OverviewTab({ stepData, metrics }) {
                         <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Status</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        {stepData.success ? (
+                        {stepData.status === 'dead' ? (
+                            <>
+                                <AlertCircle size={20} className="text-rose-500" />
+                                <span className="text-lg font-bold text-rose-700 dark:text-rose-400">Dead</span>
+                            </>
+                        ) : stepData.success ? (
                             <>
                                 <CheckCircle size={20} className="text-emerald-500" />
                                 <span className="text-lg font-bold text-emerald-700">Success</span>
@@ -411,120 +459,174 @@ function OverviewTab({ stepData, metrics }) {
                         ) : (
                             <>
                                 <Clock size={20} className="text-amber-500" />
-                                <span className="text-lg font-bold text-amber-700">Pending</span>
+                                <span className="text-lg font-bold text-amber-700 dark:text-amber-500">Pending</span>
                             </>
                         )}
                     </div>
                 </div>
             </div>
 
-            {/* Inputs & Outputs */}
-            {(stepData.inputs?.length > 0 || stepData.outputs?.length > 0) && (
-                <div className="space-y-4">
-                    <h5 className="text-sm font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2">
-                        <Database size={16} />
-                        Data Flow
-                    </h5>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {stepData.inputs?.length > 0 && (
-                            <div className="p-4 bg-blue-50/50 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-800">
-                                <div className="flex items-center gap-2 mb-3">
-                                    <ArrowDownCircle size={16} className="text-blue-600" />
-                                    <span className="text-sm font-semibold text-blue-900 dark:text-blue-100">Inputs</span>
-                                    <Badge variant="secondary" className="ml-auto text-xs">{stepData.inputs.length}</Badge>
-                                </div>
-                                <div className="space-y-1.5">
-                                    {stepData.inputs.map((input, idx) => (
-                                        <div key={idx} className="flex items-center gap-2 p-2 bg-white dark:bg-slate-800 rounded-lg border border-blue-100 dark:border-blue-800/50">
-                                            <Database size={12} className="text-blue-500 flex-shrink-0" />
-                                            <span className="text-sm font-mono text-slate-700 dark:text-slate-200 truncate">{input}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                        {stepData.outputs?.length > 0 && (
-                            <div className="p-4 bg-purple-50/50 dark:bg-purple-900/10 rounded-xl border border-purple-100 dark:border-purple-800">
-                                <div className="flex items-center gap-2 mb-3">
-                                    <ArrowUpCircle size={16} className="text-purple-600" />
-                                    <span className="text-sm font-semibold text-purple-900 dark:text-purple-100">Outputs</span>
-                                    <Badge variant="secondary" className="ml-auto text-xs">{stepData.outputs.length}</Badge>
-                                </div>
-                                <div className="space-y-1.5">
-                                    {stepData.outputs.map((output, idx) => (
-                                        <div key={idx} className="flex items-center gap-2 p-2 bg-white dark:bg-slate-800 rounded-lg border border-purple-100 dark:border-purple-800/50">
-                                            <Box size={12} className="text-purple-500 flex-shrink-0" />
-                                            <span className="text-sm font-mono text-slate-700 dark:text-slate-200 truncate">{output}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
-
-            {/* Tags/Metadata */}
-            {stepData.tags && Object.keys(stepData.tags).length > 0 && (
-                <div>
-                    <h5 className="text-sm font-bold text-slate-700 uppercase tracking-wide mb-3 flex items-center gap-2">
-                        <Tag size={16} />
-                        Metadata
-                    </h5>
-                    <div className="grid grid-cols-2 gap-3">
-                        {Object.entries(stepData.tags).map(([key, value]) => (
-                            <div key={key} className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
-                                <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">{key}</div>
-                                <div className="text-sm font-mono font-medium text-slate-900 dark:text-white truncate">{String(value)}</div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {/* Cached Badge */}
-            {stepData.cached && (
-                <div className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-xl border-2 border-blue-200 dark:border-blue-800">
-                    <div className="flex items-center gap-3">
-                        <Zap size={24} className="text-blue-600" />
-                        <div>
-                            <h6 className="font-bold text-blue-900 dark:text-blue-100">Cached Result</h6>
-                            <p className="text-sm text-blue-700 dark:text-blue-300">This step used cached results from a previous run</p>
+            {/* Heartbeat Card */}
+            {
+                stepData.last_heartbeat && (
+                    <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+                        <h5 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide mb-2 flex items-center gap-2">
+                            <Activity size={16} className="text-blue-500" />
+                            System Heartbeat
+                        </h5>
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm text-slate-500 dark:text-slate-400">Last received:</span>
+                            <span className="font-mono font-medium text-slate-900 dark:text-white">
+                                {new Date(stepData.last_heartbeat * 1000).toLocaleTimeString()}
+                                <span className="text-xs text-slate-400 ml-2">
+                                    ({((Date.now() / 1000) - stepData.last_heartbeat).toFixed(1)}s ago)
+                                </span>
+                            </span>
                         </div>
                     </div>
+                )
+            }
+
+            {/* Logs Preview (All Statuses) */}
+            <div className="mt-6">
+                <h5 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide mb-3 flex items-center gap-2">
+                    <Terminal size={16} />
+                    Logs Preview
+                </h5>
+                <LogsViewer
+                    runId={runId}
+                    stepName={stepName}
+                    isRunning={stepData.status === 'running'}
+                    maxHeight="max-h-48"
+                    minimal={true}
+                />
+                <div className="mt-2 text-right">
+                    <button
+                        onClick={() => document.querySelector('[data-tab="logs"]')?.click()}
+                        className="text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400 font-medium"
+                    >
+                        View Full Logs →
+                    </button>
                 </div>
-            )}
+            </div>
+
+            {/* Inputs & Outputs */}
+            {
+                (stepData.inputs?.length > 0 || stepData.outputs?.length > 0) && (
+                    <div className="space-y-4">
+                        <h5 className="text-sm font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2">
+                            <Database size={16} />
+                            Data Flow
+                        </h5>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {stepData.inputs?.length > 0 && (
+                                <div className="p-4 bg-blue-50/50 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-800">
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <ArrowDownCircle size={16} className="text-blue-600" />
+                                        <span className="text-sm font-semibold text-blue-900 dark:text-blue-100">Inputs</span>
+                                        <Badge variant="secondary" className="ml-auto text-xs">{stepData.inputs.length}</Badge>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        {stepData.inputs.map((input, idx) => (
+                                            <div key={idx} className="flex items-center gap-2 p-2 bg-white dark:bg-slate-800 rounded-lg border border-blue-100 dark:border-blue-800/50">
+                                                <Database size={12} className="text-blue-500 flex-shrink-0" />
+                                                <span className="text-sm font-mono text-slate-700 dark:text-slate-200 truncate">{input}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            {stepData.outputs?.length > 0 && (
+                                <div className="p-4 bg-purple-50/50 dark:bg-purple-900/10 rounded-xl border border-purple-100 dark:border-purple-800">
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <ArrowUpCircle size={16} className="text-purple-600" />
+                                        <span className="text-sm font-semibold text-purple-900 dark:text-purple-100">Outputs</span>
+                                        <Badge variant="secondary" className="ml-auto text-xs">{stepData.outputs.length}</Badge>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        {stepData.outputs.map((output, idx) => (
+                                            <div key={idx} className="flex items-center gap-2 p-2 bg-white dark:bg-slate-800 rounded-lg border border-purple-100 dark:border-purple-800/50">
+                                                <Box size={12} className="text-purple-500 flex-shrink-0" />
+                                                <span className="text-sm font-mono text-slate-700 dark:text-slate-200 truncate">{output}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* Tags/Metadata */}
+            {
+                stepData.tags && Object.keys(stepData.tags).length > 0 && (
+                    <div>
+                        <h5 className="text-sm font-bold text-slate-700 uppercase tracking-wide mb-3 flex items-center gap-2">
+                            <Tag size={16} />
+                            Metadata
+                        </h5>
+                        <div className="grid grid-cols-2 gap-3">
+                            {Object.entries(stepData.tags).map(([key, value]) => (
+                                <div key={key} className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                                    <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">{key}</div>
+                                    <div className="text-sm font-mono font-medium text-slate-900 dark:text-white truncate">{String(value)}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* Cached Badge */}
+            {
+                stepData.cached && (
+                    <div className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-xl border-2 border-blue-200 dark:border-blue-800">
+                        <div className="flex items-center gap-3">
+                            <Zap size={24} className="text-blue-600" />
+                            <div>
+                                <h6 className="font-bold text-blue-900 dark:text-blue-100">Cached Result</h6>
+                                <p className="text-sm text-blue-700 dark:text-blue-300">This step used cached results from a previous run</p>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
 
             {/* Error */}
-            {stepData.error && (
-                <div>
-                    <h5 className="text-sm font-bold text-rose-700 uppercase tracking-wide mb-3 flex items-center gap-2">
-                        <AlertCircle size={16} />
-                        Error Details
-                    </h5>
-                    <div className="p-4 bg-rose-50 dark:bg-rose-900/20 rounded-xl border-2 border-rose-200 dark:border-rose-800">
-                        <pre className="text-sm font-mono text-rose-700 dark:text-rose-300 whitespace-pre-wrap overflow-x-auto">
-                            {stepData.error}
-                        </pre>
+            {
+                stepData.error && (
+                    <div>
+                        <h5 className="text-sm font-bold text-rose-700 uppercase tracking-wide mb-3 flex items-center gap-2">
+                            <AlertCircle size={16} />
+                            Error Details
+                        </h5>
+                        <div className="p-4 bg-rose-50 dark:bg-rose-900/20 rounded-xl border-2 border-rose-200 dark:border-rose-800">
+                            <pre className="text-sm font-mono text-rose-700 dark:text-rose-300 whitespace-pre-wrap overflow-x-auto">
+                                {stepData.error}
+                            </pre>
+                        </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Metrics with Visualization */}
-            {metrics?.length > 0 && (
-                <div>
-                    <h5 className="text-sm font-bold text-slate-700 uppercase tracking-wide mb-3 flex items-center gap-2">
-                        <TrendingUp size={16} />
-                        Performance Metrics
-                    </h5>
-                    <div className="grid grid-cols-2 gap-3">
-                        {metrics.map((metric, idx) => (
-                            <MetricCard key={idx} metric={metric} />
-                        ))}
+            {
+                metrics?.length > 0 && (
+                    <div>
+                        <h5 className="text-sm font-bold text-slate-700 uppercase tracking-wide mb-3 flex items-center gap-2">
+                            <TrendingUp size={16} />
+                            Performance Metrics
+                        </h5>
+                        <div className="grid grid-cols-2 gap-3">
+                            {metrics.map((metric, idx) => (
+                                <MetricCard key={idx} metric={metric} />
+                            ))}
+                        </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 }
 
@@ -716,102 +818,22 @@ function ArtifactModal({ artifact, onClose }) {
     );
 }
 
-function SimpleProjectSelector({ runId, currentProject }) {
-    const [isOpen, setIsOpen] = useState(false);
-    const [projects, setProjects] = useState([]);
-    const [updating, setUpdating] = useState(false);
-
-    useEffect(() => {
-        if (isOpen) {
-            fetch('/api/projects/')
-                .then(res => res.json())
-                .then(data => setProjects(data))
-                .catch(err => console.error('Failed to load projects:', err));
-        }
-    }, [isOpen]);
-
-    const handleSelectProject = async (projectName) => {
-        setUpdating(true);
-        try {
-            await fetch(`/api/runs/${runId}/project`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ project_name: projectName })
-            });
-
-            const toast = document.createElement('div');
-            toast.className = 'fixed top-4 right-4 px-4 py-3 rounded-lg shadow-lg z-50 bg-green-500 text-white';
-            toast.textContent = `Run added to project ${projectName}`;
-            document.body.appendChild(toast);
-            setTimeout(() => document.body.removeChild(toast), 3000);
-
-            setIsOpen(false);
-            setTimeout(() => window.location.reload(), 500);
-        } catch (error) {
-            console.error('Failed to update project:', error);
-        } finally {
-            setUpdating(false);
-        }
-    };
-
-    return (
-        <div className="relative">
-            <button
-                onClick={() => setIsOpen(!isOpen)}
-                disabled={updating}
-                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
-                title={currentProject ? `Current project: ${currentProject}` : 'Add to project'}
-            >
-                <FolderPlus size={16} />
-                {currentProject || 'Add to Project'}
-            </button>
-
-            {isOpen && (
-                <>
-                    <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
-                    <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-20">
-                        <div className="p-2 border-b border-slate-100 dark:border-slate-700">
-                            <span className="text-xs font-semibold text-slate-500 px-2">Select Project</span>
-                        </div>
-                        <div className="max-h-64 overflow-y-auto p-1">
-                            {projects.length > 0 ? (
-                                projects.map(p => (
-                                    <button
-                                        key={p.name}
-                                        onClick={() => handleSelectProject(p.name)}
-                                        disabled={updating}
-                                        className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-colors ${p.name === currentProject
-                                            ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium'
-                                            : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
-                                            }`}
-                                    >
-                                        {p.name} {p.name === currentProject && '✓'}
-                                    </button>
-                                ))
-                            ) : (
-                                <div className="px-3 py-2 text-sm text-slate-400">No projects found</div>
-                            )}
-                        </div>
-                    </div>
-                </>
-            )}
-        </div>
-    );
-}
-
-function LogsViewer({ runId, stepName, isRunning }) {
+function LogsViewer({ runId, stepName, isRunning, maxHeight = "max-h-96", minimal = false }) {
     const [logs, setLogs] = useState('');
     const [loading, setLoading] = useState(true);
     const [useWebSocket, setUseWebSocket] = useState(true);
     const wsRef = React.useRef(null);
     const logsEndRef = React.useRef(null);
 
-    // Auto-scroll to bottom when new logs arrive
+    // Auto-scroll to bottom when new logs arrive (only if not viewing history?)
+    // Actually always auto-scroll for now unless user scrolled up (advanced)
     useEffect(() => {
         if (logsEndRef.current) {
             logsEndRef.current.scrollIntoView({ behavior: 'smooth' });
         }
     }, [logs]);
+
+    // ... (rest of logic same) ...
 
     // Reset logs when step changes
     useEffect(() => {
@@ -924,16 +946,16 @@ function LogsViewer({ runId, stepName, isRunning }) {
     }
 
     return (
-        <div className="bg-slate-900 rounded-lg p-4 font-mono text-sm overflow-x-auto max-h-96 overflow-y-auto">
+        <div className={`bg-slate-900 rounded-lg p-4 font-mono text-sm overflow-x-auto ${maxHeight} overflow-y-auto`}>
             {logs ? (
                 <>
-                    <pre className="text-green-400 whitespace-pre-wrap break-words">{logs}</pre>
+                    <pre className="text-green-400 whitespace-pre-wrap break-words">{minimal ? logs.split('\n').slice(-10).join('\n') : logs}</pre>
                     <div ref={logsEndRef} />
                 </>
             ) : (
                 <div className="text-slate-500 italic">No logs available for this step.</div>
             )}
-            {isRunning && (
+            {!minimal && isRunning && (
                 <div className="mt-2 text-amber-500 flex items-center gap-2 animate-pulse">
                     <Activity size={14} />
                     {useWebSocket ? 'Live streaming...' : 'Polling for logs...'}

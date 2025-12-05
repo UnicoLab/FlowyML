@@ -884,26 +884,66 @@ class SQLMetadataStore(MetadataStore):
                 "period_days": days,
             }
 
-    def get_statistics(self) -> dict:
+    def get_statistics(self, project: str | None = None) -> dict:
         """Get global statistics."""
         with self.engine.connect() as conn:
-            # Total runs
-            total_runs = conn.execute(select(func.count()).select_from(self.runs)).scalar()
+            # 1. Total runs
+            runs_stmt = select(func.count()).select_from(self.runs)
+            if project:
+                runs_stmt = runs_stmt.where(self.runs.c.project == project)
+            total_runs = conn.execute(runs_stmt).scalar() or 0
 
-            # Total pipelines
-            total_pipelines = conn.execute(
-                select(func.count(func.distinct(self.runs.c.pipeline_name))),
-            ).scalar()
+            # 2. Total pipelines (unique names)
+            pipelines_stmt = select(func.count(func.distinct(self.runs.c.pipeline_name)))
+            if project:
+                pipelines_stmt = pipelines_stmt.where(self.runs.c.project == project)
+            total_pipelines = conn.execute(pipelines_stmt).scalar() or 0
 
-            # Total experiments
-            total_experiments = conn.execute(select(func.count()).select_from(self.experiments)).scalar()
+            # 3. Total artifacts
+            artifacts_stmt = select(func.count()).select_from(self.artifacts)
+            if project:
+                artifacts_stmt = artifacts_stmt.where(self.artifacts.c.project == project)
+            total_artifacts = conn.execute(artifacts_stmt).scalar() or 0
 
-            # Total models (unique model names in metrics)
-            total_models = conn.execute(
-                select(func.count(func.distinct(self.model_metrics.c.model_name))),
-            ).scalar()
+            # 4. Total experiments
+            experiments_stmt = select(func.count()).select_from(self.experiments)
+            if project:
+                experiments_stmt = experiments_stmt.where(self.experiments.c.project == project)
+            total_experiments = conn.execute(experiments_stmt).scalar() or 0
+
+            # 5. Total models
+            models_stmt = select(func.count(func.distinct(self.model_metrics.c.model_name)))
+            if project:
+                models_stmt = models_stmt.where(self.model_metrics.c.project == project)
+            total_models = conn.execute(models_stmt).scalar() or 0
+
+            # 6. Status counts (completed vs failed)
+            status_stmt = select(self.runs.c.status, func.count()).group_by(self.runs.c.status)
+            if project:
+                status_stmt = status_stmt.where(self.runs.c.project == project)
+
+            status_rows = conn.execute(status_stmt).fetchall()
+            status_map = {row[0]: row[1] for row in status_rows if row[0]}
+
+            completed_runs = status_map.get("completed", 0)
+            failed_runs = status_map.get("failed", 0)
+
+            # 7. Avg duration (only completed runs)
+            dur_stmt = select(func.avg(self.runs.c.duration)).where(self.runs.c.status == "completed")
+            if project:
+                dur_stmt = dur_stmt.where(self.runs.c.project == project)
+
+            avg_duration = conn.execute(dur_stmt).scalar() or 0.0
 
             return {
+                # Frontend-friendly keys
+                "pipelines": total_pipelines,
+                "runs": total_runs,
+                "artifacts": total_artifacts,
+                "completed_runs": completed_runs,
+                "failed_runs": failed_runs,
+                "avg_duration": avg_duration,
+                # Backward compatibility
                 "total_runs": total_runs,
                 "total_pipelines": total_pipelines,
                 "total_experiments": total_experiments,

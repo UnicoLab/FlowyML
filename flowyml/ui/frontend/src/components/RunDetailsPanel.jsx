@@ -27,6 +27,7 @@ import { ProjectSelector } from './ProjectSelector';
 
 export function RunDetailsPanel({ run, onClose }) {
     const [details, setDetails] = useState(null);
+    const [artifacts, setArtifacts] = useState([]);
     const [loading, setLoading] = useState(false);
     const [activeTab, setActiveTab] = useState('overview'); // overview, steps, artifacts
     const [currentProject, setCurrentProject] = useState(run?.project);
@@ -41,9 +42,17 @@ export function RunDetailsPanel({ run, onClose }) {
     const fetchRunDetails = async () => {
         setLoading(true);
         try {
-            const res = await fetchApi(`/api/runs/${run.run_id}`);
-            const data = await res.json();
+            const [runRes, assetsRes] = await Promise.all([
+                fetchApi(`/api/runs/${run.run_id}`),
+                fetchApi(`/api/assets?run_id=${run.run_id}`)
+            ]);
+
+            const data = await runRes.json();
+            const assetsData = await assetsRes.json();
+
             setDetails(data);
+            setArtifacts(assetsData.assets || []);
+
             if (data.project) setCurrentProject(data.project);
         } catch (error) {
             console.error('Failed to fetch run details:', error);
@@ -177,11 +186,11 @@ export function RunDetailsPanel({ run, onClose }) {
                             {activeTab === 'overview' && (
                                 <div className="space-y-4">
                                     {/* DAG Visualization Preview */}
-                                    <Card className="p-0 overflow-hidden h-64 border-slate-200 dark:border-slate-700">
-                                        <div className="p-3 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 flex justify-between items-center">
+                                    <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden h-[400px] flex flex-col bg-white dark:bg-slate-800">
+                                        <div className="p-3 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 flex justify-between items-center shrink-0">
                                             <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Pipeline Graph</h3>
                                         </div>
-                                        <div className="h-full bg-slate-50/50">
+                                        <div className="flex-1 min-h-0 bg-slate-50/50 dark:bg-slate-900/50">
                                             {runData.dag ? (
                                                 <PipelineGraph
                                                     dag={runData.dag}
@@ -193,7 +202,7 @@ export function RunDetailsPanel({ run, onClose }) {
                                                 </div>
                                             )}
                                         </div>
-                                    </Card>
+                                    </div>
 
                                     {/* Error Display if Failed */}
                                     {runData.status === 'failed' && runData.error && (
@@ -238,14 +247,33 @@ export function RunDetailsPanel({ run, onClose }) {
 
                             {activeTab === 'artifacts' && (
                                 <div className="space-y-3">
-                                    {/* This would need actual artifact data structure */}
-                                    <div className="text-center py-8 text-slate-500">
-                                        <Box size={32} className="mx-auto mb-2 opacity-50" />
-                                        <p>Artifacts view not fully implemented in preview</p>
-                                        <Link to={`/runs/${runData.run_id}`} className="text-primary-600 hover:underline text-sm mt-2 inline-block">
-                                            View in full details page
-                                        </Link>
-                                    </div>
+                                    {artifacts.length > 0 ? (
+                                        artifacts.map(art => (
+                                            <div
+                                                key={art.artifact_id}
+                                                className="flex items-center gap-3 p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-primary-300 dark:hover:border-primary-700 transition-colors"
+                                            >
+                                                <div className="p-2 bg-slate-50 dark:bg-slate-700 rounded-md text-slate-500 dark:text-slate-400">
+                                                    <FileText size={18} />
+                                                </div>
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+                                                        {art.name}
+                                                    </p>
+                                                    <p className="text-xs text-slate-500 truncate">{art.type}</p>
+                                                </div>
+                                                <Link to={`/runs/${run.run_id}`}>
+                                                    <Button variant="ghost" size="sm">
+                                                        <ArrowRight size={14} />
+                                                    </Button>
+                                                </Link>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="text-center py-8 text-slate-500">
+                                            No artifacts found for this run.
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </>

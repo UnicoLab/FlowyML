@@ -157,6 +157,13 @@ async def get_run(run_id: str):
                     run["steps"][step_name]["status"] = "dead"
                     run["steps"][step_name]["success"] = False
 
+    # Inject heartbeat timestamps
+    with _heartbeat_lock:
+        if run_id in _heartbeat_timestamps:
+            for step_name, ts in _heartbeat_timestamps[run_id].items():
+                if step_name in run.get("steps", {}):
+                    run["steps"][step_name]["last_heartbeat"] = ts
+
     return run
 
 

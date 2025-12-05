@@ -9,8 +9,10 @@ import {
     FileText,
     Code,
     Table as TableIcon,
-    AlertCircle
+    AlertCircle,
+    Download
 } from 'lucide-react';
+import { Button } from './ui/Button'; // Assuming you have a Button component, or use native button if not
 
 SyntaxHighlighter.registerLanguage('json', json);
 SyntaxHighlighter.registerLanguage('python', python);
@@ -41,8 +43,6 @@ export function ArtifactViewer({ artifact }) {
 
             // If it's a value-based artifact (no file path), use the value directly if possible
             if (!artifact.path && artifact.value) {
-                // If value looks like a path to an image (unlikely but possible in some setups)
-                // Otherwise assuming text/json
                 try {
                     const parsed = JSON.parse(artifact.value);
                     setContent(parsed);
@@ -112,11 +112,11 @@ export function ArtifactViewer({ artifact }) {
 
     if (contentType === 'image') {
         return (
-            <div className="flex flex-col items-center">
-                <div className="relative rounded-lg overflow-hidden border border-slate-200 shadow-sm bg-slate-50">
+            <div className="flex flex-col items-center bg-slate-50 dark:bg-slate-900 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
+                <div className="relative rounded-lg overflow-hidden shadow-sm bg-white dark:bg-black">
                     <img src={content} alt={artifact.name} className="max-w-full max-h-[60vh] object-contain" />
                 </div>
-                <p className="text-xs text-slate-500 mt-2 flex items-center gap-1">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 flex items-center gap-1">
                     <Image size={12} />
                     Image Preview
                 </p>
@@ -126,12 +126,12 @@ export function ArtifactViewer({ artifact }) {
 
     if (contentType === 'json') {
         return (
-            <div className="rounded-lg overflow-hidden border border-slate-200 shadow-sm">
-                <div className="bg-slate-50 px-3 py-2 border-b border-slate-200 flex items-center gap-2">
-                    <Code size={14} className="text-slate-500" />
-                    <span className="text-xs font-semibold text-slate-600">JSON Viewer</span>
+            <div className="rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm">
+                <div className="bg-slate-50 dark:bg-slate-800 px-3 py-2 border-b border-slate-200 dark:border-slate-700 flex items-center gap-2">
+                    <Code size={14} className="text-slate-500 dark:text-slate-400" />
+                    <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">JSON Viewer</span>
                 </div>
-                <div className="max-h-[50vh] overflow-y-auto">
+                <div className="max-h-[50vh] overflow-y-auto bg-white">
                     <SyntaxHighlighter
                         language="json"
                         style={docco}
@@ -146,12 +146,12 @@ export function ArtifactViewer({ artifact }) {
 
     // Default Text Viewer
     return (
-        <div className="rounded-lg overflow-hidden border border-slate-200 shadow-sm">
-            <div className="bg-slate-50 px-3 py-2 border-b border-slate-200 flex items-center gap-2">
-                <FileText size={14} className="text-slate-500" />
-                <span className="text-xs font-semibold text-slate-600">Text Content</span>
+        <div className="rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm">
+            <div className="bg-slate-50 dark:bg-slate-800 px-3 py-2 border-b border-slate-200 dark:border-slate-700 flex items-center gap-2">
+                <FileText size={14} className="text-slate-500 dark:text-slate-400" />
+                <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">Text Content</span>
             </div>
-            <pre className="p-4 bg-white text-slate-800 text-xs font-mono overflow-x-auto whitespace-pre-wrap max-h-[50vh] overflow-y-auto">
+            <pre className="p-4 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 text-xs font-mono overflow-x-auto whitespace-pre-wrap max-h-[50vh] overflow-y-auto">
                 {typeof content === 'string' ? content : JSON.stringify(content, null, 2)}
             </pre>
         </div>
