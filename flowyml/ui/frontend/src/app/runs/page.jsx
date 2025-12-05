@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { fetchApi } from '../../utils/api';
-import { Link, useSearchParams } from 'react-router-dom';
-import { PlayCircle, Clock, CheckCircle, XCircle, Activity, ArrowRight, Calendar, Filter, RefreshCw, Layout } from 'lucide-react';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { PlayCircle, Clock, CheckCircle, XCircle, Activity, ArrowRight, Calendar, Filter, RefreshCw, Layout, GitCompare, CheckSquare, X } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
@@ -17,7 +17,13 @@ export function Runs() {
     const [loading, setLoading] = useState(true);
     const [selectedRun, setSelectedRun] = useState(null);
     const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
     const { selectedProject } = useProject();
+
+    // Selection & Comparison State
+    const [selectionMode, setSelectionMode] = useState('single');
+    const [selectedRunIds, setSelectedRunIds] = useState([]);
+
 
     // Filter states
     const [statusFilter, setStatusFilter] = useState('all');
@@ -49,7 +55,40 @@ export function Runs() {
     }, [selectedProject, pipelineFilter]);
 
     const handleRunSelect = (run) => {
-        setSelectedRun(run);
+        if (selectionMode === 'single') {
+            setSelectedRun(run);
+        }
+    };
+
+    const toggleSelectionMode = () => {
+        if (selectionMode === 'single') {
+            setSelectionMode('multi');
+            setSelectedRunIds([]);
+        } else {
+            setSelectionMode('single');
+            setSelectedRunIds([]);
+        }
+    };
+
+    const handleMultiSelect = (runId, checked) => {
+        if (checked) {
+            if (selectedRunIds.length >= 2) {
+                // Prevent selecting more than 2 for now, or just replace the oldest?
+                // Let's just allow max 2 for comparison, or show alert.
+                // Better: Allow selecting many, but disable button if != 2.
+                setSelectedRunIds(prev => [...prev, runId]);
+            } else {
+                setSelectedRunIds(prev => [...prev, runId]);
+            }
+        } else {
+            setSelectedRunIds(prev => prev.filter(id => id !== runId));
+        }
+    };
+
+    const handleCompare = () => {
+        if (selectedRunIds.length === 2) {
+            navigate(`/compare?run1=${selectedRunIds[0]}&run2=${selectedRunIds[1]}`);
+        }
     };
 
     return (
@@ -67,6 +106,32 @@ export function Runs() {
                         </p>
                     </div>
                     <div className="flex items-center gap-3">
+                        {selectionMode === 'multi' ? (
+                            <>
+                                <span className="text-sm text-slate-500 mr-2">
+                                    {selectedRunIds.length} selected
+                                </span>
+                                <Button
+                                    size="sm"
+                                    variant="primary"
+                                    disabled={selectedRunIds.length !== 2}
+                                    onClick={handleCompare}
+                                >
+                                    <GitCompare size={16} className="mr-2" />
+                                    Compare
+                                </Button>
+                                <Button variant="ghost" size="sm" onClick={toggleSelectionMode}>
+                                    <X size={16} className="mr-2" />
+                                    Cancel
+                                </Button>
+                            </>
+                        ) : (
+                            <Button variant="outline" size="sm" onClick={toggleSelectionMode}>
+                                <CheckSquare size={16} className="mr-2" />
+                                Select to Compare
+                            </Button>
+                        )}
+
                         <Button variant="outline" size="sm" onClick={fetchRuns} disabled={loading}>
                             <RefreshCw size={16} className={`mr-2 ${loading ? 'animate-spin' : ''}`} />
                             Refresh
@@ -95,6 +160,9 @@ export function Runs() {
                                     projectId={selectedProject}
                                     onSelect={handleRunSelect}
                                     selectedId={selectedRun?.run_id}
+                                    selectionMode={selectionMode}
+                                    selectedIds={selectedRunIds}
+                                    onMultiSelect={handleMultiSelect}
                                 />
                             </div>
                         </div>

@@ -57,7 +57,7 @@ const getLayoutedElements = (nodes, edges, direction = 'TB') => {
     return { nodes, edges };
 };
 
-export function PipelineGraph({ dag, steps, selectedStep, onStepSelect }) {
+export function PipelineGraph({ dag, steps, selectedStep, onStepSelect, onArtifactSelect }) {
     // Transform DAG data to ReactFlow format with Artifact Nodes
     const { nodes: initialNodes, edges: initialEdges } = useMemo(() => {
         if (!dag || !dag.nodes) return { nodes: [], edges: [] };
@@ -159,8 +159,10 @@ export function PipelineGraph({ dag, steps, selectedStep, onStepSelect }) {
     const onNodeClick = useCallback((event, node) => {
         if (node.type === 'step' && onStepSelect) {
             onStepSelect(node.id);
+        } else if (node.type === 'artifact' && onArtifactSelect) {
+            onArtifactSelect(node.data.label);
         }
-    }, [onStepSelect]);
+    }, [onStepSelect, onArtifactSelect]);
 
     const nodeTypes = useMemo(() => ({
         step: CustomStepNode,
@@ -343,7 +345,7 @@ function CustomArtifactNode({ data }) {
 
     return (
         <div
-            className={`px-3 py-2 rounded-lg ${style.bgColor} border-2 ${style.borderColor} flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all min-w-[140px]`}
+            className={`px-3 py-2 rounded-lg ${style.bgColor} border-2 ${style.borderColor} flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all min-w-[140px] cursor-pointer`}
             style={{ height: artifactNodeHeight }}
         >
             <Handle type="target" position={Position.Top} className="!bg-slate-400 !w-2 !h-2" />

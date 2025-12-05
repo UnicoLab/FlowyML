@@ -476,6 +476,42 @@ async def download_asset(artifact_id: str):
     )
 
 
+@router.get("/{artifact_id}/content")
+async def get_asset_content(artifact_id: str):
+    """Get the artifact content for inline viewing."""
+    import mimetypes
+
+    asset, _ = _find_asset_with_store(artifact_id)
+    if not asset:
+        raise HTTPException(status_code=404, detail="Asset not found")
+
+    artifact_path = asset.get("path")
+    if not artifact_path:
+        raise HTTPException(status_code=404, detail="Artifact path not available")
+
+    # Handle relative paths for local store
+    from flowyml.utils.config import get_config
+
+    config = get_config()
+
+    file_path = Path(artifact_path)
+    if not file_path.is_absolute():
+        file_path = config.artifacts_dir / file_path
+
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Artifact file not found on disk")
+
+    # Guess mime type
+    mime_type, _ = mimetypes.guess_type(file_path.name)
+    if not mime_type:
+        mime_type = "text/plain"  # Default fallback
+
+    return FileResponse(
+        path=file_path,
+        media_type=mime_type,
+    )
+
+
 class ProjectUpdate(BaseModel):
     project_name: str
 

@@ -16,6 +16,7 @@ import { Leaderboard } from '../app/leaderboard/page';
 import { Plugins } from '../app/plugins/page';
 import { Settings } from '../app/settings/page';
 import { TokenManagement } from '../app/tokens/page';
+import { RunComparisonPage } from '../app/compare/page';
 
 export const router = createBrowserRouter([
     {
@@ -25,6 +26,7 @@ export const router = createBrowserRouter([
             { index: true, element: <Dashboard /> },
             { path: 'pipelines', element: <Pipelines /> },
             { path: 'runs', element: <Runs /> },
+            { path: 'compare', element: <RunComparisonPage /> },
             { path: 'runs/:runId', element: <RunDetails /> },
             { path: 'assets', element: <Assets /> },
             { path: 'experiments', element: <Experiments /> },

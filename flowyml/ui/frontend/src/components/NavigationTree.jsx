@@ -53,7 +53,10 @@ const TreeNode = ({
     badge,
     onClick,
     isActive = false,
-    subLabel
+    subLabel,
+    checkable = false,
+    checked = false,
+    onCheck
 }) => {
     const [isExpanded, setIsExpanded] = useState(defaultExpanded);
     const hasChildren = children && children.length > 0;
@@ -78,6 +81,18 @@ const TreeNode = ({
                     onClick?.();
                 }}
             >
+                {/* Checkbox for selection mode */}
+                {checkable && (
+                    <div className="shrink-0 mr-1" onClick={(e) => e.stopPropagation()}>
+                        <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={(e) => onCheck?.(e.target.checked)}
+                            className="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500 cursor-pointer accent-blue-600"
+                        />
+                    </div>
+                )}
+
                 <div className="flex items-center gap-1 text-slate-400 shrink-0">
                     {hasChildren ? (
                         <motion.div
@@ -135,7 +150,10 @@ export function NavigationTree({
     onSelect,
     selectedId,
     mode = 'experiments', // experiments, pipelines, runs
-    className = ''
+    className = '',
+    selectionMode = 'single', // 'single' | 'multi'
+    selectedIds = [], // Array of IDs for multi-select
+    onMultiSelect // Callback for multi-select (id, checked)
 }) {
     const [data, setData] = useState({ projects: [], items: [] });
     const [loading, setLoading] = useState(true);
@@ -238,13 +256,6 @@ export function NavigationTree({
     );
 
     const renderExperiments = () => {
-        const getRunsForExperiment = (expName) => {
-            // This would ideally come from the API or be passed in,
-            // but for now we might not have runs loaded here.
-            // We'll just show the experiment node.
-            return [];
-        };
-
         const renderExperimentNode = (exp, level) => (
             <TreeNode
                 key={exp.experiment_id}
@@ -338,6 +349,9 @@ export function NavigationTree({
                 status={run.status}
                 isActive={selectedId === run.run_id}
                 onClick={() => onSelect?.(run)}
+                checkable={selectionMode === 'multi'}
+                checked={selectedIds?.includes(run.run_id)}
+                onCheck={(checked) => onMultiSelect?.(run.run_id, checked)}
             />
         );
 

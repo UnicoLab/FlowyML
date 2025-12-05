@@ -8,6 +8,7 @@ import { Badge } from '../../../components/ui/Badge';
 import { Button } from '../../../components/ui/Button';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ArtifactViewer } from '../../../components/ArtifactViewer';
 import { PipelineGraph } from '../../../components/PipelineGraph';
 import { CodeSnippet } from '../../../components/ui/CodeSnippet';
 
@@ -140,22 +141,22 @@ export function RunDetails() {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between bg-white p-6 rounded-xl border border-slate-100 shadow-sm">
+            <div className="flex items-center justify-between bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
                 <div>
                     <div className="flex items-center gap-2 mb-2">
                         <Link to="/runs" className="text-sm text-slate-500 hover:text-slate-700 transition-colors">Runs</Link>
                         <ChevronRight size={14} className="text-slate-300" />
-                        <span className="text-sm text-slate-900 font-medium">{run.run_id}</span>
+                        <span className="text-sm text-slate-900 dark:text-white font-medium">{run.run_id}</span>
                     </div>
-                    <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-3">
+                    <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
                         <div className={`w-3 h-3 rounded-full ${run.status === 'completed' ? 'bg-emerald-500' : run.status === 'failed' ? 'bg-rose-500' : 'bg-amber-500'}`} />
                         Run: <span className="font-mono text-slate-500">{run.run_id.substring(0, 8)}</span>
                     </h2>
-                    <p className="text-slate-500 mt-1 flex items-center gap-2">
+                    <p className="text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2">
                         <Layers size={16} />
-                        Pipeline: <span className="font-medium text-slate-700">{run.pipeline_name}</span>
+                        Pipeline: <span className="font-medium text-slate-700 dark:text-slate-200">{run.pipeline_name}</span>
                         {cloudStatus?.is_remote && (
-                            <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-600 flex items-center gap-1">
+                            <Badge variant="secondary" className="text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 flex items-center gap-1">
                                 <Cloud size={12} />
                                 {cloudStatus.orchestrator_type}
                             </Badge>
@@ -216,7 +217,7 @@ export function RunDetails() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* DAG Visualization - 2 columns */}
                 <div className="lg:col-span-2">
-                    <h3 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
                         <Activity className="text-primary-500" /> Pipeline Execution Graph
                     </h3>
                     <div className="h-[600px]">
@@ -226,6 +227,18 @@ export function RunDetails() {
                                 steps={run.steps}
                                 selectedStep={selectedStep}
                                 onStepSelect={setSelectedStep}
+                                onArtifactSelect={(name) => {
+                                    // Find the artifact object by name
+                                    // We look in 'artifacts' array which contains all assets for the run
+                                    const found = artifacts.find(a => a.name === name);
+                                    if (found) {
+                                        setSelectedArtifact(found);
+                                    } else {
+                                        // Fallback if not found (e.g. might be an intermediate artifact not persisted)
+                                        console.warn(`Artifact ${name} not found in assets list`);
+                                        // Optionally show a toast or alert
+                                    }
+                                }}
                             />
                         ) : (
                             <Card className="h-full flex items-center justify-center">
@@ -237,32 +250,32 @@ export function RunDetails() {
 
                 {/* Step Details Panel - 1 column */}
                 <div>
-                    <h3 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
                         <Info className="text-primary-500" /> Step Details
                     </h3>
 
                     {selectedStepData ? (
                         <Card className="overflow-hidden">
                             {/* Step Header */}
-                            <div className="pb-4 border-b border-slate-100">
-                                <h4 className="text-lg font-bold text-slate-900 mb-2">{selectedStep}</h4>
+                            <div className="pb-4 border-b border-slate-100 dark:border-slate-700">
+                                <h4 className="text-lg font-bold text-slate-900 dark:text-white mb-2">{selectedStep}</h4>
                                 <div className="flex items-center gap-2">
                                     <Badge variant={selectedStepData.success ? 'success' : 'danger'} className="text-xs">
                                         {selectedStepData.success ? 'Success' : 'Failed'}
                                     </Badge>
                                     {selectedStepData.cached && (
-                                        <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700">
+                                        <Badge variant="secondary" className="text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300">
                                             Cached
                                         </Badge>
                                     )}
-                                    <span className="text-xs font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                                    <span className="text-xs font-mono text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
                                         {selectedStepData.duration?.toFixed(2)}s
                                     </span>
                                 </div>
                             </div>
 
                             {/* Tabs */}
-                            <div className="flex gap-2 border-b border-slate-100 mt-4">
+                            <div className="flex gap-2 border-b border-slate-100 dark:border-slate-700 mt-4">
                                 <TabButton active={activeTab === 'overview'} onClick={() => setActiveTab('overview')}>
                                     <Info size={16} /> Overview
                                 </TabButton>
@@ -331,8 +344,8 @@ function StatsCard({ icon, label, value, color }) {
                     {icon}
                 </div>
                 <div>
-                    <p className="text-sm text-slate-500 font-medium">{label}</p>
-                    <p className="text-xl font-bold text-slate-900">{value}</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">{label}</p>
+                    <p className="text-xl font-bold text-slate-900 dark:text-white">{value}</p>
                 </div>
             </div>
         </Card>
@@ -346,8 +359,8 @@ function TabButton({ active, onClick, children }) {
             className={`
                 flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors
                 ${active
-                    ? 'text-primary-600 border-b-2 border-primary-600'
-                    : 'text-slate-500 hover:text-slate-700'
+                    ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                 }
             `}
         >
@@ -370,19 +383,19 @@ function OverviewTab({ stepData, metrics }) {
         <div className="space-y-6">
             {/* Status & Execution Info */}
             <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 bg-gradient-to-br from-slate-50 to-white rounded-xl border border-slate-200">
+                <div className="p-4 bg-gradient-to-br from-slate-50 to-white dark:from-slate-800 dark:to-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
                     <div className="flex items-center gap-2 mb-2">
                         <Clock size={14} className="text-slate-400" />
-                        <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">Duration</span>
+                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Duration</span>
                     </div>
-                    <p className="text-2xl font-bold text-slate-900">
+                    <p className="text-2xl font-bold text-slate-900 dark:text-white">
                         {formatDuration(stepData.duration)}
                     </p>
                 </div>
-                <div className="p-4 bg-gradient-to-br from-slate-50 to-white rounded-xl border border-slate-200">
+                <div className="p-4 bg-gradient-to-br from-slate-50 to-white dark:from-slate-800 dark:to-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
                     <div className="flex items-center gap-2 mb-2">
                         <Activity size={14} className="text-slate-400" />
-                        <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">Status</span>
+                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Status</span>
                     </div>
                     <div className="flex items-center gap-2">
                         {stepData.success ? (
@@ -520,12 +533,12 @@ function MetricCard({ metric }) {
     const displayValue = isNumeric ? metric.value.toFixed(4) : metric.value;
 
     return (
-        <div className="p-3 bg-gradient-to-br from-slate-50 to-white rounded-lg border border-slate-200 hover:border-primary-300 transition-all group">
-            <span className="text-xs text-slate-500 block truncate mb-1" title={metric.name}>
+        <div className="p-3 bg-gradient-to-br from-slate-50 to-white dark:from-slate-800 dark:to-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-primary-300 dark:hover:border-primary-700 transition-all group">
+            <span className="text-xs text-slate-500 dark:text-slate-400 block truncate mb-1" title={metric.name}>
                 {metric.name}
             </span>
             <div className="flex items-baseline gap-2">
-                <span className="text-xl font-mono font-bold text-slate-900 group-hover:text-primary-600 transition-colors">
+                <span className="text-xl font-mono font-bold text-slate-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
                     {displayValue}
                 </span>
                 {isNumeric && metric.value > 0 && (
@@ -649,9 +662,12 @@ function ArtifactModal({ artifact, onClose }) {
                     {/* Content */}
                     <div className="p-6 overflow-y-auto max-h-[60vh]">
                         <div className="space-y-4">
-                            {/* Properties */}
+                            {/* Rich Viewer */}
+                            <ArtifactViewer artifact={artifact} />
+
+                            {/* Properties (collapsible or below) */}
                             {artifact.properties && Object.keys(artifact.properties).length > 0 && (
-                                <div>
+                                <div className="mt-6 pt-6 border-t border-slate-100">
                                     <h4 className="text-sm font-semibold text-slate-700 mb-3">Properties</h4>
                                     <div className="grid grid-cols-2 gap-3">
                                         {Object.entries(artifact.properties).map(([key, value]) => (
@@ -666,18 +682,8 @@ function ArtifactModal({ artifact, onClose }) {
                                 </div>
                             )}
 
-                            {/* Value Preview */}
-                            {artifact.value && (
-                                <div>
-                                    <h4 className="text-sm font-semibold text-slate-700 mb-3">Value Preview</h4>
-                                    <pre className="p-4 bg-slate-900 text-slate-100 rounded-lg text-xs font-mono overflow-x-auto">
-                                        {artifact.value}
-                                    </pre>
-                                </div>
-                            )}
-
                             {/* Metadata */}
-                            <div>
+                            <div className="mt-6">
                                 <h4 className="text-sm font-semibold text-slate-700 mb-3">Metadata</h4>
                                 <div className="space-y-2 text-sm">
                                     <div className="flex justify-between">
