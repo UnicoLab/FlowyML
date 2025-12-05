@@ -10,36 +10,41 @@ import { StatusBadge } from '../../components/ui/ExecutionStatus';
 
 export function RunComparisonPage() {
     const [searchParams] = useSearchParams();
-    const [runs, setRuns] = useState({ left: null, right: null });
+    const [runs, setRuns] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    const runIdsParam = searchParams.get('runs');
     const run1Id = searchParams.get('run1');
     const run2Id = searchParams.get('run2');
 
+    // Normalize run IDs from different possible query params
+    const runIds = runIdsParam
+        ? runIdsParam.split(',').filter(Boolean)
+        : [run1Id, run2Id].filter(Boolean);
+
     useEffect(() => {
-        if (!run1Id || !run2Id) {
-            setError('Please select two runs to compare.');
+        if (runIds.length < 2) {
+            setError('Please select at least two runs to compare.');
             setLoading(false);
             return;
         }
         fetchData();
-    }, [run1Id, run2Id]);
+    }, [runIdsParam, run1Id, run2Id]);
 
     const fetchData = async () => {
         setLoading(true);
         try {
-            const [res1, res2] = await Promise.all([
-                fetchApi(`/api/runs/${run1Id}`),
-                fetchApi(`/api/runs/${run2Id}`)
-            ]);
+            const promises = runIds.map(id => fetchApi(`/api/runs/${id}`));
+            const responses = await Promise.all(promises);
 
-            if (!res1.ok || !res2.ok) throw new Error('Failed to fetch run details');
+            const data = [];
+            for (const res of responses) {
+                if (!res.ok) throw new Error('Failed to fetch run details');
+                data.push(await res.json());
+            }
 
-            const data1 = await res1.json();
-            const data2 = await res2.json();
-
-            setRuns({ left: data1, right: data2 });
+            setRuns(data);
         } catch (err) {
             setError(err.message);
         } finally {
@@ -51,7 +56,7 @@ export function RunComparisonPage() {
         return (
             <div className="flex flex-col items-center justify-center h-screen bg-slate-50 dark:bg-slate-900">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mb-4"></div>
-                <p className="text-slate-500">Loading runs for comparison...</p>
+                <p className="text-slate-500">Loading comparison...</p>
             </div>
         );
     }
@@ -71,158 +76,137 @@ export function RunComparisonPage() {
         );
     }
 
-    const { left, right } = runs;
-
-    // Helper to compare values
-    const getDiffColor = (val1, val2, type = 'text') => {
-        if (val1 === val2) return type === 'bg' ? '' : 'text-slate-500';
-        return type === 'bg' ? 'bg-yellow-50 dark:bg-yellow-900/10' : 'text-slate-900 font-medium';
-    };
+    // Helper to find best values (min duration)
+    const minDuration = Math.min(...runs.map(r => r.duration || Infinity));
 
     // Calculate step specific diffs
-    const allStepNames = Array.from(new Set([
-        ...Object.keys(left.steps || {}),
-        ...Object.keys(right.steps || {})
-    ]));
+    const allStepNames = Array.from(new Set(
+        runs.flatMap(r => Object.keys(r.steps || {}))
+    ));
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-900 overflow-y-auto">
             {/* Header */}
-            <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-10">
-                <div className="max-w-7xl mx-auto px-6 py-4">
+            <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-10 w-full overflow-x-auto">
+                <div className="w-full min-w-max px-6 py-4">
                     <div className="flex items-center gap-4 mb-4">
                         <Link to="/runs" className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors">
                             <ArrowLeft size={20} className="text-slate-500" />
                         </Link>
                         <h1 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
                             Run Comparison
-                            <Badge variant="secondary" className="ml-2">Beta</Badge>
+                            <Badge variant="secondary" className="ml-2">({runs.length} runs)</Badge>
                         </h1>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-8">
-                        {/* Run 1 Header */}
-                        <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
-                            <StatusBadge status={left.status} />
-                            <div className="min-w-0">
-                                <h3 className="font-bold text-slate-900 dark:text-white truncate">{left.run_id}</h3>
-                                <p className="text-xs text-slate-500">{format(new Date(left.start_time), 'MMM d, HH:mm:ss')}</p>
+                    <div className={`grid gap-4`} style={{ gridTemplateColumns: `repeat(${runs.length}, minmax(300px, 1fr))` }}>
+                        {runs.map(run => (
+                            <div key={run.run_id} className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+                                <StatusBadge status={run.status} />
+                                <div className="min-w-0">
+                                    <h3 className="font-bold text-slate-900 dark:text-white truncate" title={run.run_id}>{run.run_id}</h3>
+                                    <p className="text-xs text-slate-500">{format(new Date(run.start_time), 'MMM d, HH:mm:ss')}</p>
+                                </div>
                             </div>
-                        </div>
-
-                        {/* Run 2 Header */}
-                        <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
-                            <StatusBadge status={right.status} />
-                            <div className="min-w-0">
-                                <h3 className="font-bold text-slate-900 dark:text-white truncate">{right.run_id}</h3>
-                                <p className="text-xs text-slate-500">{format(new Date(right.start_time), 'MMM d, HH:mm:ss')}</p>
-                            </div>
-                        </div>
+                        ))}
                     </div>
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+            <div className="w-full overflow-x-auto">
+                <div className="min-w-max px-6 py-8 space-y-8">
 
-                {/* Metrics Comparison */}
-                <section>
-                    <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                        <Activity size={18} /> Performance Metrics
-                    </h2>
-                    <Card className="overflow-hidden">
-                        <table className="w-full text-sm text-left">
-                            <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-xs uppercase text-slate-500 font-medium">
-                                <tr>
-                                    <th className="px-6 py-3 w-1/3">Metric</th>
-                                    <th className="px-6 py-3 w-1/3 border-r border-slate-200 dark:border-slate-700">Run A</th>
-                                    <th className="px-6 py-3 w-1/3">Run B</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                                <tr className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                                    <td className="px-6 py-3 font-medium text-slate-700 dark:text-slate-300">Duration</td>
-                                    <td className={`px-6 py-3 border-r border-slate-100 dark:border-slate-700 ${left.duration < right.duration ? 'text-emerald-600' : 'text-slate-600'}`}>
-                                        {left.duration?.toFixed(2)}s
-                                    </td>
-                                    <td className={`px-6 py-3 ${right.duration < left.duration ? 'text-emerald-600' : 'text-slate-600'}`}>
-                                        {right.duration?.toFixed(2)}s
-                                    </td>
-                                </tr>
-                                <tr className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                                    <td className="px-6 py-3 font-medium text-slate-700 dark:text-slate-300">Step Count</td>
-                                    <td className="px-6 py-3 border-r border-slate-100 dark:border-slate-700 text-slate-600">
-                                        {Object.keys(left.steps || {}).length}
-                                    </td>
-                                    <td className="px-6 py-3 text-slate-600">
-                                        {Object.keys(right.steps || {}).length}
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </Card>
-                </section>
-
-                {/* Steps Comparison */}
-                <section>
-                    <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                        <Layers size={18} /> Step Execution
-                    </h2>
-                    <Card className="overflow-hidden">
-                        <table className="w-full text-sm text-left">
-                            <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-xs uppercase text-slate-500 font-medium">
-                                <tr>
-                                    <th className="px-6 py-3 w-1/3">Step Name</th>
-                                    <th className="px-6 py-3 w-1/3 border-r border-slate-200 dark:border-slate-700">Run A (Status / Time)</th>
-                                    <th className="px-6 py-3 w-1/3">Run B (Status / Time)</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                                {allStepNames.map(stepName => {
-                                    const stepA = left.steps?.[stepName];
-                                    const stepB = right.steps?.[stepName];
-
-                                    // Highlight if status matches but duration is significantly different (>20%)
-                                    const durationDiffers = stepA?.duration && stepB?.duration &&
-                                        Math.abs(stepA.duration - stepB.duration) / Math.min(stepA.duration, stepB.duration) > 0.2;
-
-                                    return (
-                                        <tr key={stepName} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                                            <td className="px-6 py-3 font-medium text-slate-700 dark:text-slate-300">{stepName}</td>
-
-                                            {/* Run A Step */}
-                                            <td className="px-6 py-3 border-r border-slate-100 dark:border-slate-700">
-                                                {stepA ? (
-                                                    <div className="flex items-center justify-between">
-                                                        <StatusBadge status={stepA.success ? 'completed' : stepA.error ? 'failed' : 'pending'} size="sm" />
-                                                        <span className={`font-mono text-xs ${durationDiffers ? 'text-amber-600 font-bold' : 'text-slate-500'}`}>
-                                                            {stepA.duration?.toFixed(2)}s
-                                                        </span>
-                                                    </div>
-                                                ) : (
-                                                    <span className="text-slate-400 italic text-xs">Not executed</span>
-                                                )}
+                    {/* Metrics Comparison */}
+                    <section>
+                        <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                            <Activity size={18} /> Performance Metrics
+                        </h2>
+                        <Card className="overflow-hidden">
+                            <table className="w-full text-sm text-left">
+                                <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-xs uppercase text-slate-500 font-medium">
+                                    <tr>
+                                        <th className="px-6 py-3 w-48 sticky left-0 bg-slate-50 dark:bg-slate-800 z-10 border-r border-slate-200 dark:border-slate-700">Metric</th>
+                                        {runs.map((run, i) => (
+                                            <th key={run.run_id} className={`px-6 py-3 min-w-[200px] ${i < runs.length - 1 ? 'border-r border-slate-200 dark:border-slate-700' : ''}`}>
+                                                {run.run_id.slice(0, 8)}
+                                            </th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                                    <tr className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                        <td className="px-6 py-3 font-medium text-slate-700 dark:text-slate-300 sticky left-0 bg-white dark:bg-slate-900 border-r border-slate-100 dark:border-slate-700">Duration</td>
+                                        {runs.map((run, i) => (
+                                            <td key={run.run_id} className={`px-6 py-3 ${i < runs.length - 1 ? 'border-r border-slate-100 dark:border-slate-700' : ''} ${run.duration === minDuration ? 'text-emerald-600 font-bold' : 'text-slate-600'}`}>
+                                                {run.duration?.toFixed(2)}s
+                                                {run.duration === minDuration && runs.length > 1 && <span className="ml-2 text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 px-1.5 py-0.5 rounded-full">Fastest</span>}
                                             </td>
-
-                                            {/* Run B Step */}
-                                            <td className="px-6 py-3">
-                                                {stepB ? (
-                                                    <div className="flex items-center justify-between">
-                                                        <StatusBadge status={stepB.success ? 'completed' : stepB.error ? 'failed' : 'pending'} size="sm" />
-                                                        <span className={`font-mono text-xs ${durationDiffers ? 'text-amber-600 font-bold' : 'text-slate-500'}`}>
-                                                            {stepB.duration?.toFixed(2)}s
-                                                        </span>
-                                                    </div>
-                                                ) : (
-                                                    <span className="text-slate-400 italic text-xs">Not executed</span>
-                                                )}
+                                        ))}
+                                    </tr>
+                                    <tr className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                        <td className="px-6 py-3 font-medium text-slate-700 dark:text-slate-300 sticky left-0 bg-white dark:bg-slate-900 border-r border-slate-100 dark:border-slate-700">Step Count</td>
+                                        {runs.map((run, i) => (
+                                            <td key={run.run_id} className={`px-6 py-3 text-slate-600 ${i < runs.length - 1 ? 'border-r border-slate-100 dark:border-slate-700' : ''}`}>
+                                                {Object.keys(run.steps || {}).length}
                                             </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </Card>
-                </section>
+                                        ))}
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </Card>
+                    </section>
+
+                    {/* Steps Comparison */}
+                    <section>
+                        <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                            <Layers size={18} /> Step Execution
+                        </h2>
+                        <Card className="overflow-hidden">
+                            <table className="w-full text-sm text-left">
+                                <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-xs uppercase text-slate-500 font-medium">
+                                    <tr>
+                                        <th className="px-6 py-3 w-48 sticky left-0 bg-slate-50 dark:bg-slate-800 z-10 border-r border-slate-200 dark:border-slate-700">Step Name</th>
+                                        {runs.map((run, i) => (
+                                            <th key={run.run_id} className={`px-6 py-3 min-w-[200px] ${i < runs.length - 1 ? 'border-r border-slate-200 dark:border-slate-700' : ''}`}>
+                                                {run.run_id.slice(0, 8)}
+                                            </th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                                    {allStepNames.map(stepName => {
+                                        // Calculate diffs for this step row
+                                        const stepDurations = runs.map(r => r.steps?.[stepName]?.duration || Infinity);
+                                        const minStepDuration = Math.min(...stepDurations);
+
+                                        return (
+                                            <tr key={stepName} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                                <td className="px-6 py-3 font-medium text-slate-700 dark:text-slate-300 sticky left-0 bg-white dark:bg-slate-900 border-r border-slate-100 dark:border-slate-700">{stepName}</td>
+                                                {runs.map((run, i) => {
+                                                    const step = run.steps?.[stepName];
+                                                    return (
+                                                        <td key={run.run_id} className={`px-6 py-3 ${i < runs.length - 1 ? 'border-r border-slate-100 dark:border-slate-700' : ''}`}>
+                                                            {step ? (
+                                                                <div className="flex items-center justify-between gap-4">
+                                                                    <StatusBadge status={step.success ? 'completed' : step.error ? 'failed' : 'pending'} size="sm" />
+                                                                    <span className={`font-mono text-xs ${step.duration === minStepDuration && runs.length > 1 ? 'text-emerald-600 font-bold' : 'text-slate-500'}`}>
+                                                                        {step.duration?.toFixed(2)}s
+                                                                    </span>
+                                                                </div>
+                                                            ) : (
+                                                                <span className="text-slate-400 italic text-xs">Not executed</span>
+                                                            )}
+                                                        </td>
+                                                    );
+                                                })}
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </Card>
+                    </section>
+                </div>
             </div>
         </div>
     );

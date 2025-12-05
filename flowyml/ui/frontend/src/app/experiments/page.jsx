@@ -19,6 +19,10 @@ export function Experiments() {
     const { selectedProject } = useProject();
     const navigate = useNavigate();
 
+    // Selection & Comparison State
+    const [selectionMode, setSelectionMode] = useState('single');
+    const [selectedIds, setSelectedIds] = useState([]);
+
     useEffect(() => {
         const fetchExperiments = async () => {
             setLoading(true);
@@ -39,7 +43,33 @@ export function Experiments() {
     }, [selectedProject]);
 
     const handleExperimentSelect = (experiment) => {
-        setSelectedExperiment(experiment);
+        if (selectionMode === 'single') {
+            setSelectedExperiment(experiment);
+        }
+    };
+
+    const toggleSelectionMode = () => {
+        if (selectionMode === 'single') {
+            setSelectionMode('multi');
+            setSelectedIds([]);
+        } else {
+            setSelectionMode('single');
+            setSelectedIds([]);
+        }
+    };
+
+    const handleMultiSelect = (id, checked) => {
+        if (checked) {
+            setSelectedIds(prev => [...prev, id]);
+        } else {
+            setSelectedIds(prev => prev.filter(i => i !== id));
+        }
+    };
+
+    const handleCompare = () => {
+        if (selectedIds.length >= 2) {
+            navigate(`/experiments/compare?ids=${selectedIds.join(',')}`);
+        }
     };
 
     return (
@@ -55,6 +85,33 @@ export function Experiments() {
                         <p className="text-sm text-slate-600 dark:text-slate-400">
                             Manage and track your ML experiments
                         </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        {selectionMode === 'multi' ? (
+                            <>
+                                <span className="text-sm text-slate-500 mr-2">
+                                    {selectedIds.length} selected
+                                </span>
+                                <Button
+                                    size="sm"
+                                    variant="primary"
+                                    disabled={selectedIds.length < 2}
+                                    onClick={handleCompare}
+                                >
+                                    <Activity size={16} className="mr-2" />
+                                    Compare
+                                </Button>
+                                <Button variant="ghost" size="sm" onClick={toggleSelectionMode}>
+                                    <Layout size={16} className="mr-2" />
+                                    Cancel
+                                </Button>
+                            </>
+                        ) : (
+                            <Button variant="outline" size="sm" onClick={toggleSelectionMode}>
+                                <Activity size={16} className="mr-2" />
+                                Select to Compare
+                            </Button>
+                        )}
                     </div>
                 </div>
             </div>
@@ -74,6 +131,9 @@ export function Experiments() {
                                     projectId={selectedProject}
                                     onSelect={handleExperimentSelect}
                                     selectedId={selectedExperiment?.experiment_id}
+                                    selectionMode={selectionMode}
+                                    selectedIds={selectedIds}
+                                    onMultiSelect={handleMultiSelect}
                                 />
                             </div>
                         </div>

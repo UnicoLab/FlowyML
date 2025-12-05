@@ -72,22 +72,15 @@ export function Runs() {
 
     const handleMultiSelect = (runId, checked) => {
         if (checked) {
-            if (selectedRunIds.length >= 2) {
-                // Prevent selecting more than 2 for now, or just replace the oldest?
-                // Let's just allow max 2 for comparison, or show alert.
-                // Better: Allow selecting many, but disable button if != 2.
-                setSelectedRunIds(prev => [...prev, runId]);
-            } else {
-                setSelectedRunIds(prev => [...prev, runId]);
-            }
+            setSelectedRunIds(prev => [...prev, runId]);
         } else {
             setSelectedRunIds(prev => prev.filter(id => id !== runId));
         }
     };
 
     const handleCompare = () => {
-        if (selectedRunIds.length === 2) {
-            navigate(`/compare?run1=${selectedRunIds[0]}&run2=${selectedRunIds[1]}`);
+        if (selectedRunIds.length >= 2) {
+            navigate(`/compare?runs=${selectedRunIds.join(',')}`);
         }
     };
 
@@ -114,7 +107,7 @@ export function Runs() {
                                 <Button
                                     size="sm"
                                     variant="primary"
-                                    disabled={selectedRunIds.length !== 2}
+                                    disabled={selectedRunIds.length < 2}
                                     onClick={handleCompare}
                                 >
                                     <GitCompare size={16} className="mr-2" />

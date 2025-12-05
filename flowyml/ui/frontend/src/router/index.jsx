@@ -17,6 +17,7 @@ import { Plugins } from '../app/plugins/page';
 import { Settings } from '../app/settings/page';
 import { TokenManagement } from '../app/tokens/page';
 import { RunComparisonPage } from '../app/compare/page';
+import { ExperimentComparisonPage } from '../app/experiments/compare/page';
 
 export const router = createBrowserRouter([
     {
@@ -30,6 +31,7 @@ export const router = createBrowserRouter([
             { path: 'runs/:runId', element: <RunDetails /> },
             { path: 'assets', element: <Assets /> },
             { path: 'experiments', element: <Experiments /> },
+            { path: 'experiments/compare', element: <ExperimentComparisonPage /> },
             { path: 'experiments/:experimentId', element: <ExperimentDetails /> },
             { path: 'traces', element: <Traces /> },
             { path: 'projects', element: <Projects /> },

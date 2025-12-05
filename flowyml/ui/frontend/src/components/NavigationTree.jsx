@@ -264,6 +264,9 @@ export function NavigationTree({
                 level={level}
                 isActive={selectedId === exp.experiment_id}
                 onClick={() => onSelect?.(exp)}
+                checkable={selectionMode === 'multi'}
+                checked={selectedIds?.includes(exp.experiment_id)}
+                onCheck={(checked) => onMultiSelect?.(exp.experiment_id, checked)}
                 badge={
                     <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500 px-1.5 py-0.5 rounded-full">
                         {exp.run_count || 0}
