@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "flowyml"
-version = "1.4.0"
+version = "1.5.0"
 description = "Next-Generation ML Pipeline Framework"
 authors = ["flowyml Team <support@unicolab.ai>"]
 license = "Apache-2.0"
