@@ -453,7 +453,33 @@ class LocalOrchestrator(Orchestrator):
                                                     self._self = asset
 
                                                 def __getattr__(self, name):  # noqa: B023
-                                                    # Try to get from asset first (handles all Asset properties)
+                                                    # Handle special cases FIRST before generic hasattr check
+                                                    # This is important because Asset has a 'metadata' attribute
+                                                    # that is an AssetMetadata dataclass, not a dict
+
+                                                    # Expose metadata as a merged dict of properties + tags
+                                                    # This MUST come before hasattr check because Asset.metadata
+                                                    # is an AssetMetadata dataclass, not a dict
+                                                    if name == "metadata":  # noqa: B023
+                                                        # Create a dict that merges properties and tags
+                                                        # Tags take precedence if there's a conflict
+                                                        metadata_dict = (
+                                                            dict(self._asset.properties)
+                                                            if self._asset.properties
+                                                            else {}
+                                                        )
+                                                        if self._asset.tags:
+                                                            metadata_dict.update(self._asset.tags)
+                                                        return metadata_dict
+
+                                                    # For Metrics, map .metrics to .data or .get_all_metrics()
+                                                    if isinstance(self._asset, Metrics):
+                                                        if name == "metrics":  # noqa: B023
+                                                            return (
+                                                                self._asset.get_all_metrics() or self._asset.data or {}  # noqa: B023
+                                                            )
+
+                                                    # Now try to get from asset (handles all Asset properties)
                                                     try:
                                                         if hasattr(self._asset, name):  # noqa: B023
                                                             attr = getattr(self._asset, name)  # noqa: B023
@@ -474,39 +500,15 @@ class LocalOrchestrator(Orchestrator):
                                                         )
                                                         pass
 
-                                                    # For Metrics, map .metrics to .data or .get_all_metrics()
-                                                    if isinstance(self._asset, Metrics):
-                                                        if name == "metrics":  # noqa: B023
-                                                            return (
-                                                                self._asset.get_all_metrics() or self._asset.data or {}  # noqa: B023
-                                                            )
-
-                                                    # For all Assets, expose .data
+                                                    # Fallback: expose common properties/tags/data
                                                     if name == "data":  # noqa: B023
                                                         return self._asset.data
 
-                                                    # Expose properties dict
                                                     if name == "properties":  # noqa: B023
                                                         return self._asset.properties
 
-                                                    # Expose tags
                                                     if name == "tags":  # noqa: B023
                                                         return self._asset.tags
-
-                                                    # Expose metadata (as alias for properties + tags)
-                                                    if name == "metadata":  # noqa: B023
-                                                        # Create a dict that merges properties and tags
-                                                        # Tags take precedence if there's a conflict
-                                                        # Start with properties, then update with tags (tags override)
-                                                        # Use dict() constructor to ensure it's a proper dict with .get() method
-                                                        metadata_dict = (
-                                                            dict(self._asset.properties)
-                                                            if self._asset.properties
-                                                            else {}
-                                                        )
-                                                        if self._asset.tags:
-                                                            metadata_dict.update(self._asset.tags)
-                                                        return metadata_dict
 
                                                     raise AttributeError(  # noqa: B023
                                                         f"'{type(self).__name__}' object has no attribute '{name}'",  # noqa: B023
@@ -603,10 +605,11 @@ class LocalOrchestrator(Orchestrator):
 
                     # Check if selected_step is already a Step object or a function
                     if isinstance(selected_step, Step):
-                        # Already a Step object, use it directly
+                        # Already a Step object (e.g., from @step decorator), use it directly
                         step_obj = selected_step
                     else:
-                        # It's a function, try to find existing Step or create one
+                        # It's a function, try to find existing Step in pipeline.steps
+                        # or check if any step has this function
                         step_obj = next((s for s in pipeline.steps if s.func == selected_step), None)
 
                         # If step not found in pipeline.steps, it's a conditional step - create Step object on the fly

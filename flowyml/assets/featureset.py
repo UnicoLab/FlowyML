@@ -164,6 +164,11 @@ class FeatureSet(Asset):
         """Get the feature data."""
         return self._data
 
+    @data.setter
+    def data(self, value: Any) -> None:
+        """Set the feature data."""
+        self._data = value
+
     @property
     def feature_names(self) -> list[str]:
         """Get feature names."""

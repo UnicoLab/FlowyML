@@ -107,6 +107,9 @@ class Project:
         # Use project metadata store
         pipeline.metadata_store = self.metadata_store
 
+        # Set project name on pipeline for stats tracking
+        pipeline.project_name = self.name
+
         # Register pipeline
         if name not in self.metadata["pipelines"]:
             self.metadata["pipelines"].append(name)
@@ -161,7 +164,7 @@ class Project:
 
     def get_stats(self) -> dict[str, Any]:
         """Get project statistics."""
-        stats = self.metadata_store.get_statistics()
+        stats = self.metadata_store.get_statistics(project=self.name)
         stats["project_name"] = self.name
         stats["pipelines"] = len(self.metadata["pipelines"])
         return stats

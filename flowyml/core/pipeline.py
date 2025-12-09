@@ -272,6 +272,11 @@ class Pipeline:
                 proj.metadata["pipelines"].append(name)
                 proj._save_metadata()
 
+            # Store project name for later use (e.g., in _save_run)
+            self.project_name = project_to_use
+        else:
+            self.project_name = None
+
         # State
         self._built = False
         self.step_groups: list[Any] = []  # Will hold StepGroup objects
@@ -770,6 +775,7 @@ class Pipeline:
             if hasattr(result.docker_config, "to_dict")
             else result.docker_config,
             "remote_job_id": result.remote_job_id,
+            "project": getattr(self, "project_name", None),  # Include project for stats tracking
         }
         self.metadata_store.save_run(result.run_id, metadata)
 

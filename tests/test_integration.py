@@ -338,6 +338,7 @@ class TestFeatureIntegration(unittest.TestCase):
         # Link versioned pipeline to project
         versioned.pipeline.metadata_store = project.metadata_store
         versioned.pipeline.runs_dir = project.runs_dir
+        versioned.pipeline.project_name = project.name  # Required for stats tracking
         versioned.version = "v1.0.0"
 
         # Setup monitoring
