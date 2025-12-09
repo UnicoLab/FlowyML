@@ -3,6 +3,7 @@
 import pytest
 from flowyml.core.step import step
 from flowyml.core.pipeline import Pipeline
+from flowyml.core.context import Context
 from flowyml.core.resources import ResourceRequirements, GPUConfig
 from flowyml.core.step_grouping import StepGroupAnalyzer, get_execution_units
 
@@ -406,3 +407,84 @@ class TestExecutionUnits:
         # Last should be step_d
         assert units[0].name == "step_a"
         assert units[-1].name == "step_d"
+
+    def test_grouped_steps_with_context(self):
+        """Test that context parameters are properly injected to each step in a group."""
+        from flowyml import context
+
+        ctx = context(learning_rate=0.001, epochs=10, batch_size=32)
+
+        @step(outputs=["data"], execution_group="training")
+        def load_data(learning_rate: float):
+            # This step needs learning_rate from context
+            return {"data": [1, 2, 3], "lr": learning_rate}
+
+        @step(inputs=["data"], outputs=["model"], execution_group="training")
+        def train_model(data: dict, learning_rate: float, epochs: int, batch_size: int):
+            # This step needs multiple context parameters
+            assert learning_rate == 0.001
+            assert epochs == 10
+            assert batch_size == 32
+            return {"model": "trained", "lr": learning_rate, "epochs": epochs, "batch_size": batch_size}
+
+        @step(inputs=["model"], outputs=["result"], execution_group="training")
+        def evaluate(model: dict, epochs: int):
+            # This step needs epochs from context
+            assert epochs == 10
+            return {"result": "evaluated", "epochs": epochs}
+
+        pipeline = Pipeline("test_grouped_context", context=ctx)
+        pipeline.add_step(load_data)
+        pipeline.add_step(train_model)
+        pipeline.add_step(evaluate)
+
+        result = pipeline.run()
+
+        assert result.success
+        # Verify all steps executed successfully
+        assert result.step_results["load_data"].success
+        assert result.step_results["train_model"].success
+        assert result.step_results["evaluate"].success
+        # Verify context was injected correctly
+        assert result.outputs["model"]["lr"] == 0.001
+        assert result.outputs["model"]["epochs"] == 10
+        assert result.outputs["model"]["batch_size"] == 32
+        assert result.outputs["result"]["epochs"] == 10
+
+    def test_grouped_steps_with_different_context_params(self):
+        """Test that each step in a group gets its own context parameters injected."""
+        from flowyml import context
+
+        ctx = context(param1="value1", param2="value2", param3="value3")
+
+        @step(outputs=["a"], execution_group="group1")
+        def step_a(param1: str):
+            # Only needs param1
+            assert param1 == "value1"
+            return {"a": param1}
+
+        @step(inputs=["a"], outputs=["b"], execution_group="group1")
+        def step_b(a: dict, param2: str):
+            # Needs param2 (and input a)
+            assert param2 == "value2"
+            return {"b": param2, "a": a}
+
+        @step(inputs=["b"], outputs=["c"], execution_group="group1")
+        def step_c(b: dict, param3: str):
+            # Needs param3 (and input b)
+            assert param3 == "value3"
+            return {"c": param3, "b": b}
+
+        pipeline = Pipeline("test_different_context", context=ctx)
+        pipeline.add_step(step_a)
+        pipeline.add_step(step_b)
+        pipeline.add_step(step_c)
+
+        result = pipeline.run()
+
+        assert result.success
+        # Verify each step got its correct context parameter
+        assert result.step_results["step_a"].success
+        assert result.step_results["step_b"].success
+        assert result.step_results["step_c"].success
+        assert result.outputs["c"]["c"] == "value3"

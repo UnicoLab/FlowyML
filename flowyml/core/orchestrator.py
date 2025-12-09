@@ -94,16 +94,16 @@ class LocalOrchestrator(Orchestrator):
             # Check if unit is a group or individual step
             if isinstance(unit, StepGroup):
                 # Execute entire group
+                # Show group execution start
+                if hasattr(pipeline, "_display") and pipeline._display:
+                    for step in unit.steps:
+                        pipeline._display.update_step_status(step_name=step.name, status="running")
 
-                # Get context parameters (use first step's function as representative)
-                first_step = unit.steps[0]
-                context_params = pipeline.context.inject_params(first_step.func)
-
-                # Execute the group
+                # Pass pipeline context so each step can get its own injected params
                 group_results = pipeline.executor.execute_step_group(
                     step_group=unit,
                     inputs=step_outputs,
-                    context_params=context_params,
+                    context=pipeline.context,  # Pass full context object
                     cache_store=pipeline.cache_store,
                     artifact_store=pipeline.stack.artifact_store if pipeline.stack else None,
                     run_id=run_id,
@@ -112,6 +112,16 @@ class LocalOrchestrator(Orchestrator):
 
                 # Process each step result
                 for step_result in group_results:
+                    # Update display
+                    if hasattr(pipeline, "_display") and pipeline._display:
+                        pipeline._display.update_step_status(
+                            step_name=step_result.step_name,
+                            status="success" if step_result.success else "failed",
+                            duration=step_result.duration_seconds,
+                            cached=step_result.cached,
+                            error=step_result.error,
+                        )
+
                     result.add_step_result(step_result)
 
                     # Handle failure
@@ -186,6 +196,10 @@ class LocalOrchestrator(Orchestrator):
                 # Get context parameters for this step
                 context_params = pipeline.context.inject_params(step.func)
 
+                # Update display - step starting
+                if hasattr(pipeline, "_display") and pipeline._display:
+                    pipeline._display.update_step_status(step_name=step.name, status="running")
+
                 # Run step start hooks
                 hooks.run_step_start_hooks(step, step_inputs)
 
@@ -202,6 +216,16 @@ class LocalOrchestrator(Orchestrator):
 
                 # Run step end hooks
                 hooks.run_step_end_hooks(step, step_result)
+
+                # Update display - step completed
+                if hasattr(pipeline, "_display") and pipeline._display:
+                    pipeline._display.update_step_status(
+                        step_name=step.name,
+                        status="success" if step_result.success else "failed",
+                        duration=step_result.duration_seconds,
+                        cached=step_result.cached,
+                        error=step_result.error,
+                    )
 
                 result.add_step_result(step_result)
 

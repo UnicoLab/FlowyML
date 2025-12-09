@@ -83,10 +83,37 @@ export function PipelineGraph({ dag, steps, selectedStep, onStepSelect, onArtifa
             return id;
         };
 
+        // Map execution groups to colors
+        const groupColors = {};
+        const groupColorPalette = [
+            { bg: 'bg-blue-50 dark:bg-blue-900/20', border: 'border-blue-400 dark:border-blue-500', text: 'text-blue-700 dark:text-blue-300', badge: 'bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-300' },
+            { bg: 'bg-purple-50 dark:bg-purple-900/20', border: 'border-purple-400 dark:border-purple-500', text: 'text-purple-700 dark:text-purple-300', badge: 'bg-purple-100 dark:bg-purple-800 text-purple-700 dark:text-purple-300' },
+            { bg: 'bg-green-50 dark:bg-green-900/20', border: 'border-green-400 dark:border-green-500', text: 'text-green-700 dark:text-green-300', badge: 'bg-green-100 dark:bg-green-800 text-green-700 dark:text-green-300' },
+            { bg: 'bg-orange-50 dark:bg-orange-900/20', border: 'border-orange-400 dark:border-orange-500', text: 'text-orange-700 dark:text-orange-300', badge: 'bg-orange-100 dark:bg-orange-800 text-orange-700 dark:text-orange-300' },
+            { bg: 'bg-pink-50 dark:bg-pink-900/20', border: 'border-pink-400 dark:border-pink-500', text: 'text-pink-700 dark:text-pink-300', badge: 'bg-pink-100 dark:bg-pink-800 text-pink-700 dark:text-pink-300' },
+            { bg: 'bg-cyan-50 dark:bg-cyan-900/20', border: 'border-cyan-400 dark:border-cyan-500', text: 'text-cyan-700 dark:text-cyan-300', badge: 'bg-cyan-100 dark:bg-cyan-800 text-cyan-700 dark:text-cyan-300' },
+        ];
+
+        // First pass: collect all execution groups
+        const executionGroups = new Set();
+        dag.nodes.forEach(node => {
+            const stepData = steps?.[node.id] || {};
+            if (stepData.execution_group) {
+                executionGroups.add(stepData.execution_group);
+            }
+        });
+
+        // Assign colors to groups
+        Array.from(executionGroups).forEach((group, idx) => {
+            groupColors[group] = groupColorPalette[idx % groupColorPalette.length];
+        });
+
         // 1. Create Step Nodes and Connections
         dag.nodes.forEach(node => {
             const stepData = steps?.[node.id] || {};
             const status = stepData.success ? 'success' : stepData.error ? 'failed' : stepData.running ? 'running' : 'pending';
+            const executionGroup = stepData.execution_group;
+            const groupColor = executionGroup ? groupColors[executionGroup] : null;
 
             nodes.push({
                 id: node.id,
@@ -96,7 +123,9 @@ export function PipelineGraph({ dag, steps, selectedStep, onStepSelect, onArtifa
                     status,
                     duration: stepData.duration,
                     cached: stepData.cached,
-                    selected: selectedStep === node.id
+                    selected: selectedStep === node.id,
+                    execution_group: executionGroup,
+                    groupColor: groupColor
                 }
             });
 
@@ -234,12 +263,15 @@ function CustomStepNode({ data }) {
     };
 
     const config = statusConfig[data.status] || statusConfig.pending;
+    const groupColor = data.groupColor;
+    const hasGroup = data.execution_group && groupColor;
 
     return (
         <div
             className={`
                 relative px-4 py-3 rounded-lg border-2 transition-all duration-200
-                ${config.bg} ${config.border}
+                ${hasGroup ? groupColor.bg : config.bg}
+                ${hasGroup ? groupColor.border : config.border}
                 ${data.selected ? `ring-4 ${config.ring} shadow-lg` : `hover:shadow-md ${config.shadow}`}
             `}
             style={{ width: stepNodeWidth, height: stepNodeHeight }}
@@ -252,10 +284,17 @@ function CustomStepNode({ data }) {
                         {config.icon}
                     </div>
                     <div className="min-w-0 flex-1">
-                        <h3 className="font-bold text-slate-900 text-sm truncate" title={data.label}>
+                        <h3 className={`font-bold text-sm truncate ${hasGroup ? groupColor.text : 'text-slate-900 dark:text-white'}`} title={data.label}>
                             {data.label}
                         </h3>
-                        <p className="text-xs text-slate-500 capitalize">{data.status}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                            <p className="text-xs text-slate-500 capitalize">{data.status}</p>
+                            {hasGroup && (
+                                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${groupColor.badge}`}>
+                                    {data.execution_group}
+                                </span>
+                            )}
+                        </div>
                     </div>
                 </div>
 

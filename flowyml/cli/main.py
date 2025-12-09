@@ -4,6 +4,14 @@ import click
 from pathlib import Path
 from flowyml.utils.config import get_config
 
+# Import model commands early to avoid E402 error
+from flowyml.cli.models import (
+    list_models,
+    promote_model,
+    show_model,
+    delete_model,
+)
+
 
 @click.group()
 @click.version_option(version="0.1.0", prog_name="flowyml")
@@ -360,6 +368,19 @@ def clear() -> None:
         click.echo("✓ Cache cleared successfully")
     except Exception as e:
         click.echo(f"✗ Error clearing cache: {e}", err=True)
+
+
+@cli.group()
+def models() -> None:
+    """Model registry management commands."""
+    pass
+
+
+# Register model commands
+models.add_command(list_models)
+models.add_command(promote_model)
+models.add_command(show_model)
+models.add_command(delete_model)
 
 
 @cli.group()

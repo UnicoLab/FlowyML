@@ -354,12 +354,7 @@ class Pipeline:
                     ui_url = ui_manager.get_url()
                     run_url = ui_manager.get_run_url(run_id)
 
-                    # Display UI URL
-                    if ui_url:
-                        print(f"\n🌐 flowyml UI is available at: {ui_url}")
-                        if run_url:
-                            print(f"📊 View this run in real-time: {run_url}")
-                        print()  # Empty line for readability
+                    # UI URL will be shown in summary, no need to print here
             except Exception:
                 # Silently fail if UI is not available
                 pass
@@ -394,6 +389,26 @@ class Pipeline:
         resource_config = self._coerce_resource_config(resources)
         docker_cfg = self._coerce_docker_config(docker_config)
 
+        # Initialize display system for beautiful CLI output
+        display = None
+        try:
+            from flowyml.core.display import PipelineDisplay
+
+            display = PipelineDisplay(
+                pipeline_name=self.name,
+                steps=self.steps,
+                dag=self.dag,
+                verbose=True,
+            )
+            display.show_header()
+            display.show_execution_start()
+        except Exception:
+            # Silently fail if display system not available
+            pass
+
+        # Store display on pipeline for orchestrator to use
+        self._display = display
+
         # Run the pipeline via orchestrator
         result = orchestrator.run_pipeline(
             self,
@@ -404,6 +419,10 @@ class Pipeline:
             context=context,
             **kwargs,
         )
+
+        # Show summary
+        if display:
+            display.show_summary(result, ui_url=ui_url, run_url=run_url)
 
         # If result is just a job ID (remote execution), wrap it in a basic result
         if isinstance(result, str):
@@ -431,6 +450,7 @@ class Pipeline:
                     "outputs": step.outputs,
                     "source_code": step.source_code,
                     "tags": step.tags,
+                    "execution_group": step.execution_group,
                 }
                 for step in self.steps
             ],
@@ -530,6 +550,7 @@ class Pipeline:
                 "inputs": step.inputs,
                 "outputs": step.outputs,
                 "tags": step.tags,
+                "execution_group": step.execution_group,
                 "resources": step.resources.to_dict() if hasattr(step.resources, "to_dict") else step.resources,
             }
 

@@ -183,7 +183,8 @@ class Executor:
         self,
         step_group,  # StepGroup
         inputs: dict[str, Any],
-        context_params: dict[str, Any],
+        context: Any | None = None,  # Context object for per-step injection
+        context_params: dict[str, Any] | None = None,  # Deprecated: use context instead
         cache_store: Any | None = None,
         artifact_store: Any | None = None,
         run_id: str | None = None,
@@ -194,7 +195,8 @@ class Executor:
         Args:
             step_group: StepGroup to execute
             inputs: Input data available to the group
-            context_params: Parameters from context
+            context: Context object for per-step parameter injection (preferred)
+            context_params: Parameters from context (deprecated, use context instead)
             cache_store: Cache store for caching
             artifact_store: Artifact store for materialization
             run_id: Run identifier
@@ -398,7 +400,8 @@ class LocalExecutor(Executor):
         self,
         step_group,  # StepGroup from step_grouping module
         inputs: dict[str, Any],
-        context_params: dict[str, Any],
+        context: Any | None = None,  # Context object for per-step injection
+        context_params: dict[str, Any] | None = None,  # Deprecated: use context instead
         cache_store: Any | None = None,
         artifact_store: Any | None = None,
         run_id: str | None = None,
@@ -411,7 +414,8 @@ class LocalExecutor(Executor):
         Args:
             step_group: StepGroup containing steps to execute
             inputs: Input data available to the group
-            context_params: Parameters from context
+            context: Context object for per-step parameter injection (preferred)
+            context_params: Parameters from context (deprecated, use context instead)
             cache_store: Cache store for caching
             artifact_store: Artifact store for materialization
             run_id: Run identifier
@@ -434,11 +438,21 @@ class LocalExecutor(Executor):
                 if input_name in step_outputs:
                     step_inputs[input_name] = step_outputs[input_name]
 
+            # Inject context parameters for this specific step
+            if context is not None:
+                # Use context object to inject params per step
+                step_context_params = context.inject_params(step.func)
+            elif context_params is not None:
+                # Fallback to provided context_params (backward compatibility)
+                step_context_params = context_params
+            else:
+                step_context_params = {}
+
             # Execute this step
             result = self.execute_step(
                 step=step,
                 inputs=step_inputs,
-                context_params=context_params,
+                context_params=step_context_params,
                 cache_store=cache_store,
                 artifact_store=artifact_store,
                 run_id=run_id,

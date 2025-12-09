@@ -184,7 +184,7 @@ class ModelRegistry:
             path: Path to save to
             framework: Framework name
         """
-        from flowyml.storage.materializers import get_materializer
+        from flowyml.storage.materializers.base import get_materializer
 
         # Try to get appropriate materializer
         materializer = get_materializer(model)

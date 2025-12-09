@@ -94,7 +94,7 @@ class TestCacheComprehensive(BaseTestCase):
         @step
         def expensive_computation():
             execution_count["count"] += 1
-            time.sleep(0.01)  # Simulate expensive operation
+            time.sleep(0.05)  # Simulate expensive operation (longer sleep for more reliable timing)
             return {"result": 42}
 
         p = Pipeline("cache_reuse", enable_cache=True)
@@ -110,14 +110,19 @@ class TestCacheComprehensive(BaseTestCase):
         result2 = p.run()
         duration2 = time.time() - start2
 
-        # Verify execution count
+        # Verify execution count (should only execute once due to cache)
         self.assertEqual(execution_count["count"], 1)
 
         # Verify results are same
         self.assertEqual(result1["expensive_computation"], result2["expensive_computation"])
 
-        # Second run should be faster (cached)
-        self.assertLess(duration2, duration1)
+        # Second run should be significantly faster (cached) - allow for some timing variance
+        # Cached run should be at least 10x faster (0.05s vs <0.005s)
+        self.assertLess(
+            duration2,
+            duration1 * 0.5,
+            f"Cached run ({duration2:.4f}s) should be faster than first run ({duration1:.4f}s)",
+        )
 
 
 if __name__ == "__main__":

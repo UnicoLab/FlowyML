@@ -41,6 +41,8 @@ psycopg2-binary = ">=2.9.0"
 uvicorn = {version = ">=0.23.0", extras = ["standard"]}
 websockets = ">=11.0"
 python-multipart = ">=0.0.6"
+# Rich display for beautiful CLI output (optional but recommended)
+rich = {version = ">=13.0.0", optional = true}
 
 # Optional dependencies (extras)
 torch = {version = ">=2.0.0", optional = true}
@@ -93,6 +95,8 @@ aws = ["boto3"]
 azure = ["azure-ai-ml", "azure-identity", "azure-storage-blob"]
 # UI extra kept for backward compatibility (dependencies are now in main)
 ui = ["fastapi", "uvicorn", "websockets", "python-multipart"]
+# Rich display for beautiful CLI output
+rich = ["rich"]
 all = [
     "torch",
     "tensorflow",
