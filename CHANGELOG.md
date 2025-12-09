@@ -2,6 +2,37 @@
 
 <!-- version list -->
 
+## v1.5.0 (2025-12-08)
+
+### Chores
+
+- Save last release version for recovery [skip ci]
+  ([`38abf2e`](https://github.com/UnicoLab/FlowyML/commit/38abf2e15026ac1f23c7a5073e618b000d7ec90b))
+
+### Features
+
+- Add project filtering to global stats, inject heartbeat timestamps into runs, and improve artifact
+  viewer UI with dark mode support.
+  ([`d6ad5c6`](https://github.com/UnicoLab/FlowyML/commit/d6ad5c60c2fe430d81df76065ad3c0763a8c24ab))
+
+- Implement experiment comparison feature with multi-selection UI and a new dedicated comparison
+  page.
+  ([`6fcb613`](https://github.com/UnicoLab/FlowyML/commit/6fcb613faf885046959e3663cb8db738e7697230))
+
+- Implement real-time run visualization using websockets and React Flow.
+  ([`a618895`](https://github.com/UnicoLab/FlowyML/commit/a618895425f56f3c2c13731c859e7c5e5f592c9a))
+
+- Implement run stopping, real-time step log streaming, and execution heartbeat integration.
+  ([`3545f7e`](https://github.com/UnicoLab/FlowyML/commit/3545f7eabe80a0f2ba4f627284c36fe37b2418e6))
+
+- Improve UI data handling robustness, update backend retry policy, and add dead step marking for
+  runs.
+  ([`cf15ac0`](https://github.com/UnicoLab/FlowyML/commit/cf15ac0a4d8ae04f4422787c9969388212ce3c29))
+
+- Introduce run comparison page and enable inline artifact content viewing.
+  ([`92690aa`](https://github.com/UnicoLab/FlowyML/commit/92690aab88278610d89115ff73f35d4459767f7e))
+
+
 ## v1.4.0 (2025-12-02)
 
 ### Bug Fixes
