@@ -2,6 +2,39 @@
 
 <!-- version list -->
 
+## v1.6.0 (2025-12-09)
+
+### Chores
+
+- Save last release version for recovery [skip ci]
+  ([`65d5243`](https://github.com/UnicoLab/FlowyML/commit/65d524381903ca6071a421df1650ca9f667b486e))
+
+### Features
+
+- Add data setter to FeatureSet for improved data management and enhance metadata handling in
+  LocalOrchestrator for better attribute access and clarity.
+  ([`a9e72b4`](https://github.com/UnicoLab/FlowyML/commit/a9e72b4ee6ce076538f3f38a504d3fa242be6f21))
+
+- Enhance experiment tracking and control flow capabilities in pipelines, introducing automatic
+  logging of metrics and conditional execution with If statements for improved flexibility and
+  usability.
+  ([`c50edff`](https://github.com/UnicoLab/FlowyML/commit/c50edff3d8979804293041633fa2af2ab9661d8f))
+
+- Enhance testing capabilities by enabling parallel execution for all test types in Makefile and
+  updating pytest configuration in pyproject.toml. Update poetry.lock to reflect changes in optional
+  dependencies and improve feature set initialization in featureset.py.
+  ([`fc828fb`](https://github.com/UnicoLab/FlowyML/commit/fc828fbf4721ecdd3dda8837c97ff716ce9371d6))
+
+- Implement rich display system for pipeline execution, enhancing CLI output with execution group
+  color coding and improved step status visualization.
+  ([`aa411a1`](https://github.com/UnicoLab/FlowyML/commit/aa411a1922730c004a160e0871086267a0b162a7))
+
+- Update checkpointing functionality to be enabled by default, enhancing pipeline resilience and
+  simplifying user experience. Improve documentation with automatic checkpointing details and
+  execution history tracking in the scheduler.
+  ([`0c8b2fb`](https://github.com/UnicoLab/FlowyML/commit/0c8b2fb1060eadacf98bfc8544079b211b95f2d4))
+
+
 ## v1.5.0 (2025-12-08)
 
 ### Chores
