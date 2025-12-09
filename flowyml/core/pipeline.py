@@ -134,7 +134,38 @@ class Pipeline:
         >>> pipeline = Pipeline("my_pipeline", context=ctx)
         >>> pipeline.add_step(train)
         >>> result = pipeline.run()
+
+        # With project_name, automatically creates/attaches to project
+        >>> pipeline = Pipeline("my_pipeline", context=ctx, project_name="ml_project")
+
+        # With version parameter, automatically creates VersionedPipeline
+        >>> pipeline = Pipeline("my_pipeline", context=ctx, version="v1.0.1", project_name="ml_project")
     """
+
+    def __new__(
+        cls,
+        name: str,
+        version: str | None = None,
+        project_name: str | None = None,
+        project: str | None = None,  # For backward compatibility
+        **kwargs,
+    ):
+        """Create a Pipeline or VersionedPipeline instance.
+
+        If version is provided, automatically returns a VersionedPipeline instance.
+        Otherwise, returns a regular Pipeline instance.
+        """
+        if version is not None:
+            from flowyml.core.versioning import VersionedPipeline
+
+            # Pass project_name or project to VersionedPipeline
+            vp_kwargs = kwargs.copy()
+            if project_name:
+                vp_kwargs["project_name"] = project_name
+            elif project:
+                vp_kwargs["project"] = project
+            return VersionedPipeline(name=name, version=version, **vp_kwargs)
+        return super().__new__(cls)
 
     def __init__(
         self,
@@ -144,7 +175,9 @@ class Pipeline:
         enable_cache: bool = True,
         cache_dir: str | None = None,
         stack: Any | None = None,  # Stack instance
-        project: str | None = None,  # Project name to attach to
+        project: str | None = None,  # Project name to attach to (deprecated, use project_name)
+        project_name: str | None = None,  # Project name to attach to (creates if doesn't exist)
+        version: str | None = None,  # If provided, VersionedPipeline is created via __new__
     ):
         """Initialize pipeline.
 
@@ -155,7 +188,11 @@ class Pipeline:
             enable_cache: Whether to enable caching
             cache_dir: Optional directory for cache
             stack: Optional stack instance to run on
-            project: Optional project name to attach this pipeline to.
+            project: Optional project name to attach this pipeline to (deprecated, use project_name)
+            project_name: Optional project name to attach this pipeline to.
+                If the project doesn't exist, it will be created automatically.
+            version: Optional version string. If provided, a VersionedPipeline
+                instance is automatically created instead of a regular Pipeline.
         """
         self.name = name
         self.context = context or Context()
@@ -191,14 +228,16 @@ class Pipeline:
             self._apply_stack(stack, locked=True)
 
         # Handle Project Attachment
-        if project:
+        # Support both project_name (preferred) and project (for backward compatibility)
+        project_to_use = project_name or project
+        if project_to_use:
             from flowyml.core.project import ProjectManager
 
             manager = ProjectManager()
             # Get or create project
-            proj = manager.get_project(project)
+            proj = manager.get_project(project_to_use)
             if not proj:
-                proj = manager.create_project(project)
+                proj = manager.create_project(project_to_use)
 
             # Configure pipeline with project settings
             self.runs_dir = proj.runs_dir

@@ -27,9 +27,9 @@ class VersionedPipeline:
     Tracks changes between versions and allows comparison.
 
     Examples:
-        >>> from flowyml import VersionedPipeline, step
-        >>> pipeline = VersionedPipeline("training")
-        >>> pipeline.version = "v1.0.0"
+        >>> from flowyml import VersionedPipeline, step, context
+        >>> ctx = context(learning_rate=0.001, epochs=10)
+        >>> pipeline = VersionedPipeline("training", context=ctx, version="v1.0.0", project_name="ml_project")
         >>> pipeline.add_step(load_data)
         >>> pipeline.add_step(train_model)
         >>> pipeline.save_version()
@@ -39,6 +39,10 @@ class VersionedPipeline:
         >>> pipeline.save_version()
         >>> # Compare versions
         >>> diff = pipeline.compare_with("v1.0.0")
+
+        # Or use Pipeline with version parameter (automatically creates VersionedPipeline)
+        >>> from flowyml import Pipeline
+        >>> pipeline = Pipeline("training", context=ctx, version="v1.0.1", project_name="ml_project")
     """
 
     def __init__(
@@ -46,12 +50,17 @@ class VersionedPipeline:
         name: str,
         version: str = "v0.1.0",
         versions_dir: str = ".flowyml/versions",
+        context: Any | None = None,
+        **kwargs,
     ):
         from flowyml.core.pipeline import Pipeline
 
         self.name = name
         self._version = version
-        self.pipeline = Pipeline(name)
+        # Pass context and other kwargs to the internal Pipeline
+        # Remove 'version' from kwargs to avoid recursion
+        pipeline_kwargs = {k: v for k, v in kwargs.items() if k != "version"}
+        self.pipeline = Pipeline(name, context=context, **pipeline_kwargs)
 
         # Version storage
         self.versions_dir = Path(versions_dir) / name
