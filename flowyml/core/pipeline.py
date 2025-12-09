@@ -319,6 +319,7 @@ class Pipeline:
         resources: Any | None = None,  # ResourceConfig
         docker_config: Any | None = None,  # DockerConfig
         context: dict[str, Any] | None = None,  # Context vars override
+        auto_start_ui: bool = True,  # Auto-start UI server
         **kwargs,
     ) -> PipelineResult:
         """Execute the pipeline.
@@ -330,6 +331,7 @@ class Pipeline:
             resources: Resource configuration for execution
             docker_config: Docker configuration for containerized execution
             context: Context variables override
+            auto_start_ui: Automatically start UI server if not running and display URL
             **kwargs: Additional arguments passed to the orchestrator
 
         Returns:
@@ -339,6 +341,28 @@ class Pipeline:
         from flowyml.core.orchestrator import LocalOrchestrator
 
         run_id = str(uuid.uuid4())
+
+        # Auto-start UI server if requested
+        ui_url = None
+        run_url = None
+        if auto_start_ui:
+            try:
+                from flowyml.ui.server_manager import UIServerManager
+
+                ui_manager = UIServerManager.get_instance()
+                if ui_manager.ensure_running(auto_start=True):
+                    ui_url = ui_manager.get_url()
+                    run_url = ui_manager.get_run_url(run_id)
+
+                    # Display UI URL
+                    if ui_url:
+                        print(f"\n🌐 flowyml UI is available at: {ui_url}")
+                        if run_url:
+                            print(f"📊 View this run in real-time: {run_url}")
+                        print()  # Empty line for readability
+            except Exception:
+                # Silently fail if UI is not available
+                pass
 
         # Determine stack for this run
         if stack is not None:
