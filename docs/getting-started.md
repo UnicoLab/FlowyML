@@ -29,6 +29,7 @@ pip install flowyml
 Includes UI support and common ML dependencies:
 
 ```bash
+pip install "flowyml[ui]"
 pip install "flowyml[all]"
 ```
 

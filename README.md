@@ -199,7 +199,7 @@ pipeline.run(debug=True)  # Pauses at breakpoint
 Assets are not just files; they are first-class citizens with lineage, metadata, and versioning.
 
 ```python
-from flowyml.core import Dataset, Model, Metrics, FeatureSet
+from flowyml import Dataset, Model, Metrics, FeatureSet
 
 # Assets track their producer, lineage, and metadata automatically
 dataset = Dataset.create(data=df, name="training_data", metadata={"source": "s3"})

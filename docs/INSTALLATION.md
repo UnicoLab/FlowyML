@@ -1,7 +1,7 @@
 # Installation Guide 📦
 
 > [!TIP]
-> **Quick start**: If you're just exploring FlowyML, run `pip install "flowyml[all]"` and you're ready to go. Come back to this page when you need production-grade deployment.
+> **Quick start**: If you're just exploring FlowyML, run `pip install "flowyml[all]"` and you're ready to go. Come back to this page when you need production-grade deployment. To add support for interactive GUI: `pip install "flowyml[ui]"`.
 
 ## System Requirements
 

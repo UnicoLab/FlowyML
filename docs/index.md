@@ -345,7 +345,7 @@ pipeline.run(debug=True)
 Assets are not just files; they are first-class citizens with lineage, metadata, and versioning. Specialized types for ML workflows.
 
 ```python
-from flowyml.core import Dataset, Model, Metrics, FeatureSet
+from flowyml import Dataset, Model, Metrics, FeatureSet
 
 # Type-safe ML assets with metadata
 dataset = Dataset.create(
