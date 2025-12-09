@@ -39,11 +39,11 @@ The `VersionedPipeline` class provides:
 ## Basic Usage 🚀
 
 ```python
-from flowyml import VersionedPipeline, step
+from flowyml import VersionedPipeline, step, context
 
-# Create a versioned pipeline
-pipeline = VersionedPipeline("training_pipeline")
-pipeline.version = "v1.0.0"
+# Create a versioned pipeline with context
+ctx = context(learning_rate=0.001, epochs=10)
+pipeline = VersionedPipeline("training_pipeline", context=ctx, version="v1.0.0")
 
 # Add steps
 @step(outputs=["data"])
@@ -51,8 +51,35 @@ def load_data():
     return load_from_source()
 
 @step(inputs=["data"], outputs=["model"])
-def train(data):
-    return train_model(data)
+def train(data, learning_rate: float, epochs: int):
+    return train_model(data, learning_rate, epochs)
+
+pipeline.add_step(load_data)
+pipeline.add_step(train)
+
+# Save the version
+pipeline.save_version(metadata={"description": "Initial training pipeline"})
+```
+
+### Using Pipeline with Version Parameter
+
+You can also create a versioned pipeline directly using the `Pipeline` class with a `version` parameter:
+
+```python
+from flowyml import Pipeline, step, context
+
+ctx = context(learning_rate=0.001, epochs=10)
+
+# Automatically creates a VersionedPipeline when version is provided
+pipeline = Pipeline("training_pipeline", context=ctx, version="v1.0.1")
+
+@step(outputs=["data"])
+def load_data():
+    return load_from_source()
+
+@step(inputs=["data"], outputs=["model"])
+def train(data, learning_rate: float, epochs: int):
+    return train_model(data, learning_rate, epochs)
 
 pipeline.add_step(load_data)
 pipeline.add_step(train)
@@ -164,22 +191,22 @@ pipeline.save_version()
 
 ### Context Parameter Tracking
 
-Changes to context parameters are automatically tracked:
+Changes to context parameters are automatically tracked. You can pass context when creating the pipeline:
 
 ```python
-from flowyml import context
+from flowyml import VersionedPipeline, context
 
-ctx1 = context(learning_rate=0.001)
-pipeline = VersionedPipeline("training", context=ctx1)
+ctx1 = context(learning_rate=0.001, epochs=10)
+pipeline = VersionedPipeline("training", context=ctx1, version="v1.0.0")
 pipeline.save_version()
 
 # Change context
-ctx2 = context(learning_rate=0.01)  # Changed!
-pipeline.context = ctx2
+ctx2 = context(learning_rate=0.01, epochs=20)  # Changed!
+pipeline = VersionedPipeline("training", context=ctx2, version="v1.1.0")
 pipeline.save_version()
 
-diff = pipeline.compare_with(previous_version)
-# Will show context_changes
+diff = pipeline.compare_with("v1.0.0")
+# Will show context_changes with added, removed, and modified parameters
 ```
 
 ## Integration with CI/CD 🚀
@@ -215,7 +242,9 @@ def verify_version_changes():
 VersionedPipeline(
     name: str,
     version: str = "v0.1.0",
-    versions_dir: str = ".flowyml/versions"
+    versions_dir: str = ".flowyml/versions",
+    context: Context | None = None,
+    **kwargs  # Additional Pipeline parameters (project_name, executor, etc.)
 )
 ```
 

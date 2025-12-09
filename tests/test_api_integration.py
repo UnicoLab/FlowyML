@@ -87,6 +87,73 @@ def test_versioned_pipeline_integration():
         assert result.success
 
 
+def test_versioned_pipeline_with_context():
+    """Test VersionedPipeline with context parameter."""
+    from flowyml import context
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        ctx = context(learning_rate=0.001, epochs=10)
+        vp = VersionedPipeline("test_versioned_ctx", context=ctx, version="v1.0.0", versions_dir=tmpdir)
+
+        @step(outputs=["result"])
+        def process(learning_rate: float, epochs: int):
+            return {"value": learning_rate * epochs}
+
+        vp.add_step(process)
+        vp.save_version()
+
+        # Verify context is passed to pipeline
+        assert vp.pipeline.context.get("learning_rate") == 0.001
+        assert vp.pipeline.context.get("epochs") == 10
+
+        # Run pipeline
+        result = vp.run()
+        assert result.success
+        assert result["process"]["value"] == 0.01
+
+
+def test_versioned_pipeline_with_project_name():
+    """Test VersionedPipeline with project_name parameter."""
+    from pathlib import Path
+    from flowyml import context
+    from flowyml.utils.config import get_config
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        projects_dir = Path(tmpdir) / "projects"
+        projects_dir.mkdir()
+
+        from flowyml.utils.config import update_config
+
+        original_projects_dir = get_config().projects_dir
+        update_config(projects_dir=str(projects_dir))
+
+        try:
+            ctx = context(learning_rate=0.001)
+            vp = VersionedPipeline(
+                "test_versioned_project",
+                context=ctx,
+                version="v1.0.0",
+                project_name="test_project",
+            )
+
+            @step(outputs=["result"])
+            def process(learning_rate: float):
+                return {"value": learning_rate}
+
+            vp.add_step(process)
+            vp.save_version()
+
+            # Verify project was created
+            project_dir = projects_dir / "test_project"
+            assert project_dir.exists()
+            assert (project_dir / "project.json").exists()
+
+            # Verify pipeline uses project's runs directory
+            assert vp.pipeline.runs_dir == project_dir / "runs"
+        finally:
+            update_config(projects_dir=str(original_projects_dir))
+
+
 def test_scheduler_integration():
     """Test PipelineScheduler integration."""
     scheduler = PipelineScheduler()

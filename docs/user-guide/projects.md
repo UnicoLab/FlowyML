@@ -74,6 +74,9 @@ projects/
 
 ### Creating Pipelines
 
+You can create pipelines in projects in two ways:
+
+**Method 1: Using project.create_pipeline()**
 ```python
 project = Project("analytics")
 
@@ -86,6 +89,26 @@ ml_pipeline = project.create_pipeline("model_training")
 etl_pipeline.add_step(extract_data)
 etl_pipeline.run()
 ```
+
+**Method 2: Using project_name parameter (Recommended)**
+```python
+from flowyml import Pipeline, step
+
+# Automatically creates/attaches to project if it doesn't exist
+pipeline = Pipeline("daily_etl", project_name="analytics")
+
+@step(outputs=["data"])
+def extract_data():
+    return fetch_data()
+
+pipeline.add_step(extract_data)
+pipeline.run()
+```
+
+The `project_name` parameter automatically:
+- Creates the project if it doesn't exist
+- Attaches the pipeline to the project
+- Uses the project's metadata store and runs directory
 
 ### Querying Project Data
 
@@ -208,19 +231,29 @@ pipelines = project.get_pipelines()
 ### With Versioning
 
 ```python
-from flowyml import VersionedPipeline
+from flowyml import VersionedPipeline, Pipeline, context
 
+ctx = context(learning_rate=0.001, epochs=10)
+
+# Method 1: Using project_name parameter (Recommended)
+# Automatically creates/attaches to project and creates VersionedPipeline
+pipeline = Pipeline("training", context=ctx, version="v1.0.0", project_name="ml_prod")
+pipeline.add_step(train)
+pipeline.save_version()
+pipeline.run()
+
+# Method 2: Using VersionedPipeline directly with project_name
+versioned = VersionedPipeline("training", context=ctx, version="v1.0.1", project_name="ml_prod")
+versioned.add_step(train)
+versioned.save_version()
+versioned.run()
+
+# Method 3: Using project.create_pipeline() then manually setting up versioning
 project = Project("ml_prod")
-
-# Create versioned pipeline within project
 pipeline = project.create_pipeline("training")
-versioned = VersionedPipeline("training")
-versioned.version = "v1.0.0"
-
-# Use project's storage
+versioned = VersionedPipeline("training", context=ctx, version="v1.0.2")
 versioned.runs_dir = project.runs_dir
 versioned.metadata_store = project.metadata_store
-
 versioned.add_step(train)
 versioned.save_version()
 versioned.run()

@@ -129,6 +129,86 @@ class TestPipeline(BaseTestCase):
         # Check that there's an error in the step results
         self.assertIsNotNone(result.step_results.get("failing_step"))
 
+    def test_pipeline_with_project_name(self):
+        """Test pipeline with project_name parameter."""
+        import tempfile
+        import shutil
+        from pathlib import Path
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Create a temporary projects directory
+            projects_dir = Path(tmpdir) / "projects"
+            projects_dir.mkdir()
+
+            # Mock the projects directory
+            from flowyml.utils.config import get_config, update_config
+
+            original_projects_dir = get_config().projects_dir
+            update_config(projects_dir=str(projects_dir))
+
+            try:
+                # Create pipeline with project_name (should create project automatically)
+                p = Pipeline("test_pipeline", project_name="test_project")
+                self.assertEqual(p.name, "test_pipeline")
+
+                # Verify project was created
+                project_dir = projects_dir / "test_project"
+                self.assertTrue(project_dir.exists())
+                self.assertTrue((project_dir / "project.json").exists())
+
+                # Verify pipeline is using project's runs directory
+                self.assertEqual(p.runs_dir, project_dir / "runs")
+            finally:
+                update_config(projects_dir=str(original_projects_dir))
+
+    def test_pipeline_with_version_creates_versioned_pipeline(self):
+        """Test that Pipeline with version parameter creates VersionedPipeline."""
+        from flowyml.core.versioning import VersionedPipeline
+
+        p = Pipeline("versioned_test", version="v1.0.0")
+        self.assertIsInstance(p, VersionedPipeline)
+        self.assertEqual(p.version, "v1.0.0")
+        self.assertEqual(p.name, "versioned_test")
+
+    def test_pipeline_with_version_and_context(self):
+        """Test Pipeline with version and context parameters."""
+        from flowyml.core.versioning import VersionedPipeline
+
+        ctx = Context(learning_rate=0.001, epochs=10)
+        p = Pipeline("versioned_with_ctx", context=ctx, version="v1.0.1")
+
+        self.assertIsInstance(p, VersionedPipeline)
+        self.assertEqual(p.version, "v1.0.1")
+        self.assertEqual(p.context.get("learning_rate"), 0.001)
+        self.assertEqual(p.context.get("epochs"), 10)
+
+    def test_pipeline_with_version_and_project_name(self):
+        """Test Pipeline with version and project_name parameters."""
+        import tempfile
+        from pathlib import Path
+        from flowyml.core.versioning import VersionedPipeline
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            projects_dir = Path(tmpdir) / "projects"
+            projects_dir.mkdir()
+
+            from flowyml.utils.config import get_config, update_config
+
+            original_projects_dir = get_config().projects_dir
+            update_config(projects_dir=str(projects_dir))
+
+            try:
+                p = Pipeline("versioned_project_test", version="v1.0.0", project_name="test_project")
+
+                self.assertIsInstance(p, VersionedPipeline)
+                self.assertEqual(p.version, "v1.0.0")
+
+                # Verify project was created
+                project_dir = projects_dir / "test_project"
+                self.assertTrue(project_dir.exists())
+            finally:
+                update_config(projects_dir=str(original_projects_dir))
+
 
 if __name__ == "__main__":
     unittest.main()

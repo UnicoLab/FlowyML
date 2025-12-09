@@ -133,7 +133,8 @@ pipeline = Pipeline(
     context=ctx,              # Context for parameter injection
     enable_cache=True,        # Enable intelligent caching
     cache_dir="./my_cache",   # Custom cache directory
-    stack=my_stack            # Execution stack (local, cloud, etc.)
+    stack=my_stack,           # Execution stack (local, cloud, etc.)
+    project_name="ml_project" # Automatically creates/attaches to project
 )
 ```
 
@@ -492,7 +493,8 @@ def train(X_train, y_train, n_estimators: int):
 def evaluate(model, X_test, y_test):
     return model.score(X_test, y_test)
 
-pipeline = Pipeline("ml_training", context=ctx)
+# Create pipeline with project (will create project if it doesn't exist)
+pipeline = Pipeline("ml_training", context=ctx, project_name="ml_platform")
 pipeline.add_step(load_data)
 pipeline.add_step(split_data)
 pipeline.add_step(train)

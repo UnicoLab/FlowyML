@@ -397,14 +397,22 @@ if drift_result['drift_detected']:
 Git-like versioning for pipelines. Track changes, compare, rollback.
 
 ```python
-from flowyml import VersionedPipeline
+from flowyml import Pipeline, VersionedPipeline, context
 
-pipeline = VersionedPipeline("training", version="v1.0.0")
+ctx = context(learning_rate=0.001, epochs=10)
+
+# Method 1: Use Pipeline with version parameter (auto-creates VersionedPipeline)
+pipeline = Pipeline("training", context=ctx, version="v1.0.0", project_name="ml_project")
 pipeline.add_step(load_data)
 pipeline.save_version()
 
 # ... make changes ...
 pipeline.version = "v1.1.0"
+pipeline.save_version()
+
+# Method 2: Use VersionedPipeline directly
+pipeline = VersionedPipeline("training", context=ctx, version="v1.0.0", project_name="ml_project")
+pipeline.add_step(load_data)
 pipeline.save_version()
 
 # Compare versions to see exactly what changed (steps, code, context)
