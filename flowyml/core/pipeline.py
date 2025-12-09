@@ -173,11 +173,14 @@ class Pipeline:
         context: Context | None = None,
         executor: Executor | None = None,
         enable_cache: bool = True,
+        enable_checkpointing: bool | None = None,  # None means use config default
+        enable_experiment_tracking: bool | None = None,  # None means use config default (True)
         cache_dir: str | None = None,
         stack: Any | None = None,  # Stack instance
         project: str | None = None,  # Project name to attach to (deprecated, use project_name)
         project_name: str | None = None,  # Project name to attach to (creates if doesn't exist)
         version: str | None = None,  # If provided, VersionedPipeline is created via __new__
+        **kwargs,
     ):
         """Initialize pipeline.
 
@@ -186,17 +189,35 @@ class Pipeline:
             context: Optional context for parameter injection
             executor: Optional executor (defaults to LocalExecutor)
             enable_cache: Whether to enable caching
+            enable_checkpointing: Whether to enable checkpointing (defaults to config setting, True by default)
+            enable_experiment_tracking: Whether to enable automatic experiment tracking (defaults to config.auto_log_metrics, True by default)
             cache_dir: Optional directory for cache
             stack: Optional stack instance to run on
             project: Optional project name to attach this pipeline to (deprecated, use project_name)
             project_name: Optional project name to attach this pipeline to.
                 If the project doesn't exist, it will be created automatically.
             version: Optional version string. If provided, a VersionedPipeline
+                instance will be created instead of a regular Pipeline.
+            **kwargs: Additional keyword arguments passed to the pipeline.
                 instance is automatically created instead of a regular Pipeline.
         """
+        from flowyml.utils.config import get_config
+
         self.name = name
         self.context = context or Context()
         self.enable_cache = enable_cache
+
+        # Set checkpointing (use config default if not specified)
+        config = get_config()
+        self.enable_checkpointing = (
+            enable_checkpointing if enable_checkpointing is not None else config.enable_checkpointing
+        )
+
+        # Set experiment tracking (use config default if not specified, default: True)
+        # Can be set via enable_experiment_tracking parameter or defaults to config.auto_log_metrics
+        self.enable_experiment_tracking = (
+            enable_experiment_tracking if enable_experiment_tracking is not None else config.auto_log_metrics
+        )
         self.stack = None  # Will be assigned via _apply_stack
         self._stack_locked = stack is not None
         self._provided_executor = executor
@@ -219,10 +240,13 @@ class Pipeline:
 
         # Initialize components from stack or defaults
         self.executor = executor or LocalExecutor()
-        # Metadata store for UI integration
+        # Metadata store for UI integration - use same store as UI
         from flowyml.storage.metadata import SQLiteMetadataStore
+        from flowyml.utils.config import get_config
 
-        self.metadata_store = SQLiteMetadataStore()
+        config = get_config()
+        # Use the same metadata database path as the UI to ensure visibility
+        self.metadata_store = SQLiteMetadataStore(db_path=str(config.metadata_db))
 
         if stack:
             self._apply_stack(stack, locked=True)
@@ -251,6 +275,7 @@ class Pipeline:
         # State
         self._built = False
         self.step_groups: list[Any] = []  # Will hold StepGroup objects
+        self.control_flows: list[Any] = []  # Store conditional control flows (If, Switch, etc.)
 
     def _apply_stack(self, stack: Any | None, locked: bool) -> None:
         """Attach a stack and update executors/metadata."""
@@ -274,6 +299,32 @@ class Pipeline:
             Self for chaining
         """
         self.steps.append(step)
+        self._built = False
+        return self
+
+    def add_control_flow(self, control_flow: Any) -> "Pipeline":
+        """Add conditional control flow to the pipeline.
+
+        Args:
+            control_flow: Control flow object (If, Switch, etc.)
+
+        Returns:
+            Self for chaining
+
+        Example:
+            ```python
+            from flowyml import If
+
+            pipeline.add_control_flow(
+                If(
+                    condition=lambda ctx: ctx.steps["evaluate_model"].outputs["accuracy"] > 0.9,
+                    then_step=deploy_model,
+                    else_step=retrain_model,
+                )
+            )
+            ```
+        """
+        self.control_flows.append(control_flow)
         self._built = False
         return self
 
@@ -316,6 +367,7 @@ class Pipeline:
         inputs: dict[str, Any] | None = None,
         debug: bool = False,
         stack: Any | None = None,  # Stack override
+        orchestrator: Any | None = None,  # Orchestrator override (takes precedence over stack orchestrator)
         resources: Any | None = None,  # ResourceConfig
         docker_config: Any | None = None,  # DockerConfig
         context: dict[str, Any] | None = None,  # Context vars override
@@ -327,20 +379,69 @@ class Pipeline:
         Args:
             inputs: Optional input data for the pipeline
             debug: Enable debug mode with detailed logging
-            stack: Stack override (uses self.stack if not provided)
+            stack: Stack override (uses self.stack or active stack if not provided)
+            orchestrator: Orchestrator override (takes precedence over stack orchestrator)
             resources: Resource configuration for execution
             docker_config: Docker configuration for containerized execution
             context: Context variables override
             auto_start_ui: Automatically start UI server if not running and display URL
             **kwargs: Additional arguments passed to the orchestrator
 
+        Note:
+            The orchestrator is determined in this priority order:
+            1. Explicit `orchestrator` parameter (if provided)
+            2. Stack's orchestrator (if stack is set/active)
+            3. Default LocalOrchestrator
+
+            When using a stack (e.g., GCPStack), the stack's orchestrator is automatically
+            used unless explicitly overridden. This is the recommended approach for
+            production deployments.
+
         Returns:
             PipelineResult with outputs and execution info
         """
         import uuid
         from flowyml.core.orchestrator import LocalOrchestrator
+        from flowyml.core.checkpoint import PipelineCheckpoint
+        from flowyml.utils.config import get_config
 
-        run_id = str(uuid.uuid4())
+        # Generate or use provided run_id
+        run_id = kwargs.pop("run_id", None) or str(uuid.uuid4())
+
+        # Initialize checkpointing if enabled
+        if self.enable_checkpointing:
+            config = get_config()
+            checkpoint = PipelineCheckpoint(
+                run_id=run_id,
+                checkpoint_dir=str(config.checkpoint_dir),
+            )
+
+            # Check if we should resume from checkpoint
+            if checkpoint.exists():
+                checkpoint_data = checkpoint.load()
+                completed_steps = checkpoint_data.get("completed_steps", [])
+                if completed_steps:
+                    # Auto-resume: use checkpoint state
+                    if hasattr(self, "_display") and self._display:
+                        self._display.console.print(
+                            f"[yellow]📦 Resuming from checkpoint: {len(completed_steps)} steps already completed[/yellow]",
+                        )
+                    # Store checkpoint info for orchestrator
+                    self._checkpoint = checkpoint
+                    self._resume_from_checkpoint = True
+                    self._completed_steps_from_checkpoint = set(completed_steps)
+                else:
+                    self._checkpoint = checkpoint
+                    self._resume_from_checkpoint = False
+                    self._completed_steps_from_checkpoint = set()
+            else:
+                self._checkpoint = checkpoint
+                self._resume_from_checkpoint = False
+                self._completed_steps_from_checkpoint = set()
+        else:
+            self._checkpoint = None
+            self._resume_from_checkpoint = False
+            self._completed_steps_from_checkpoint = set()
 
         # Auto-start UI server if requested
         ui_url = None
@@ -348,9 +449,12 @@ class Pipeline:
         if auto_start_ui:
             try:
                 from flowyml.ui.server_manager import UIServerManager
+                from flowyml.ui.utils import get_ui_host_port
 
                 ui_manager = UIServerManager.get_instance()
-                if ui_manager.ensure_running(auto_start=True):
+                # Use config values for host/port
+                host, port = get_ui_host_port()
+                if ui_manager.ensure_running(host=host, port=port, auto_start=True):
                     ui_url = ui_manager.get_url()
                     run_url = ui_manager.get_run_url(run_id)
 
@@ -374,9 +478,12 @@ class Pipeline:
                 self._apply_stack(active_stack, locked=False)
 
         # Determine orchestrator
-        orchestrator = getattr(self.stack, "orchestrator", None) if self.stack else None
+        # Priority: 1) Explicit orchestrator parameter, 2) Stack orchestrator, 3) Default LocalOrchestrator
         if orchestrator is None:
-            orchestrator = LocalOrchestrator()
+            # Use orchestrator from stack if available
+            orchestrator = getattr(self.stack, "orchestrator", None) if self.stack else None
+            if orchestrator is None:
+                orchestrator = LocalOrchestrator()
 
         # Update context with provided values
         if context:
@@ -508,6 +615,92 @@ class Pipeline:
             return DockerConfig(**docker_config)
         return docker_config
 
+    def _log_experiment_metrics(self, result: PipelineResult) -> None:
+        """Automatically log Metrics to experiment tracking.
+
+        Extracts Metrics objects from pipeline outputs and logs them along with
+        context parameters to the experiment tracking system.
+
+        This is called automatically after each pipeline run if experiment tracking is enabled.
+        """
+        from flowyml.utils.config import get_config
+        from flowyml.assets.metrics import Metrics
+
+        config = get_config()
+
+        # Check if experiment tracking is enabled (default: True)
+        # Can be disabled globally via config or per-pipeline via enable_experiment_tracking
+        enable_tracking = getattr(self, "enable_experiment_tracking", None)
+        if enable_tracking is None:
+            enable_tracking = getattr(config, "auto_log_metrics", True)
+
+        if not enable_tracking:
+            return
+
+        # Extract all Metrics from pipeline outputs
+        all_metrics = {}
+        for output_name, output_value in result.outputs.items():
+            if isinstance(output_value, Metrics):
+                # Extract metrics from Metrics object
+                metrics_dict = output_value.get_all_metrics() or output_value.data or {}
+                # Use output name as prefix to avoid conflicts, but simplify if output is "metrics"
+                for key, value in metrics_dict.items():
+                    if output_name == "metrics" or output_name.endswith("/metrics"):
+                        # Use metric key directly for cleaner names
+                        all_metrics[key] = value
+                    else:
+                        # Prefix with output name to avoid conflicts
+                        all_metrics[f"{output_name}.{key}"] = value
+            elif isinstance(output_value, dict):
+                # Check if dict contains Metrics objects
+                for key, val in output_value.items():
+                    if isinstance(val, Metrics):
+                        metrics_dict = val.get_all_metrics() or val.data or {}
+                        for mkey, mval in metrics_dict.items():
+                            all_metrics[f"{key}.{mkey}"] = mval
+
+        # Extract context parameters
+        context_params = {}
+        if self.context:
+            # Get all context parameters using to_dict() method
+            context_params = self.context.to_dict()
+
+        # Only log if we have metrics or parameters
+        if all_metrics or context_params:
+            try:
+                from flowyml.tracking.experiment import Experiment
+                from flowyml.tracking.runs import Run
+
+                # Create or get experiment (use pipeline name as experiment name)
+                experiment_name = self.name
+                experiment = Experiment(
+                    name=experiment_name,
+                    description=f"Auto-tracked experiment for pipeline: {self.name}",
+                )
+
+                # Log run to experiment
+                experiment.log_run(
+                    run_id=result.run_id,
+                    metrics=all_metrics,
+                    parameters=context_params,
+                )
+
+                # Also create/update Run object for compatibility
+                run = Run(
+                    run_id=result.run_id,
+                    pipeline_name=self.name,
+                    parameters=context_params,
+                )
+                if all_metrics:
+                    run.log_metrics(all_metrics)
+                run.complete(status="success" if result.success else "failed")
+
+            except Exception as e:
+                # Don't fail pipeline if experiment logging fails
+                import warnings
+
+                warnings.warn(f"Failed to log experiment metrics: {e}", stacklevel=2)
+
     def _save_run(self, result: PipelineResult) -> None:
         """Save run results to disk and metadata database."""
         # Save to JSON file
@@ -575,6 +768,9 @@ class Pipeline:
             "remote_job_id": result.remote_job_id,
         }
         self.metadata_store.save_run(result.run_id, metadata)
+
+        # Automatic experiment tracking: Extract Metrics and log to experiments
+        self._log_experiment_metrics(result)
 
         # Save artifacts and metrics
         for step_name, step_result in result.step_results.items():

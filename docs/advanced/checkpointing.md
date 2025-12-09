@@ -76,26 +76,66 @@ def train_large_model(data):
 
 ## 🧪 Experiment Tracking
 
-flowyml automatically tracks every pipeline run, capturing parameters, metrics, and artifacts. This allows you to compare experiments and reproduce results.
+flowyml **automatically tracks every pipeline run** when you use `Metrics` objects, capturing parameters, metrics, and artifacts. This allows you to compare experiments and reproduce results without any additional setup.
 
-### Tracking Metrics
+### Automatic Experiment Tracking
 
-Use the `Metrics` asset to log performance indicators.
+**Experiment tracking is enabled by default!** Simply use `Metrics` objects in your pipeline, and flowyml will automatically:
+
+- Extract all metrics from `Metrics` objects
+- Capture context parameters (learning_rate, epochs, etc.)
+- Log everything to the experiment tracking system
+- Create an experiment named after your pipeline
+
+**Example:**
+```python
+from flowyml import Pipeline, step, context, Metrics
+
+# Define context with parameters
+ctx = context(
+    learning_rate=0.001,
+    batch_size=32,
+    epochs=10
+)
+
+@step(outputs=["metrics/evaluation"])
+def evaluate_model(model):
+    """Evaluate the trained model."""
+    metrics = {"test_accuracy": 0.93, "test_loss": 0.07}
+
+    # Return Metrics object - automatically logged to experiments!
+    return Metrics.create(
+        name="example_metrics",
+        metrics=metrics,
+        metadata={"source": "example"},
+    )
+
+pipeline = Pipeline("training_pipeline", context=ctx)
+pipeline.add_step(evaluate_model)
+result = pipeline.run()
+
+# Metrics are automatically logged! No additional code needed.
+```
+
+### Manual Experiment Tracking
+
+If you want more control, you can manually create and manage experiments:
 
 ```python
-from flowyml import step, Metrics
+from flowyml import Experiment
 
-@step(outputs=["metrics"])
-def evaluate(model, test_data):
-    accuracy = model.score(test_data)
-    f1 = f1_score(model, test_data)
+# Create experiment
+exp = Experiment(
+    name="learning_rate_tuning",
+    description="Testing different learning rates"
+)
 
-    # Create a Metrics object
-    return Metrics.create(
-        accuracy=accuracy,
-        f1_score=f1,
-        epoch=10
-    )
+# Log a run manually
+exp.log_run(
+    run_id=result.run_id,
+    metrics={"accuracy": 0.95, "loss": 0.05},
+    parameters={"learning_rate": 0.001}
+)
 ```
 
 ### Comparing Experiments
@@ -104,21 +144,50 @@ You can compare runs using the CLI or the Python API.
 
 **CLI:**
 ```bash
+# Compare two specific runs
 flowyml experiment compare <run_id_1> <run_id_2>
+
+# List all experiments
+flowyml experiment list
+
+# View experiment details
+flowyml experiment show <experiment_name>
 ```
 
 **Python:**
 ```python
-from flowyml import compare_runs
+from flowyml import compare_runs, Experiment
 
+# Compare runs using the utility function
 diff = compare_runs(["run_1", "run_2"])
 print(diff)
+
+# Or use Experiment object
+exp = Experiment("training_pipeline")
+comparison = exp.compare_runs()
+best_run = exp.get_best_run(metric="accuracy", maximize=True)
+```
+
+### Disabling Automatic Tracking
+
+If you want to disable automatic experiment tracking:
+
+```python
+from flowyml.utils.config import update_config
+
+# Disable auto-logging globally
+update_config(auto_log_metrics=False)
+
+# Or disable for a specific pipeline
+pipeline = Pipeline("my_pipeline", enable_experiment_tracking=False)
 ```
 
 ### Visualizing Experiments
 
 The flowyml UI provides a dedicated **Experiments** view where you can:
-- View a table of all runs.
-- Filter by parameters or metrics.
-- Plot metric trends over time.
-- Compare side-by-side details of selected runs.
+- View a table of all runs
+- Filter by parameters or metrics
+- Plot metric trends over time
+- Compare side-by-side details of selected runs
+
+Access it at `http://localhost:8080/experiments` when the UI is running.

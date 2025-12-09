@@ -93,18 +93,61 @@ class Metrics(Asset):
         parent: Asset | None = None,
         tags: dict[str, str] | None = None,
         properties: dict[str, Any] | None = None,
-        **metrics,
+        metadata: dict[str, Any] | None = None,
+        metrics: dict[str, Any] | None = None,
+        **kwargs,
     ) -> "Metrics":
         """Factory method to create metrics.
 
+        Supports multiple ways to provide metrics:
+        1. As keyword arguments: Metrics.create(accuracy=0.95, loss=0.05)
+        2. As a dict: Metrics.create(metrics={"accuracy": 0.95, "loss": 0.05})
+        3. Mixed: Metrics.create(metrics={"accuracy": 0.95}, loss=0.05)
+
+        Args:
+            name: Name of the metrics asset
+            version: Version string
+            parent: Parent asset for lineage
+            tags: Tags dictionary (or use metadata for convenience)
+            properties: Properties dictionary
+            metadata: Metadata dictionary (merged into tags and properties)
+            metrics: Metrics as a dictionary (alternative to **kwargs)
+            **kwargs: Additional metrics as keyword arguments
+
         Example:
+            >>> # Using keyword arguments
             >>> metrics = Metrics.create(accuracy=0.95, loss=0.05, training_time="2h 15m")
+
+            >>> # Using metrics dict
+            >>> metrics = Metrics.create(
+            ...     name="example_metrics",
+            ...     metrics={"test_accuracy": 0.93, "test_loss": 0.07},
+            ...     metadata={"source": "example"},
+            ... )
         """
+        # Merge metrics dict with kwargs
+        all_metrics = {}
+        if metrics:
+            all_metrics.update(metrics)
+        all_metrics.update(kwargs)
+
+        # Handle metadata - merge into tags and properties
+        final_tags = tags or {}
+        final_properties = properties or {}
+        if metadata:
+            # If metadata contains string values, treat as tags
+            # Otherwise, merge into properties
+            for key, value in metadata.items():
+                if isinstance(value, str):
+                    final_tags[key] = value
+                else:
+                    final_properties[key] = value
+
         return cls(
             name=name or "metrics",
             version=version,
-            data=metrics,
+            data=all_metrics if all_metrics else None,
             parent=parent,
-            tags=tags,
-            properties=properties,
+            tags=final_tags,
+            properties=final_properties,
         )

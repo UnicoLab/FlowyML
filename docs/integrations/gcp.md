@@ -36,31 +36,69 @@ flowyml stack register gcp-prod \
 
 Run your pipeline steps as Vertex AI Custom Jobs. flowyml handles the Dockerization and submission automatically.
 
-### Real-World Pattern: Hybrid Execution
+### Recommended: Stack-Based Execution (Automatic Orchestrator)
 
-Develop locally, then deploy to Vertex AI for the heavy lifting.
+**The best practice is to use a GCP stack**, which automatically provides the orchestrator, executor, artifact store, and all other components. This is the core concept of stacks - they encapsulate all infrastructure configuration.
 
 ```python
 from flowyml import Pipeline
-from flowyml.integrations.gcp import VertexAIOrchestrator
+from flowyml.stacks.gcp import GCPStack
+
+# Create GCP stack with Vertex AI orchestrator
+gcp_stack = GCPStack(
+    name="production",
+    project_id="my-gcp-project",
+    region="us-central1",
+    bucket_name="my-artifacts-bucket",
+    service_account="my-sa@my-project.iam.gserviceaccount.com"
+)
+
+# Create pipeline with stack
+pipeline = Pipeline("training_pipeline", stack=gcp_stack)
+# ... add steps ...
+
+# Run pipeline - automatically uses Vertex AI orchestrator from stack!
+pipeline.run()
+```
+
+**Or use active stack from configuration:**
+
+```python
+from flowyml import Pipeline
+from flowyml.stacks.registry import set_active_stack
+
+# Set active stack (from flowyml.yaml or programmatically)
+set_active_stack("gcp-production")
+
+# Pipeline automatically uses active stack's orchestrator
+pipeline = Pipeline("training_pipeline")
+pipeline.add_step(...)
+pipeline.run()  # Uses Vertex AI orchestrator from active stack!
+```
+
+### Alternative: Explicit Orchestrator Override
+
+If you need to override the stack's orchestrator for a specific run:
+
+```python
+from flowyml import Pipeline
+from flowyml.stacks.gcp import VertexAIOrchestrator
 
 pipeline = Pipeline("training_pipeline")
 # ... add steps ...
 
-# Option 1: Run locally for debugging
-# pipeline.run()
-
-# Option 2: Run on Vertex AI for production
+# Override orchestrator for this run only
 pipeline.run(
     orchestrator=VertexAIOrchestrator(
-        project="my-gcp-project",
-        location="us-central1",
-        machine_type="n1-standard-16", # Powerful machine!
-        accelerator_type="NVIDIA_TESLA_T4",
-        accelerator_count=1
+        project_id="my-gcp-project",
+        region="us-central1",
+        service_account="my-sa@my-project.iam.gserviceaccount.com"
     )
 )
 ```
+
+> [!TIP]
+> **Stack-Based is Better**: Using a stack ensures all components (orchestrator, artifact store, metadata store, container registry) work together seamlessly. The stack automatically handles configuration and ensures consistency across your infrastructure.
 
 > [!TIP]
 > **Cost Control**: Vertex AI charges by the second. flowyml ensures resources are only provisioned while your steps are running.

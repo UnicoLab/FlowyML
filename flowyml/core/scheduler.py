@@ -3,7 +3,6 @@
 import contextlib
 import json
 import logging
-import sqlite3
 import threading
 import time
 from collections.abc import Callable
@@ -11,6 +10,26 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
+
+from sqlalchemy import (
+    create_engine,
+    MetaData,
+    Table,
+    Column,
+    String,
+    Integer,
+    Float,
+    Text,
+    Boolean,
+    DateTime,
+    ForeignKey,
+    select,
+    insert,
+    update,
+    delete,
+    func,
+)
+from sqlalchemy.pool import StaticPool
 
 from flowyml.core.scheduler_config import SchedulerConfig
 
@@ -81,6 +100,7 @@ class ScheduleExecution:
     success: bool = False
     error: str | None = None
     duration_seconds: float | None = None
+    run_id: str | None = None  # Pipeline run_id if available
 
 
 class SchedulerMetrics:
@@ -119,54 +139,83 @@ class SchedulerMetrics:
 
 
 class SchedulerPersistence:
-    """Persist schedules to SQLite database."""
+    """Persist schedules to SQLite database using SQLAlchemy."""
 
     def __init__(self, db_path: str | None = None):
         self.db_path = db_path or str(Path.cwd() / ".flowyml_scheduler.db")
+        # Convert to absolute path for SQLite URL
+        abs_path = Path(self.db_path).resolve()
+        abs_path.parent.mkdir(parents=True, exist_ok=True)
+        self.db_url = f"sqlite:///{abs_path}"
         self._init_db()
 
     def _init_db(self):
-        """Initialize database schema."""
-        with sqlite3.connect(self.db_path) as conn:
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS schedules (
-                    name TEXT PRIMARY KEY,
-                    data TEXT NOT NULL,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-                """,
-            )
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS executions (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    schedule_name TEXT NOT NULL,
-                    started_at TIMESTAMP NOT NULL,
-                    completed_at TIMESTAMP,
-                    success BOOLEAN,
-                    error TEXT,
-                    duration_seconds REAL,
-                    FOREIGN KEY(schedule_name) REFERENCES schedules(name)
-                )
-                """,
-            )
+        """Initialize database schema using SQLAlchemy."""
+        # Create engine
+        self.engine = create_engine(
+            self.db_url,
+            connect_args={"check_same_thread": False},
+            poolclass=StaticPool,
+        )
+
+        self.metadata = MetaData()
+
+        # Define schedules table
+        self.schedules = Table(
+            "schedules",
+            self.metadata,
+            Column("name", String, primary_key=True),
+            Column("data", Text, nullable=False),
+            Column("updated_at", DateTime, server_default=func.current_timestamp()),
+        )
+
+        # Define executions table
+        self.executions = Table(
+            "executions",
+            self.metadata,
+            Column("id", Integer, primary_key=True, autoincrement=True),
+            Column("schedule_name", String, ForeignKey("schedules.name"), nullable=False),
+            Column("started_at", DateTime, nullable=False),
+            Column("completed_at", DateTime, nullable=True),
+            Column("success", Boolean, nullable=True),
+            Column("error", Text, nullable=True),
+            Column("duration_seconds", Float, nullable=True),
+            Column("run_id", String, nullable=True),
+        )
+
+        # Create all tables
+        self.metadata.create_all(self.engine)
 
     def save_schedule(self, schedule: Schedule) -> None:
-        """Save schedule to database."""
+        """Save schedule to database using SQLAlchemy."""
         data = schedule.to_dict()
-        with sqlite3.connect(self.db_path) as conn:
-            conn.execute(
-                "INSERT OR REPLACE INTO schedules (name, data) VALUES (?, ?)",
-                (schedule.pipeline_name, json.dumps(data)),
+        with self.engine.connect() as conn:
+            # Use INSERT OR REPLACE equivalent in SQLAlchemy
+            stmt = (
+                update(self.schedules)
+                .where(self.schedules.c.name == schedule.pipeline_name)
+                .values(data=json.dumps(data), updated_at=func.current_timestamp())
             )
+            result = conn.execute(stmt)
+            conn.commit()
+
+            # If no rows were updated, insert new record
+            if result.rowcount == 0:
+                stmt = insert(self.schedules).values(
+                    name=schedule.pipeline_name,
+                    data=json.dumps(data),
+                )
+                conn.execute(stmt)
+                conn.commit()
 
     def load_schedules(self, pipeline_funcs: dict[str, Callable]) -> dict[str, Schedule]:
-        """Load all schedules from database."""
+        """Load all schedules from database using SQLAlchemy."""
         schedules = {}
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.execute("SELECT name, data FROM schedules")
-            for name, data_json in cursor:
+        with self.engine.connect() as conn:
+            stmt = select(self.schedules.c.name, self.schedules.c.data)
+            result = conn.execute(stmt)
+            for row in result:
+                name, data_json = row
                 try:
                     data = json.loads(data_json)
                     if name in pipeline_funcs:
@@ -176,52 +225,72 @@ class SchedulerPersistence:
         return schedules
 
     def delete_schedule(self, name: str) -> None:
-        """Delete schedule from database."""
-        with sqlite3.connect(self.db_path) as conn:
-            conn.execute("DELETE FROM schedules WHERE name = ?", (name,))
-            conn.execute("DELETE FROM executions WHERE schedule_name = ?", (name,))
+        """Delete schedule from database using SQLAlchemy."""
+        with self.engine.connect() as conn:
+            # Delete executions first (foreign key constraint)
+            stmt = delete(self.executions).where(self.executions.c.schedule_name == name)
+            conn.execute(stmt)
+
+            # Delete schedule
+            stmt = delete(self.schedules).where(self.schedules.c.name == name)
+            conn.execute(stmt)
+            conn.commit()
 
     def save_execution(self, execution: ScheduleExecution) -> None:
-        """Save execution record."""
-        with sqlite3.connect(self.db_path) as conn:
-            conn.execute(
-                """
-                INSERT INTO executions
-                (schedule_name, started_at, completed_at, success, error, duration_seconds)
-                VALUES (?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    execution.schedule_name,
-                    execution.started_at,
-                    execution.completed_at,
-                    execution.success,
-                    execution.error,
-                    execution.duration_seconds,
-                ),
+        """Save execution record using SQLAlchemy."""
+        with self.engine.connect() as conn:
+            stmt = insert(self.executions).values(
+                schedule_name=execution.schedule_name,
+                started_at=execution.started_at,
+                completed_at=execution.completed_at,
+                success=execution.success,
+                error=execution.error,
+                duration_seconds=execution.duration_seconds,
+                run_id=execution.run_id,
             )
+            conn.execute(stmt)
+            conn.commit()
 
     def get_history(self, schedule_name: str, limit: int = 50) -> list[dict[str, Any]]:
-        """Get execution history for a schedule."""
+        """Get execution history for a schedule using SQLAlchemy."""
         history = []
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.execute(
-                """
-                SELECT started_at, completed_at, success, error, duration_seconds
-                FROM executions
-                WHERE schedule_name = ?
-                ORDER BY started_at DESC
-                LIMIT ?
-                """,
-                (schedule_name, limit),
+        with self.engine.connect() as conn:
+            stmt = (
+                select(
+                    self.executions.c.started_at,
+                    self.executions.c.completed_at,
+                    self.executions.c.success,
+                    self.executions.c.error,
+                    self.executions.c.duration_seconds,
+                    self.executions.c.run_id,
+                )
+                .where(self.executions.c.schedule_name == schedule_name)
+                .order_by(self.executions.c.started_at.desc())
+                .limit(limit)
             )
-            for row in cursor:
+            result = conn.execute(stmt)
+            for row in result:
+                # Handle datetime conversion
+                started_at = row.started_at
+                if isinstance(started_at, datetime):
+                    started_at = started_at.isoformat()
+                elif started_at is not None:
+                    started_at = str(started_at)
+
+                completed_at = row.completed_at
+                if isinstance(completed_at, datetime):
+                    completed_at = completed_at.isoformat()
+                elif completed_at is not None:
+                    completed_at = str(completed_at)
+
                 history.append(
                     {
-                        "started_at": row[0],
-                        "completed_at": row[1],
-                        "success": bool(row[2]),
-                        "error": row[3],
-                        "duration_seconds": row[4],
+                        "started_at": started_at,
+                        "completed_at": completed_at,
+                        "success": bool(row.success) if row.success is not None else False,
+                        "error": row.error,
+                        "duration_seconds": row.duration_seconds,
+                        "run_id": row.run_id,
                     },
                 )
         return history
@@ -474,11 +543,11 @@ class PipelineScheduler:
         """Remove all schedules."""
         self.schedules.clear()
         if self._persistence:
-            # Re-initialize DB to clear it
-            db_path = Path(self._persistence.db_path)
-            if db_path.exists():
-                db_path.unlink()
-            self._persistence._init_db()
+            # Delete all schedules and executions using SQLAlchemy
+            with self._persistence.engine.connect() as conn:
+                conn.execute(delete(self._persistence.executions))
+                conn.execute(delete(self._persistence.schedules))
+                conn.commit()
 
     def enable(self, name: str) -> None:
         """Enable a schedule."""
@@ -507,23 +576,98 @@ class PipelineScheduler:
             started_at=datetime.now(),
         )
 
+        pipeline_result = None
         try:
             logger.info(f"Starting scheduled run: {schedule.pipeline_name}")
-            schedule.pipeline_func()
-            execution.success = True
+
+            # Execute pipeline and capture result
+            result = schedule.pipeline_func()
+
+            # Check if result is a PipelineResult object
+            from flowyml.core.pipeline import PipelineResult
+
+            if isinstance(result, PipelineResult):
+                pipeline_result = result
+                execution.success = result.success
+                # Store run_id for tracking
+                execution.run_id = result.run_id
+            else:
+                # Assume success if no exception and result is truthy
+                execution.success = bool(result)
+
             schedule.last_run = datetime.now(pytz.timezone(schedule.timezone)) if pytz else datetime.now()
 
             if self.on_success:
                 self.on_success(schedule, execution)
         except Exception as e:
-            logger.error(f"Schedule {schedule.pipeline_name} failed: {e}")
+            logger.error(f"Schedule {schedule.pipeline_name} failed: {e}", exc_info=True)
             execution.error = str(e)
+            execution.success = False
             if self.on_failure:
                 self.on_failure(schedule, execution, e)
         finally:
             execution.completed_at = datetime.now()
             execution.duration_seconds = (execution.completed_at - execution.started_at).total_seconds()
             self.metrics.update(execution)
+
+            # Ensure pipeline result is saved to metadata store for UI visibility
+            # The pipeline should have already saved via _save_run, but we ensure it's in the UI's store
+            if pipeline_result:
+                try:
+                    # Get the global metadata store used by UI (same as pipeline should use)
+                    from flowyml.ui.backend.dependencies import get_store
+
+                    # Get the UI's metadata store
+                    ui_store = get_store()
+
+                    # Also ensure the pipeline's metadata store is the same instance/path
+                    # If the pipeline used a different store, sync to UI store
+
+                    # Check if run is already in UI store
+                    existing_run = ui_store.load_run(pipeline_result.run_id)
+                    if not existing_run:
+                        # Run wasn't saved to UI store, save it now
+                        # Build comprehensive metadata
+                        metadata = {
+                            "run_id": pipeline_result.run_id,
+                            "pipeline_name": pipeline_result.pipeline_name,
+                            "status": "completed" if pipeline_result.success else "failed",
+                            "start_time": pipeline_result.start_time.isoformat(),
+                            "end_time": pipeline_result.end_time.isoformat() if pipeline_result.end_time else None,
+                            "duration": pipeline_result.duration_seconds,
+                            "success": pipeline_result.success,
+                            "scheduled": True,  # Mark as scheduled run
+                            "schedule_name": schedule.pipeline_name,
+                            "steps": {
+                                name: {
+                                    "success": result.success,
+                                    "duration": result.duration_seconds,
+                                    "cached": result.cached,
+                                    "retries": result.retries,
+                                    "error": result.error,
+                                }
+                                for name, result in pipeline_result.step_results.items()
+                            },
+                        }
+
+                        # Add outputs if available
+                        if pipeline_result.outputs:
+                            metadata["outputs"] = {
+                                k: str(v)[:200] if not isinstance(v, (dict, list)) else str(v)[:200]
+                                for k, v in pipeline_result.outputs.items()
+                            }
+
+                        ui_store.save_run(pipeline_result.run_id, metadata)
+                        logger.info(f"✅ Saved scheduled run {pipeline_result.run_id} to UI metadata store")
+                    else:
+                        # Update existing run to mark as scheduled
+                        if not existing_run.get("scheduled"):
+                            existing_run["scheduled"] = True
+                            existing_run["schedule_name"] = schedule.pipeline_name
+                            ui_store.save_run(pipeline_result.run_id, existing_run)
+                            logger.debug(f"Updated run {pipeline_result.run_id} to mark as scheduled")
+                except Exception as e:
+                    logger.warning(f"Failed to save scheduled run to UI metadata store: {e}", exc_info=True)
 
             if self.config.distributed:
                 self._lock.release(schedule.pipeline_name)

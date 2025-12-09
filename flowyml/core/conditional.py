@@ -371,3 +371,107 @@ def unless(condition_func: Callable[[Any], bool]) -> Callable:
         return wrapper
 
     return decorator
+
+
+class If:
+    """If-else conditional control flow for pipelines.
+
+    Supports both constructor and fluent API styles.
+
+    Example (constructor style):
+        ```python
+        from flowyml import Pipeline, step, If
+
+
+        @step(outputs=["accuracy"])
+        def evaluate_model():
+            return 0.95
+
+
+        @step
+        def deploy_model():
+            print("Deploying...")
+
+
+        @step
+        def retrain_model():
+            print("Retraining...")
+
+
+        pipeline = Pipeline("conditional_deploy")
+        pipeline.add_step(evaluate_model)
+        pipeline.add_control_flow(
+            If(
+                condition=lambda ctx: ctx.steps["evaluate_model"].outputs["accuracy"] > 0.9,
+                then_step=deploy_model,
+                else_step=retrain_model,
+            )
+        )
+        ```
+
+    Example (fluent style):
+        ```python
+        pipeline.add_control_flow(
+            If(condition=lambda ctx: ctx["accuracy"] > 0.95).then(deploy_to_prod).else_(notify_slack_failure)
+        )
+        ```
+    """
+
+    def __init__(
+        self,
+        condition: Callable[[Any], bool],
+        then_step: Callable | None = None,
+        else_step: Callable | None = None,
+    ):
+        """Initialize If condition.
+
+        Args:
+            condition: Function that takes a context object and returns bool
+            then_step: Step to execute if condition is True (optional, can use .then() instead)
+            else_step: Step to execute if condition is False (optional, can use .else_() instead)
+        """
+        self.condition = condition
+        self.then_step = then_step
+        self.else_step = else_step
+
+    def then(self, step: Callable) -> "If":
+        """Set the step to execute if condition is True (fluent API).
+
+        Args:
+            step: Step function to execute
+
+        Returns:
+            Self for method chaining
+        """
+        self.then_step = step
+        return self
+
+    def else_(self, step: Callable) -> "If":
+        """Set the step to execute if condition is False (fluent API).
+
+        Args:
+            step: Step function to execute
+
+        Returns:
+            Self for method chaining
+        """
+        self.else_step = step
+        return self
+
+    def evaluate(self, context: Any) -> Callable | None:
+        """Evaluate condition and return the step to execute.
+
+        Args:
+            context: Context object with step outputs and other data
+
+        Returns:
+            Step function to execute, or None if no step should execute
+        """
+        try:
+            if self.condition(context):
+                return self.then_step
+            else:
+                return self.else_step
+        except Exception:
+            # If condition evaluation fails, return else_step as fallback
+            return self.else_step

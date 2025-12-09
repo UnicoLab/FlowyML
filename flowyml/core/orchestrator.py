@@ -17,7 +17,9 @@ from flowyml.core.observability import get_metrics_collector
 from flowyml.core.retry_policy import with_retry
 
 if TYPE_CHECKING:
-    from flowyml.core.pipeline import Pipeline
+    from flowyml.core.pipeline import Pipeline, PipelineResult
+    from flowyml.core.executor import ExecutionResult
+    from flowyml.core.step import Step
 
 
 class LocalOrchestrator(Orchestrator):
@@ -89,6 +91,11 @@ class LocalOrchestrator(Orchestrator):
         # Get execution units (individual steps or groups)
         execution_units = get_execution_units(pipeline.dag, pipeline.steps)
 
+        # Check if we're resuming from checkpoint
+        resume_from_checkpoint = getattr(pipeline, "_resume_from_checkpoint", False)
+        completed_steps_from_checkpoint = getattr(pipeline, "_completed_steps_from_checkpoint", set())
+        checkpoint = getattr(pipeline, "_checkpoint", None)
+
         # Execute steps/groups in order
         for unit in execution_units:
             # Check if unit is a group or individual step
@@ -134,9 +141,75 @@ class LocalOrchestrator(Orchestrator):
                     if step_result.output is not None:
                         self._process_step_output(pipeline, step_result, step_outputs, result)
 
+                        # Save checkpoint after successful step
+                        checkpoint = getattr(pipeline, "_checkpoint", None)
+                        if checkpoint and step_result.success:
+                            try:
+                                # Save step outputs to checkpoint
+                                checkpoint.save_step_state(
+                                    step_name=step_result.step_name,
+                                    outputs=step_outputs,
+                                    metadata={
+                                        "duration": step_result.duration_seconds,
+                                        "cached": step_result.cached,
+                                    },
+                                )
+                            except Exception as e:
+                                # Don't fail pipeline if checkpoint save fails
+                                import warnings
+
+                                warnings.warn(
+                                    f"Failed to save checkpoint for step {step_result.step_name}: {e}",
+                                    stacklevel=2,
+                                )
+
+                    # Check for control flows that need to be evaluated after this step
+                    self._evaluate_control_flows(pipeline, step_result, step_outputs, result, run_id)
+
             else:
                 # Execute single ungrouped step
                 step = unit
+
+                # Skip step if already completed in checkpoint
+                if resume_from_checkpoint and step.name in completed_steps_from_checkpoint:
+                    if hasattr(pipeline, "_display") and pipeline._display:
+                        pipeline._display.update_step_status(
+                            step_name=step.name,
+                            status="success",
+                            cached=True,
+                        )
+
+                    # Load step outputs from checkpoint
+                    try:
+                        if checkpoint:
+                            step_outputs_from_checkpoint = checkpoint.load_step_state(step.name)
+
+                            # Process checkpoint outputs
+                            if isinstance(step_outputs_from_checkpoint, dict):
+                                for output_name, output_value in step_outputs_from_checkpoint.items():
+                                    step_outputs[output_name] = output_value
+                                    result.outputs[output_name] = output_value
+
+                            # Create a mock ExecutionResult for checkpointed step
+                            step_result = ExecutionResult(
+                                step_name=step.name,
+                                success=True,
+                                output=step_outputs_from_checkpoint,
+                                duration_seconds=0.0,
+                                cached=True,
+                            )
+                            result.add_step_result(step_result)
+
+                            # Continue to next step
+                            continue
+                    except Exception as e:
+                        # If checkpoint load fails, execute the step normally
+                        import warnings
+
+                        warnings.warn(
+                            f"Failed to load checkpoint for step {step.name}: {e}. Executing step normally.",
+                            stacklevel=2,
+                        )
 
                 # Prepare step inputs
                 step_inputs = {}
@@ -240,8 +313,47 @@ class LocalOrchestrator(Orchestrator):
                 if step_result.output is not None:
                     self._process_step_output(pipeline, step_result, step_outputs, result)
 
+                    # Save checkpoint after successful step
+                    checkpoint = getattr(pipeline, "_checkpoint", None)
+                    if checkpoint and step_result.success:
+                        try:
+                            # Save step outputs to checkpoint
+                            checkpoint.save_step_state(
+                                step_name=step.name,
+                                outputs=step_outputs,
+                                metadata={
+                                    "duration": step_result.duration_seconds,
+                                    "cached": step_result.cached,
+                                },
+                            )
+                        except Exception as e:
+                            # Don't fail pipeline if checkpoint save fails
+                            import warnings
+
+                            warnings.warn(f"Failed to save checkpoint for step {step.name}: {e}", stacklevel=2)
+
+                # Check for control flows that need to be evaluated after this step
+                self._evaluate_control_flows(pipeline, step_result, step_outputs, result, run_id)
+
         # Success! Finalize and return
         result.finalize(success=True)
+
+        # Save final checkpoint if checkpointing is enabled
+        checkpoint = getattr(pipeline, "_checkpoint", None)
+        if checkpoint and result.success:
+            try:
+                checkpoint.save_step_state(
+                    "pipeline_complete",
+                    result.outputs,
+                    metadata={
+                        "duration": result.duration_seconds,
+                        "success": True,
+                    },
+                )
+            except Exception as e:
+                import warnings
+
+                warnings.warn(f"Failed to save final checkpoint: {e}", stacklevel=2)
 
         # Run pipeline end hooks
         hooks.run_pipeline_end_hooks(pipeline, result)
@@ -253,6 +365,288 @@ class LocalOrchestrator(Orchestrator):
         pipeline._save_run(result)
         pipeline._save_pipeline_definition()
         return result
+
+    def _evaluate_control_flows(
+        self,
+        pipeline: "Pipeline",
+        step_result: "ExecutionResult",
+        step_outputs: dict[str, Any],
+        result: "PipelineResult",
+        run_id: str,
+    ) -> None:
+        """Evaluate control flows after a step completes.
+
+        Args:
+            pipeline: Pipeline instance
+            step_result: Result of the step that just completed
+            step_outputs: Current step outputs dictionary
+            result: Pipeline result object
+            run_id: Run identifier
+        """
+        from flowyml.core.conditional import If
+
+        # Create a context object for condition evaluation
+        class ExecutionContext:
+            """Context object for conditional evaluation.
+
+            Provides access to step outputs via ctx.steps['step_name'].outputs['output_name']
+            """
+
+            def __init__(self, result: "PipelineResult", pipeline: "Pipeline"):
+                self.result = result
+                self.pipeline = pipeline
+                self._steps_cache = None
+
+            @property
+            def steps(self):
+                """Lazy-load steps dictionary with outputs."""
+                if self._steps_cache is None:
+                    self._steps_cache = {}
+                    # Build steps dictionary with outputs
+                    for step_name, step_res in self.result.step_results.items():
+                        if step_res.success and step_res.output is not None:
+                            step_def = next((s for s in self.pipeline.steps if s.name == step_name), None)
+                            if step_def:
+                                # Create step outputs dictionary
+                                step_outputs = {}
+                                if len(step_def.outputs) == 1:
+                                    step_outputs[step_def.outputs[0]] = step_res.output
+                                elif isinstance(step_res.output, dict):
+                                    step_outputs = step_res.output
+                                elif step_def.outputs:
+                                    # Try to map tuple/list outputs
+                                    if isinstance(step_res.output, (list, tuple)) and len(step_res.output) == len(
+                                        step_def.outputs,
+                                    ):
+                                        for name, val in zip(step_def.outputs, step_res.output, strict=False):
+                                            step_outputs[name] = val
+                                    else:
+                                        step_outputs[step_def.outputs[0]] = step_res.output
+
+                                # Create step object with outputs attribute that supports Asset objects
+                                class StepContext:
+                                    def __init__(self, outputs):
+                                        # Wrap outputs to support Asset object access
+                                        self._raw_outputs = outputs
+                                        self.outputs = self._wrap_outputs(outputs)
+
+                                    def _wrap_outputs(self, outputs):
+                                        """Wrap outputs to support Asset object property access."""
+                                        wrapped = {}
+                                        for key, value in outputs.items():
+                                            wrapped[key] = self._wrap_asset(value)
+                                        return wrapped
+
+                                    def _wrap_asset(self, value):
+                                        """Wrap Asset objects to expose their properties."""
+                                        # Check if it's an Asset object
+                                        from flowyml.assets.base import Asset
+                                        from flowyml.assets.metrics import Metrics
+                                        from flowyml.assets.featureset import FeatureSet
+
+                                        if isinstance(value, Asset):
+                                            # Create a wrapper that exposes Asset properties
+                                            class AssetWrapper:
+                                                def __init__(self, asset):
+                                                    self._asset = asset
+                                                    # Expose the asset itself
+                                                    self._self = asset
+
+                                                def __getattr__(self, name):  # noqa: B023
+                                                    # Try to get from asset first (handles all Asset properties)
+                                                    if hasattr(self._asset, name):  # noqa: B023
+                                                        attr = getattr(self._asset, name)  # noqa: B023
+                                                        # If it's a property/method, return it
+                                                        return attr
+
+                                                    # For Metrics, map .metrics to .data or .get_all_metrics()
+                                                    if isinstance(self._asset, Metrics):
+                                                        if name == "metrics":  # noqa: B023
+                                                            return (
+                                                                self._asset.get_all_metrics() or self._asset.data or {}
+                                                            )
+
+                                                    # For all Assets, expose .data
+                                                    if name == "data":  # noqa: B023
+                                                        return self._asset.data
+
+                                                    # Expose properties dict
+                                                    if name == "properties":  # noqa: B023
+                                                        return self._asset.properties
+
+                                                    # Expose tags
+                                                    if name == "tags":  # noqa: B023
+                                                        return self._asset.tags
+
+                                                    # Expose metadata (as alias for properties + tags)
+                                                    if name == "metadata":  # noqa: B023
+                                                        return {
+                                                            **self._asset.properties,
+                                                            **dict(self._asset.tags.items()),
+                                                        }
+
+                                                    raise AttributeError(  # noqa: B023
+                                                        f"'{type(self).__name__}' object has no attribute '{name}'",  # noqa: B023
+                                                    )
+
+                                                def __getitem__(self, key):
+                                                    """Allow dict-like access for Metrics.data and Asset.data."""
+                                                    # For Metrics, access via get_all_metrics()
+                                                    if isinstance(self._asset, Metrics):
+                                                        metrics = (
+                                                            self._asset.get_all_metrics() or self._asset.data or {}
+                                                        )
+                                                        if isinstance(metrics, dict):
+                                                            return metrics[key]  # noqa: B023
+
+                                                    # For all Assets, allow dict access to .data if it's a dict
+                                                    if isinstance(self._asset.data, dict):
+                                                        return self._asset.data[key]
+
+                                                    # For FeatureSet, allow access to statistics
+                                                    if isinstance(self._asset, FeatureSet):
+                                                        if key in self._asset.statistics:
+                                                            return self._asset.statistics[key]
+
+                                                    raise KeyError(f"'{key}' not found in {type(self._asset).__name__}")
+
+                                                def __contains__(self, key):
+                                                    """Support 'in' operator."""
+                                                    # For Metrics, check in metrics dict
+                                                    if isinstance(self._asset, Metrics):
+                                                        metrics = (
+                                                            self._asset.get_all_metrics() or self._asset.data or {}
+                                                        )
+                                                        if isinstance(metrics, dict):
+                                                            return key in metrics
+
+                                                    # For all Assets, check in .data if it's a dict
+                                                    if isinstance(self._asset.data, dict):
+                                                        return key in self._asset.data
+
+                                                    # For FeatureSet, check in statistics
+                                                    if isinstance(self._asset, FeatureSet):
+                                                        return key in self._asset.statistics
+
+                                                    return False
+
+                                                def __repr__(self):
+                                                    return f"<AssetWrapper({type(self._asset).__name__})>"
+
+                                            return AssetWrapper(value)
+                                        # For dict values, return as-is but allow attribute access
+                                        elif isinstance(value, dict):
+
+                                            class DictWrapper(dict):
+                                                """Dict wrapper that allows attribute access."""
+
+                                                def __getattr__(self, name):  # noqa: B023
+                                                    if name in self:  # noqa: B023
+                                                        return self[name]  # noqa: B023
+                                                    raise AttributeError(  # noqa: B023
+                                                        f"'{type(self).__name__}' object has no attribute '{name}'",  # noqa: B023
+                                                    )
+
+                                            return DictWrapper(value)
+                                        # For other types, return as-is
+                                        return value
+
+                                self._steps_cache[step_name] = StepContext(step_outputs)
+                return self._steps_cache
+
+        context = ExecutionContext(result, pipeline)
+
+        # Evaluate each control flow
+        for control_flow in pipeline.control_flows:
+            if isinstance(control_flow, If):
+                try:
+                    selected_step = control_flow.evaluate(context)
+                except Exception as e:
+                    # If condition evaluation fails, log and skip
+                    import warnings
+
+                    warnings.warn(f"Failed to evaluate control flow condition: {e}", stacklevel=2)
+                    continue
+
+                if selected_step:
+                    # Find the Step object for this function
+                    step_obj = next((s for s in pipeline.steps if s.func == selected_step), None)
+                    if step_obj and step_obj.name not in result.step_results:
+                        # Execute the selected step
+                        # The check above prevents re-execution of the same step
+                        self._execute_conditional_step(
+                            pipeline,
+                            step_obj,
+                            step_outputs,
+                            result,
+                            run_id,
+                        )
+                        # Note: Control flows will be re-evaluated after conditional step completes
+
+    def _execute_conditional_step(
+        self,
+        pipeline: "Pipeline",
+        step: "Step",
+        step_outputs: dict[str, Any],
+        result: "PipelineResult",
+        run_id: str,
+    ) -> None:
+        """Execute a step that was selected by conditional logic.
+
+        Args:
+            pipeline: Pipeline instance
+            step: Step to execute
+            step_outputs: Current step outputs
+            result: Pipeline result object
+            run_id: Run identifier
+        """
+        # Prepare step inputs (similar to regular step execution)
+        import inspect
+
+        step_inputs = {}
+        sig = inspect.signature(step.func)
+        params = [p for p in sig.parameters.values() if p.name not in ("self", "cls")]
+
+        for param in params:
+            if param.name in step_outputs:
+                step_inputs[param.name] = step_outputs[param.name]
+
+        # Get context parameters
+        context_params = pipeline.context.inject_params(step.func)
+
+        # Update display
+        if hasattr(pipeline, "_display") and pipeline._display:
+            pipeline._display.update_step_status(step_name=step.name, status="running")
+
+        # Execute step
+        step_result = pipeline.executor.execute_step(
+            step,
+            step_inputs,
+            context_params,
+            pipeline.cache_store,
+            artifact_store=pipeline.stack.artifact_store if pipeline.stack else None,
+            run_id=run_id,
+            project_name=pipeline.name,
+        )
+
+        # Update display
+        if hasattr(pipeline, "_display") and pipeline._display:
+            pipeline._display.update_step_status(
+                step_name=step.name,
+                status="success" if step_result.success else "failed",
+                duration=step_result.duration_seconds,
+                cached=step_result.cached,
+                error=step_result.error,
+            )
+
+        result.add_step_result(step_result)
+
+        # Process outputs
+        if step_result.output is not None:
+            self._process_step_output(pipeline, step_result, step_outputs, result)
+
+        # Check for control flows that need to be evaluated after conditional step
+        self._evaluate_control_flows(pipeline, step_result, step_outputs, result, run_id)
 
     def _process_step_output(self, pipeline, step_result, step_outputs, result):
         """Helper to process step outputs and update state."""

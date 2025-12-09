@@ -78,8 +78,14 @@ class MonitorThread(threading.Thread):
         self.log_capture = log_capture
         self.interval = interval
         self._stop_event = threading.Event()
-        # Use environment variable or default to UI server port (8080)
-        self.api_url = os.getenv("FLOWYML_SERVER_URL", "http://localhost:8080")
+        # Get UI server URL from configuration (supports env vars, config, centralized deployments)
+        try:
+            from flowyml.ui.utils import get_ui_server_url
+
+            self.api_url = get_ui_server_url()
+        except Exception:
+            # Fallback to environment variable or default
+            self.api_url = os.getenv("FLOWYML_SERVER_URL", "http://localhost:8080")
 
     def stop(self):
         self._stop_event.set()

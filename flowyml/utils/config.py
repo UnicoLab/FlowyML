@@ -27,9 +27,11 @@ class FlowymlConfig:
     remote_ui_url: str = ""
     remote_services: list[dict[str, str]] = field(default_factory=list)
     enable_caching: bool = True
+    enable_checkpointing: bool = True  # Enable checkpointing by default
     enable_logging: bool = True
     log_level: str = "INFO"
     max_cache_size_mb: int = 10000  # 10GB default
+    checkpoint_dir: Path = field(default_factory=lambda: Path(".flowyml/checkpoints"))
 
     # UI settings
     ui_host: str = "localhost"
@@ -63,6 +65,7 @@ class FlowymlConfig:
             "runs_dir",
             "experiments_dir",
             "projects_dir",
+            "checkpoint_dir",
         ]:
             value = getattr(self, field_name)
             if not isinstance(value, Path):
@@ -76,6 +79,7 @@ class FlowymlConfig:
         self.runs_dir.mkdir(parents=True, exist_ok=True)
         self.experiments_dir.mkdir(parents=True, exist_ok=True)
         self.projects_dir.mkdir(parents=True, exist_ok=True)
+        self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
         # Create metadata db parent dir
         self.metadata_db.parent.mkdir(parents=True, exist_ok=True)
@@ -90,12 +94,14 @@ class FlowymlConfig:
             "runs_dir": str(self.runs_dir),
             "experiments_dir": str(self.experiments_dir),
             "projects_dir": str(self.projects_dir),
+            "checkpoint_dir": str(self.checkpoint_dir),
             "default_stack": self.default_stack,
             "execution_mode": self.execution_mode,
             "remote_server_url": self.remote_server_url,
             "remote_ui_url": self.remote_ui_url,
             "remote_services": self.remote_services,
             "enable_caching": self.enable_caching,
+            "enable_checkpointing": self.enable_checkpointing,
             "enable_logging": self.enable_logging,
             "log_level": self.log_level,
             "max_cache_size_mb": self.max_cache_size_mb,
@@ -274,6 +280,7 @@ def get_env_config() -> dict[str, Any]:
         "flowyml_EXECUTION_MODE": "execution_mode",
         "flowyml_REMOTE_SERVER_URL": "remote_server_url",
         "flowyml_REMOTE_UI_URL": "remote_ui_url",
+        "flowyml_SERVER_URL": "remote_ui_url",  # Alias for FLOWYML_SERVER_URL -> remote_ui_url
         "flowyml_ENABLE_CACHING": "enable_caching",
         "flowyml_LOG_LEVEL": "log_level",
         "flowyml_UI_HOST": "ui_host",

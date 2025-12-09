@@ -5,7 +5,7 @@ import time
 import subprocess
 from typing import Optional
 
-from flowyml.ui.utils import is_ui_running, get_ui_url
+from flowyml.ui.utils import is_ui_running, get_ui_url, get_ui_host_port
 
 
 class UIServerManager:
@@ -17,8 +17,8 @@ class UIServerManager:
     def __init__(self):
         self._server_thread: Optional[threading.Thread] = None
         self._server_process: Optional[subprocess.Popen] = None
-        self._host = "localhost"
-        self._port = 8080
+        # Initialize from config/env vars
+        self._host, self._port = get_ui_host_port()
         self._running = False
         self._started = False
 
@@ -31,19 +31,25 @@ class UIServerManager:
                     cls._instance = cls()
         return cls._instance
 
-    def ensure_running(self, host: str = "localhost", port: int = 8080, auto_start: bool = True) -> bool:
+    def ensure_running(self, host: str | None = None, port: int | None = None, auto_start: bool = True) -> bool:
         """Ensure UI server is running, start it if not and auto_start is True.
 
         Args:
-            host: Host to bind to
-            port: Port to bind to
+            host: Host to bind to (uses config/env if None)
+            port: Port to bind to (uses config/env if None)
             auto_start: If True, automatically start server if not running
 
         Returns:
             True if server is running, False otherwise
         """
-        self._host = host
-        self._port = port
+        # Use provided values or get from config
+        if host is None or port is None:
+            config_host, config_port = get_ui_host_port()
+            self._host = host if host is not None else config_host
+            self._port = port if port is not None else config_port
+        else:
+            self._host = host
+            self._port = port
 
         # Check if already running
         if is_ui_running(host, port):
@@ -55,21 +61,27 @@ class UIServerManager:
         # Try to start the server
         return self.start(host, port)
 
-    def start(self, host: str = "localhost", port: int = 8080) -> bool:
+    def start(self, host: str | None = None, port: int | None = None) -> bool:
         """Start the UI server in a background thread.
 
         Args:
-            host: Host to bind to
-            port: Port to bind to
+            host: Host to bind to (uses config/env if None)
+            port: Port to bind to (uses config/env if None)
 
         Returns:
             True if started successfully, False otherwise
         """
-        if self._running:
-            return is_ui_running(host, port)
+        # Use provided values or get from config
+        if host is None or port is None:
+            config_host, config_port = get_ui_host_port()
+            self._host = host if host is not None else config_host
+            self._port = port if port is not None else config_port
+        else:
+            self._host = host
+            self._port = port
 
-        self._host = host
-        self._port = port
+        if self._running:
+            return is_ui_running(self._host, self._port)
 
         try:
             # Check if UI dependencies are available

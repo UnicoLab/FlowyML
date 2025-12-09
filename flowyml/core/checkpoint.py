@@ -49,12 +49,17 @@ class PipelineCheckpoint:
         # Update checkpoint metadata
         checkpoint_data = self.load() if self.checkpoint_file.exists() else {}
 
+        # Get existing completed steps (avoid duplicates)
+        completed_steps = checkpoint_data.get("completed_steps", [])
+        if step_name not in completed_steps:
+            completed_steps.append(step_name)
+
         checkpoint_data.update(
             {
                 "run_id": self.run_id,
                 "last_completed_step": step_name,
                 "last_update": datetime.now().isoformat(),
-                "completed_steps": checkpoint_data.get("completed_steps", []) + [step_name],
+                "completed_steps": completed_steps,
                 "step_metadata": checkpoint_data.get("step_metadata", {}),
             },
         )

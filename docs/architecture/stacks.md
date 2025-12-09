@@ -140,6 +140,69 @@ stack = KubernetesStack(
 )
 ```
 
+## Automatic Component Usage
+
+**When you use a stack, all components are automatically used by the pipeline.** This is the core concept of stacks - they encapsulate all infrastructure configuration.
+
+### How Stacks Work
+
+1. **Create or select a stack** with all components configured
+2. **Attach stack to pipeline** (via constructor or active stack)
+3. **Pipeline automatically uses**:
+   - Stack's orchestrator (e.g., VertexAIOrchestrator)
+   - Stack's executor (e.g., VertexAIExecutor)
+   - Stack's artifact store (e.g., GCSArtifactStore)
+   - Stack's metadata store (e.g., CloudSQLMetadataStore)
+   - Stack's container registry (e.g., GCRContainerRegistry)
+
+### Example: GCP Stack with Automatic Orchestrator
+
+```python
+from flowyml import Pipeline
+from flowyml.stacks.gcp import GCPStack
+
+# Create GCP stack - includes VertexAIOrchestrator automatically
+gcp_stack = GCPStack(
+    name="production",
+    project_id="my-gcp-project",
+    region="us-central1",
+    bucket_name="my-artifacts",
+    service_account="my-sa@my-project.iam.gserviceaccount.com"
+)
+
+# Create pipeline with stack
+pipeline = Pipeline("training_pipeline", stack=gcp_stack)
+pipeline.add_step(train_model)
+pipeline.add_step(evaluate_model)
+
+# Run pipeline - automatically uses Vertex AI orchestrator!
+# No need to specify orchestrator explicitly
+result = pipeline.run()
+```
+
+### Stack Priority in Pipeline.run()
+
+When you call `pipeline.run()`, the orchestrator is determined in this order:
+
+1. **Explicit `orchestrator` parameter** (if provided) - highest priority
+2. **Stack's orchestrator** (if stack is set/active) - **recommended**
+3. **Default LocalOrchestrator** - fallback
+
+```python
+# Option 1: Use stack's orchestrator (recommended)
+pipeline = Pipeline("my_pipeline", stack=gcp_stack)
+pipeline.run()  # Uses VertexAIOrchestrator from stack
+
+# Option 2: Override orchestrator for this run only
+pipeline.run(orchestrator=custom_orchestrator)  # Override stack's orchestrator
+
+# Option 3: Use active stack
+from flowyml.stacks.registry import set_active_stack
+set_active_stack("gcp-production")
+pipeline = Pipeline("my_pipeline")
+pipeline.run()  # Uses orchestrator from active stack
+```
+
 ## Resource Configuration
 
 Define compute resources for your pipelines:
