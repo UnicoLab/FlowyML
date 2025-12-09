@@ -21,7 +21,7 @@ class DummyOrchestrator(Orchestrator):
     def validate(self) -> bool:
         return True
 
-    def run_pipeline(self, pipeline, resources=None, docker_config=None, **kwargs):
+    def run_pipeline(self, pipeline, run_id=None, resources=None, docker_config=None, **kwargs):
         self.last_payload = {
             "pipeline": pipeline.name,
             "resources": resources,

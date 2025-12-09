@@ -36,8 +36,9 @@ The `PipelineScheduler` provides:
 - **Hourly schedules**: Run at specific minute each hour
 - **Interval schedules**: Run at regular intervals
 - **Timezone support**: Schedule in any timezone
-- **Persistence**: Schedules survive restarts (SQLite backed)
+- **Persistence**: Schedules survive restarts (SQLAlchemy-backed SQLite database)
 - **Distributed**: Coordinate across multiple servers (Redis/File locking)
+- **Execution History**: Track all scheduled run executions with metadata
 
 ## Quick Start 🚀
 
@@ -135,7 +136,13 @@ scheduler.schedule_interval(
 
 ### Persistence
 
-Schedules are automatically persisted to a local SQLite database (`.flowyml_scheduler.db`). This ensures that schedules are not lost if the application restarts.
+Schedules are automatically persisted to a local SQLite database (`.flowyml_scheduler.db`) using SQLAlchemy. This ensures that schedules are not lost if the application restarts and provides better type safety and database portability.
+
+**Technical Details:**
+- Uses SQLAlchemy ORM for all database operations (no raw SQL queries)
+- Supports SQLite by default, with easy migration to PostgreSQL if needed
+- Automatic schema creation and migration
+- Transaction-safe operations
 
 To configure persistence:
 
@@ -187,6 +194,26 @@ The scheduler tracks metrics and health status.
 health = scheduler.health_check()
 print(f"Status: {health['status']}")
 print(f"Success Rate: {health['metrics']['success_rate']:.1%}")
+```
+
+### Execution History
+
+The scheduler automatically tracks execution history for all scheduled runs, including:
+- Start and completion times
+- Success/failure status
+- Duration
+- Error messages (if any)
+- Run IDs (for linking to pipeline runs in the UI)
+
+```python
+# Get execution history for a schedule
+history = scheduler.get_history("daily_etl_job", limit=50)
+
+for execution in history:
+    status = "✅" if execution["success"] else "❌"
+    print(f"{status} {execution['started_at']} - {execution['duration_seconds']:.2f}s")
+    if execution.get("run_id"):
+        print(f"   Run ID: {execution['run_id']}")
 ```
 
 ## Managing Schedules 🛠️
@@ -261,12 +288,19 @@ PipelineScheduler(config: Optional[SchedulerConfig] = None)
 ```
 
 **Methods**:
-- `schedule_cron(name, func, cron_expression, timezone="UTC")`
-- `schedule_daily(name, func, hour, minute, timezone="UTC")`
-- `schedule_hourly(name, func, minute, timezone="UTC")`
-- `schedule_interval(name, func, hours, minutes, seconds, timezone="UTC")`
-- `health_check() -> Dict`
-- `clear()`
+- `schedule_cron(name, func, cron_expression, timezone="UTC")` - Schedule using cron expression
+- `schedule_daily(name, func, hour, minute, timezone="UTC")` - Schedule daily at specific time
+- `schedule_hourly(name, func, minute, timezone="UTC")` - Schedule hourly at specific minute
+- `schedule_interval(name, func, hours, minutes, seconds, timezone="UTC")` - Schedule at intervals
+- `health_check() -> Dict` - Get scheduler health and metrics
+- `get_history(schedule_name, limit=50) -> List[Dict]` - Get execution history for a schedule
+- `list_schedules() -> List[Schedule]` - List all schedules
+- `enable(name)` - Enable a schedule
+- `disable(name)` - Disable a schedule
+- `unschedule(name)` - Remove a schedule
+- `clear()` - Remove all schedules
+- `start()` - Start the scheduler
+- `stop()` - Stop the scheduler
 
 ### SchedulerConfig
 

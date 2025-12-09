@@ -454,10 +454,18 @@ class LocalOrchestrator(Orchestrator):
 
                                                 def __getattr__(self, name):  # noqa: B023
                                                     # Try to get from asset first (handles all Asset properties)
-                                                    if hasattr(self._asset, name):  # noqa: B023
-                                                        attr = getattr(self._asset, name)  # noqa: B023
-                                                        # If it's a property/method, return it
-                                                        return attr
+                                                    try:
+                                                        if hasattr(self._asset, name):  # noqa: B023
+                                                            attr = getattr(self._asset, name)  # noqa: B023
+                                                            # If it's a property/method, return it
+                                                            # If it's callable but we want the value, call it
+                                                            if callable(attr) and not isinstance(attr, type):
+                                                                # It's a method, not a property - return as-is
+                                                                return attr
+                                                            return attr
+                                                    except Exception:
+                                                        # If accessing the attribute fails, continue to fallback logic
+                                                        pass
 
                                                     # For Metrics, map .metrics to .data or .get_all_metrics()
                                                     if isinstance(self._asset, Metrics):
@@ -569,9 +577,29 @@ class LocalOrchestrator(Orchestrator):
                     continue
 
                 if selected_step:
-                    # Find the Step object for this function
-                    step_obj = next((s for s in pipeline.steps if s.func == selected_step), None)
-                    if step_obj and step_obj.name not in result.step_results:
+                    from flowyml.core.step import Step
+
+                    # Check if selected_step is already a Step object or a function
+                    if isinstance(selected_step, Step):
+                        # Already a Step object, use it directly
+                        step_obj = selected_step
+                    else:
+                        # It's a function, try to find existing Step or create one
+                        step_obj = next((s for s in pipeline.steps if s.func == selected_step), None)
+
+                        # If step not found in pipeline.steps, it's a conditional step - create Step object on the fly
+                        if step_obj is None:
+                            # Get function name safely
+                            func_name = getattr(selected_step, "__name__", "conditional_step")
+                            # Create a Step object for the conditional step function
+                            step_obj = Step(
+                                func=selected_step,
+                                name=func_name,
+                                inputs=[],  # Conditional steps may not have explicit inputs
+                                outputs=[],  # Conditional steps may not have explicit outputs
+                            )
+
+                    if step_obj.name not in result.step_results:
                         # Execute the selected step
                         # The check above prevents re-execution of the same step
                         self._execute_conditional_step(
@@ -641,9 +669,31 @@ class LocalOrchestrator(Orchestrator):
 
         result.add_step_result(step_result)
 
+        # Handle failure
+        if not step_result.success:
+            result.finalize(success=False)
+            return
+
         # Process outputs
         if step_result.output is not None:
             self._process_step_output(pipeline, step_result, step_outputs, result)
+
+            # Save checkpoint after successful conditional step
+            checkpoint = getattr(pipeline, "_checkpoint", None)
+            if checkpoint and step_result.success:
+                try:
+                    checkpoint.save_step_state(
+                        step_name=step.name,
+                        outputs=step_outputs,
+                        metadata={
+                            "duration": step_result.duration_seconds,
+                            "cached": step_result.cached,
+                        },
+                    )
+                except Exception as e:
+                    import warnings
+
+                    warnings.warn(f"Failed to save checkpoint for conditional step {step.name}: {e}", stacklevel=2)
 
         # Check for control flows that need to be evaluated after conditional step
         self._evaluate_control_flows(pipeline, step_result, step_outputs, result, run_id)

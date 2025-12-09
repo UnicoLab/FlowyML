@@ -527,8 +527,8 @@ class Pipeline:
             **kwargs,
         )
 
-        # Show summary
-        if display:
+        # Show summary (only if result is a PipelineResult, not a string)
+        if display and not isinstance(result, str):
             display.show_summary(result, ui_url=ui_url, run_url=run_url)
 
         # If result is just a job ID (remote execution), wrap it in a basic result
@@ -540,6 +540,10 @@ class Pipeline:
             self._save_run(wrapper)
             self._save_pipeline_definition()
             return wrapper
+
+        # Ensure result has configs attached (in case orchestrator didn't do it)
+        if hasattr(result, "attach_configs") and not hasattr(result, "resource_config"):
+            result.attach_configs(resource_config, docker_cfg)
 
         return result
 

@@ -130,11 +130,14 @@ ctx = context(
 
 pipeline = Pipeline(
     name="training_pipeline",
-    context=ctx,              # Context for parameter injection
-    enable_cache=True,        # Enable intelligent caching
-    cache_dir="./my_cache",   # Custom cache directory
-    stack=my_stack,           # Execution stack (local, cloud, etc.)
-    project_name="ml_project" # Automatically creates/attaches to project
+    context=ctx,                    # Context for parameter injection
+    enable_cache=True,              # Enable intelligent caching
+    cache_dir="./my_cache",         # Custom cache directory
+    stack=my_stack,                 # Execution stack (local, cloud, etc.)
+    project_name="ml_project",      # Automatically creates/attaches to project
+    version="v1.0.0",               # Optional: creates VersionedPipeline automatically
+    enable_checkpointing=True,       # Enable automatic checkpointing (default: True)
+    enable_experiment_tracking=True  # Enable automatic experiment tracking (default: True)
 )
 ```
 
@@ -148,6 +151,10 @@ pipeline = Pipeline(
 | `enable_cache` | `bool` | Enable step caching | `True` |
 | `cache_dir` | `str` | Cache storage directory | `.flowyml/cache` |
 | `stack` | `Stack` | Execution stack (local/cloud) | `None` |
+| `project_name` | `str` | Project name (creates/attaches automatically) | `None` |
+| `version` | `str` | Version string (creates VersionedPipeline) | `None` |
+| `enable_checkpointing` | `bool` | Enable automatic checkpointing | `True` |
+| `enable_experiment_tracking` | `bool` | Enable automatic experiment tracking | `True` (config default) |
 
 ## Execution Graph (DAG) 🕸️
 

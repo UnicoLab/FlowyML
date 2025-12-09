@@ -23,26 +23,32 @@ flowyml ensures you never lose progress. Save pipeline state automatically and t
 
 Checkpointing allows you to save the intermediate results of your pipeline steps. This is crucial for long-running pipelines, as it enables you to resume execution from the point of failure or to skip expensive steps that have already been computed.
 
-### Real-World Pattern: The "Resume" Workflow
+### Automatic Checkpointing (Default)
 
-Crash-proof your long-running pipelines.
+**Checkpointing is enabled by default!** FlowyML automatically saves pipeline state after each step, allowing you to resume from failures without any additional setup.
 
 ```python
-from flowyml import Pipeline, checkpoint_enabled_pipeline
+from flowyml import Pipeline
 
+# Checkpointing is enabled by default
 pipeline = Pipeline("heavy_processing")
+pipeline.add_step(load_data)
+pipeline.add_step(train_model)
+pipeline.add_step(evaluate_model)
 
 # 1. Try to run
 try:
-    pipeline.run()
+    result = pipeline.run()
 except Exception:
     print("Pipeline crashed! Fix the bug and re-run.")
 
-# 2. Resume later (e.g., in a new script or after fix)
-# flowyml detects the previous run state and resumes
-pipeline = checkpoint_enabled_pipeline(pipeline, run_id="run_2023_10_27")
-pipeline.run()
+# 2. Resume automatically on next run
+# FlowyML detects the previous run state and resumes from the last successful step
+result = pipeline.run()  # Automatically resumes from checkpoint
 ```
+
+> [!TIP]
+> **Pro Tip**: Checkpointing is enabled by default. If you want to disable it for a specific pipeline, use `Pipeline("name", enable_checkpointing=False)`.
 
 > [!TIP]
 > **Pro Tip**: Always enable checkpointing for pipelines that take longer than 10 minutes. The storage cost is negligible compared to the compute time saved.
