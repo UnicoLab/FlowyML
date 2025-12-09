@@ -19,7 +19,7 @@ description = "Document parameters, class attributes, return types, and variable
 optional = false
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "extra == \"ui\""
+markers = "extra == \"ui\" or extra == \"all\""
 files = [
     {file = "annotated_doc-0.0.4-py3-none-any.whl", hash = "sha256:571ac1dc6991c450b25a9c2d84a3705e2ae7a53467b5d111c24fa8baabbed320"},
     {file = "annotated_doc-0.0.4.tar.gz", hash = "sha256:fbcda96e87e9c92ad167c2e53839e57503ecfda18804ea28102353485033faa4"},
@@ -772,7 +772,7 @@ description = "FastAPI framework, high performance, easy to learn, fast to code,
 optional = false
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "extra == \"ui\""
+markers = "extra == \"ui\" or extra == \"all\""
 files = [
     {file = "fastapi-0.122.0-py3-none-any.whl", hash = "sha256:a456e8915dfc6c8914a50d9651133bd47ec96d331c5b44600baa635538a30d67"},
     {file = "fastapi-0.122.0.tar.gz", hash = "sha256:cd9b5352031f93773228af8b4c443eedc2ac2aa74b27780387b853c3726fb94b"},
@@ -1509,7 +1509,7 @@ trio = ["trio (>=0.22.0,<1.0)"]
 name = "httptools"
 version = "0.7.1"
 description = "A collection of framework independent HTTP protocol utils."
-optional = true
+optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 markers = "extra == \"ui\" or extra == \"all\""
@@ -4208,7 +4208,7 @@ six = ">=1.5"
 name = "python-dotenv"
 version = "1.2.1"
 description = "Read key-value pairs from a .env file and set them as environment variables"
-optional = true
+optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 markers = "extra == \"ui\" or extra == \"all\""
@@ -4224,7 +4224,7 @@ cli = ["click (>=5.0)"]
 name = "python-multipart"
 version = "0.0.20"
 description = "A streaming multipart parser for Python"
-optional = true
+optional = false
 python-versions = ">=3.8"
 groups = ["main"]
 markers = "extra == \"ui\" or extra == \"all\""
@@ -4976,7 +4976,7 @@ description = "The little ASGI library that shines."
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "extra == \"ui\""
+markers = "extra == \"ui\" or extra == \"all\""
 files = [
     {file = "starlette-0.50.0-py3-none-any.whl", hash = "sha256:9e5391843ec9b6e472eed1365a78c8098cfceb7a74bfd4d6b1c0c0095efb3bca"},
     {file = "starlette-0.50.0.tar.gz", hash = "sha256:a2a17b22203254bcbc2e1f926d2d55f3f9497f769416b3190768befe598fa3ca"},
@@ -5492,7 +5492,7 @@ zstd = ["zstandard (>=0.18.0)"]
 name = "uvicorn"
 version = "0.38.0"
 description = "The lightning-fast ASGI server."
-optional = true
+optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 markers = "extra == \"ui\" or extra == \"all\""
@@ -5520,7 +5520,7 @@ standard = ["colorama (>=0.4) ; sys_platform == \"win32\"", "httptools (>=0.6.3)
 name = "uvloop"
 version = "0.22.1"
 description = "Fast implementation of asyncio event loop on top of libuv"
-optional = true
+optional = false
 python-versions = ">=3.8.1"
 groups = ["main"]
 markers = "sys_platform != \"win32\" and sys_platform != \"cygwin\" and platform_python_implementation != \"PyPy\" and (extra == \"ui\" or extra == \"all\")"
@@ -5665,7 +5665,7 @@ watchmedo = ["PyYAML (>=3.10)"]
 name = "watchfiles"
 version = "1.1.1"
 description = "Simple, modern and high performance file watching and code reload in python."
-optional = true
+optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 markers = "extra == \"ui\" or extra == \"all\""
@@ -5815,7 +5815,7 @@ files = [
 name = "websockets"
 version = "15.0.1"
 description = "An implementation of the WebSocket Protocol (RFC 6455 & 7692)"
-optional = true
+optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 markers = "extra == \"ui\" or extra == \"all\""
@@ -6081,11 +6081,12 @@ test = ["big-O", "jaraco.functools", "jaraco.itertools", "jaraco.test", "more_it
 type = ["pytest-mypy"]
 
 [extras]
-all = ["google-cloud-aiplatform", "google-cloud-storage", "python-multipart", "scikit-learn", "tensorflow", "torch", "uvicorn", "websockets"]
+all = ["fastapi", "google-cloud-aiplatform", "google-cloud-storage", "python-multipart", "scikit-learn", "tensorflow", "torch", "uvicorn", "websockets"]
 aws = []
 azure = []
 gcp = ["google-cloud-aiplatform", "google-cloud-storage"]
 pytorch = ["torch"]
+rich = ["rich"]
 sklearn = ["scikit-learn"]
 tensorflow = ["tensorflow"]
 ui = ["fastapi", "python-multipart", "uvicorn", "websockets"]
@@ -6093,4 +6094,4 @@ ui = ["fastapi", "python-multipart", "uvicorn", "websockets"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<4.0"
-content-hash = "198003888e6d3a2ddafdaa38d1707759e71e645c2cde54c0e0062444322449f7"
+content-hash = "0056e0112df5206aacbddc73e92c02d6b1803d6f6bfebc31bf4fa25e931f771a"

@@ -127,20 +127,23 @@ stacks: ## List available stacks
 # Testing
 # =============================================================================
 
-test: ## Run all tests
-	$(PYTEST) tests/ -v
+test: ## Run all tests (with parallel execution)
+	$(PYTEST) tests/ -v -n auto
 
-test-unit: ## Run unit tests only
-	$(PYTEST) tests/ -v -k "not integration"
+test-unit: ## Run unit tests only (with parallel execution)
+	$(PYTEST) tests/ -v -k "not integration" -n auto
 
 test-integration: ## Run integration tests only
 	$(PYTEST) tests/test_integration.py tests/test_api_integration.py -v
 
-test-coverage: ## Run tests with coverage report
-	$(PYTEST) tests/ --cov=flowyml --cov-report=html --cov-report=term
+test-coverage: ## Run tests with coverage report (parallel execution)
+	$(PYTEST) tests/ --cov=flowyml --cov-report=html --cov-report=term -n auto
 
-test-fast: ## Run tests without coverage (faster)
-	$(PYTEST) tests/ -v --tb=short
+test-fast: ## Run tests without coverage (faster, parallel execution)
+	$(PYTEST) tests/ -v --tb=short -n auto
+
+test-serial: ## Run tests serially (no parallel execution) - useful for debugging
+	$(PYTEST) tests/ -v
 
 # =============================================================================
 # Code Quality

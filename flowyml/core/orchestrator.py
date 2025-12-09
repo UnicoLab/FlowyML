@@ -463,15 +463,22 @@ class LocalOrchestrator(Orchestrator):
                                                                 # It's a method, not a property - return as-is
                                                                 return attr
                                                             return attr
-                                                    except Exception:
-                                                        # If accessing the attribute fails, continue to fallback logic
+                                                    except Exception as e:
+                                                        # If accessing the attribute fails, log and continue to fallback logic
+                                                        # This can happen if a property raises an exception
+                                                        import warnings
+
+                                                        warnings.warn(
+                                                            f"Failed to access attribute '{name}' on {type(self._asset).__name__}: {e}",  # noqa: B023
+                                                            stacklevel=3,
+                                                        )
                                                         pass
 
                                                     # For Metrics, map .metrics to .data or .get_all_metrics()
                                                     if isinstance(self._asset, Metrics):
                                                         if name == "metrics":  # noqa: B023
                                                             return (
-                                                                self._asset.get_all_metrics() or self._asset.data or {}
+                                                                self._asset.get_all_metrics() or self._asset.data or {}  # noqa: B023
                                                             )
 
                                                     # For all Assets, expose .data
@@ -488,10 +495,18 @@ class LocalOrchestrator(Orchestrator):
 
                                                     # Expose metadata (as alias for properties + tags)
                                                     if name == "metadata":  # noqa: B023
-                                                        return {
-                                                            **self._asset.properties,
-                                                            **dict(self._asset.tags.items()),
-                                                        }
+                                                        # Create a dict that merges properties and tags
+                                                        # Tags take precedence if there's a conflict
+                                                        # Start with properties, then update with tags (tags override)
+                                                        # Use dict() constructor to ensure it's a proper dict with .get() method
+                                                        metadata_dict = (
+                                                            dict(self._asset.properties)
+                                                            if self._asset.properties
+                                                            else {}
+                                                        )
+                                                        if self._asset.tags:
+                                                            metadata_dict.update(self._asset.tags)
+                                                        return metadata_dict
 
                                                     raise AttributeError(  # noqa: B023
                                                         f"'{type(self).__name__}' object has no attribute '{name}'",  # noqa: B023
@@ -570,12 +585,19 @@ class LocalOrchestrator(Orchestrator):
                 try:
                     selected_step = control_flow.evaluate(context)
                 except Exception as e:
-                    # If condition evaluation fails, log and skip
+                    # If condition evaluation fails, log the error with full traceback for debugging
                     import warnings
+                    import traceback
 
-                    warnings.warn(f"Failed to evaluate control flow condition: {e}", stacklevel=2)
-                    continue
+                    warnings.warn(
+                        f"Failed to evaluate control flow condition: {e}\n{traceback.format_exc()}",
+                        stacklevel=2,
+                    )
+                    # If condition evaluation fails, try to execute else_step as fallback
+                    # This ensures we don't silently skip execution
+                    selected_step = control_flow.else_step
 
+                # Execute selected_step if it exists (could be then_step, else_step, or None)
                 if selected_step:
                     from flowyml.core.step import Step
 

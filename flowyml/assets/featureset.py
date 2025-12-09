@@ -67,19 +67,36 @@ class FeatureSet(Asset):
             source_dataset: Name of source dataset
             **kwargs: Additional metadata
         """
-        # Initialize base asset
-        metadata = FeatureSetMetadata(
+        # Initialize base asset first
+        super().__init__(
             name=name,
-            type="featureset",
+            version=kwargs.get("version"),
+            data=None,
+            parent=kwargs.get("parent"),
+            tags=kwargs.get("tags"),
+            properties=kwargs.get("properties"),
+        )
+
+        # Create FeatureSet-specific metadata
+        feature_set_metadata = FeatureSetMetadata(
+            asset_id=self.asset_id,
+            name=name,
+            version=self.version,
+            asset_type=self.__class__.__name__,
+            created_at=self.metadata.created_at,
+            created_by=self.metadata.created_by,
+            parent_ids=self.metadata.parent_ids,
+            tags=self.metadata.tags,
+            properties=self.metadata.properties,
             feature_names=feature_names or [],
             num_features=len(feature_names) if feature_names else 0,
             num_samples=num_samples,
             transformations=transformations or [],
             source_dataset=source_dataset,
-            **kwargs,
         )
 
-        super().__init__(name=name, type="featureset", metadata=metadata)
+        # Replace metadata with FeatureSet-specific metadata
+        self.metadata = feature_set_metadata
         self._data = data
 
         # Extract feature metadata if data provided
@@ -188,6 +205,7 @@ class FeatureSet(Asset):
         data: Any,
         name: str | None = None,
         feature_names: list[str] | None = None,
+        num_samples: int = 0,
         transformations: list[str] | None = None,
         source_dataset: str | None = None,
         **kwargs,
@@ -198,6 +216,7 @@ class FeatureSet(Asset):
             data: The feature matrix
             name: Name of the feature set (auto-generated if not provided)
             feature_names: List of feature names
+            num_samples: Number of samples in the feature set
             transformations: List of transformations applied
             source_dataset: Name of source dataset
             **kwargs: Additional metadata
@@ -213,6 +232,7 @@ class FeatureSet(Asset):
             name=name,
             data=data,
             feature_names=feature_names,
+            num_samples=num_samples,
             transformations=transformations,
             source_dataset=source_dataset,
             **kwargs,

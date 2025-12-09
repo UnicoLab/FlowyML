@@ -143,8 +143,16 @@ disallow_untyped_defs = false
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_functions = ["test_*"]
-addopts = "-v --cov=flowyml --cov-report=term-missing"
+# Enable parallel execution with pytest-xdist (auto-detects CPU count)
+# Use -n auto to use all available CPUs, or -n 4 for fixed number
+addopts = "-v --cov=flowyml --cov-report=term-missing -n auto --dist=worksteal"
 asyncio_mode = "auto"
+# Markers for test organization
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+]
 
 [tool.semantic_release]
 version_toml = ["pyproject.toml:tool.poetry.version"]
