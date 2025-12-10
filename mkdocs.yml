@@ -103,6 +103,8 @@ nav:
   - 🔌 Integrations:
     - 🧠 Keras: integrations/keras.md
     - 📊 Keras Training History: integrations/keras-training-history.md
+    - 🔥 PyTorch: integrations/pytorch.md
+    - 🔬 Scikit-learn: integrations/sklearn.md
     - ☁️ GCP: integrations/gcp.md
   - 🔌 Plugins:
      - 📚 Overview: plugins/overview.md
