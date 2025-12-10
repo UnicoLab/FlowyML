@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.7.1 (2025-12-10)
+
+### Chores
+
+- Save last release version for recovery [skip ci]
+  ([`44565bc`](https://github.com/UnicoLab/FlowyML/commit/44565bc0bd1fe9784f940274e2c1aefe3d04a6a9))
+
+
 ## v1.7.0 (2025-12-10)
 
 ### Bug Fixes
