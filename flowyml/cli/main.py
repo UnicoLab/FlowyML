@@ -450,5 +450,381 @@ def logs(run_id: str, step: str, tail: int) -> None:
     click.echo("  [Log output would appear here]")
 
 
+# ============================================================================
+# Quick Commands: flowyml go / stop / status
+# ============================================================================
+
+
+@cli.command()
+@click.option("--host", default="localhost", help="Host to bind to")
+@click.option("--port", default=8080, type=int, help="Port to bind to")
+@click.option("--open-browser", "-o", is_flag=True, help="Open browser automatically")
+def go(host: str, port: int, open_browser: bool) -> None:
+    r"""🚀 Start flowyml - Initialize UI dashboard and show welcome message.
+
+    This is the quickest way to get started with flowyml. It starts the UI
+    dashboard server in the background and displays the URL to access it.
+
+    \b
+    Examples:
+        flowyml go              # Start on default port 8080
+        flowyml go -o           # Start and open browser
+        flowyml go --port 9000  # Start on custom port
+    """
+    import subprocess
+    import sys
+    import time
+    from flowyml.ui.utils import is_ui_running
+
+    try:
+        from rich.console import Console
+        from rich.panel import Panel
+        from rich.text import Text
+        from rich import box
+
+        console = Console()
+        rich_available = True
+    except ImportError:
+        rich_available = False
+
+    url = f"http://{host}:{port}"
+
+    # Check if already running
+    if is_ui_running(host, port):
+        if rich_available:
+            panel_content = Text()
+            panel_content.append("✅ ", style="green")
+            panel_content.append("flowyml is already running!\n\n", style="bold green")
+            panel_content.append("🌐 Dashboard: ", style="bold")
+            panel_content.append(url, style="cyan underline link " + url)
+            panel_content.append("\n\n", style="")
+            panel_content.append("Run ", style="dim")
+            panel_content.append("flowyml stop", style="bold yellow")
+            panel_content.append(" to stop the server.", style="dim")
+
+            console.print(
+                Panel(
+                    panel_content,
+                    title="[bold cyan]🌊 flowyml[/bold cyan]",
+                    border_style="cyan",
+                    box=box.DOUBLE,
+                ),
+            )
+        else:
+            click.echo("✅ flowyml is already running!")
+            click.echo(f"🌐 Dashboard: {url}")
+            click.echo("\nRun 'flowyml stop' to stop the server.")
+
+        if open_browser:
+            import webbrowser
+
+            webbrowser.open(url)
+        return
+
+    # Start the UI server as a background subprocess
+    if rich_available:
+        console.print("[bold cyan]🌊 flowyml[/bold cyan] - Starting up...\n")
+    else:
+        click.echo("🌊 flowyml - Starting up...")
+
+    try:
+        # Start uvicorn as a background process
+        # Using subprocess with nohup-like behavior
+        cmd = [
+            sys.executable,
+            "-m",
+            "uvicorn",
+            "flowyml.ui.backend.main:app",
+            "--host",
+            host,
+            "--port",
+            str(port),
+            "--log-level",
+            "warning",
+        ]
+
+        # Start as detached background process
+        if sys.platform == "win32":
+            # Windows: use CREATE_NEW_PROCESS_GROUP
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                creationflags=subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS,
+            )
+        else:
+            # Unix: use start_new_session
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                start_new_session=True,
+            )
+
+        # Wait for server to start (up to 8 seconds)
+        started = False
+        for _ in range(80):
+            time.sleep(0.1)
+            if is_ui_running(host, port):
+                started = True
+                break
+
+        if started:
+            # Save PID for later stop command
+            pid_file = Path.home() / ".flowyml" / "ui_server.pid"
+            pid_file.parent.mkdir(parents=True, exist_ok=True)
+            pid_file.write_text(f"{process.pid}\n{host}\n{port}")
+
+            if rich_available:
+                panel_content = Text()
+                panel_content.append("✅ ", style="green")
+                panel_content.append("flowyml is ready!\n\n", style="bold green")
+                panel_content.append("🌐 Dashboard: ", style="bold")
+                panel_content.append(url, style="cyan underline link " + url)
+                panel_content.append("\n\n", style="")
+                panel_content.append("📊 View pipelines: ", style="")
+                panel_content.append(f"{url}/pipelines", style="cyan")
+                panel_content.append("\n", style="")
+                panel_content.append("📜 View runs: ", style="")
+                panel_content.append(f"{url}/runs", style="cyan")
+                panel_content.append("\n\n", style="")
+                panel_content.append("Run ", style="dim")
+                panel_content.append("flowyml stop", style="bold yellow")
+                panel_content.append(" to stop the server.", style="dim")
+
+                console.print(
+                    Panel(
+                        panel_content,
+                        title="[bold cyan]🌊 flowyml[/bold cyan]",
+                        border_style="green",
+                        box=box.DOUBLE,
+                    ),
+                )
+
+                console.print()
+                console.print("[dim]Tip: The dashboard runs in the background. Your pipelines will[/dim]")
+                console.print("[dim]automatically show a clickable URL when they run.[/dim]")
+            else:
+                click.echo("✅ flowyml is ready!")
+                click.echo(f"🌐 Dashboard: {url}")
+                click.echo(f"📊 View pipelines: {url}/pipelines")
+                click.echo(f"📜 View runs: {url}/runs")
+                click.echo("\nRun 'flowyml stop' to stop the server.")
+                click.echo("\nTip: The dashboard runs in the background. Your pipelines will")
+                click.echo("automatically show a clickable URL when they run.")
+
+            if open_browser:
+                import webbrowser
+
+                webbrowser.open(url)
+        else:
+            # Server didn't start, kill the process
+            process.terminate()
+            raise RuntimeError("Server failed to start within timeout")
+
+    except Exception as e:
+        if rich_available:
+            panel_content = Text()
+            panel_content.append("❌ ", style="red")
+            panel_content.append("Failed to start flowyml UI server.\n\n", style="bold red")
+            panel_content.append(f"Error: {str(e)[:100]}\n\n", style="dim red")
+            panel_content.append("Possible issues:\n", style="")
+            panel_content.append(f"  • Port {port} might be in use\n", style="dim")
+            panel_content.append("  • Missing dependencies (uvicorn, fastapi)\n", style="dim")
+            panel_content.append("\n", style="")
+            panel_content.append("Try:\n", style="")
+            panel_content.append(f"  flowyml go --port {port + 1}", style="bold yellow")
+            panel_content.append("  (use different port)\n", style="dim")
+            panel_content.append("  flowyml ui start", style="bold yellow")
+            panel_content.append("  (for verbose output)", style="dim")
+
+            console.print(
+                Panel(
+                    panel_content,
+                    title="[bold red]Error[/bold red]",
+                    border_style="red",
+                    box=box.ROUNDED,
+                ),
+            )
+        else:
+            click.echo(f"❌ Failed to start flowyml UI server: {e}")
+            click.echo("Possible issues:")
+            click.echo(f"  • Port {port} might be in use")
+            click.echo("  • Missing dependencies (uvicorn, fastapi)")
+            click.echo(f"\nTry: flowyml go --port {port + 1}")
+            click.echo("Or run 'flowyml ui start' for verbose output.")
+
+
+@cli.command("stop")
+@click.option("--host", default="localhost", help="Host of the server")
+@click.option("--port", default=8080, type=int, help="Port of the server")
+def stop_server(host: str, port: int) -> None:
+    r"""🛑 Stop flowyml - Shutdown the UI dashboard server.
+
+    Stops the flowyml UI server if it's running.
+
+    \b
+    Examples:
+        flowyml stop              # Stop server on default port
+        flowyml stop --port 9000  # Stop server on custom port
+    """
+    import os
+    import signal
+    import time
+    from flowyml.ui.utils import is_ui_running
+
+    try:
+        from rich.console import Console
+        from rich.panel import Panel
+        from rich.text import Text
+        from rich import box
+
+        console = Console()
+        rich_available = True
+    except ImportError:
+        rich_available = False
+
+    pid_file = Path.home() / ".flowyml" / "ui_server.pid"
+
+    # First check if we have a PID file from 'flowyml go'
+    if pid_file.exists():
+        try:
+            content = pid_file.read_text().strip().split("\n")
+            pid = int(content[0])
+            # Note: saved_host and saved_port are in the file but we use the CLI args
+            # to allow stopping a server on a different port if needed
+
+            # Try to kill the process
+            try:
+                os.kill(pid, signal.SIGTERM)
+                time.sleep(0.5)
+
+                # Clean up PID file
+                pid_file.unlink(missing_ok=True)
+
+                if rich_available:
+                    console.print(f"[green]✅ flowyml server (PID {pid}) stopped successfully.[/green]")
+                else:
+                    click.echo(f"✅ flowyml server (PID {pid}) stopped successfully.")
+                return
+            except ProcessLookupError:
+                # Process already dead, clean up PID file
+                pid_file.unlink(missing_ok=True)
+            except PermissionError:
+                if rich_available:
+                    console.print(f"[red]❌ Permission denied to stop process {pid}[/red]")
+                else:
+                    click.echo(f"❌ Permission denied to stop process {pid}")
+                return
+        except (ValueError, IndexError):
+            # Invalid PID file, remove it
+            pid_file.unlink(missing_ok=True)
+
+    # Check if server is running
+    if not is_ui_running(host, port):
+        if rich_available:
+            console.print(f"[yellow]ℹ️  No flowyml server running on {host}:{port}[/yellow]")
+        else:
+            click.echo(f"ℹ️  No flowyml server running on {host}:{port}")
+        return
+
+    # Server is running but we don't have a PID file - must be from 'flowyml ui start'
+    if rich_available:
+        panel_content = Text()
+        panel_content.append("ℹ️  ", style="yellow")
+        panel_content.append("Server running but not started with 'flowyml go'.\n\n", style="")
+        panel_content.append("To stop it:\n", style="")
+        panel_content.append("  • If running in foreground: ", style="dim")
+        panel_content.append("Press Ctrl+C\n", style="bold")
+        panel_content.append("  • Find and kill: ", style="dim")
+        panel_content.append(f"pkill -f 'uvicorn.*:{port}'\n", style="bold")
+        panel_content.append("  • Or find PID: ", style="dim")
+        panel_content.append(f"lsof -i :{port}", style="bold")
+
+        console.print(
+            Panel(
+                panel_content,
+                title="[bold yellow]Manual Stop Required[/bold yellow]",
+                border_style="yellow",
+                box=box.ROUNDED,
+            ),
+        )
+    else:
+        click.echo("ℹ️  Server running but not started with 'flowyml go'.")
+        click.echo("To stop it:")
+        click.echo("  • If running in foreground: Press Ctrl+C")
+        click.echo(f"  • Find and kill: pkill -f 'uvicorn.*:{port}'")
+        click.echo(f"  • Or find PID: lsof -i :{port}")
+
+
+@cli.command("status")
+@click.option("--host", default="localhost", help="Host to check")
+@click.option("--port", default=8080, type=int, help="Port to check")
+def server_status(host: str, port: int) -> None:
+    r"""📊 Check flowyml status - Show if the UI server is running.
+
+    \b
+    Examples:
+        flowyml status              # Check default port
+        flowyml status --port 9000  # Check custom port
+    """
+    from flowyml.ui.utils import is_ui_running
+
+    try:
+        from rich.console import Console
+        from rich.panel import Panel
+        from rich.text import Text
+        from rich import box
+
+        console = Console()
+        rich_available = True
+    except ImportError:
+        rich_available = False
+
+    if is_ui_running(host, port):
+        url = f"http://{host}:{port}"
+        if rich_available:
+            panel_content = Text()
+            panel_content.append("✅ ", style="green")
+            panel_content.append("flowyml is running\n\n", style="bold green")
+            panel_content.append("🌐 Dashboard: ", style="bold")
+            panel_content.append(url, style="cyan underline link " + url)
+            panel_content.append("\n", style="")
+            panel_content.append("💚 Health: ", style="")
+            panel_content.append(f"{url}/api/health", style="dim")
+
+            console.print(
+                Panel(
+                    panel_content,
+                    title="[bold cyan]🌊 flowyml Status[/bold cyan]",
+                    border_style="green",
+                    box=box.ROUNDED,
+                ),
+            )
+        else:
+            click.echo("✅ flowyml is running")
+            click.echo(f"🌐 Dashboard: {url}")
+            click.echo(f"💚 Health: {url}/api/health")
+    else:
+        if rich_available:
+            panel_content = Text()
+            panel_content.append("❌ ", style="red")
+            panel_content.append(f"flowyml is not running on {host}:{port}\n\n", style="")
+            panel_content.append("Start with: ", style="dim")
+            panel_content.append("flowyml go", style="bold cyan")
+
+            console.print(
+                Panel(
+                    panel_content,
+                    title="[bold cyan]🌊 flowyml Status[/bold cyan]",
+                    border_style="red",
+                    box=box.ROUNDED,
+                ),
+            )
+        else:
+            click.echo(f"❌ flowyml is not running on {host}:{port}")
+            click.echo("Start with: flowyml go")
+
+
 if __name__ == "__main__":
     cli()

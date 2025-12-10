@@ -451,22 +451,9 @@ class Pipeline:
         # Auto-start UI server if requested
         ui_url = None
         run_url = None
+        ui_start_failed = False
         if auto_start_ui:
-            try:
-                from flowyml.ui.server_manager import UIServerManager
-                from flowyml.ui.utils import get_ui_host_port
-
-                ui_manager = UIServerManager.get_instance()
-                # Use config values for host/port
-                host, port = get_ui_host_port()
-                if ui_manager.ensure_running(host=host, port=port, auto_start=True):
-                    ui_url = ui_manager.get_url()
-                    run_url = ui_manager.get_run_url(run_id)
-
-                    # UI URL will be shown in summary, no need to print here
-            except Exception:
-                # Silently fail if UI is not available
-                pass
+            ui_url, run_url, ui_start_failed = self._ensure_ui_server(run_id)
 
         # Determine stack for this run
         if stack is not None:
@@ -595,6 +582,163 @@ class Pipeline:
         except Exception as e:
             # Don't fail the run if definition saving fails
             print(f"Warning: Failed to save pipeline definition: {e}")
+
+    def _ensure_ui_server(self, run_id: str) -> tuple[str | None, str | None, bool]:
+        """Ensure UI server is running, start it if needed, or show guidance.
+
+        Args:
+            run_id: The run ID for generating the run URL
+
+        Returns:
+            Tuple of (ui_url, run_url, start_failed)
+            - ui_url: Base URL of the UI server if running
+            - run_url: URL to view this specific run if server is running
+            - start_failed: True if we tried to start and failed (show guidance)
+        """
+        import subprocess
+        import sys
+        import time
+        from pathlib import Path
+
+        try:
+            from flowyml.ui.utils import is_ui_running, get_ui_host_port
+        except ImportError:
+            return None, None, False
+
+        host, port = get_ui_host_port()
+        url = f"http://{host}:{port}"
+
+        # Check if already running
+        if is_ui_running(host, port):
+            return url, f"{url}/runs/{run_id}", False
+
+        # Try to start the UI server as a background subprocess
+        try:
+            # Check if uvicorn is available
+            try:
+                import uvicorn  # noqa: F401
+            except ImportError:
+                # uvicorn not installed, show guidance but don't fail
+                self._show_ui_guidance(host, port, reason="missing_deps")
+                return None, None, True
+
+            # Start uvicorn as a background process
+            cmd = [
+                sys.executable,
+                "-m",
+                "uvicorn",
+                "flowyml.ui.backend.main:app",
+                "--host",
+                host,
+                "--port",
+                str(port),
+                "--log-level",
+                "warning",
+            ]
+
+            # Start as detached background process
+            if sys.platform == "win32":
+                process = subprocess.Popen(
+                    cmd,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    creationflags=subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS,
+                )
+            else:
+                process = subprocess.Popen(
+                    cmd,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    start_new_session=True,
+                )
+
+            # Wait for server to start (up to 8 seconds)
+            started = False
+            for _ in range(80):
+                time.sleep(0.1)
+                if is_ui_running(host, port):
+                    started = True
+                    break
+
+            if started:
+                # Save PID for later stop command
+                pid_file = Path.home() / ".flowyml" / "ui_server.pid"
+                pid_file.parent.mkdir(parents=True, exist_ok=True)
+                pid_file.write_text(f"{process.pid}\n{host}\n{port}")
+
+                return url, f"{url}/runs/{run_id}", False
+            else:
+                # Server didn't start, kill the process and show guidance
+                process.terminate()
+                self._show_ui_guidance(host, port, reason="start_failed")
+                return None, None, True
+
+        except Exception:
+            # Show guidance on failure
+            self._show_ui_guidance(host, port, reason="error")
+            return None, None, True
+
+    def _show_ui_guidance(self, host: str, port: int, reason: str = "not_running") -> None:
+        """Show a helpful message guiding the user to start the UI server.
+
+        Args:
+            host: Host the server should run on
+            port: Port the server should run on
+            reason: Why we're showing guidance (not_running, missing_deps, start_failed, error)
+        """
+        try:
+            from rich.console import Console
+            from rich.panel import Panel
+            from rich.text import Text
+            from rich import box
+
+            console = Console()
+
+            content = Text()
+            content.append("💡 ", style="yellow")
+            content.append("Want to see your pipeline run in a live dashboard?\n\n", style="bold")
+
+            if reason == "missing_deps":
+                content.append("UI dependencies not installed. ", style="dim")
+                content.append("Install with:\n", style="")
+                content.append("  pip install uvicorn fastapi\n\n", style="bold cyan")
+
+            content.append("Start the dashboard with:\n", style="")
+            content.append("  flowyml go", style="bold green")
+
+            if port != 8080:
+                content.append(f" --port {port}", style="bold green")
+
+            content.append("\n\n", style="")
+            content.append("Then run your pipeline again to see it in the UI!", style="dim")
+
+            console.print()
+            console.print(
+                Panel(
+                    content,
+                    title="[bold cyan]🌐 Dashboard Available[/bold cyan]",
+                    border_style="yellow",
+                    box=box.ROUNDED,
+                ),
+            )
+            console.print()
+
+        except ImportError:
+            # Fallback to simple print
+            print()
+            print("=" * 60)
+            print("💡 Want to see your pipeline run in a live dashboard?")
+            print()
+            if reason == "missing_deps":
+                print("   UI dependencies not installed. Install with:")
+                print("     pip install uvicorn fastapi")
+                print()
+            print("   Start the dashboard with:")
+            print("     flowyml go" + (f" --port {port}" if port != 8080 else ""))
+            print()
+            print("   Then run your pipeline again to see it in the UI!")
+            print("=" * 60)
+            print()
 
     def _coerce_resource_config(self, resources: Any | None):
         """Convert resources input to ResourceConfig if necessary."""
