@@ -40,36 +40,93 @@ You can create assets explicitly using the `.create()` factory method. This auto
 
 ### Datasets
 
+FlowyML automatically extracts statistics and metadata from various data formats!
+
 ```python
 from flowyml import Dataset
 import pandas as pd
 
 df = pd.DataFrame(...)
 
-# Create a versioned dataset
+# 🎯 SIMPLIFIED: Just pass the data - stats are auto-extracted!
 dataset = Dataset.create(
     data=df,
     name="training_data",
-    properties={
-        "source": "s3://bucket/data.csv",
-        "rows": len(df)
-    }
+    source="s3://bucket/data.csv",  # Optional metadata
 )
+
+# Access auto-extracted properties
+print(f"Samples: {dataset.num_samples}")
+print(f"Features: {dataset.num_features}")
+print(f"Columns: {dataset.feature_columns}")
+print(f"Stats: {dataset.column_stats}")  # Per-column mean, std, min, max, etc.
 ```
 
+**Convenience methods for common formats:**
+
+```python
+# Load from CSV with automatic stats extraction
+dataset = Dataset.from_csv("data.csv", name="my_data")
+
+# Load from Parquet
+dataset = Dataset.from_parquet("data.parquet", name="my_data")
+```
+
+**Supported data types:**
+- Pandas DataFrames
+- NumPy arrays
+- Python dictionaries
+- TensorFlow `tf.data.Dataset`
+- Lists of dictionaries
+
 ### Models
+
+FlowyML automatically extracts model metadata from all major ML frameworks!
 
 ```python
 from flowyml import Model
 
-# Create a versioned model
+# 🎯 SIMPLIFIED: Just pass the model - everything is auto-extracted!
 model_asset = Model.create(
-    data=trained_model_object,
+    data=trained_model,
     name="resnet50_finetuned",
-    framework="pytorch",
-    parameters={"epochs": 10, "lr": 0.001}
 )
+
+# Access auto-extracted properties
+print(f"Framework: {model_asset.framework}")  # keras, pytorch, sklearn, etc.
+print(f"Parameters: {model_asset.parameters}")
+print(f"Layers: {model_asset.num_layers}")
+print(f"Optimizer: {model_asset.optimizer}")  # For Keras
 ```
+
+**Convenience methods for specific frameworks:**
+
+```python
+# Keras with training history
+from flowyml.integrations.keras import FlowymlKerasCallback
+
+callback = FlowymlKerasCallback(experiment_name="demo")
+model.fit(X, y, callbacks=[callback])
+
+model_asset = Model.from_keras(
+    model,
+    name="my_model",
+    callback=callback,  # Auto-extracts training_history!
+)
+
+# PyTorch
+model_asset = Model.from_pytorch(model, name="my_model")
+
+# Scikit-learn
+model_asset = Model.from_sklearn(model, name="my_model")
+```
+
+**Supported frameworks:**
+- Keras/TensorFlow (full extraction: layers, optimizer, loss, metrics)
+- PyTorch (parameters, layers, device, dtype)
+- Scikit-learn (hyperparameters, feature importance, is_fitted)
+- XGBoost/LightGBM/CatBoost
+- Hugging Face Transformers
 
 ### Metrics
 
