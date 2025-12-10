@@ -251,6 +251,29 @@ class SchedulerPersistence:
             conn.execute(stmt)
             conn.commit()
 
+    def list_all_schedules(self) -> list[dict[str, Any]]:
+        """List all schedules from database without requiring pipeline functions.
+
+        This is useful for displaying schedules in the UI regardless of whether
+        the pipeline code is loaded.
+        """
+        schedules = []
+        with self.engine.connect() as conn:
+            stmt = select(self.schedules.c.name, self.schedules.c.data, self.schedules.c.updated_at)
+            result = conn.execute(stmt)
+            for row in result:
+                try:
+                    data = json.loads(row.data)
+                    data["name"] = row.name
+                    if row.updated_at:
+                        data["updated_at"] = (
+                            row.updated_at.isoformat() if isinstance(row.updated_at, datetime) else str(row.updated_at)
+                        )
+                    schedules.append(data)
+                except Exception as e:
+                    logger.error(f"Failed to parse schedule {row.name}: {e}")
+        return schedules
+
     def get_history(self, schedule_name: str, limit: int = 50) -> list[dict[str, Any]]:
         """Get execution history for a schedule using SQLAlchemy."""
         history = []

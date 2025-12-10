@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { fetchApi } from '../../../utils/api';
 import { downloadArtifactById } from '../../../utils/downloads';
 import { useParams, Link } from 'react-router-dom';
-import { CheckCircle, XCircle, Clock, Calendar, Package, ArrowRight, BarChart2, FileText, Database, Box, ChevronRight, Activity, Layers, Code2, Terminal, Info, X, Maximize2, TrendingUp, Download, ArrowDownCircle, ArrowUpCircle, Tag, Zap, AlertCircle, FolderPlus, Cloud, Server } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Calendar, Package, ArrowRight, BarChart2, FileText, Database, Box, ChevronRight, Activity, Layers, Code2, Terminal, Info, X, Maximize2, TrendingUp, Download, ArrowDownCircle, ArrowUpCircle, Tag, Zap, AlertCircle, FolderPlus, Cloud, Server, LineChart, Minimize2 } from 'lucide-react';
 import { Card } from '../../../components/ui/Card';
 import { Badge } from '../../../components/ui/Badge';
 import { Button } from '../../../components/ui/Button';
@@ -12,6 +12,7 @@ import { ArtifactViewer } from '../../../components/ArtifactViewer';
 import { PipelineGraph } from '../../../components/PipelineGraph';
 import { ProjectSelector } from '../../../components/ProjectSelector';
 import { CodeSnippet } from '../../../components/ui/CodeSnippet';
+import { TrainingMetricsPanel } from '../../../components/TrainingMetricsPanel';
 
 export function RunDetails() {
     const { runId } = useParams();
@@ -26,6 +27,8 @@ export function RunDetails() {
     const [isPolling, setIsPolling] = useState(false);
     const [stopping, setStopping] = useState(false);
     const [stepLogs, setStepLogs] = useState({});
+    const [stepPanelExpanded, setStepPanelExpanded] = useState(false);
+    const [hasTrainingHistory, setHasTrainingHistory] = useState(false);
 
     const handleStopRun = async () => {
         if (!confirm('Are you sure you want to stop this run?')) return;
@@ -227,14 +230,18 @@ export function RunDetails() {
                 />
             </div>
 
-            {/* Main Content - Split View */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* DAG Visualization - 2 columns */}
-                <div className="lg:col-span-2">
+            {/* Main Content - Dynamic Split View */}
+            <div className={`grid gap-6 transition-all duration-300 ${
+                stepPanelExpanded
+                    ? 'grid-cols-1 lg:grid-cols-2'
+                    : 'grid-cols-1 lg:grid-cols-3'
+            }`}>
+                {/* DAG Visualization */}
+                <div className={stepPanelExpanded ? 'lg:col-span-1' : 'lg:col-span-2'}>
                     <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
                         <Activity className="text-primary-500" /> Pipeline Execution Graph
                     </h3>
-                    <div className="h-[calc(100vh-240px)] min-h-[600px]">
+                    <div className={`min-h-[500px] ${stepPanelExpanded ? 'h-[500px]' : 'h-[calc(100vh-240px)]'}`}>
                         {run.dag ? (
                             <PipelineGraph
                                 dag={run.dag}
@@ -242,15 +249,11 @@ export function RunDetails() {
                                 selectedStep={selectedStep}
                                 onStepSelect={setSelectedStep}
                                 onArtifactSelect={(name) => {
-                                    // Find the artifact object by name
-                                    // We look in 'artifacts' array which contains all assets for the run
                                     const found = artifacts.find(a => a.name === name);
                                     if (found) {
                                         setSelectedArtifact(found);
                                     } else {
-                                        // Fallback if not found (e.g. might be an intermediate artifact not persisted)
                                         console.warn(`Artifact ${name} not found in assets list`);
-                                        // Optionally show a toast or alert
                                     }
                                 }}
                             />
@@ -262,18 +265,31 @@ export function RunDetails() {
                     </div>
                 </div>
 
-                {/* Step Details Panel - 1 column */}
-                <div>
-                    <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                        <Info className="text-primary-500" /> Step Details
-                    </h3>
+                {/* Step Details Panel - Expandable */}
+                <div className={stepPanelExpanded ? 'lg:col-span-1' : ''}>
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                            <Info className="text-primary-500" /> Step Details
+                        </h3>
+                        <button
+                            onClick={() => setStepPanelExpanded(!stepPanelExpanded)}
+                            className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                            title={stepPanelExpanded ? 'Collapse panel' : 'Expand panel'}
+                        >
+                            <Maximize2 size={16} className="text-slate-600 dark:text-slate-300" />
+                        </button>
+                    </div>
 
                     {selectedStepData ? (
-                        <Card className="overflow-hidden">
+                        <Card className={`overflow-hidden transition-all duration-300 ${
+                            stepPanelExpanded ? 'h-auto' : ''
+                        }`}>
                             {/* Step Header */}
                             <div className="pb-4 border-b border-slate-100 dark:border-slate-700">
-                                <h4 className="text-lg font-bold text-slate-900 dark:text-white mb-2">{selectedStep}</h4>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center justify-between">
+                                    <h4 className="text-lg font-bold text-slate-900 dark:text-white">{selectedStep}</h4>
+                                </div>
+                                <div className="flex items-center gap-2 mt-2">
                                     <Badge variant={selectedStepData.success ? 'success' : 'danger'} className="text-xs">
                                         {selectedStepData.success ? 'Success' : 'Failed'}
                                     </Badge>
@@ -288,7 +304,7 @@ export function RunDetails() {
                                 </div>
                             </div>
 
-                            {/* Live Heartbeat Indicator (Header) */}
+                            {/* Live Heartbeat Indicator */}
                             {selectedStepData.status === 'running' && (
                                 <div className="px-4 py-2 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-100 dark:border-blue-800 flex items-center justify-between">
                                     <div className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300">
@@ -312,23 +328,25 @@ export function RunDetails() {
                             )}
 
                             {/* Tabs */}
-                            <div className="flex gap-2 border-b border-slate-100 dark:border-slate-700 mt-4">
+                            <div className="flex gap-1 border-b border-slate-100 dark:border-slate-700 mt-4 overflow-x-auto">
                                 <TabButton active={activeTab === 'overview'} onClick={() => setActiveTab('overview')}>
-                                    <Info size={16} /> Overview
+                                    <Info size={14} /> Overview
                                 </TabButton>
                                 <TabButton active={activeTab === 'code'} onClick={() => setActiveTab('code')}>
-                                    <Code2 size={16} /> Code
+                                    <Code2 size={14} /> Code
                                 </TabButton>
                                 <TabButton active={activeTab === 'artifacts'} onClick={() => setActiveTab('artifacts')}>
-                                    <Package size={16} /> Artifacts
+                                    <Package size={14} /> Artifacts
                                 </TabButton>
                                 <TabButton active={activeTab === 'logs'} onClick={() => setActiveTab('logs')} data-tab="logs">
-                                    <Terminal size={16} /> Logs
+                                    <Terminal size={14} /> Logs
                                 </TabButton>
                             </div>
 
-                            {/* Tab Content */}
-                            <div className="mt-4 max-h-[450px] overflow-y-auto">
+                            {/* Tab Content - Larger when expanded */}
+                            <div className={`mt-4 overflow-y-auto transition-all duration-300 ${
+                                stepPanelExpanded ? 'max-h-[600px]' : 'max-h-[450px]'
+                            }`}>
                                 {activeTab === 'overview' && (
                                     <OverviewTab
                                         stepData={selectedStepData}
@@ -351,17 +369,26 @@ export function RunDetails() {
                                         runId={runId}
                                         stepName={selectedStep}
                                         isRunning={run.status === 'running'}
+                                        maxHeight={stepPanelExpanded ? 'max-h-[500px]' : 'max-h-96'}
                                     />
                                 )}
                             </div>
                         </Card>
                     ) : (
-                        <Card className="p-12 text-center">
-                            <p className="text-slate-500">Select a step to view details</p>
+                        <Card className="p-12 text-center border-2 border-dashed border-slate-200 dark:border-slate-700">
+                            <Info size={32} className="mx-auto text-slate-300 dark:text-slate-600 mb-3" />
+                            <p className="text-slate-500 dark:text-slate-400 font-medium">Select a step to view details</p>
+                            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Click on any step in the graph</p>
                         </Card>
                     )}
                 </div>
             </div>
+
+            {/* Training Metrics Section - Only shown if there's training data */}
+            <TrainingMetricsSectionWrapper
+                runId={runId}
+                isRunning={run.status === 'running'}
+            />
 
             {/* Artifact Detail Modal */}
             <ArtifactModal
@@ -961,6 +988,90 @@ function LogsViewer({ runId, stepName, isRunning, maxHeight = "max-h-96", minima
                     {useWebSocket ? 'Live streaming...' : 'Polling for logs...'}
                 </div>
             )}
+        </div>
+    );
+}
+
+/**
+ * Training Metrics Section Wrapper
+ * Only renders the training metrics section if there's actual training data.
+ * This prevents showing an empty section for non-training pipelines.
+ */
+function TrainingMetricsSectionWrapper({ runId, isRunning }) {
+    const [hasData, setHasData] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(true);
+    const [loading, setLoading] = useState(true);
+
+    // Check if training data exists
+    useEffect(() => {
+        const checkTrainingData = async () => {
+            try {
+                const res = await fetchApi(`/api/runs/${runId}/training-history`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setHasData(data.has_history && data.training_history?.epochs?.length > 0);
+                }
+            } catch (err) {
+                console.error('Error checking training history:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (runId) {
+            checkTrainingData();
+        }
+    }, [runId]);
+
+    // Don't render anything if no training data
+    if (loading) return null;
+    if (!hasData) return null;
+
+    return (
+        <div className="mt-8">
+            <Card className="overflow-hidden">
+                <div
+                    className="p-6 cursor-pointer flex items-center justify-between bg-gradient-to-r from-slate-50 to-white dark:from-slate-800 dark:to-slate-900 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                    onClick={() => setIsExpanded(!isExpanded)}
+                >
+                    <div className="flex items-center gap-3">
+                        <div className="p-2.5 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl shadow-lg">
+                            <LineChart size={20} className="text-white" />
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                                Training Metrics
+                            </h3>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">
+                                Interactive training history visualization
+                            </p>
+                        </div>
+                    </div>
+                    <ChevronRight
+                        size={20}
+                        className={`text-slate-400 transform transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
+                    />
+                </div>
+                <AnimatePresence>
+                    {isExpanded && (
+                        <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="overflow-hidden"
+                        >
+                            <div className="p-6">
+                                <TrainingMetricsPanel
+                                    runId={runId}
+                                    isRunning={isRunning}
+                                    autoRefresh={true}
+                                />
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </Card>
         </div>
     );
 }

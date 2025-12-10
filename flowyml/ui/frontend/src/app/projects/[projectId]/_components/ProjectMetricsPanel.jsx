@@ -14,7 +14,7 @@ import {
     ReferenceLine
 } from 'recharts';
 import { format } from 'date-fns';
-import { Box, Activity, Clock, Tag } from 'lucide-react';
+import { Box, Activity, Clock, Tag, BarChart2 } from 'lucide-react';
 import { Card } from '../../../../components/ui/Card';
 import { Badge } from '../../../../components/ui/Badge';
 

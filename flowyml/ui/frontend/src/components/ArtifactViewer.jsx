@@ -10,9 +10,11 @@ import {
     Code,
     Table as TableIcon,
     AlertCircle,
-    Download
+    Download,
+    TrendingUp
 } from 'lucide-react';
-import { Button } from './ui/Button'; // Assuming you have a Button component, or use native button if not
+import { Button } from './ui/Button';
+import { TrainingHistoryChart } from './TrainingHistoryChart';
 
 SyntaxHighlighter.registerLanguage('json', json);
 SyntaxHighlighter.registerLanguage('python', python);
@@ -106,6 +108,51 @@ export function ArtifactViewer({ artifact }) {
             <div className="flex flex-col items-center justify-center p-8 text-rose-500 bg-rose-50 rounded-lg border border-rose-100">
                 <AlertCircle size={24} className="mb-2" />
                 <p className="text-sm font-medium">{error}</p>
+            </div>
+        );
+    }
+
+    // Check if artifact has training history (from Keras callback)
+    const hasTrainingHistory = artifact?.training_history &&
+        artifact.training_history.epochs &&
+        artifact.training_history.epochs.length > 0;
+
+    // Render training history chart for model artifacts with training data
+    if (hasTrainingHistory) {
+        return (
+            <div className="space-y-6">
+                {/* Training History Visualization */}
+                <div>
+                    <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-200 dark:border-slate-700">
+                        <TrendingUp className="text-primary-500" size={20} />
+                        <h4 className="text-lg font-bold text-slate-900 dark:text-white">Training History</h4>
+                        <span className="text-xs text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-full">
+                            {artifact.training_history.epochs.length} epochs
+                        </span>
+                    </div>
+                    <TrainingHistoryChart trainingHistory={artifact.training_history} compact={false} />
+                </div>
+
+                {/* Also show JSON content if available */}
+                {content && contentType === 'json' && (
+                    <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
+                        <h5 className="text-sm font-semibold text-slate-600 dark:text-slate-400 mb-3 flex items-center gap-2">
+                            <Code size={14} />
+                            Raw Metadata
+                        </h5>
+                        <div className="rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm">
+                            <div className="max-h-[30vh] overflow-y-auto bg-white dark:bg-slate-900">
+                                <SyntaxHighlighter
+                                    language="json"
+                                    style={docco}
+                                    customStyle={{ margin: 0, padding: '1rem', fontSize: '0.75rem' }}
+                                >
+                                    {JSON.stringify(content, null, 2)}
+                                </SyntaxHighlighter>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         );
     }

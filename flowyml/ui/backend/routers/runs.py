@@ -484,3 +484,115 @@ async def get_run_logs(run_id: str):
     logs = await anyio.to_thread.run_sync(read_all_logs)
 
     return {"logs": logs}
+
+
+@router.get("/{run_id}/training-history")
+async def get_training_history(run_id: str):
+    """Get training history (per-epoch metrics) for a run.
+
+    This combines:
+    1. Training history from model artifacts (saved by FlowymlKerasCallback)
+    2. Per-epoch metrics saved in the metrics table
+
+    Returns a consolidated training history suitable for visualization.
+    """
+    store = _find_store_for_run(run_id)
+
+    # Get per-epoch metrics from the metrics table
+    metrics = store.get_metrics(run_id)
+
+    # Build training history from metrics table
+    # Group metrics by step (epoch) and name
+    epoch_metrics = {}
+    for m in metrics:
+        step = m.get("step", 0)
+        name = m.get("name", "unknown")
+        value = m.get("value", 0)
+
+        if step not in epoch_metrics:
+            epoch_metrics[step] = {}
+        epoch_metrics[step][name] = value
+
+    # Convert to chart-friendly format
+    training_history_from_metrics = {
+        "epochs": [],
+        "train_loss": [],
+        "val_loss": [],
+        "train_accuracy": [],
+        "val_accuracy": [],
+        "mae": [],
+        "val_mae": [],
+    }
+
+    # Standard metric name mappings
+    metric_mappings = {
+        "loss": "train_loss",
+        "val_loss": "val_loss",
+        "accuracy": "train_accuracy",
+        "acc": "train_accuracy",
+        "val_accuracy": "val_accuracy",
+        "val_acc": "val_accuracy",
+        "mae": "mae",
+        "val_mae": "val_mae",
+    }
+
+    # Track custom metrics
+    custom_metrics = set()
+
+    if epoch_metrics:
+        sorted_epochs = sorted(epoch_metrics.keys())
+        for epoch in sorted_epochs:
+            training_history_from_metrics["epochs"].append(epoch + 1)  # 1-indexed for display
+
+            epoch_data = epoch_metrics[epoch]
+            for metric_name, value in epoch_data.items():
+                # Map to standard name or track as custom
+                standard_name = metric_mappings.get(metric_name)
+                if standard_name:
+                    training_history_from_metrics[standard_name].append(value)
+                else:
+                    # Custom metric
+                    if metric_name not in custom_metrics:
+                        custom_metrics.add(metric_name)
+                        training_history_from_metrics[metric_name] = []
+                    training_history_from_metrics[metric_name].append(value)
+
+    # Also try to get training history from model artifacts
+    artifacts = store.list_assets(run_id=run_id)
+    artifact_history = None
+
+    for artifact in artifacts:
+        # Check if artifact has training_history
+        if artifact.get("training_history"):
+            artifact_history = artifact.get("training_history")
+            break
+        # Also check in metadata/properties
+        metadata = artifact.get("metadata", {})
+        if isinstance(metadata, str):
+            try:
+                metadata = json.loads(metadata)
+            except Exception:
+                metadata = {}
+        if metadata.get("training_history"):
+            artifact_history = metadata.get("training_history")
+            break
+
+    # Prefer artifact history if it has more data, otherwise use metrics
+    if artifact_history and len(artifact_history.get("epochs", [])) > len(
+        training_history_from_metrics.get("epochs", []),
+    ):
+        final_history = artifact_history
+    elif training_history_from_metrics.get("epochs"):
+        final_history = training_history_from_metrics
+    else:
+        final_history = artifact_history or {}
+
+    # Clean up empty arrays
+    cleaned_history = {k: v for k, v in final_history.items() if v and (not isinstance(v, list) or len(v) > 0)}
+
+    return {
+        "training_history": cleaned_history,
+        "has_history": len(cleaned_history.get("epochs", [])) > 0,
+        "total_epochs": len(cleaned_history.get("epochs", [])),
+        "source": "artifact" if artifact_history else "metrics",
+    }

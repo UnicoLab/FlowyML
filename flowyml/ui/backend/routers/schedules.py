@@ -25,21 +25,41 @@ class ScheduleRequest(BaseModel):
 
 @router.get("/")
 async def list_schedules():
-    """List all active schedules."""
-    # Convert Schedule objects to dicts for JSON serialization
-    schedules = scheduler.list_schedules()
-    return [
-        {
-            "pipeline_name": s.pipeline_name,
-            "schedule_type": s.schedule_type,
-            "schedule_value": s.schedule_value,
-            "enabled": s.enabled,
-            "last_run": s.last_run,
-            "next_run": s.next_run,
-            "timezone": s.timezone,
-        }
-        for s in schedules
-    ]
+    """List all active schedules.
+
+    This reads schedules from the shared database, so schedules created
+    by user code (e.g., in scripts) are visible in the UI.
+    """
+    # First, get schedules from the in-memory scheduler
+    memory_schedules = []
+    for s in scheduler.list_schedules():
+        memory_schedules.append(
+            {
+                "pipeline_name": s.pipeline_name,
+                "schedule_type": s.schedule_type,
+                "schedule_value": s.schedule_value,
+                "enabled": s.enabled,
+                "last_run": s.last_run.isoformat() if s.last_run else None,
+                "next_run": s.next_run.isoformat() if s.next_run else None,
+                "timezone": s.timezone,
+            },
+        )
+
+    # Also read directly from the persistence database to get schedules
+    # created by other processes (e.g., user scripts)
+    db_schedules = []
+    if scheduler._persistence:
+        db_schedules = scheduler._persistence.list_all_schedules()
+
+    # Merge: prefer memory schedules (more up-to-date), but include db-only ones
+    memory_names = {s["pipeline_name"] for s in memory_schedules}
+    result = list(memory_schedules)
+
+    for db_sched in db_schedules:
+        if db_sched.get("pipeline_name") not in memory_names:
+            result.append(db_sched)
+
+    return result
 
 
 @router.get("/health")

@@ -87,10 +87,16 @@ class MonitorThread(threading.Thread):
             # Fallback to environment variable or default
             self.api_url = os.getenv("FLOWYML_SERVER_URL", "http://localhost:8080")
 
-    def stop(self):
+    def stop(self, error: str | None = None):
+        """Stop the monitor thread.
+
+        Args:
+            error: Optional error message to send as final log entry
+        """
+        self._final_error = error
         self._stop_event.set()
 
-    def _flush_logs(self):
+    def _flush_logs(self, level: str = "INFO"):
         """Send captured logs to the server."""
         if not self.log_capture:
             return
@@ -105,7 +111,20 @@ class MonitorThread(threading.Thread):
                 f"{self.api_url}/api/runs/{self.run_id}/steps/{self.step_name}/logs",
                 json={
                     "content": content,
-                    "level": "INFO",
+                    "level": level,
+                    "timestamp": datetime.now().isoformat(),
+                },
+                timeout=2,
+            )
+
+    def _send_error(self, error: str):
+        """Send error message to the server."""
+        with contextlib.suppress(Exception):
+            requests.post(
+                f"{self.api_url}/api/runs/{self.run_id}/steps/{self.step_name}/logs",
+                json={
+                    "content": f"ERROR: {error}",
+                    "level": "ERROR",
                     "timestamp": datetime.now().isoformat(),
                 },
                 timeout=2,
@@ -136,6 +155,10 @@ class MonitorThread(threading.Thread):
 
         # Final log flush
         self._flush_logs()
+
+        # Send error if there was one
+        if hasattr(self, "_final_error") and self._final_error:
+            self._send_error(self._final_error)
 
 
 # Keep HeartbeatThread as an alias for backwards compatibility
@@ -335,8 +358,8 @@ class LocalExecutor(Executor):
 
                         sys.stderr = original_stderr
 
-                    # Stop monitor thread
-                    if monitor_thread:
+                    # Stop monitor thread (only if not already stopped in exception handler)
+                    if monitor_thread and not monitor_thread._stop_event.is_set():
                         monitor_thread.stop()
                         monitor_thread.join()
 
@@ -374,6 +397,7 @@ class LocalExecutor(Executor):
 
             except Exception as e:
                 last_error = str(e)
+                error_traceback = traceback.format_exc()
                 retries += 1
 
                 if attempt < max_retries:
@@ -382,12 +406,17 @@ class LocalExecutor(Executor):
                     time.sleep(wait_time)
                     continue
 
-                # All retries exhausted
+                # All retries exhausted - send error to logs
+                if monitor_thread:
+                    monitor_thread.stop(error=f"{last_error}\n{error_traceback}")
+                    monitor_thread.join()
+                    monitor_thread = None  # Prevent double-stop in finally
+
                 duration = time.time() - start_time
                 return ExecutionResult(
                     step_name=step.name,
                     success=False,
-                    error=f"{last_error}\n{traceback.format_exc()}",
+                    error=f"{last_error}\n{error_traceback}",
                     duration_seconds=duration,
                     retries=retries,
                 )
@@ -438,11 +467,41 @@ class LocalExecutor(Executor):
             # Find the step object
             step = next(s for s in step_group.steps if s.name == step_name)
 
-            # Prepare inputs for this step
+            # Prepare inputs for this step - map input names to function parameters
             step_inputs = {}
-            for input_name in step.inputs:
-                if input_name in step_outputs:
-                    step_inputs[input_name] = step_outputs[input_name]
+
+            # Get function signature to properly map inputs to parameters
+            sig = inspect.signature(step.func)
+            params = list(sig.parameters.values())
+            # Filter out self/cls
+            params = [p for p in params if p.name not in ("self", "cls")]
+            assigned_params = set()
+
+            if step.inputs:
+                for i, input_name in enumerate(step.inputs):
+                    if input_name not in step_outputs:
+                        continue
+
+                    val = step_outputs[input_name]
+
+                    # Check if input name matches a parameter directly
+                    param_match = next((p for p in params if p.name == input_name), None)
+
+                    if param_match:
+                        step_inputs[param_match.name] = val
+                        assigned_params.add(param_match.name)
+                    elif i < len(params):
+                        # Positional fallback - use the parameter at the same position
+                        target_param = params[i]
+                        if target_param.name not in assigned_params:
+                            step_inputs[target_param.name] = val
+                            assigned_params.add(target_param.name)
+
+            # Auto-map parameters from available outputs by name
+            for param in params:
+                if param.name in step_outputs and param.name not in step_inputs:
+                    step_inputs[param.name] = step_outputs[param.name]
+                    assigned_params.add(param.name)
 
             # Inject context parameters for this specific step
             if context is not None:

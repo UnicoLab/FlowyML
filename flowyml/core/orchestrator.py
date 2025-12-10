@@ -390,12 +390,20 @@ class LocalOrchestrator(Orchestrator):
             """Context object for conditional evaluation.
 
             Provides access to step outputs via ctx.steps['step_name'].outputs['output_name']
+            and context parameters via ctx.params
             """
 
             def __init__(self, result: "PipelineResult", pipeline: "Pipeline"):
                 self.result = result
                 self.pipeline = pipeline
                 self._steps_cache = None
+
+            @property
+            def params(self):
+                """Get pipeline context parameters as a dictionary."""
+                if self.pipeline.context:
+                    return self.pipeline.context._params
+                return {}
 
             @property
             def steps(self):
@@ -627,6 +635,12 @@ class LocalOrchestrator(Orchestrator):
                     if step_obj.name not in result.step_results:
                         # Execute the selected step
                         # The check above prevents re-execution of the same step
+                        # If step has inputs defined, copy them to the step object for proper input mapping
+                        if hasattr(selected_step, "_step_inputs") and selected_step._step_inputs:
+                            step_obj.inputs = selected_step._step_inputs
+                        elif hasattr(selected_step, "inputs"):
+                            step_obj.inputs = selected_step.inputs or []
+
                         self._execute_conditional_step(
                             pipeline,
                             step_obj,
@@ -659,10 +673,31 @@ class LocalOrchestrator(Orchestrator):
         step_inputs = {}
         sig = inspect.signature(step.func)
         params = [p for p in sig.parameters.values() if p.name not in ("self", "cls")]
+        assigned_params = set()
 
+        # First, try to map from declared inputs (like "model/trained" -> function param)
+        if step.inputs:
+            for i, input_name in enumerate(step.inputs):
+                if input_name not in step_outputs:
+                    continue
+                val = step_outputs[input_name]
+                # Try to match input name directly to a parameter
+                param_match = next((p for p in params if p.name == input_name), None)
+                if param_match:
+                    step_inputs[param_match.name] = val
+                    assigned_params.add(param_match.name)
+                elif i < len(params):
+                    # Positional fallback - use parameter at same position
+                    target_param = params[i]
+                    if target_param.name not in assigned_params:
+                        step_inputs[target_param.name] = val
+                        assigned_params.add(target_param.name)
+
+        # Then, try direct parameter name matching from step_outputs
         for param in params:
-            if param.name in step_outputs:
+            if param.name not in assigned_params and param.name in step_outputs:
                 step_inputs[param.name] = step_outputs[param.name]
+                assigned_params.add(param.name)
 
         # Get context parameters
         context_params = pipeline.context.inject_params(step.func)

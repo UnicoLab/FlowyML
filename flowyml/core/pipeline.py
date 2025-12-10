@@ -985,6 +985,12 @@ class Pipeline:
                             if hasattr(value.metadata, "properties")
                             else {},
                         }
+
+                        # Include training_history if present (for Model assets with Keras training)
+                        # This enables interactive training charts in the UI
+                        if hasattr(value, "training_history") and value.training_history:
+                            artifact_metadata["training_history"] = value.training_history
+
                         self.metadata_store.save_artifact(artifact_id, artifact_metadata)
 
                         # Special handling for Metrics asset
