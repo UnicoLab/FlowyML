@@ -511,6 +511,8 @@ class Pipeline:
                 steps=self.steps,
                 dag=self.dag,
                 verbose=True,
+                ui_url=ui_url,  # Pass UI URL for prominent display at start
+                run_url=run_url,  # Pass run-specific URL for clickable link
             )
             display.show_header()
             display.show_execution_start()

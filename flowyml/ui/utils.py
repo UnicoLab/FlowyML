@@ -78,12 +78,14 @@ def is_ui_running(host: str = "localhost", port: int = 8080) -> bool:
         conn = http.client.HTTPConnection(host, port, timeout=2)
         conn.request("GET", "/api/health")
         response = conn.getresponse()
-        conn.close()
 
         # Check if response is successful and from flowyml
+        # Note: must read data BEFORE closing connection
         if response.status == 200:
             data = response.read().decode("utf-8")
+            conn.close()
             return "flowyml" in data.lower() or "ok" in data.lower()
+        conn.close()
         return False
     except Exception:
         return False

@@ -86,11 +86,14 @@ class UIServerManager:
         try:
             # Check if UI dependencies are available
             try:
-                import uvicorn
-
-                print(f"uvicorn {uvicorn.__version__}")
+                import uvicorn  # noqa: F401 - just check import
             except ImportError:
                 return False
+
+            # Capture host/port for closure
+            server_host = self._host
+            server_port = self._port
+            startup_error = {"error": None}
 
             # Start server in a daemon thread
             def run_server():
@@ -100,13 +103,13 @@ class UIServerManager:
                     # Run uvicorn server (blocking call, but in daemon thread)
                     uvicorn.run(
                         "flowyml.ui.backend.main:app",
-                        host=host,
-                        port=port,
-                        log_level="warning",  # Reduce noise in background
+                        host=server_host,
+                        port=server_port,
+                        log_level="warning",  # Show startup issues
                         access_log=False,
                     )
-                except Exception:
-                    pass  # Server will be stopped
+                except Exception as e:
+                    startup_error["error"] = str(e)
 
             # Start in daemon thread
             self._server_thread = threading.Thread(
@@ -118,14 +121,19 @@ class UIServerManager:
             self._running = True
             self._started = True
 
-            # Wait a bit for server to start
-            max_wait = 5
+            # Wait a bit for server to start (up to 8 seconds)
+            max_wait = 8
             for _ in range(max_wait * 10):  # Check every 100ms
                 time.sleep(0.1)
-                if is_ui_running(host, port):
+                # Check if server started successfully
+                if is_ui_running(server_host, server_port):
                     return True
+                # Check if we have an error
+                if startup_error["error"]:
+                    self._running = False
+                    return False
 
-            # If we get here, server didn't start
+            # If we get here, server didn't start in time
             self._running = False
             return False
 

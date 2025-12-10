@@ -21,7 +21,15 @@ except ImportError:
 class PipelineDisplay:
     """Beautiful CLI display for pipeline execution."""
 
-    def __init__(self, pipeline_name: str, steps: list[Any], dag: Any, verbose: bool = True):
+    def __init__(
+        self,
+        pipeline_name: str,
+        steps: list[Any],
+        dag: Any,
+        verbose: bool = True,
+        ui_url: str | None = None,
+        run_url: str | None = None,
+    ):
         """Initialize display system.
 
         Args:
@@ -29,11 +37,15 @@ class PipelineDisplay:
             steps: List of step objects
             dag: Pipeline DAG
             verbose: Whether to show detailed output
+            ui_url: Optional base URL for the UI dashboard
+            run_url: Optional URL to view this specific run in the UI
         """
         self.pipeline_name = pipeline_name
         self.steps = steps
         self.dag = dag
         self.verbose = verbose
+        self.ui_url = ui_url
+        self.run_url = run_url
         self.console = Console() if RICH_AVAILABLE else None
         self.step_status = {step.name: "pending" for step in steps}
         self.step_durations = {}
@@ -75,6 +87,9 @@ class PipelineDisplay:
             self.console.print(header)
             self.console.print()
 
+            # Show prominent UI URL if available (so users can click to follow execution)
+            self._show_ui_url_banner()
+
             # DAG visualization
             self._show_dag_rich()
         else:
@@ -83,7 +98,62 @@ class PipelineDisplay:
             print(f"🌊 flowyml Pipeline: {self.pipeline_name}")
             print("=" * 70)
             print()
+            # Show UI URL in simple mode too
+            self._show_ui_url_simple()
             self._show_dag_simple()
+
+    def _show_ui_url_banner(self) -> None:
+        """Show a prominent UI URL banner with clickable link (Rich mode)."""
+        if not RICH_AVAILABLE or not self.console:
+            return
+
+        if self.run_url:
+            # Create a prominent banner with the run URL
+            url_content = Text()
+            url_content.append("🌐 ", style="bold cyan")
+            url_content.append("Dashboard: ", style="bold white")
+            url_content.append(self.run_url, style="bold cyan underline link " + self.run_url)
+            url_content.append("\n", style="")
+            url_content.append("   ", style="")
+            url_content.append("↑ Click to follow pipeline execution in real-time", style="dim italic")
+
+            ui_panel = Panel(
+                url_content,
+                border_style="green",
+                box=box.DOUBLE,
+                title="[bold green]✨ Live Dashboard[/bold green]",
+                title_align="left",
+            )
+            self.console.print(ui_panel)
+            self.console.print()
+        elif self.ui_url:
+            # Show base UI URL if no specific run URL
+            url_content = Text()
+            url_content.append("🌐 ", style="bold cyan")
+            url_content.append("Dashboard: ", style="bold white")
+            url_content.append(self.ui_url, style="bold cyan underline link " + self.ui_url)
+
+            ui_panel = Panel(
+                url_content,
+                border_style="cyan",
+                box=box.ROUNDED,
+                title="[bold cyan]UI Available[/bold cyan]",
+                title_align="left",
+            )
+            self.console.print(ui_panel)
+            self.console.print()
+
+    def _show_ui_url_simple(self) -> None:
+        """Show UI URL in simple text mode."""
+        if self.run_url:
+            print("=" * 70)
+            print(f"🌐 Dashboard: {self.run_url}")
+            print("   ↑ Open this URL to follow pipeline execution in real-time")
+            print("=" * 70)
+            print()
+        elif self.ui_url:
+            print(f"🌐 UI Available: {self.ui_url}")
+            print()
 
     def _show_dag_rich(self) -> None:
         """Show DAG using rich."""
