@@ -164,7 +164,7 @@ export function RunDetails() {
                     </div>
                     <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
                         <div className={`w-3 h-3 rounded-full ${run.status === 'completed' ? 'bg-emerald-500' : run.status === 'failed' ? 'bg-rose-500' : 'bg-amber-500'}`} />
-                        Run: <span className="font-mono text-slate-500">{run.run_id.substring(0, 8)}</span>
+                        Run: <span className="font-mono text-slate-500">{run.run_id?.substring(0, 8) || runId?.substring(0, 8) || 'N/A'}</span>
                     </h2>
                     <p className="text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2">
                         <Layers size={16} />

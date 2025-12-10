@@ -283,7 +283,7 @@ function RecentRunCard({ run, index }) {
                                 {run.pipeline_name}
                             </h4>
                             <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
-                                <span className="font-mono">{run.run_id.substring(0, 8)}</span>
+                                <span className="font-mono">{run.run_id?.substring(0, 8) || 'N/A'}</span>
                                 {run.start_time && (
                                     <>
                                         <span>•</span>

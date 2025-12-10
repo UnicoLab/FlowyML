@@ -53,7 +53,7 @@ export function ProjectRunsList({ projectId }) {
                     </div>
                     <div>
                         <div className="font-medium text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                            {run.name || run.run_id.substring(0, 8)}
+                            {run.name || run.run_id?.substring(0, 8) || 'N/A'}
                         </div>
                         <div className="text-xs text-slate-500">{run.pipeline_name}</div>
                     </div>
@@ -101,12 +101,12 @@ export function ProjectRunsList({ projectId }) {
                                 </span>
                             </div>
                             <span className="text-xs font-mono text-slate-400 bg-slate-50 dark:bg-slate-900 px-2 py-1 rounded">
-                                {run.run_id.substring(0, 8)}
+                                {run.run_id?.substring(0, 8) || 'N/A'}
                             </span>
                         </div>
 
                         <h3 className="font-semibold text-slate-900 dark:text-white mb-1 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                            {run.name || `Run ${run.run_id.substring(0, 8)}`}
+                            {run.name || `Run ${run.run_id?.substring(0, 8) || 'N/A'}`}
                         </h3>
                         <p className="text-sm text-slate-500 dark:text-slate-400 mb-4 flex items-center gap-1">
                             <span className="opacity-75">Pipeline:</span>

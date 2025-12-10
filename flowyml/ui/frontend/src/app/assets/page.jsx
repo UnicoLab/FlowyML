@@ -144,7 +144,7 @@ export function Assets() {
                     className="font-mono text-xs text-primary-600 hover:underline"
                     onClick={(e) => e.stopPropagation()}
                 >
-                    {asset.run_id.substring(0, 8)}
+                    {asset.run_id?.substring(0, 8) || 'N/A'}
                 </Link>
             ) : (
                 <span className="font-mono text-xs text-slate-400">-</span>

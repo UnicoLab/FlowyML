@@ -117,7 +117,7 @@ export function Leaderboard() {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400 font-mono">
-                                        {model.run_id.substring(0, 8)}
+                                        {model.run_id?.substring(0, 8) || 'N/A'}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
                                         {model.timestamp ? format(new Date(model.timestamp), 'MMM d, HH:mm') : '-'}

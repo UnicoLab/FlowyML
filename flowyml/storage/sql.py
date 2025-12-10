@@ -249,6 +249,9 @@ class SQLMetadataStore(MetadataStore):
             stmt = select(self.runs).where(self.runs.c.run_id == run_id)
             existing = conn.execute(stmt).fetchone()
 
+            # Ensure run_id is included in metadata for consistency
+            metadata_with_id = {**metadata, "run_id": run_id}
+
             values = {
                 "run_id": run_id,
                 "pipeline_name": metadata.get("pipeline_name"),
@@ -256,7 +259,7 @@ class SQLMetadataStore(MetadataStore):
                 "start_time": metadata.get("start_time"),
                 "end_time": metadata.get("end_time"),
                 "duration": metadata.get("duration"),
-                "metadata": json.dumps(metadata),
+                "metadata": json.dumps(metadata_with_id),
                 "project": metadata.get("project"),
             }
 
@@ -299,7 +302,10 @@ class SQLMetadataStore(MetadataStore):
             stmt = select(self.runs.c.metadata).where(self.runs.c.run_id == run_id)
             row = conn.execute(stmt).fetchone()
             if row:
-                return json.loads(row[0])
+                data = json.loads(row[0])
+                # Ensure run_id is always included in the returned dict
+                data["run_id"] = run_id
+                return data
             return None
 
     def update_run_project(self, run_id: str, project_name: str) -> None:
@@ -325,12 +331,18 @@ class SQLMetadataStore(MetadataStore):
     def list_runs(self, limit: int | None = None) -> list[dict]:
         """List all runs."""
         with self.engine.connect() as conn:
-            stmt = select(self.runs.c.metadata).order_by(self.runs.c.created_at.desc())
+            stmt = select(self.runs.c.run_id, self.runs.c.metadata).order_by(self.runs.c.created_at.desc())
             if limit:
                 stmt = stmt.limit(limit)
 
             rows = conn.execute(stmt).fetchall()
-            return [json.loads(row[0]) for row in rows]
+            runs = []
+            for row in rows:
+                data = json.loads(row[1])
+                # Ensure run_id is always included in the returned dict
+                data["run_id"] = row[0]
+                runs.append(data)
+            return runs
 
     def list_pipelines(self, project: str = None) -> list[str]:
         """List all unique pipeline names."""
@@ -402,7 +414,7 @@ class SQLMetadataStore(MetadataStore):
     def query(self, **filters) -> list[dict]:
         """Query runs with filters."""
         with self.engine.connect() as conn:
-            stmt = select(self.runs.c.metadata)
+            stmt = select(self.runs.c.run_id, self.runs.c.metadata)
 
             for key, value in filters.items():
                 if hasattr(self.runs.c, key):
@@ -410,7 +422,13 @@ class SQLMetadataStore(MetadataStore):
 
             stmt = stmt.order_by(self.runs.c.created_at.desc())
             rows = conn.execute(stmt).fetchall()
-            return [json.loads(row[0]) for row in rows]
+            runs = []
+            for row in rows:
+                data = json.loads(row[1])
+                # Ensure run_id is always included in the returned dict
+                data["run_id"] = row[0]
+                runs.append(data)
+            return runs
 
     def save_metric(self, run_id: str, name: str, value: float, step: int = 0) -> None:
         """Save a single metric value."""
