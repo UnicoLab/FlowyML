@@ -368,6 +368,23 @@ function SampleDataTable({ data, columns, maxRows = 10 }) {
     );
 }
 
+// Helper to safely parse Python-style dict strings
+function parsePythonDict(str) {
+    if (!str || typeof str !== 'string') return null;
+    try {
+        // Replace Python-style quotes and booleans
+        let jsonStr = str
+            .replace(/'/g, '"')  // Replace single quotes with double quotes
+            .replace(/True/g, 'true')
+            .replace(/False/g, 'false')
+            .replace(/None/g, 'null');
+        return JSON.parse(jsonStr);
+    } catch (e) {
+        console.warn('Failed to parse data string:', e);
+        return null;
+    }
+}
+
 // Main DatasetViewer component
 export function DatasetViewer({ artifact }) {
     const [activeTab, setActiveTab] = useState('overview');
@@ -377,7 +394,33 @@ export function DatasetViewer({ artifact }) {
         if (!artifact) return null;
 
         const props = artifact.properties || {};
-        const data = artifact.data || props.data || {};
+
+        // Data can be in multiple places:
+        // 1. artifact.data (if already parsed by backend)
+        // 2. props._full_data (full data stored in properties)
+        // 3. artifact.value (string that needs parsing - may be truncated!)
+        // 4. props.data
+        let data = artifact.data || props._full_data || props.data;
+
+        // If data is not found, try parsing the value field
+        if (!data && artifact.value) {
+            data = parsePythonDict(artifact.value);
+        }
+
+        // If still no data, return basic info
+        if (!data || typeof data !== 'object') {
+            return {
+                name: artifact.name || 'Dataset',
+                numSamples: props.num_samples || props.samples || 0,
+                numFeatures: props.num_features || (props.feature_columns?.length || 0),
+                featureColumns: props.feature_columns || [],
+                columns: [],
+                columnNames: [],
+                samples: [],
+                source: props.source,
+                createdAt: artifact.created_at,
+            };
+        }
 
         // Try to extract features and target
         let features = data.features || {};
@@ -387,7 +430,7 @@ export function DatasetViewer({ artifact }) {
         let columns = [];
 
         // If features is an object with column arrays
-        if (features && typeof features === 'object') {
+        if (features && typeof features === 'object' && !Array.isArray(features)) {
             columnNames = Object.keys(features);
             const numRows = features[columnNames[0]]?.length || 0;
 
@@ -397,7 +440,7 @@ export function DatasetViewer({ artifact }) {
                 columnNames.forEach(col => {
                     row[col] = features[col]?.[i];
                 });
-                if (target.length > i) {
+                if (Array.isArray(target) && target.length > i) {
                     row['target'] = target[i];
                 }
                 samples.push(row);
@@ -412,7 +455,7 @@ export function DatasetViewer({ artifact }) {
             });
 
             // Add target column if exists
-            if (target.length > 0) {
+            if (Array.isArray(target) && target.length > 0) {
                 columnNames.push('target');
                 columns.push({
                     name: 'target',
@@ -424,7 +467,7 @@ export function DatasetViewer({ artifact }) {
         return {
             name: artifact.name || 'Dataset',
             numSamples: props.num_samples || props.samples || samples.length,
-            numFeatures: props.num_features || columnNames.length - (target.length > 0 ? 1 : 0),
+            numFeatures: props.num_features || columnNames.length - (Array.isArray(target) && target.length > 0 ? 1 : 0),
             featureColumns: props.feature_columns || columnNames.filter(c => c !== 'target'),
             columns,
             columnNames,

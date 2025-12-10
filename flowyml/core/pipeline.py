@@ -972,6 +972,26 @@ class Pipeline:
                     if is_asset:
                         # Handle flowyml Asset
                         asset_type = value.__class__.__name__
+                        # Get properties
+                        props = (
+                            self._sanitize_for_json(value.metadata.properties)
+                            if hasattr(value.metadata, "properties")
+                            else {}
+                        )
+
+                        # For Dataset assets, include the full data for visualization
+                        # This enables histograms and statistics in the UI
+                        data_value = None
+                        if asset_type == "Dataset" and value.data:
+                            try:
+                                # Store full data as JSON-serializable dict
+                                data_value = self._sanitize_for_json(value.data)
+                                props["_full_data"] = data_value
+                            except Exception:
+                                data_value = str(value.data)[:1000]
+                        else:
+                            data_value = str(value.data)[:1000] if value.data else None
+
                         artifact_metadata = {
                             "artifact_id": artifact_id,
                             "name": value.name,
@@ -979,12 +999,14 @@ class Pipeline:
                             "run_id": result.run_id,
                             "step": step_name,
                             "path": None,
-                            "value": str(value.data)[:1000] if value.data else None,
+                            "value": data_value if isinstance(data_value, str) else None,
                             "created_at": datetime.now().isoformat(),
-                            "properties": self._sanitize_for_json(value.metadata.properties)
-                            if hasattr(value.metadata, "properties")
-                            else {},
+                            "properties": props,
                         }
+
+                        # For Dataset, also include the data directly in the artifact
+                        if asset_type == "Dataset" and isinstance(data_value, dict):
+                            artifact_metadata["data"] = data_value
 
                         # Include training_history if present (for Model assets with Keras training)
                         # This enables interactive training charts in the UI

@@ -27,6 +27,17 @@ export function ArtifactViewer({ artifact }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
+    // Check if this is a Dataset artifact FIRST - before any async operations
+    // This ensures Dataset gets its own specialized viewer with histograms
+    const isDataset = artifact?.type?.toLowerCase() === 'dataset' ||
+        artifact?.asset_type?.toLowerCase() === 'dataset';
+
+    // Render Dataset viewer immediately if it's a dataset
+    // Don't wait for content fetch - dataset data is in properties
+    if (isDataset) {
+        return <DatasetViewer artifact={artifact} />;
+    }
+
     useEffect(() => {
         if (!artifact?.artifact_id) return;
         fetchContent();
@@ -118,15 +129,6 @@ export function ArtifactViewer({ artifact }) {
     const hasTrainingHistory = artifact?.training_history &&
         artifact.training_history.epochs &&
         artifact.training_history.epochs.length > 0;
-
-    // Check if this is a Dataset artifact
-    const isDataset = artifact?.type?.toLowerCase() === 'dataset' ||
-        artifact?.asset_type?.toLowerCase() === 'dataset';
-
-    // Render Dataset viewer with histograms and statistics
-    if (isDataset) {
-        return <DatasetViewer artifact={artifact} />;
-    }
 
     // Render training history chart for model artifacts with training data
     if (hasTrainingHistory) {
