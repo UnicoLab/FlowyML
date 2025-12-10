@@ -11,10 +11,12 @@ import {
     Table as TableIcon,
     AlertCircle,
     Download,
-    TrendingUp
+    TrendingUp,
+    Database,
 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { TrainingHistoryChart } from './TrainingHistoryChart';
+import { DatasetViewer } from './DatasetViewer';
 
 SyntaxHighlighter.registerLanguage('json', json);
 SyntaxHighlighter.registerLanguage('python', python);
@@ -116,6 +118,15 @@ export function ArtifactViewer({ artifact }) {
     const hasTrainingHistory = artifact?.training_history &&
         artifact.training_history.epochs &&
         artifact.training_history.epochs.length > 0;
+
+    // Check if this is a Dataset artifact
+    const isDataset = artifact?.type?.toLowerCase() === 'dataset' ||
+        artifact?.asset_type?.toLowerCase() === 'dataset';
+
+    // Render Dataset viewer with histograms and statistics
+    if (isDataset) {
+        return <DatasetViewer artifact={artifact} />;
+    }
 
     // Render training history chart for model artifacts with training data
     if (hasTrainingHistory) {

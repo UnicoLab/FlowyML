@@ -248,12 +248,52 @@ export function RunDetails() {
                                 steps={run.steps}
                                 selectedStep={selectedStep}
                                 onStepSelect={setSelectedStep}
-                                onArtifactSelect={(name) => {
-                                    const found = artifacts.find(a => a.name === name);
+                                onArtifactSelect={(artifactLabel) => {
+                                    // Smart artifact matching:
+                                    // DAG labels are like "data/train", "model/trained"
+                                    // API names are like "train_dataset", "trained_model"
+
+                                    // 1. Exact name match
+                                    let found = artifacts.find(a => a.name === artifactLabel);
+
+                                    if (!found) {
+                                        // 2. Match by output pattern
+                                        // "data/train" -> look for artifacts with "train" and type Dataset
+                                        // "model/trained" -> look for artifacts with "trained" and type Model
+                                        const parts = artifactLabel.split('/');
+                                        const prefix = parts[0];  // "data", "model", "metrics"
+                                        const suffix = parts[1];  // "train", "trained", "evaluation"
+
+                                        const typeMap = {
+                                            'data': 'Dataset',
+                                            'model': 'Model',
+                                            'metrics': 'Metrics',
+                                            'features': 'FeatureSet',
+                                        };
+                                        const expectedType = typeMap[prefix];
+
+                                        // Look for artifacts with matching type and suffix in name
+                                        if (suffix && expectedType) {
+                                            found = artifacts.find(a =>
+                                                a.type === expectedType &&
+                                                (a.name.toLowerCase().includes(suffix.toLowerCase()) ||
+                                                 suffix.toLowerCase().includes(a.name.toLowerCase().replace(/_/g, '')))
+                                            );
+                                        }
+
+                                        // 3. Fallback: match by type alone if only one of that type
+                                        if (!found && expectedType) {
+                                            const typeMatches = artifacts.filter(a => a.type === expectedType);
+                                            if (typeMatches.length === 1) {
+                                                found = typeMatches[0];
+                                            }
+                                        }
+                                    }
+
                                     if (found) {
                                         setSelectedArtifact(found);
                                     } else {
-                                        console.warn(`Artifact ${name} not found in assets list`);
+                                        console.warn(`Artifact "${artifactLabel}" not found in assets list. Available:`, artifacts.map(a => a.name));
                                     }
                                 }}
                             />
