@@ -26,6 +26,7 @@ import {
     Columns,
     Rows,
     Info,
+    Activity,
     PieChart as PieChartIcon,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -385,6 +386,69 @@ function parsePythonDict(str) {
     }
 }
 
+// Normalize different dataset formats (pandas, tensorflow, numpy, etc.)
+function normalizeDatasetFormat(data) {
+    if (!data) return null;
+
+    // Already in the expected format {features: {...}, target: [...]}
+    if (data.features && typeof data.features === 'object') {
+        return data;
+    }
+
+    // TensorFlow dataset metadata format
+    // Often stored as: {element_spec: {...}, cardinality: N, ...}
+    if (data.element_spec || data.cardinality !== undefined) {
+        return {
+            _tf_dataset: true,
+            element_spec: data.element_spec,
+            cardinality: data.cardinality,
+            ...data
+        };
+    }
+
+    // Pandas DataFrame format: {columns: [...], data: [[...], ...], index: [...]}
+    if (data.columns && Array.isArray(data.columns) && data.data && Array.isArray(data.data)) {
+        const features = {};
+        data.columns.forEach((col, idx) => {
+            features[col] = data.data.map(row => row[idx]);
+        });
+        return { features, target: [] };
+    }
+
+    // Numpy array format: {shape: [...], dtype: '...', data: [...]}
+    if (data.shape && data.dtype && Array.isArray(data.data)) {
+        // Single feature array
+        return {
+            features: { values: data.data.flat() },
+            target: []
+        };
+    }
+
+    // Dict of arrays format: {col1: [...], col2: [...]}
+    if (typeof data === 'object' && !Array.isArray(data)) {
+        const keys = Object.keys(data);
+        const firstVal = data[keys[0]];
+        if (Array.isArray(firstVal)) {
+            // Treat last column as target if it's named 'target', 'label', or 'y'
+            const targetKeys = ['target', 'label', 'y', 'labels', 'targets'];
+            const targetKey = keys.find(k => targetKeys.includes(k.toLowerCase()));
+            const featureKeys = keys.filter(k => k !== targetKey);
+
+            const features = {};
+            featureKeys.forEach(k => {
+                features[k] = data[k];
+            });
+
+            return {
+                features,
+                target: targetKey ? data[targetKey] : []
+            };
+        }
+    }
+
+    return null;
+}
+
 // Main DatasetViewer component
 export function DatasetViewer({ artifact }) {
     const [activeTab, setActiveTab] = useState('overview');
@@ -400,18 +464,39 @@ export function DatasetViewer({ artifact }) {
         // 2. props._full_data (full data stored in properties)
         // 3. artifact.value (string that needs parsing - may be truncated!)
         // 4. props.data
-        let data = artifact.data || props._full_data || props.data;
+        let rawData = artifact.data || props._full_data || props.data;
 
         // If data is not found, try parsing the value field
-        if (!data && artifact.value) {
-            data = parsePythonDict(artifact.value);
+        if (!rawData && artifact.value) {
+            rawData = parsePythonDict(artifact.value);
+        }
+
+        // Normalize the data format (handles pandas, tensorflow, numpy, etc.)
+        const data = normalizeDatasetFormat(rawData);
+
+        // Handle TensorFlow dataset metadata (no actual data, just specs)
+        if (data && data._tf_dataset) {
+            return {
+                name: artifact.name || 'Dataset',
+                numSamples: data.cardinality || props.num_samples || props.samples || 'Unknown',
+                numFeatures: props.num_features || 0,
+                featureColumns: props.feature_columns || [],
+                columns: [],
+                columnNames: [],
+                samples: [],
+                source: props.source || 'TensorFlow Dataset',
+                createdAt: artifact.created_at,
+                isTensorFlow: true,
+                elementSpec: data.element_spec,
+                tfMetadata: data,
+            };
         }
 
         // If still no data, return basic info
         if (!data || typeof data !== 'object') {
             return {
                 name: artifact.name || 'Dataset',
-                numSamples: props.num_samples || props.samples || 0,
+                numSamples: props.num_samples || props.samples || props.cardinality || 0,
                 numFeatures: props.num_features || (props.feature_columns?.length || 0),
                 featureColumns: props.feature_columns || [],
                 columns: [],
@@ -482,6 +567,59 @@ export function DatasetViewer({ artifact }) {
             <div className="flex flex-col items-center justify-center p-8 text-slate-400">
                 <Database size={32} className="mb-2 opacity-50" />
                 <p className="text-sm">No dataset information available</p>
+            </div>
+        );
+    }
+
+    // Special view for TensorFlow datasets (show metadata/specs instead of data)
+    if (datasetInfo.isTensorFlow) {
+        return (
+            <div className="space-y-6">
+                {/* Header */}
+                <div className="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-slate-700">
+                    <div className="p-3 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl shadow-lg">
+                        <Database size={24} className="text-white" />
+                    </div>
+                    <div>
+                        <h3 className="text-xl font-bold text-slate-900 dark:text-white">{datasetInfo.name}</h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
+                            TensorFlow Dataset • {datasetInfo.numSamples} samples
+                        </p>
+                    </div>
+                </div>
+
+                {/* TF Dataset Info */}
+                <div className="bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-xl p-6 border border-orange-200 dark:border-orange-800">
+                    <h4 className="font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                        <Activity size={18} className="text-orange-600" />
+                        TensorFlow Dataset Metadata
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-white dark:bg-slate-800 p-4 rounded-lg">
+                            <p className="text-xs text-slate-500 uppercase tracking-wide">Cardinality</p>
+                            <p className="text-lg font-bold text-slate-900 dark:text-white font-mono">
+                                {datasetInfo.numSamples}
+                            </p>
+                        </div>
+                        <div className="bg-white dark:bg-slate-800 p-4 rounded-lg">
+                            <p className="text-xs text-slate-500 uppercase tracking-wide">Source</p>
+                            <p className="text-lg font-bold text-slate-900 dark:text-white">
+                                {datasetInfo.source}
+                            </p>
+                        </div>
+                    </div>
+                    {datasetInfo.elementSpec && (
+                        <div className="mt-4 bg-white dark:bg-slate-800 p-4 rounded-lg">
+                            <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Element Spec</p>
+                            <pre className="text-xs font-mono text-slate-700 dark:text-slate-300 overflow-x-auto">
+                                {JSON.stringify(datasetInfo.elementSpec, null, 2)}
+                            </pre>
+                        </div>
+                    )}
+                    <p className="text-xs text-slate-500 mt-4 italic">
+                        💡 TensorFlow datasets are lazy-loaded. Full data visualization requires materializing the dataset.
+                    </p>
+                </div>
             </div>
         );
     }

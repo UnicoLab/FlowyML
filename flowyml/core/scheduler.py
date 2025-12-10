@@ -224,6 +224,36 @@ class SchedulerPersistence:
                     logger.error(f"Failed to load schedule {name}: {e}")
         return schedules
 
+    def load_schedule(self, name: str) -> Schedule | None:
+        """Load a single schedule from database by name.
+
+        Returns None if not found. Creates a Schedule without a pipeline_func
+        (the schedule will be enabled/disabled but won't actually run until
+        a pipeline function is registered).
+        """
+        with self.engine.connect() as conn:
+            stmt = select(self.schedules.c.name, self.schedules.c.data).where(
+                self.schedules.c.name == name,
+            )
+            result = conn.execute(stmt)
+            row = result.fetchone()
+            if row:
+                try:
+                    data = json.loads(row.data)
+                    # Create a minimal Schedule for enable/disable operations
+                    # without requiring the pipeline function
+                    return Schedule(
+                        pipeline_name=data.get("pipeline_name", name),
+                        pipeline_func=lambda: None,  # Placeholder - not for execution
+                        schedule_type=data.get("schedule_type", ""),
+                        schedule_value=data.get("schedule_value", ""),
+                        timezone=data.get("timezone", "UTC"),
+                        enabled=data.get("enabled", True),
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to load schedule {name}: {e}")
+        return None
+
     def delete_schedule(self, name: str) -> None:
         """Delete schedule from database using SQLAlchemy."""
         with self.engine.connect() as conn:
@@ -556,11 +586,17 @@ class PipelineScheduler:
         return schedule
 
     def unschedule(self, name: str) -> None:
-        """Remove a scheduled pipeline."""
+        """Remove a scheduled pipeline.
+
+        Handles both in-memory schedules and persisted schedules.
+        """
+        # Remove from in-memory schedules if present
         if name in self.schedules:
             del self.schedules[name]
-            if self._persistence:
-                self._persistence.delete_schedule(name)
+
+        # Always try to remove from persistence (handles schedules created by other processes)
+        if self._persistence:
+            self._persistence.delete_schedule(name)
 
     def clear(self) -> None:
         """Remove all schedules."""
@@ -573,18 +609,42 @@ class PipelineScheduler:
                 conn.commit()
 
     def enable(self, name: str) -> None:
-        """Enable a schedule."""
+        """Enable a schedule.
+
+        Handles both in-memory schedules and persisted schedules.
+        """
         if name in self.schedules:
             self.schedules[name].enabled = True
             if self._persistence:
                 self._persistence.save_schedule(self.schedules[name])
+        elif self._persistence:
+            # Schedule might be in persistence but not loaded in memory
+            # Load it, update, and save back
+            schedule = self._persistence.load_schedule(name)
+            if schedule:
+                schedule.enabled = True
+                self._persistence.save_schedule(schedule)
+                # Also add to in-memory schedules
+                self.schedules[name] = schedule
 
     def disable(self, name: str) -> None:
-        """Disable a schedule."""
+        """Disable a schedule.
+
+        Handles both in-memory schedules and persisted schedules.
+        """
         if name in self.schedules:
             self.schedules[name].enabled = False
             if self._persistence:
                 self._persistence.save_schedule(self.schedules[name])
+        elif self._persistence:
+            # Schedule might be in persistence but not loaded in memory
+            # Load it, update, and save back
+            schedule = self._persistence.load_schedule(name)
+            if schedule:
+                schedule.enabled = False
+                self._persistence.save_schedule(schedule)
+                # Also add to in-memory schedules
+                self.schedules[name] = schedule
 
     def _run_pipeline(self, schedule: Schedule) -> None:
         """Run a scheduled pipeline."""
