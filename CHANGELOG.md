@@ -2,6 +2,27 @@
 
 <!-- version list -->
 
+## v1.7.0 (2025-12-10)
+
+### Bug Fixes
+
+- Introduce quick commands for managing the flowyml UI server, including start, stop, and status
+  functionalities, enhancing user experience with detailed feedback and options for automatic
+  browser opening.
+  ([`6fe2145`](https://github.com/UnicoLab/FlowyML/commit/6fe214589f586759312ea536fc6b7fa9c5379a86))
+
+### Chores
+
+- Save last release version for recovery [skip ci]
+  ([`07be0b0`](https://github.com/UnicoLab/FlowyML/commit/07be0b000479b457b02ba0262e262c33dc095fbd))
+
+### Features
+
+- Enhance PipelineDisplay with optional UI and run URLs for improved user experience during pipeline
+  execution. Add methods to display clickable links in both rich and simple modes.
+  ([`ecf0412`](https://github.com/UnicoLab/FlowyML/commit/ecf0412ad9a17d3d923795cc5ba1a956a41e8dfe))
+
+
 ## v1.6.0 (2025-12-09)
 
 ### Chores
