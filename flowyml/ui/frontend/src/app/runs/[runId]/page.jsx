@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { fetchApi } from '../../../utils/api';
 import { downloadArtifactById } from '../../../utils/downloads';
 import { useParams, Link } from 'react-router-dom';
-import { CheckCircle, XCircle, Clock, Calendar, Package, ArrowRight, BarChart2, FileText, Database, Box, ChevronRight, Activity, Layers, Code2, Terminal, Info, X, Maximize2, TrendingUp, Download, ArrowDownCircle, ArrowUpCircle, Tag, Zap, AlertCircle, FolderPlus, Cloud, Server, LineChart, Minimize2 } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Calendar, Package, ArrowRight, BarChart2, FileText, Database, Box, ChevronRight, Activity, Layers, Code2, Terminal, Info, X, Maximize2, TrendingUp, TrendingDown, Download, ArrowDownCircle, ArrowUpCircle, Tag, Zap, AlertCircle, FolderPlus, Cloud, Server, LineChart, Minimize2 } from 'lucide-react';
 import { Card } from '../../../components/ui/Card';
 import { Badge } from '../../../components/ui/Badge';
 import { Button } from '../../../components/ui/Button';
@@ -13,6 +13,7 @@ import { PipelineGraph } from '../../../components/PipelineGraph';
 import { ProjectSelector } from '../../../components/ProjectSelector';
 import { CodeSnippet } from '../../../components/ui/CodeSnippet';
 import { TrainingMetricsPanel } from '../../../components/TrainingMetricsPanel';
+import { TrainingHistoryChart } from '../../../components/TrainingHistoryChart';
 
 export function RunDetails() {
     const { runId } = useParams();
@@ -779,7 +780,89 @@ function ArtifactsTab({ artifacts, onArtifactClick }) {
 }
 
 function ArtifactModal({ artifact, onClose }) {
+    const [activeTab, setActiveTab] = useState('visualization');
+
     if (!artifact) return null;
+
+    const isDataset = artifact.type === 'Dataset' || artifact.asset_type === 'Dataset';
+    const isModel = artifact.type === 'Model' || artifact.asset_type === 'Model';
+    const isMetrics = artifact.type === 'Metrics' || artifact.asset_type === 'Metrics';
+
+    // Get properties for display (filter out internal/large ones)
+    const displayableProps = artifact.properties
+        ? Object.entries(artifact.properties).filter(([key, value]) => {
+            // Skip internal properties and very large values
+            if (key.startsWith('_')) return false;
+            if (typeof value === 'string' && value.length > 500) return false;
+            return true;
+        })
+        : [];
+
+    // Check for training history
+    const hasTrainingHistory = artifact.training_history &&
+        artifact.training_history.epochs &&
+        artifact.training_history.epochs.length > 0;
+
+    // Also check in properties for training history
+    const trainingHistoryFromProps = artifact.properties?.training_history;
+    const effectiveTrainingHistory = artifact.training_history || (
+        trainingHistoryFromProps && trainingHistoryFromProps.epochs
+            ? trainingHistoryFromProps
+            : null
+    );
+
+    // Get icon and gradient based on type
+    const getTypeStyle = () => {
+        if (isDataset) return {
+            icon: <Database size={28} />,
+            gradient: 'from-blue-500 to-indigo-600',
+            bgGradient: 'from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20',
+            iconBg: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+        };
+        if (isModel) return {
+            icon: <Box size={28} />,
+            gradient: 'from-purple-500 to-violet-600',
+            bgGradient: 'from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20',
+            iconBg: 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
+        };
+        if (isMetrics) return {
+            icon: <BarChart2 size={28} />,
+            gradient: 'from-emerald-500 to-teal-600',
+            bgGradient: 'from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20',
+            iconBg: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'
+        };
+        return {
+            icon: <FileText size={28} />,
+            gradient: 'from-slate-500 to-slate-600',
+            bgGradient: 'from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900',
+            iconBg: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+        };
+    };
+
+    const typeStyle = getTypeStyle();
+
+    // Get model-specific properties
+    const modelInfo = isModel ? {
+        framework: artifact.properties?.framework || 'Unknown',
+        parameters: artifact.properties?.parameters,
+        layers: artifact.properties?.num_layers,
+        optimizer: artifact.properties?.optimizer,
+        learningRate: artifact.properties?.learning_rate,
+        epochsTrained: artifact.properties?.epochs_trained || effectiveTrainingHistory?.epochs?.length,
+    } : null;
+
+    // Get dataset-specific properties
+    const datasetInfo = isDataset ? {
+        samples: artifact.properties?.num_samples || artifact.properties?.samples,
+        features: artifact.properties?.num_features,
+        source: artifact.properties?.source,
+        split: artifact.properties?.split,
+    } : null;
+
+    // Get metrics-specific data
+    const metricsData = isMetrics && artifact.properties ? Object.entries(artifact.properties)
+        .filter(([key, value]) => typeof value === 'number' && !key.startsWith('_'))
+        .sort((a, b) => a[0].localeCompare(b[0])) : [];
 
     return (
         <AnimatePresence>
@@ -787,101 +870,355 @@ function ArtifactModal({ artifact, onClose }) {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
                 onClick={onClose}
             >
                 <motion.div
-                    initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.9, opacity: 0 }}
+                    initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                    animate={{ scale: 1, opacity: 1, y: 0 }}
+                    exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                    transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                     onClick={(e) => e.stopPropagation()}
-                    className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[80vh] overflow-hidden"
+                    className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col"
                 >
-                    {/* Header */}
-                    <div className="flex items-center justify-between p-6 border-b border-slate-100 bg-gradient-to-r from-primary-50 to-purple-50">
-                        <div className="flex items-center gap-3">
-                            <div className="p-3 bg-white rounded-xl shadow-sm">
-                                {artifact.type === 'Dataset' ? <Database size={24} className="text-blue-600" /> :
-                                    artifact.type === 'Model' ? <Box size={24} className="text-purple-600" /> :
-                                        artifact.type === 'Metrics' ? <BarChart2 size={24} className="text-emerald-600" /> :
-                                            <FileText size={24} className="text-slate-600" />}
+                    {/* Header with gradient */}
+                    <div className={`relative p-6 bg-gradient-to-r ${typeStyle.bgGradient} border-b border-slate-200 dark:border-slate-700`}>
+                        {/* Background decoration */}
+                        <div className="absolute top-0 right-0 w-64 h-64 opacity-10 pointer-events-none">
+                            <div className={`w-full h-full bg-gradient-to-br ${typeStyle.gradient} rounded-full blur-3xl`} />
+                        </div>
+
+                        <div className="relative flex items-start justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className={`p-4 rounded-2xl shadow-lg bg-gradient-to-br ${typeStyle.gradient}`}>
+                                    <div className="text-white">
+                                        {typeStyle.icon}
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{artifact.name}</h3>
+                                    <div className="flex items-center gap-3 mt-1">
+                                        <span className={`text-sm font-medium px-3 py-0.5 rounded-full ${typeStyle.iconBg}`}>
+                                            {artifact.type}
+                                        </span>
+                                        {artifact.step && (
+                                            <span className="text-sm text-slate-500 dark:text-slate-400">
+                                                from <span className="font-mono font-medium">{artifact.step}</span>
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
-                            <div>
-                                <h3 className="text-xl font-bold text-slate-900">{artifact.name}</h3>
-                                <p className="text-sm text-slate-500">{artifact.type}</p>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => downloadArtifactById(artifact.artifact_id)}
+                                    className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r ${typeStyle.gradient} text-white text-sm font-semibold hover:shadow-lg transition-all disabled:opacity-50`}
+                                    disabled={!artifact.artifact_id}
+                                >
+                                    <Download size={16} /> Download
+                                </button>
+                                <button
+                                    onClick={onClose}
+                                    className="p-2.5 hover:bg-white/50 dark:hover:bg-slate-800 rounded-xl transition-colors"
+                                >
+                                    <X size={22} className="text-slate-500 dark:text-slate-400" />
+                                </button>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => downloadArtifactById(artifact.artifact_id)}
-                                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-primary-600 text-white text-sm font-semibold hover:bg-primary-500 transition-colors disabled:opacity-50"
-                                disabled={!artifact.artifact_id}
-                            >
-                                <Download size={16} /> Download
-                            </button>
-                            <button
-                                onClick={onClose}
-                                className="p-2 hover:bg-white rounded-lg transition-colors"
-                            >
-                                <X size={20} className="text-slate-400" />
-                            </button>
-                        </div>
+
+                        {/* Quick stats bar for Models */}
+                        {isModel && modelInfo && (
+                            <div className="mt-4 flex flex-wrap gap-4">
+                                <QuickStat label="Framework" value={modelInfo.framework} icon={<Zap size={12} />} />
+                                {modelInfo.parameters && <QuickStat label="Parameters" value={modelInfo.parameters.toLocaleString()} icon={<Activity size={12} />} />}
+                                {modelInfo.layers && <QuickStat label="Layers" value={modelInfo.layers} icon={<Layers size={12} />} />}
+                                {modelInfo.epochsTrained && <QuickStat label="Epochs" value={modelInfo.epochsTrained} icon={<TrendingUp size={12} />} />}
+                            </div>
+                        )}
+
+                        {/* Quick stats bar for Datasets */}
+                        {isDataset && datasetInfo && (
+                            <div className="mt-4 flex flex-wrap gap-4">
+                                {datasetInfo.samples && <QuickStat label="Samples" value={datasetInfo.samples.toLocaleString()} icon={<Database size={12} />} />}
+                                {datasetInfo.features && <QuickStat label="Features" value={datasetInfo.features} icon={<Layers size={12} />} />}
+                                {datasetInfo.split && <QuickStat label="Split" value={datasetInfo.split} icon={<FileText size={12} />} />}
+                                {datasetInfo.source && <QuickStat label="Source" value={datasetInfo.source} icon={<Cloud size={12} />} />}
+                            </div>
+                        )}
                     </div>
 
-                    {/* Content */}
-                    <div className="p-6 overflow-y-auto max-h-[60vh]">
-                        <div className="space-y-4">
-                            {/* Rich Viewer */}
-                            <ArtifactViewer artifact={artifact} />
+                    {/* Tabs - only show for complex types */}
+                    {(isModel || isDataset || isMetrics) && (
+                        <div className="flex gap-1 px-6 py-3 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                            <TabBtn active={activeTab === 'visualization'} onClick={() => setActiveTab('visualization')}>
+                                {isModel ? <><LineChart size={14} /> Visualization</> :
+                                 isDataset ? <><BarChart2 size={14} /> Statistics</> :
+                                 <><Activity size={14} /> Metrics</>}
+                            </TabBtn>
+                            {displayableProps.length > 0 && (
+                                <TabBtn active={activeTab === 'properties'} onClick={() => setActiveTab('properties')}>
+                                    <Tag size={14} /> Properties ({displayableProps.length})
+                                </TabBtn>
+                            )}
+                            <TabBtn active={activeTab === 'metadata'} onClick={() => setActiveTab('metadata')}>
+                                <Info size={14} /> Metadata
+                            </TabBtn>
+                        </div>
+                    )}
 
-                            {/* Properties (collapsible or below) */}
-                            {artifact.properties && Object.keys(artifact.properties).length > 0 && (
-                                <div className="mt-6 pt-6 border-t border-slate-100">
-                                    <h4 className="text-sm font-semibold text-slate-700 mb-3">Properties</h4>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        {Object.entries(artifact.properties).map(([key, value]) => (
-                                            <div key={key} className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                                                <span className="text-xs text-slate-500 block mb-1">{key}</span>
-                                                <span className="text-sm font-mono font-semibold text-slate-900">
-                                                    {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                    {/* Content */}
+                    <div className="flex-1 overflow-y-auto p-6">
+                        <AnimatePresence mode="wait">
+                            {/* Visualization Tab */}
+                            {activeTab === 'visualization' && (
+                                <motion.div
+                                    key="viz"
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    className="space-y-6"
+                                >
+                                    {/* Model with Training History */}
+                                    {isModel && effectiveTrainingHistory && (
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-4">
+                                                <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                                                    <LineChart size={18} className="text-purple-600 dark:text-purple-400" />
+                                                </div>
+                                                <h4 className="text-lg font-bold text-slate-900 dark:text-white">Training History</h4>
+                                                <span className="text-xs bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full text-slate-500">
+                                                    {effectiveTrainingHistory.epochs.length} epochs
+                                                </span>
+                                            </div>
+                                            <TrainingHistoryChart
+                                                trainingHistory={effectiveTrainingHistory}
+                                                compact={false}
+                                            />
+                                        </div>
+                                    )}
+
+                                    {/* Model without Training History */}
+                                    {isModel && !effectiveTrainingHistory && (
+                                        <div className="text-center py-12">
+                                            <div className="inline-flex p-4 bg-slate-100 dark:bg-slate-800 rounded-full mb-4">
+                                                <Box size={32} className="text-slate-400" />
+                                            </div>
+                                            <h4 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Model Artifact</h4>
+                                            <p className="text-slate-500 dark:text-slate-400">
+                                                No training history available for this model.
+                                                <br />
+                                                Use <code className="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-xs">FlowymlKerasCallback</code> to capture training metrics.
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {/* Dataset Viewer - use the full DatasetViewer */}
+                                    {isDataset && (
+                                        <ArtifactViewer artifact={artifact} />
+                                    )}
+
+                                    {/* Metrics Display */}
+                                    {isMetrics && metricsData.length > 0 && (
+                                        <div className="space-y-4">
+                                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                                {metricsData.map(([key, value], idx) => (
+                                                    <MetricDisplayCard
+                                                        key={key}
+                                                        name={key}
+                                                        value={value}
+                                                        index={idx}
+                                                    />
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Generic Artifact */}
+                                    {!isModel && !isDataset && !isMetrics && (
+                                        <ArtifactViewer artifact={artifact} />
+                                    )}
+                                </motion.div>
+                            )}
+
+                            {/* Properties Tab */}
+                            {activeTab === 'properties' && (
+                                <motion.div
+                                    key="props"
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                >
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {displayableProps.map(([key, value]) => (
+                                            <div
+                                                key={key}
+                                                className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700"
+                                            >
+                                                <span className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide block mb-1">
+                                                    {key.replace(/_/g, ' ')}
+                                                </span>
+                                                <span className="text-sm font-mono font-semibold text-slate-900 dark:text-white break-all">
+                                                    {typeof value === 'object' ? JSON.stringify(value, null, 2) :
+                                                     typeof value === 'number' ? value.toLocaleString() :
+                                                     String(value)}
                                                 </span>
                                             </div>
                                         ))}
                                     </div>
-                                </div>
+                                </motion.div>
                             )}
 
-                            {/* Metadata */}
-                            <div className="mt-6">
-                                <h4 className="text-sm font-semibold text-slate-700 mb-3">Metadata</h4>
-                                <div className="space-y-2 text-sm">
-                                    <div className="flex justify-between">
-                                        <span className="text-slate-500">Artifact ID:</span>
-                                        <span className="font-mono text-xs text-slate-700">{artifact.artifact_id}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-slate-500">Step:</span>
-                                        <span className="font-medium text-slate-700">{artifact.step}</span>
-                                    </div>
-                                    {artifact.created_at && (
-                                        <div className="flex justify-between">
-                                            <span className="text-slate-500">Created:</span>
-                                            <span className="text-slate-700">{format(new Date(artifact.created_at), 'MMM d, yyyy HH:mm:ss')}</span>
+                            {/* Metadata Tab */}
+                            {activeTab === 'metadata' && (
+                                <motion.div
+                                    key="meta"
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    className="space-y-4"
+                                >
+                                    <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700">
+                                        <h5 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide mb-4">
+                                            Artifact Information
+                                        </h5>
+                                        <div className="space-y-3">
+                                            <MetadataRow label="Artifact ID" value={artifact.artifact_id} mono />
+                                            <MetadataRow label="Type" value={artifact.type} />
+                                            <MetadataRow label="Step" value={artifact.step} />
+                                            {artifact.run_id && <MetadataRow label="Run ID" value={artifact.run_id} mono />}
+                                            {artifact.pipeline_name && <MetadataRow label="Pipeline" value={artifact.pipeline_name} />}
+                                            {artifact.created_at && (
+                                                <MetadataRow
+                                                    label="Created"
+                                                    value={format(new Date(artifact.created_at), 'MMM d, yyyy HH:mm:ss')}
+                                                />
+                                            )}
                                         </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
 
                     {/* Footer */}
-                    <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-2">
-                        <Button variant="ghost" onClick={onClose}>Close</Button>
-                        <Button variant="primary">Download</Button>
+                    <div className="p-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex justify-between items-center">
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                            💡 Click Download to save the full artifact data
+                        </p>
+                        <div className="flex gap-2">
+                            <Button variant="ghost" onClick={onClose}>Close</Button>
+                            <Button
+                                variant="primary"
+                                onClick={() => downloadArtifactById(artifact.artifact_id)}
+                                disabled={!artifact.artifact_id}
+                            >
+                                <Download size={14} className="mr-1.5" />
+                                Download
+                            </Button>
+                        </div>
                     </div>
                 </motion.div>
             </motion.div>
         </AnimatePresence>
+    );
+}
+
+// Quick stat component for header
+function QuickStat({ label, value, icon }) {
+    return (
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-white/50 dark:bg-slate-800/50 rounded-lg backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50">
+            <span className="text-slate-400">{icon}</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400">{label}:</span>
+            <span className="text-sm font-bold text-slate-900 dark:text-white">{value}</span>
+        </div>
+    );
+}
+
+// Tab button component
+function TabBtn({ active, onClick, children }) {
+    return (
+        <button
+            onClick={onClick}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+                active
+                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-700/50'
+            }`}
+        >
+            {children}
+        </button>
+    );
+}
+
+// Metric display card for Metrics artifacts
+function MetricDisplayCard({ name, value, index }) {
+    const colors = [
+        'from-blue-500 to-indigo-600',
+        'from-purple-500 to-violet-600',
+        'from-emerald-500 to-teal-600',
+        'from-amber-500 to-orange-600',
+        'from-rose-500 to-pink-600',
+        'from-cyan-500 to-blue-600',
+    ];
+    const color = colors[index % colors.length];
+
+    // Format name nicely
+    const displayName = name
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, c => c.toUpperCase());
+
+    // Format value
+    const displayValue = typeof value === 'number'
+        ? (Math.abs(value) < 0.01 || Math.abs(value) > 1000
+            ? value.toExponential(3)
+            : value.toFixed(4))
+        : value;
+
+    // Determine if this is a "good" metric (accuracy, score) or "bad" (loss, error)
+    const isLossLike = name.toLowerCase().includes('loss') ||
+                       name.toLowerCase().includes('error') ||
+                       name.toLowerCase().includes('mse') ||
+                       name.toLowerCase().includes('mae');
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: index * 0.05 }}
+            className="relative overflow-hidden p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-all group"
+        >
+            <div className={`absolute top-0 right-0 w-16 h-16 bg-gradient-to-br ${color} opacity-10 rounded-full blur-2xl group-hover:opacity-20 transition-opacity`} />
+            <div className="relative">
+                <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1 truncate">
+                    {displayName}
+                </p>
+                <p className="text-2xl font-bold font-mono text-slate-900 dark:text-white">
+                    {displayValue}
+                </p>
+                <div className="mt-1 flex items-center gap-1">
+                    {isLossLike ? (
+                        <TrendingDown size={12} className="text-emerald-500" />
+                    ) : (
+                        <TrendingUp size={12} className="text-emerald-500" />
+                    )}
+                    <span className="text-xs text-slate-400">
+                        {isLossLike ? 'Lower is better' : 'Higher is better'}
+                    </span>
+                </div>
+            </div>
+        </motion.div>
+    );
+}
+
+// Metadata row component
+function MetadataRow({ label, value, mono = false }) {
+    return (
+        <div className="flex justify-between items-center py-2 border-b border-slate-200/50 dark:border-slate-700/50 last:border-0">
+            <span className="text-sm text-slate-500 dark:text-slate-400">{label}</span>
+            <span className={`text-sm font-medium text-slate-900 dark:text-white ${mono ? 'font-mono text-xs' : ''}`}>
+                {value || '—'}
+            </span>
+        </div>
     );
 }
 

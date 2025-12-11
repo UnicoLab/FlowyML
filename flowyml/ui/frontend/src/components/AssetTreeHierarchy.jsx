@@ -213,8 +213,77 @@ export function AssetTreeHierarchy({ projectId, onAssetSelect, compact = false }
         );
     };
 
-    const getArtifactsForRun = (runId) => {
-        let artifacts = data.artifacts.filter(a => a.run_id === runId);
+    const getArtifactsForRun = (runId, run = null) => {
+        // Match artifacts by run_id (exact match or partial match for truncated IDs)
+        let artifacts = data.artifacts.filter(a => {
+            // Exact match
+            if (a.run_id === runId) return true;
+
+            // Partial match (run_id might be truncated in display)
+            if (runId && a.run_id && (
+                a.run_id.startsWith(runId) ||
+                runId.startsWith(a.run_id) ||
+                a.run_id.includes(runId) ||
+                runId.includes(a.run_id)
+            )) return true;
+
+            // Match by artifact_id containing run_id
+            if (runId && a.artifact_id && a.artifact_id.includes(runId)) return true;
+
+            // Match by pipeline_name if available
+            if (run && a.pipeline_name && a.pipeline_name === run.pipeline_name) return true;
+
+            return false;
+        });
+
+        // Apply asset type filter
+        if (assetTypeFilter !== 'all') {
+            artifacts = artifacts.filter(a => a.type?.toLowerCase() === assetTypeFilter);
+        }
+
+        return artifacts;
+    };
+
+    // Get all artifacts for a pipeline (regardless of run matching)
+    const getArtifactsForPipeline = (pipelineName, projectName) => {
+        let artifacts = data.artifacts.filter(a => {
+            // Match by pipeline_name
+            if (a.pipeline_name === pipelineName) return true;
+
+            // Match by project if pipeline_name is not set on artifact
+            if (!a.pipeline_name && a.project === projectName) return true;
+
+            return false;
+        });
+
+        // Apply asset type filter
+        if (assetTypeFilter !== 'all') {
+            artifacts = artifacts.filter(a => a.type?.toLowerCase() === assetTypeFilter);
+        }
+
+        return artifacts;
+    };
+
+    // Get artifacts that belong to a project but couldn't be matched to a specific run
+    const getUnmatchedArtifactsForProject = (projectName, allMatchedRunIds) => {
+        let artifacts = data.artifacts.filter(a => {
+            // Only include artifacts for this project
+            if (a.project !== projectName) return false;
+
+            // Exclude if already matched to a run
+            if (allMatchedRunIds.has(a.run_id)) return false;
+
+            // Check partial matches
+            for (const runId of allMatchedRunIds) {
+                if (a.run_id && runId && (
+                    a.run_id.startsWith(runId) ||
+                    runId.startsWith(a.run_id) ||
+                    a.artifact_id?.includes(runId)
+                )) return false;
+            }
+
+            return true;
+        });
 
         // Apply asset type filter
         if (assetTypeFilter !== 'all') {
@@ -236,7 +305,7 @@ export function AssetTreeHierarchy({ projectId, onAssetSelect, compact = false }
             // Single project view or no projects - show pipelines directly
             return data.pipelines.map((pipeline, idx) => {
                 const runs = getRunsForPipeline(pipeline.name, projectId);
-                return renderPipeline(pipeline, runs, 0, idx < 3); // Expand first 3 pipelines
+                return renderPipeline(pipeline, runs, 0, idx < 3, projectId); // Expand first 3 pipelines
             });
         } else {
             // Multiple projects - group by project
@@ -258,7 +327,7 @@ export function AssetTreeHierarchy({ projectId, onAssetSelect, compact = false }
                     >
                         {pipelines.map((pipeline, idx) => {
                             const runs = getRunsForPipeline(pipeline.name, project.name);
-                            return renderPipeline(pipeline, runs, 1, projIdx === 0 && idx < 2); // Expand first 2 pipelines of first project
+                            return renderPipeline(pipeline, runs, 1, projIdx === 0 && idx < 2, project.name); // Expand first 2 pipelines of first project
                         })}
                     </TreeNode>
                 );
@@ -266,10 +335,32 @@ export function AssetTreeHierarchy({ projectId, onAssetSelect, compact = false }
         }
     };
 
-    const renderPipeline = (pipeline, runs, baseLevel, defaultExpanded = false) => {
-        const totalArtifacts = runs.reduce((sum, run) => {
-            return sum + getArtifactsForRun(run.run_id).length;
-        }, 0);
+    const renderPipeline = (pipeline, runs, baseLevel, defaultExpanded = false, projectName = null) => {
+        // Get all artifacts for this pipeline (by pipeline_name or project)
+        const pipelineArtifacts = getArtifactsForPipeline(pipeline.name, projectName);
+
+        // Get run IDs for this pipeline
+        const runIds = new Set(runs.map(r => r.run_id));
+
+        // Get unmatched artifacts (artifacts in pipeline that don't match any run)
+        const unmatchedArtifacts = pipelineArtifacts.filter(a => {
+            // Check exact match
+            if (runIds.has(a.run_id)) return false;
+
+            // Check partial matches
+            for (const runId of runIds) {
+                if (a.run_id && runId && (
+                    a.run_id.startsWith(runId) ||
+                    runId.startsWith(a.run_id) ||
+                    a.artifact_id?.includes(runId)
+                )) return false;
+            }
+
+            return true;
+        });
+
+        const matchedArtifacts = pipelineArtifacts.length - unmatchedArtifacts.length;
+        const totalArtifacts = pipelineArtifacts.length;
 
         return (
             <TreeNode
@@ -277,7 +368,7 @@ export function AssetTreeHierarchy({ projectId, onAssetSelect, compact = false }
                 label={pipeline.name}
                 icon={Activity}
                 level={baseLevel}
-                defaultExpanded={defaultExpanded} // Use the parameter
+                defaultExpanded={defaultExpanded || unmatchedArtifacts.length > 0} // Expand if has unmatched artifacts
                 badge={
                     <div className="flex gap-1">
                         {totalArtifacts > 0 && (
@@ -297,16 +388,33 @@ export function AssetTreeHierarchy({ projectId, onAssetSelect, compact = false }
                     </Link>
                 }
             >
-                {runs.length === 0 && (
+                {runs.length === 0 && unmatchedArtifacts.length === 0 && (
                     <div className="pl-12 py-2 text-xs text-slate-400 italic">No runs yet</div>
                 )}
                 {runs.map(run => renderRun(run, baseLevel + 1))}
+                {/* Show unmatched artifacts under "Other Artifacts" */}
+                {unmatchedArtifacts.length > 0 && (
+                    <TreeNode
+                        key={`${pipeline.name}-unmatched`}
+                        label="Other Artifacts"
+                        icon={FileBox}
+                        level={baseLevel + 1}
+                        defaultExpanded={true}
+                        badge={
+                            <span className="flex items-center gap-0.5 text-[10px] bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 px-1.5 py-0.5 rounded-full">
+                                <FileBox className="w-3 h-3" /> {unmatchedArtifacts.length}
+                            </span>
+                        }
+                    >
+                        {unmatchedArtifacts.map(artifact => renderArtifact(artifact, baseLevel + 2))}
+                    </TreeNode>
+                )}
             </TreeNode>
         );
     };
 
     const renderRun = (run, baseLevel) => {
-        const artifacts = getArtifactsForRun(run.run_id);
+        const artifacts = getArtifactsForRun(run.run_id, run);
         const modelCount = artifacts.filter(a => a.type?.toLowerCase() === 'model').length;
 
         return (
