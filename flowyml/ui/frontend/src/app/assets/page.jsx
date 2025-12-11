@@ -85,6 +85,7 @@ export function Assets() {
     const [expandedPipelines, setExpandedPipelines] = useState({});
     const [expandedRuns, setExpandedRuns] = useState({});
     const [showExplorer, setShowExplorer] = useState(true);
+    const [hideListWhenDetails, setHideListWhenDetails] = useState(false);
     const { selectedProject } = useProject();
 
     // Fetch all data
@@ -418,48 +419,52 @@ export function Assets() {
                 {/* Content Area with Resizable Panels */}
                 <main className="flex-1 min-w-0 overflow-hidden">
                     <PanelGroup direction="horizontal" className="h-full">
-                        {/* Asset List Panel */}
-                        <Panel
-                            defaultSize={selectedAsset ? (detailsPanelExpanded ? 30 : 55) : 100}
-                            minSize={selectedAsset ? 20 : 100}
-                            className="overflow-hidden"
-                        >
-                            <div className="h-full overflow-hidden p-4">
-                                {filteredAssets.length === 0 ? (
-                                    <div className="h-full flex items-center justify-center">
-                                        <EmptyState
-                                            icon={Package}
-                                            title="No artifacts found"
-                                            description={searchQuery ? `No results for "${searchQuery}"` : "Run a pipeline to generate artifacts"}
+                        {/* Asset List Panel - can be hidden when viewing details */}
+                        {(!selectedAsset || !hideListWhenDetails) && (
+                            <Panel
+                                defaultSize={selectedAsset ? (detailsPanelExpanded ? 25 : 35) : 100}
+                                minSize={selectedAsset ? 15 : 100}
+                                className="overflow-hidden"
+                            >
+                                <div className="h-full overflow-hidden p-4">
+                                    {filteredAssets.length === 0 ? (
+                                        <div className="h-full flex items-center justify-center">
+                                            <EmptyState
+                                                icon={Package}
+                                                title="No artifacts found"
+                                                description={searchQuery ? `No results for "${searchQuery}"` : "Run a pipeline to generate artifacts"}
+                                            />
+                                        </div>
+                                    ) : viewMode === 'table' ? (
+                                        <AssetTable
+                                            assets={filteredAssets}
+                                            onSelect={setSelectedAsset}
+                                            sortConfig={sortConfig}
+                                            onSort={handleSort}
+                                            selectedAsset={selectedAsset}
                                         />
-                                    </div>
-                                ) : viewMode === 'table' ? (
-                                    <AssetTable
-                                        assets={filteredAssets}
-                                        onSelect={setSelectedAsset}
-                                        sortConfig={sortConfig}
-                                        onSort={handleSort}
-                                        selectedAsset={selectedAsset}
-                                    />
-                                ) : (
-                                    <AssetGrid
-                                        assets={filteredAssets}
-                                        onSelect={setSelectedAsset}
-                                        selectedAsset={selectedAsset}
-                                    />
-                                )}
-                            </div>
-                        </Panel>
+                                    ) : (
+                                        <AssetGrid
+                                            assets={filteredAssets}
+                                            onSelect={setSelectedAsset}
+                                            selectedAsset={selectedAsset}
+                                        />
+                                    )}
+                                </div>
+                            </Panel>
+                        )}
 
                         {/* Resizable Handle & Details Panel */}
                         {selectedAsset && (
                             <>
-                                <PanelResizeHandle className="w-1.5 bg-slate-200 dark:bg-slate-700 hover:bg-blue-400 dark:hover:bg-blue-500 transition-colors flex items-center justify-center group cursor-col-resize">
-                                    <div className="w-0.5 h-8 bg-slate-300 dark:bg-slate-600 group-hover:bg-blue-300 dark:group-hover:bg-blue-400 rounded-full" />
-                                </PanelResizeHandle>
+                                {!hideListWhenDetails && (
+                                    <PanelResizeHandle className="w-1.5 bg-slate-200 dark:bg-slate-700 hover:bg-blue-400 dark:hover:bg-blue-500 transition-colors flex items-center justify-center group cursor-col-resize">
+                                        <div className="w-0.5 h-8 bg-slate-300 dark:bg-slate-600 group-hover:bg-blue-300 dark:group-hover:bg-blue-400 rounded-full" />
+                                    </PanelResizeHandle>
+                                )}
                                 <Panel
-                                    defaultSize={detailsPanelExpanded ? 70 : 45}
-                                    minSize={30}
+                                    defaultSize={hideListWhenDetails ? 100 : (detailsPanelExpanded ? 75 : 65)}
+                                    minSize={40}
                                     className="overflow-hidden"
                                 >
                                     <div className="h-full overflow-hidden">
@@ -468,6 +473,8 @@ export function Assets() {
                                             onClose={() => setSelectedAsset(null)}
                                             isExpanded={detailsPanelExpanded}
                                             onToggleExpand={() => setDetailsPanelExpanded(!detailsPanelExpanded)}
+                                            hideList={hideListWhenDetails}
+                                            onToggleHideList={() => setHideListWhenDetails(!hideListWhenDetails)}
                                         />
                                     </div>
                                 </Panel>
@@ -924,7 +931,7 @@ function AssetCard({ asset, onSelect, isSelected }) {
 }
 
 // Expanded Details Panel Wrapper with controls
-function AssetDetailsPanelExpanded({ asset, onClose, isExpanded, onToggleExpand }) {
+function AssetDetailsPanelExpanded({ asset, onClose, isExpanded, onToggleExpand, hideList, onToggleHideList }) {
     const config = getTypeConfig(asset.type);
     const Icon = config.icon;
 
@@ -938,7 +945,7 @@ function AssetDetailsPanelExpanded({ asset, onClose, isExpanded, onToggleExpand 
                             <Icon size={24} className="text-white" />
                         </div>
                         <div>
-                            <h2 className="text-lg font-bold text-white truncate max-w-[300px]">
+                            <h2 className="text-lg font-bold text-white truncate max-w-[400px]">
                                 {asset.name}
                             </h2>
                             <p className="text-white/80 text-sm">
@@ -947,6 +954,14 @@ function AssetDetailsPanelExpanded({ asset, onClose, isExpanded, onToggleExpand 
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
+                        {/* Toggle hide list button */}
+                        <button
+                            onClick={onToggleHideList}
+                            className="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+                            title={hideList ? "Show list" : "Hide list for full view"}
+                        >
+                            {hideList ? <Minimize2 size={18} className="text-white" /> : <Maximize2 size={18} className="text-white" />}
+                        </button>
                         <Button
                             onClick={onToggleExpand}
                             variant="ghost"
