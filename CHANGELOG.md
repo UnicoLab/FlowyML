@@ -2,6 +2,43 @@
 
 <!-- version list -->
 
+## v1.7.2 (2025-12-11)
+
+### Bug Fixes
+
+- Add Keras training pipeline example and enhance model asset with training history support
+  ([`c07bec4`](https://github.com/UnicoLab/FlowyML/commit/c07bec41b2c3196828d3ff2bd9b566016eebb724))
+
+- Add new integrations for PyTorch and Scikit-learn in documentation
+  ([`aeec1f9`](https://github.com/UnicoLab/FlowyML/commit/aeec1f9bef79c1e1f297118225ab7bea9ac3a1fe))
+
+- Clarify Assets interface data field in assets documentation
+  ([`75d555f`](https://github.com/UnicoLab/FlowyML/commit/75d555f608e9534a96e2db3a8f5a109a50beea26))
+
+- Enhance AssetDetailsPanel with toggle functionality for asset list visibility
+  ([`2066a9f`](https://github.com/UnicoLab/FlowyML/commit/2066a9f8982ee0b6f5c1f7d2f7d96b0e0d08228f))
+
+- Enhance Dataset and Model assets with automatic statistics and metadata extraction
+  ([`e61decb`](https://github.com/UnicoLab/FlowyML/commit/e61decb46bdba727d6a2487f6acc2c6178b4b4c8))
+
+- Enhance DatasetViewer and ArtifactViewer for improved dataset handling
+  ([`3e1264b`](https://github.com/UnicoLab/FlowyML/commit/3e1264bc6fa07d8ab37b002ed6de8f1ac0d25597))
+
+- Enhance DatasetViewer for improved TensorFlow dataset handling
+  ([`dbdae52`](https://github.com/UnicoLab/FlowyML/commit/dbdae521ff138a16ed0b889cc5687b583912ea19))
+
+- Introduce DatasetViewer component and enhance artifact selection logic
+  ([`110ef26`](https://github.com/UnicoLab/FlowyML/commit/110ef26400d0e960e56aba4d061ba57856467086))
+
+- Update frontend components and dependencies for improved functionality
+  ([`36c4893`](https://github.com/UnicoLab/FlowyML/commit/36c4893e267ffe5b714db6acbbd17966d7b205bb))
+
+### Chores
+
+- Save last release version for recovery [skip ci]
+  ([`c025f3e`](https://github.com/UnicoLab/FlowyML/commit/c025f3e55c54f1a77b69ad0e46e86bdd7f9c9658))
+
+
 ## v1.7.1 (2025-12-10)
 
 ### Chores
