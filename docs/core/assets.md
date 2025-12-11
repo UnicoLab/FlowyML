@@ -38,6 +38,10 @@ flowyml provides specialized classes for different ML artifact types:
 
 You can create assets explicitly using the `.create()` factory method. This automatically handles versioning, metadata generation, and lineage tracking.
 
+> [!IMPORTANT]
+> **Assets interface data field** is not about passing the data to the asset, but rather about the asset's interface on which data to register. This can be a model (Keras) or dataset (Pandas) etc ... Which data take into account when creating the asset.
+
+
 ### Datasets
 
 FlowyML automatically extracts statistics and metadata from various data formats!
