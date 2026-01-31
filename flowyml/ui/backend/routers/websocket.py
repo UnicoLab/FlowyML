@@ -88,7 +88,7 @@ async def websocket_logs(websocket: WebSocket, run_id: str, step_name: str = "__
                 # Could handle client commands here if needed
                 if data == "ping":
                     await websocket.send_text("pong")
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 # Send heartbeat to keep connection alive
                 try:
                     await websocket.send_json({"type": "heartbeat"})
@@ -110,7 +110,7 @@ async def websocket_step_logs(websocket: WebSocket, run_id: str, step_name: str)
                 data = await asyncio.wait_for(websocket.receive_text(), timeout=30.0)
                 if data == "ping":
                     await websocket.send_text("pong")
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 try:
                     await websocket.send_json({"type": "heartbeat"})
                 except Exception:

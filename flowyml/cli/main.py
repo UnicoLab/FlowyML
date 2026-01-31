@@ -826,5 +826,597 @@ def server_status(host: str, port: int) -> None:
             click.echo("Start with: flowyml go")
 
 
+# ============================================================================
+# ZenML Integration Commands
+# ============================================================================
+
+
+@cli.group()
+def zenml() -> None:
+    """ZenML integration commands - Seamlessly use ZenML components in FlowyML.
+
+    FlowyML can automatically discover and wrap ZenML integrations,
+    making them available as first-class FlowyML stack components.
+    """
+    pass
+
+
+@zenml.command("list")
+@click.option("--installed", is_flag=True, help="Show only installed integrations")
+def list_zenml_integrations(installed: bool) -> None:
+    """List available ZenML integrations.
+
+    Shows all ZenML integrations that can be used with FlowyML.
+    Use --installed to see only the integrations you have installed.
+    """
+    from flowyml.stacks.plugins import get_component_registry
+
+    registry = get_component_registry()
+
+    if installed:
+        integrations = registry.list_installed_zenml_integrations()
+        click.echo("Installed ZenML integrations:\n")
+    else:
+        integrations = registry.list_zenml_integrations()
+        click.echo("Available ZenML integrations:\n")
+
+    if not integrations:
+        click.echo("  No integrations found.")
+        click.echo("\n  Make sure ZenML is installed: pip install zenml")
+        return
+
+    for name in sorted(integrations):
+        click.echo(f"  • {name}")
+
+    click.echo(f"\nTotal: {len(integrations)} integrations")
+
+    if not installed:
+        click.echo("\nTo install an integration:")
+        click.echo("  flowyml zenml install <integration_name>")
+
+
+@zenml.command("install")
+@click.argument("integration_name")
+def install_zenml_integration(integration_name: str) -> None:
+    """Install a ZenML integration and its dependencies.
+
+    This installs the ZenML integration package and all required
+    dependencies, making it available for use in FlowyML pipelines.
+
+    Examples:
+        flowyml zenml install mlflow
+        flowyml zenml install kubernetes
+        flowyml zenml install aws
+    """
+    from flowyml.stacks.plugins import get_component_registry
+
+    click.echo(f"Installing ZenML integration '{integration_name}'...")
+
+    registry = get_component_registry()
+    success = registry.install_zenml_integration(integration_name)
+
+    if success:
+        click.echo(f"✓ Successfully installed '{integration_name}'")
+        click.echo("\nTo use this integration in FlowyML:")
+        click.echo(f"  flowyml zenml import {integration_name}")
+    else:
+        click.echo(f"✗ Failed to install '{integration_name}'", err=True)
+        click.echo("  Check that ZenML is installed and the integration name is correct.")
+
+
+@zenml.command("import")
+@click.argument("integration_name")
+def import_zenml_integration(integration_name: str) -> None:
+    """Import components from a ZenML integration.
+
+    Discovers all flavors provided by a ZenML integration and registers
+    them as FlowyML stack components, ready to use in your pipelines.
+
+    Examples:
+        flowyml zenml import mlflow
+        flowyml zenml import kubernetes
+    """
+    from flowyml.stacks.plugins import get_component_registry
+
+    click.echo(f"Importing ZenML integration '{integration_name}'...")
+
+    registry = get_component_registry()
+    components = registry.import_zenml_integration(integration_name)
+
+    if components:
+        click.echo(f"✓ Successfully imported {len(components)} components:\n")
+        for comp in components:
+            click.echo(f"  • {comp.__name__}")
+        click.echo("\nThese components are now available in your FlowyML stacks.")
+    else:
+        click.echo(f"✗ No components imported from '{integration_name}'", err=True)
+        click.echo("  Make sure the integration is installed:")
+        click.echo(f"    flowyml zenml install {integration_name}")
+
+
+@zenml.command("import-all")
+def import_all_zenml_integrations() -> None:
+    """Import all components from all installed ZenML integrations.
+
+    This is the easiest way to make all ZenML components available
+    in FlowyML with a single command.
+
+    Example:
+        flowyml zenml import-all
+    """
+    from flowyml.stacks.plugins import get_component_registry
+
+    click.echo("Importing all installed ZenML integrations...")
+
+    registry = get_component_registry()
+    result = registry.import_all_zenml()
+
+    if result:
+        total = sum(len(comps) for comps in result.values())
+        click.echo(f"✓ Successfully imported {total} components from {len(result)} integrations:\n")
+
+        for integration_name, components in result.items():
+            click.echo(f"  {integration_name}:")
+            for comp in components:
+                click.echo(f"    • {comp.__name__}")
+
+        click.echo("\nAll components are now available in your FlowyML stacks.")
+    else:
+        click.echo("✗ No components imported", err=True)
+        click.echo("  Make sure ZenML is installed and you have some integrations installed:")
+        click.echo("    pip install zenml")
+        click.echo("    flowyml zenml install mlflow")
+
+
+@zenml.command("status")
+def zenml_status() -> None:
+    """Check ZenML availability and show integration summary.
+
+    Shows whether ZenML is installed and a summary of available
+    and installed integrations.
+    """
+    try:
+        import zenml
+
+        zenml_version = zenml.__version__
+        zenml_available = True
+    except ImportError:
+        zenml_available = False
+        zenml_version = None
+
+    if zenml_available:
+        click.echo(f"✓ ZenML is installed (version {zenml_version})\n")
+
+        from flowyml.stacks.plugins import get_component_registry
+
+        registry = get_component_registry()
+
+        available = registry.list_zenml_integrations()
+        installed = registry.list_installed_zenml_integrations()
+
+        click.echo(f"  Available integrations: {len(available)}")
+        click.echo(f"  Installed integrations: {len(installed)}")
+
+        if installed:
+            click.echo(f"\n  Installed: {', '.join(installed[:5])}")
+            if len(installed) > 5:
+                click.echo(f"             ...and {len(installed) - 5} more")
+
+        click.echo("\n  Quick start:")
+        click.echo("    flowyml zenml import-all  # Import all installed integrations")
+    else:
+        click.echo("✗ ZenML is not installed\n")
+        click.echo("  To install ZenML:")
+        click.echo("    pip install zenml")
+        click.echo("\n  After installing, you can:")
+        click.echo("    flowyml zenml list        # List available integrations")
+        click.echo("    flowyml zenml install aws # Install an integration")
+        click.echo("    flowyml zenml import-all  # Import all components")
+
+
+# =============================================================================
+# NATIVE PLUGIN COMMANDS
+# =============================================================================
+
+
+@cli.group()
+def plugin() -> None:
+    """Native plugin management commands.
+
+    Manage FlowyML plugins without external framework dependencies.
+    Install plugins directly (e.g., 'flowyml plugin install mlflow')
+    and FlowyML will install only the underlying packages you need.
+    """
+    pass
+
+
+@plugin.command("list")
+@click.option("--installed", is_flag=True, help="Show only installed plugins")
+@click.option(
+    "--type",
+    "plugin_type",
+    type=click.Choice(
+        [
+            "experiment_tracker",
+            "artifact_store",
+            "orchestrator",
+            "container_registry",
+            "feature_store",
+            "data_validator",
+            "alerter",
+        ],
+    ),
+    help="Filter by plugin type",
+)
+def plugin_list(installed: bool, plugin_type: str) -> None:
+    """List available plugins.
+
+    Shows all plugins in the FlowyML catalog. Use --installed to see
+    only plugins whose packages are already installed.
+
+    Examples:
+        flowyml plugin list
+        flowyml plugin list --installed
+        flowyml plugin list --type experiment_tracker
+    """
+    from flowyml.plugins import get_manager, PluginType
+
+    manager = get_manager()
+
+    # Convert string to PluginType if provided
+    ptype = PluginType(plugin_type) if plugin_type else None
+
+    if installed:
+        plugins = manager.list_installed(ptype)
+        title = "Installed Plugins"
+    else:
+        plugins = manager.list_available(ptype)
+        title = "Available Plugins"
+
+    if not plugins:
+        click.echo("No plugins found.")
+        return
+
+    click.echo(f"\n📦 {title}:\n")
+
+    # Group by type for better display
+    from flowyml.plugins import get_plugin_info
+
+    grouped = {}
+    for name in plugins:
+        info = get_plugin_info(name)
+        if info:
+            type_name = info.plugin_type.value.replace("_", " ").title()
+            if type_name not in grouped:
+                grouped[type_name] = []
+            is_installed = manager.is_installed(name)
+            status = "✓" if is_installed else " "
+            grouped[type_name].append((name, info.description, status))
+
+    for type_name, items in sorted(grouped.items()):
+        click.echo(f"  {type_name}:")
+        for name, desc, status in sorted(items):
+            click.echo(f"    {status} {name:<20} - {desc[:50]}")
+        click.echo()
+
+    click.echo("Install a plugin with: flowyml plugin install <name>")
+
+
+@plugin.command("install")
+@click.argument("name")
+@click.option("--upgrade", is_flag=True, help="Upgrade to latest version")
+def plugin_install(name: str, upgrade: bool) -> None:
+    """Install a plugin.
+
+    Installs the underlying packages for a plugin directly.
+    For example, 'flowyml plugin install mlflow' installs the mlflow package.
+
+    Examples:
+        flowyml plugin install mlflow
+        flowyml plugin install kubernetes
+        flowyml plugin install s3 --upgrade
+    """
+    from flowyml.plugins import get_manager, get_plugin_info
+
+    manager = get_manager()
+    info = get_plugin_info(name)
+
+    if not info:
+        click.echo(f"✗ Plugin '{name}' not found", err=True)
+        click.echo("\nAvailable plugins:")
+        for p in manager.list_available()[:10]:
+            click.echo(f"  • {p}")
+        if len(manager.list_available()) > 10:
+            click.echo(f"  ... and {len(manager.list_available()) - 10} more")
+        return
+
+    click.echo(f"Installing plugin '{name}'...")
+    click.echo(f"  Packages: {', '.join(info.packages)}")
+
+    if manager.install(name, upgrade=upgrade):
+        click.echo(f"\n✓ Plugin '{name}' installed successfully!")
+        click.echo("\nUsage:")
+        click.echo("  from flowyml.plugins import get_plugin")
+        click.echo(f'  plugin = get_plugin("{name}")')
+    else:
+        click.echo(f"\n✗ Failed to install '{name}'", err=True)
+
+
+@plugin.command("info")
+@click.argument("name")
+def plugin_info(name: str) -> None:
+    """Show detailed information about a plugin.
+
+    Displays the plugin description, required packages, documentation URL,
+    and current installation status.
+    """
+    from flowyml.plugins import get_plugin_info, get_manager
+
+    info = get_plugin_info(name)
+    manager = get_manager()
+
+    if not info:
+        click.echo(f"✗ Plugin '{name}' not found", err=True)
+        return
+
+    is_installed = manager.is_installed(name)
+    status = "✓ Installed" if is_installed else "○ Not installed"
+
+    click.echo(f"\n📦 Plugin: {info.name}")
+    click.echo(f"   Status: {status}")
+    click.echo(f"   Type: {info.plugin_type.value.replace('_', ' ').title()}")
+    click.echo(f"   Description: {info.description}")
+    click.echo(f"   Version: {info.version}")
+    click.echo(f"   Author: {info.author}")
+    click.echo("\n   Packages:")
+    for pkg in info.packages:
+        click.echo(f"     • {pkg}")
+    if info.tags:
+        click.echo(f"\n   Tags: {', '.join(info.tags)}")
+    if info.documentation_url:
+        click.echo(f"\n   Docs: {info.documentation_url}")
+
+    if not is_installed:
+        click.echo(f"\n   Install with: flowyml plugin install {name}")
+
+
+@plugin.command("uninstall")
+@click.argument("name")
+@click.confirmation_option(prompt="Are you sure you want to uninstall?")
+def plugin_uninstall(name: str) -> None:
+    """Uninstall a plugin.
+
+    Removes the underlying packages for a plugin.
+    """
+    from flowyml.plugins import get_manager
+
+    manager = get_manager()
+
+    if not manager.is_installed(name):
+        click.echo(f"Plugin '{name}' is not installed")
+        return
+
+    click.echo(f"Uninstalling plugin '{name}'...")
+
+    if manager.uninstall(name):
+        click.echo(f"✓ Plugin '{name}' uninstalled")
+    else:
+        click.echo(f"✗ Failed to uninstall '{name}'", err=True)
+
+
+@plugin.command("install-git")
+@click.argument("git_url")
+def plugin_install_git(git_url: str) -> None:
+    """Install a community plugin from a git repository.
+
+    Example:
+        flowyml plugin install-git https://github.com/user/flowyml-custom-plugin.git
+    """
+    from flowyml.plugins import get_manager
+
+    manager = get_manager()
+
+    click.echo(f"Installing plugin from {git_url}...")
+
+    if manager.install_from_git(git_url):
+        click.echo("✓ Plugin installed from git!")
+        click.echo("  Run 'flowyml plugin list --installed' to see available plugins")
+    else:
+        click.echo("✗ Failed to install from git", err=True)
+
+
+# =============================================================================
+# STACK COMMANDS (Config-based plugin management)
+# =============================================================================
+
+
+@cli.group()
+def stack() -> None:
+    """Stack configuration commands.
+
+    Configure your FlowyML stack (experiment_tracker, artifact_store,
+    orchestrator, etc.) in flowyml.yaml for seamless integration.
+
+    With a configured stack, your code stays clean:
+        from flowyml.plugins import start_run, log_metrics, save_model
+
+        start_run("training")
+        log_metrics({"accuracy": 0.95})
+        save_model(model, "models/classifier")
+    """
+    pass
+
+
+@stack.command("init")
+@click.option("--tracker", type=str, help="Experiment tracker plugin (e.g., mlflow)")
+@click.option("--store", type=str, help="Artifact store plugin (e.g., gcs, s3)")
+@click.option("--orchestrator", type=str, help="Orchestrator plugin (e.g., vertex_ai)")
+@click.option("--registry", type=str, help="Container registry plugin (e.g., gcr)")
+@click.option("--force", is_flag=True, help="Overwrite existing config")
+def stack_init(
+    tracker: str,
+    store: str,
+    orchestrator: str,
+    registry: str,
+    force: bool,
+) -> None:
+    """Initialize a flowyml.yaml configuration file.
+
+    Creates a template configuration file with your selected plugins.
+    You can then customize the configuration with your settings.
+
+    Examples:
+        flowyml stack init --tracker mlflow --store gcs
+        flowyml stack init --tracker mlflow --store s3 --orchestrator kubernetes
+    """
+    import os
+    from flowyml.plugins import generate_config_template
+
+    config_path = "flowyml.yaml"
+
+    if os.path.exists(config_path) and not force:
+        click.echo(f"✗ {config_path} already exists. Use --force to overwrite.", err=True)
+        return
+
+    content = generate_config_template(
+        tracker=tracker,
+        store=store,
+        orchestrator=orchestrator,
+        registry=registry,
+    )
+
+    with open(config_path, "w") as f:
+        f.write(content)
+
+    click.echo(f"✓ Created {config_path}")
+    click.echo("\nNext steps:")
+    click.echo("  1. Edit flowyml.yaml with your settings")
+
+    # Show which plugins to install
+    plugins_to_install = [p for p in [tracker, store, orchestrator, registry] if p]
+    if plugins_to_install:
+        click.echo(f"  2. Install plugins: flowyml plugin install {' '.join(plugins_to_install)}")
+
+    click.echo("  3. Use in code:")
+    click.echo("     from flowyml.plugins import start_run, log_metrics, save_model")
+    click.echo('     start_run("my_training")')
+
+
+@stack.command("show")
+def stack_show() -> None:
+    """Show the currently configured stack.
+
+    Displays all plugins configured in flowyml.yaml and their status.
+    """
+    from flowyml.plugins import validate_stack, get_config
+
+    config = get_config()
+    plugins_config = config.plugins_config
+
+    if not plugins_config:
+        click.echo("No stack configured. Run 'flowyml stack init' to create flowyml.yaml")
+        return
+
+    click.echo("\n📦 Current Stack:\n")
+
+    validation = validate_stack()
+
+    for role, conf in plugins_config.items():
+        if isinstance(conf, dict):
+            plugin_type = conf.get("type", "unknown")
+            is_installed = validation.get(role, False)
+            status = "✓" if is_installed else "○"
+
+            click.echo(f"  {status} {role}:")
+            click.echo(f"      type: {plugin_type}")
+
+            # Show key config values (not sensitive ones)
+            for key, value in conf.items():
+                if key != "type" and "key" not in key.lower() and "secret" not in key.lower():
+                    click.echo(f"      {key}: {value}")
+            click.echo()
+
+    # Show missing plugins
+    missing = [role for role, installed in validation.items() if not installed]
+    if missing:
+        click.echo("⚠️  Some plugins are not installed:")
+        for role in missing:
+            plugin_type = plugins_config.get(role, {}).get("type")
+            if plugin_type:
+                click.echo(f"    flowyml plugin install {plugin_type}")
+
+
+@stack.command("validate")
+def stack_validate() -> None:
+    """Validate the current stack configuration.
+
+    Checks that all configured plugins are installed and can be initialized.
+    """
+    from flowyml.plugins import get_config, validate_stack
+
+    click.echo("Validating stack configuration...\n")
+
+    config = get_config()
+
+    if not config._config_path:
+        click.echo("✗ No flowyml.yaml found", err=True)
+        click.echo("  Run 'flowyml stack init' to create one")
+        return
+
+    click.echo(f"Config file: {config._config_path}\n")
+
+    validation = validate_stack()
+
+    if not validation:
+        click.echo("No plugins configured")
+        return
+
+    all_valid = True
+    for role, is_installed in validation.items():
+        status = "✓" if is_installed else "✗"
+        click.echo(f"  {status} {role}")
+        if not is_installed:
+            all_valid = False
+
+    click.echo()
+    if all_valid:
+        click.echo("✓ All plugins are installed and ready!")
+    else:
+        click.echo("✗ Some plugins need to be installed")
+        click.echo("  Run 'flowyml stack show' for installation commands")
+
+
+@stack.command("install")
+def stack_install() -> None:
+    """Install all plugins configured in flowyml.yaml."""
+    from flowyml.plugins import get_config, get_manager
+
+    config = get_config()
+    plugins_config = config.plugins_config
+    manager = get_manager()
+
+    if not plugins_config:
+        click.echo("No stack configured. Run 'flowyml stack init' first.")
+        return
+
+    click.echo("Installing stack plugins...\n")
+
+    for _role, conf in plugins_config.items():
+        if isinstance(conf, dict):
+            plugin_type = conf.get("type")
+            if plugin_type:
+                if manager.is_installed(plugin_type):
+                    click.echo(f"  ✓ {plugin_type} (already installed)")
+                else:
+                    click.echo(f"  Installing {plugin_type}...")
+                    if manager.install(plugin_type):
+                        click.echo(f"  ✓ {plugin_type} installed")
+                    else:
+                        click.echo(f"  ✗ Failed to install {plugin_type}")
+
+    click.echo("\n✓ Stack installation complete!")
+    click.echo("  Run 'flowyml stack validate' to verify the configuration")
+
+
 if __name__ == "__main__":
     cli()

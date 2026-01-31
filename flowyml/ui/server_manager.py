@@ -15,8 +15,8 @@ class UIServerManager:
     _lock = threading.Lock()
 
     def __init__(self):
-        self._server_thread: Optional[threading.Thread] = None
-        self._server_process: Optional[subprocess.Popen] = None
+        self._server_thread: threading.Thread | None = None
+        self._server_process: subprocess.Popen | None = None
         # Initialize from config/env vars
         self._host, self._port = get_ui_host_port()
         self._running = False
@@ -148,7 +148,7 @@ class UIServerManager:
         self._running = False
         self._server_thread = None
 
-    def get_url(self) -> Optional[str]:
+    def get_url(self) -> str | None:
         """Get the URL of the running UI server.
 
         Returns:
@@ -160,7 +160,7 @@ class UIServerManager:
         """Check if UI server is running."""
         return is_ui_running(self._host, self._port)
 
-    def get_run_url(self, run_id: str) -> Optional[str]:
+    def get_run_url(self, run_id: str) -> str | None:
         """Get URL to view a specific pipeline run.
 
         Args:
@@ -174,7 +174,7 @@ class UIServerManager:
             return f"{base_url}/runs/{run_id}"
         return None
 
-    def get_pipeline_url(self, pipeline_name: str) -> Optional[str]:
+    def get_pipeline_url(self, pipeline_name: str) -> str | None:
         """Get URL to view a specific pipeline.
 
         Args:

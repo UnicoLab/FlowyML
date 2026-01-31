@@ -83,6 +83,41 @@ print(f"Mean: {stats['mean']}, Std: {stats['std']}")
 
 ---
 
+### 3️⃣.5 **ZenML Auto-Integration** ⚡NEW
+
+Import the entire ZenML ecosystem with one line:
+
+```python
+from flowyml.stacks import import_all_zenml
+
+# Import all ZenML components at once
+components = import_all_zenml()
+# Done! All ZenML orchestrators, artifact stores, etc. are ready
+```
+
+**CLI commands:**
+
+```bash
+# Check ZenML status
+flowyml zenml status
+
+# List and install integrations
+flowyml zenml list
+flowyml zenml install mlflow
+flowyml zenml install kubernetes
+
+# Import all at once
+flowyml zenml import-all
+```
+
+**Features:**
+- Automatic discovery of ZenML integrations
+- Zero configuration wrapping of components
+- Full CLI for installation and import
+- Works with 50+ ZenML integrations
+
+---
+
 ### 4️⃣ **Pipeline Scheduling**
 
 Run pipelines automatically on a schedule:

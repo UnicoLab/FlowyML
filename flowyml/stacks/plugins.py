@@ -26,6 +26,14 @@ from flowyml.stacks.components import (
 from flowyml.stacks.bridge import GenericBridge, AdaptationRule
 
 
+# Lazy import to avoid circular dependencies
+def _get_zenml_bridge():
+    """Lazy import of ZenMLBridge to avoid import errors when ZenML is not installed."""
+    from flowyml.stacks.zenml_bridge import ZenMLBridge
+
+    return ZenMLBridge()
+
+
 @dataclass
 class PluginInfo:
     """Metadata about a plugin."""
@@ -333,6 +341,113 @@ class ComponentRegistry:
             return True
         except subprocess.CalledProcessError:
             return False
+
+    # ==================== ZenML Integration Methods ====================
+
+    def list_zenml_integrations(self) -> list[str]:
+        """List all available ZenML integrations.
+
+        Returns:
+            List of integration names (e.g., ['mlflow', 'kubernetes', 'aws']).
+        """
+        try:
+            bridge = _get_zenml_bridge()
+            return bridge.list_available_integrations()
+        except Exception:
+            return []
+
+    def list_installed_zenml_integrations(self) -> list[str]:
+        """List installed ZenML integrations.
+
+        Returns:
+            List of installed integration names.
+        """
+        try:
+            bridge = _get_zenml_bridge()
+            return bridge.list_installed_integrations()
+        except Exception:
+            return []
+
+    def install_zenml_integration(self, integration_name: str) -> bool:
+        """Install a ZenML integration and its dependencies.
+
+        Args:
+            integration_name: Name of the integration (e.g., "mlflow", "kubernetes").
+
+        Returns:
+            True if installation was successful.
+
+        Example:
+            >>> registry = get_component_registry()
+            >>> registry.install_zenml_integration("mlflow")
+            True
+        """
+        try:
+            bridge = _get_zenml_bridge()
+            return bridge.install_integration(integration_name)
+        except Exception as e:
+            print(f"Failed to install ZenML integration: {e}")
+            return False
+
+    def import_zenml_integration(self, integration_name: str) -> list[type[StackComponent]]:
+        """Import all components from a ZenML integration.
+
+        This discovers all flavors provided by a ZenML integration and
+        registers them as FlowyML components.
+
+        Args:
+            integration_name: Name of the integration to import.
+
+        Returns:
+            List of wrapped FlowyML component classes.
+
+        Example:
+            >>> registry = get_component_registry()
+            >>> components = registry.import_zenml_integration("mlflow")
+            >>> print([c.__name__ for c in components])
+            ['ZenMLMLFlowExperimentTrackerWrapper']
+        """
+        try:
+            bridge = _get_zenml_bridge()
+            components = bridge.import_integration(integration_name)
+
+            # Register all imported components
+            for component_class in components:
+                self.register(component_class)
+
+            return components
+        except Exception as e:
+            print(f"Failed to import ZenML integration: {e}")
+            return []
+
+    def import_all_zenml(self) -> dict[str, list[type[StackComponent]]]:
+        """Import all components from all installed ZenML integrations.
+
+        This is the easiest way to make all ZenML components available
+        in FlowyML with a single call.
+
+        Returns:
+            Dictionary mapping integration names to lists of wrapped components.
+
+        Example:
+            >>> registry = get_component_registry()
+            >>> all_components = registry.import_all_zenml()
+            >>> print(all_components.keys())
+            dict_keys(['mlflow', 'kubernetes', 'aws'])
+        """
+        try:
+            bridge = _get_zenml_bridge()
+            result = bridge.import_all()
+
+            # Register all imported components
+            for _integration_name, components in result.items():
+                for component_class in components:
+                    self.register(component_class)
+
+            return result
+        except Exception as e:
+            print(f"Failed to import ZenML integrations: {e}")
+            return {}
 
     @staticmethod
     def _class_to_snake_case(name: str) -> str:

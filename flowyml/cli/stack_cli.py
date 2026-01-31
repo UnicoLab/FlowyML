@@ -98,23 +98,28 @@ def stack() -> None:
 @click.option("--config", "-c", help="Path to flowyml.yaml")
 def list_stacks(config: str | None) -> None:
     """List all configured stacks."""
-    from flowyml.utils.stack_config import load_config
+    from flowyml.plugins.stack_config import get_stack_manager
+    from flowyml.plugins.config import get_config
 
-    loader = load_config(config)
-    stacks = loader.list_stacks()
+    # Initialize config if path provided
+    if config:
+        get_config(config)
+
+    manager = get_stack_manager()
+    stacks = manager.list_stacks()
 
     if not stacks:
-        click.echo("No stacks configured. Create a flowyml.yaml file.")
+        click.echo("No stacks configured. Create a flowyml.yaml file with 'stacks:' section.")
         return
 
-    default = loader.get_default_stack()
+    active = manager.active_stack_name
 
-    click.echo("\nConfigured stacks:")
+    click.echo("\n📦 Configured stacks:")
     for stack_name in stacks:
-        marker = " (default)" if stack_name == default else ""
-        config_data = loader.get_stack_config(stack_name)
-        stack_type = config_data.get("type", "unknown")
-        click.echo(f"  • {stack_name}{marker} [{stack_type}]")
+        marker = " ✓ (active)" if stack_name == active else ""
+        stack = manager.get_stack(stack_name)
+        orch_type = stack.orchestrator.get("type", "local") if stack and stack.orchestrator else "local"
+        click.echo(f"  • {stack_name}{marker} [orchestrator: {orch_type}]")
     click.echo()
 
 
@@ -123,35 +128,111 @@ def list_stacks(config: str | None) -> None:
 @click.option("--config", "-c", help="Path to flowyml.yaml")
 def show_stack(stack_name: str, config: str | None) -> None:
     """Show detailed stack configuration."""
-    from flowyml.utils.stack_config import load_config
-    import yaml
+    from flowyml.plugins.stack_config import get_stack_manager
+    from flowyml.plugins.config import get_config
 
-    loader = load_config(config)
-    stack_config = loader.get_stack_config(stack_name)
+    # Initialize config if path provided
+    if config:
+        get_config(config)
 
-    if not stack_config:
+    manager = get_stack_manager()
+    stack = manager.get_stack(stack_name)
+
+    if not stack:
         click.echo(f"Stack '{stack_name}' not found", err=True)
+        available = manager.list_stacks()
+        if available:
+            click.echo(f"Available stacks: {', '.join(available)}")
         sys.exit(1)
 
-    click.echo(f"\nStack: {stack_name}")
-    click.echo(yaml.dump(stack_config, default_flow_style=False))
+    is_active = stack_name == manager.active_stack_name
+    status = " (active)" if is_active else ""
+
+    click.echo(f"\n📦 Stack: {stack_name}{status}")
+    click.echo("─" * 40)
+
+    # Show components
+    if stack.orchestrator:
+        click.echo(f"\n🎯 Orchestrator: {stack.orchestrator.get('type', 'unknown')}")
+        for k, v in stack.orchestrator.items():
+            if k != "type":
+                click.echo(f"   {k}: {v}")
+
+    if stack.artifact_store:
+        click.echo(f"\n💾 Artifact Store: {stack.artifact_store.get('type', 'unknown')}")
+        for k, v in stack.artifact_store.items():
+            if k != "type":
+                click.echo(f"   {k}: {v}")
+
+    if stack.experiment_tracker:
+        click.echo(f"\n📊 Experiment Tracker: {stack.experiment_tracker.get('type', 'unknown')}")
+
+    if stack.model_registry:
+        click.echo(f"\n📝 Model Registry: {stack.model_registry.get('type', 'unknown')}")
+
+    if stack.model_deployer:
+        click.echo(f"\n🚀 Model Deployer: {stack.model_deployer.get('type', 'unknown')}")
+
+    if stack.container_registry:
+        click.echo(f"\n🐳 Container Registry: {stack.container_registry.get('type', 'unknown')}")
+
+    if stack.artifact_routing:
+        click.echo("\n📍 Artifact Routing:")
+        for type_name, rule in stack.artifact_routing.rules.items():
+            click.echo(f"   {type_name}: store={rule.store}, register={rule.register}")
+
+    click.echo()
 
 
-@stack.command("set-default")
+@stack.command("set")
 @click.argument("stack_name")
 @click.option("--config", "-c", help="Path to flowyml.yaml")
-def set_default_stack(stack_name: str, config: str | None) -> None:
-    """Set the default stack."""
-    from flowyml.stacks.registry import get_registry
+def set_active_stack(stack_name: str, config: str | None) -> None:
+    """Set the active stack."""
+    from flowyml.plugins.stack_config import get_stack_manager
+    from flowyml.plugins.config import get_config
 
-    registry = get_registry()
+    # Initialize config if path provided
+    if config:
+        get_config(config)
 
-    if stack_name not in registry.list_stacks():
-        click.echo(f"Stack '{stack_name}' not found", err=True)
+    manager = get_stack_manager()
+
+    if manager.set_active_stack(stack_name):
+        click.echo(f"✅ Active stack set to '{stack_name}'")
+    else:
+        click.echo(f"❌ Stack '{stack_name}' not found", err=True)
+        available = manager.list_stacks()
+        if available:
+            click.echo(f"Available stacks: {', '.join(available)}")
         sys.exit(1)
 
-    registry.set_active_stack(stack_name)
-    click.echo(f"Set '{stack_name}' as active stack")
+
+@stack.command("register")
+@click.argument("stack_name")
+@click.option("--file", "-f", "config_file", required=True, help="Path to stack config file")
+def register_stack(stack_name: str, config_file: str) -> None:
+    """Register a new stack from a config file."""
+    import yaml
+    from flowyml.plugins.stack_config import get_stack_manager, StackConfig
+
+    config_path = Path(config_file)
+    if not config_path.exists():
+        click.echo(f"Config file not found: {config_file}", err=True)
+        sys.exit(1)
+
+    try:
+        with open(config_path) as f:
+            stack_data = yaml.safe_load(f)
+
+        stack_config = StackConfig.from_dict(stack_name, stack_data)
+        manager = get_stack_manager()
+        manager.register_stack(stack_name, stack_config)
+
+        click.echo(f"✅ Registered stack '{stack_name}' from {config_file}")
+    except Exception as e:
+        click.echo(f"❌ Error registering stack: {e}", err=True)
+        sys.exit(1)
 
 
 @cli.command()

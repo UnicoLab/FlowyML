@@ -202,7 +202,19 @@ pipeline.add_step(
 ```
 
 ### 6. 🧩 Universal Plugin System
-Extend with any tool. Even wrap and reuse ZenML components!
+Extend with any tool. Even wrap and reuse ZenML components with **one line**!
+
+```python
+from flowyml.stacks import import_all_zenml
+
+# Import ALL ZenML components at once
+components = import_all_zenml()
+
+# Or use the CLI
+# flowyml zenml import-all
+```
+
+For specific components:
 
 ```python
 from flowyml.stacks.plugins import load_component

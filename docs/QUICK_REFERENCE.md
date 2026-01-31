@@ -16,7 +16,10 @@
 | Use GPUs | `flowyml run pipeline.py --resources gpu_training` |
 | See what would run | `flowyml run pipeline.py --dry-run` |
 | List available stacks | `flowyml stack list` |
-| Start the web UI | `flowyml ui start` |
+| Start the web UI | `flowyml ui start` or `flowyml go` |
+| **Import all ZenML components** | `flowyml zenml import-all` |
+| **Check ZenML status** | `flowyml zenml status` |
+| **Install ZenML integration** | `flowyml zenml install mlflow` |
 
 ---
 
@@ -42,6 +45,27 @@ flowyml stack set-default NAME # Set which stack runs by default
 
 > [!TIP]
 > **Pro tip**: Run `flowyml stack list` to verify your configuration before deploying to production.
+
+### ZenML Integration
+
+Import and use the entire ZenML ecosystem with simple commands:
+
+```bash
+flowyml zenml status          # Check if ZenML is installed
+flowyml zenml list            # List available integrations
+flowyml zenml list --installed # Show only installed integrations
+flowyml zenml install mlflow   # Install an integration
+flowyml zenml import mlflow    # Import components from an integration
+flowyml zenml import-all       # Import ALL installed integration components
+```
+
+**When to use**: Leveraging ZenML's 50+ integrations (MLflow, Kubernetes, AWS, etc.) in FlowyML.
+
+**Python equivalent**:
+```python
+from flowyml.stacks import import_all_zenml
+components = import_all_zenml()  # One-liner to import everything
+```
 
 ### Run Pipelines
 

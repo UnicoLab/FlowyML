@@ -5,8 +5,11 @@ from dataclasses import dataclass, field, asdict
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 import shutil
+
+if TYPE_CHECKING:
+    from flowyml.assets.base import Asset
 
 
 class ModelStage(str, Enum):
@@ -489,3 +492,133 @@ class ModelRegistry:
             "total_versions": total_versions,
             "by_stage": stage_counts,
         }
+
+    # ========== Asset Integration Methods ==========
+
+    def register_asset(
+        self,
+        model_asset: "Asset",
+        version: str | None = None,
+        stage: ModelStage = ModelStage.DEVELOPMENT,
+        description: str = "",
+        author: str | None = None,
+        capture_environment: bool = False,
+    ) -> ModelVersion:
+        """Register a Model asset directly to the registry.
+
+        This method leverages the auto-extracted metadata from Model assets,
+        making registration simpler and more consistent.
+
+        Args:
+            model_asset: A Model asset (from flowyml.assets.model)
+            version: Version string (defaults to asset's version)
+            stage: Deployment stage
+            description: Model description
+            author: Model author
+            capture_environment: Whether to capture Python environment
+
+        Returns:
+            ModelVersion instance
+
+        Example:
+            >>> from flowyml import Model, ModelRegistry
+            >>> model_asset = Model.create(data=trained_model, name="classifier")
+            >>> registry = ModelRegistry()
+            >>> registry.register_asset(model_asset, version="v1.0.0")
+        """
+        # Get version from asset if not provided
+        version = version or model_asset.version
+
+        # Extract metadata from asset
+        properties = model_asset.properties if hasattr(model_asset, "properties") else {}
+        tags = model_asset.tags if hasattr(model_asset, "tags") else {}
+
+        # Get framework from auto-extracted properties
+        framework = properties.get("framework", "unknown")
+
+        # Extract metrics from properties (common keys)
+        metrics = {}
+        for key in ["accuracy", "f1", "precision", "recall", "loss", "auc", "mse", "mae"]:
+            if key in properties:
+                metrics[key] = properties[key]
+
+        # Capture environment if requested
+        if capture_environment:
+            from flowyml.registry.model_environment import ModelEnvironment
+
+            env = ModelEnvironment.from_current()
+            tags["python_version"] = env.python_version
+            tags["platform"] = env.platform
+            properties["environment"] = env.to_dict()
+
+        return self.register(
+            model=model_asset.data,
+            name=model_asset.name,
+            version=version,
+            framework=framework,
+            stage=stage,
+            metrics=metrics,
+            tags=tags,
+            description=description or properties.get("description", ""),
+            author=author,
+            parent_version=None,
+        )
+
+    def to_asset(
+        self,
+        name: str,
+        version: str | None = None,
+        stage: ModelStage | None = None,
+    ) -> "Asset":
+        """Load a model version as a Model asset.
+
+        This creates a Model asset with all the stored metadata,
+        enabling seamless integration with FlowyML pipelines.
+
+        Args:
+            name: Model name
+            version: Specific version (if None, loads latest)
+            stage: Stage filter (if version is None)
+
+        Returns:
+            Model asset with loaded model and metadata
+
+        Example:
+            >>> registry = ModelRegistry()
+            >>> model_asset = registry.to_asset("classifier", version="v1.0.0")
+            >>> print(model_asset.properties)
+        """
+        from flowyml.assets.model import Model
+
+        model_version = self.get_version(name, version) if version else self.get_latest_version(name, stage)
+
+        if not model_version:
+            raise ValueError(f"Model {name} not found")
+
+        model_data = self.load(name, version or model_version.version)
+
+        properties = {
+            "framework": model_version.framework,
+            "stage": model_version.stage.value,
+            "created_at": model_version.created_at,
+            "updated_at": model_version.updated_at,
+            **model_version.metrics,
+        }
+
+        return Model(
+            name=name,
+            version=model_version.version,
+            data=model_data,
+            tags=model_version.tags,
+            properties=properties,
+        )
+
+    def capture_environment(self) -> dict[str, Any]:
+        """Capture current Python environment.
+
+        Returns:
+            Dictionary with environment info
+        """
+        from flowyml.registry.model_environment import ModelEnvironment
+
+        return ModelEnvironment.from_current().to_dict()

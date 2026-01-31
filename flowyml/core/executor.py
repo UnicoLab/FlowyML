@@ -375,6 +375,35 @@ class LocalExecutor(Executor):
                             project_name=project_name,
                         )
 
+                # Type-based artifact routing
+                routing_result = None
+                try:
+                    from flowyml.core.routing import route_artifact, should_route
+
+                    if should_route(result):
+                        # Get return type annotation if available
+                        return_type = None
+                        try:
+                            from flowyml.core.routing import get_step_return_type
+
+                            return_type = get_step_return_type(step.func)
+                        except Exception:
+                            pass
+
+                        routing_result = route_artifact(
+                            output=result,
+                            step_name=step.name,
+                            run_id=run_id or "local",
+                            return_type=return_type,
+                            project_name=project_name,
+                        )
+                        if routing_result and routing_result.store_uri:
+                            artifact_uri = routing_result.store_uri
+                except ImportError:
+                    pass  # Routing module not available
+                except Exception:
+                    pass  # Routing failed, continue with normal flow
+
                 # Cache result
                 if cache_store and step.cache:
                     cache_key = step.get_cache_key(inputs)

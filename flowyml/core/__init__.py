@@ -27,6 +27,15 @@ from flowyml.core.resources import (
     NodeAffinity,
     resources,
 )
+from flowyml.core.types import (
+    Artifact,
+    Model,
+    Dataset,
+    Metrics,
+    Parameters,
+    is_artifact_type,
+    get_artifact_type_name,
+)
 
 __all__ = [
     # Context
@@ -65,4 +74,12 @@ __all__ = [
     "GPUConfig",
     "NodeAffinity",
     "resources",
+    # Artifact Types
+    "Artifact",
+    "Model",
+    "Dataset",
+    "Metrics",
+    "Parameters",
+    "is_artifact_type",
+    "get_artifact_type_name",
 ]

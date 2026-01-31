@@ -2,6 +2,58 @@
 
 <!-- version list -->
 
+## v1.8.0 (2026-01-31)
+
+### Features
+
+- **Type-Based Artifact Routing**: ZenML-like functionality without ZenML dependency. Define artifact types in code, automatically route to configured infrastructure.
+  - New core types: `Model`, `Dataset`, `Metrics`, `Parameters`
+  - Automatic storage based on type annotations
+  - Path templating with `{run_id}`, `{step_name}`, `{artifact_name}`
+
+- **Multi-Stack Configuration**: Named stack support for different environments.
+  - Stack switching via `FLOWYML_STACK` environment variable
+  - Context manager `use_stack()` for programmatic switching
+  - CLI commands: `flowyml stack list/show/set`
+
+- **Model Registry Plugins**: Native model registration without external frameworks.
+  - Vertex AI Model Registry (`vertex_model_registry`)
+  - SageMaker Model Registry (`sagemaker_model_registry`)
+  - Auto-registration when `register: true` in config
+
+- **Model Deployer Plugins**: Deploy models to cloud endpoints.
+  - Vertex AI Endpoints (`vertex_endpoint`)
+  - SageMaker Endpoints (`sagemaker_endpoint`)
+  - **Conditional Deployment**: `deploy_condition` (manual/auto/on_approval)
+  - **Metrics-Based Auto-Deploy**: `deploy_min_metrics` thresholds
+
+- **Experiment Tracker Integration**: Auto-log metrics and parameters.
+  - MLflow integration (`mlflow`)
+  - Weights & Biases integration (`wandb`)
+  - `Metrics` and `Parameters` types auto-logged
+
+- **Orchestrator Enhancements**: Type-aware remote execution.
+  - `run_with_routing()` method for Vertex AI and SageMaker
+  - `configure_model_deployment()` for post-pipeline deployment
+  - Routing configuration injection into remote pipelines
+
+- **Artifact Store Enhancements**: Type-aware saving.
+  - `save_typed_artifact()` method for GCS and S3 plugins
+  - Proper serialization for Model, Dataset, Metrics, Parameters
+  - Parquet support for DataFrames
+
+### Documentation
+
+- New guide: `docs/plugins/type_routing.md` - Comprehensive type-based routing guide
+- Updated: `docs/plugins/stack-configuration.md` - Multi-stack support
+- Updated: `docs/plugins/native-plugins.md` - New registry and deployer plugins
+
+### Breaking Changes
+
+- None. This is a backward-compatible feature release.
+
+---
+
 ## v1.7.2 (2025-12-11)
 
 ### Bug Fixes

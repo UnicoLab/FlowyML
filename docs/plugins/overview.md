@@ -1,42 +1,104 @@
 # 🔌 FlowyML Plugin System
 
-FlowyML features a **revolutionary plugin architecture** that allows you to use components from ANY ML framework - ZenML, Airflow, Prefect, MLflow, and more - without modifying their code or creating hard dependencies.
+FlowyML features a **powerful native plugin system** that allows you to integrate with ANY ML tool - MLflow, Kubernetes, AWS S3, and more - **without external framework dependencies**.
 
-## 🌟 Why This Matters
+# FlowyML Plugin System
 
-**Stop choosing between frameworks.** With FlowyML's plugin system, you can:
+FlowyML provides a **native plugin system** that integrates seamlessly with cloud ML services without requiring external framework dependencies.
 
-- ✅ Use ZenML's Kubernetes orchestrator with FlowyML's modern UI
-- ✅ Mix Airflow operators with FlowyML pipelines
-- ✅ Leverage MLflow tracking with FlowyML's project management
-- ✅ Create hybrid stacks combining components from multiple frameworks
-- ✅ Access the entire ML ecosystem without vendor lock-in
+> **Native plugins are the default and recommended approach.** ZenML integration is available as a legacy/optional feature for existing users.
 
-## ⚠️ Important: Dependency Requirements
-
-**You MUST install the external framework to use its components.**
-
-The plugin system dynamically imports components from installed packages - it does NOT copy or bundle code.
-
-### To Use ZenML Components:
+## Quick Start
 
 ```bash
-# Install ZenML
-pip install zenml
+# Initialize your stack
+flowyml stack init --tracker mlflow --store gcs --orchestrator vertex_ai
 
-# Install specific ZenML integrations
-zenml integration install kubernetes  # For K8s orchestrator
-zenml integration install mlflow      # For MLflow tracking
-zenml integration install s3          # For S3 artifact store
+# Install configured plugins
+flowyml stack install
 ```
 
-### To Use Airflow Components (coming soon):
+```python
+# Your code - infrastructure-agnostic
+from flowyml.plugins import start_run, log_metrics, save_model
+
+start_run("training")
+log_metrics({"accuracy": 0.95})
+save_model(model, "classifier")  # Goes wherever config says
+```
+
+## Native Plugins vs ZenML
+
+| Feature | Native Plugins (Default) | ZenML (Legacy) |
+|---------|-------------------------|----------------|
+| **Dependencies** | Only the tools you use | Full ZenML framework |
+| **Configuration** | `flowyml.yaml` | ZenML config system |
+| **Overhead** | Minimal | Framework overhead |
+| **Flexibility** | Direct access to all features | ZenML abstractions |
+| **Recommended** | ✅ Yes | For existing ZenML users |
+
+## Documentation
+
+### Native Plugins (Recommended)
+
+- **[Stack Configuration](stack-configuration.md)** - Configure your ML stack with `flowyml.yaml`
+- **[Native Plugins Guide](native-plugins.md)** - Complete guide to native plugins
+- **[Implementation Roadmap](plugins_todo_implementation.md)** - Upcoming GCP and AWS plugins
+
+### Legacy Integration
+
+- **[ZenML Integration](zenml-integration.md)** - For existing ZenML users (optional)
+
+## Available Plugins
+
+### Experiment Trackers
+- `mlflow` - MLflow tracking and model registry
+- `wandb` - Weights & Biases
+- `neptune` - Neptune.ai
+- `tensorboard` - TensorBoard
+
+### Artifact Stores
+- `gcs` - Google Cloud Storage ✅
+- `s3` - AWS S3 ✅
+- `azure_blob` - Azure Blob Storage
+
+### Container Registries
+- `gcr` - Google Container/Artifact Registry ✅
+- `ecr` - AWS ECR ✅
+- `acr` - Azure Container Registry
+
+### Orchestrators
+- `vertex_ai` - Google Vertex AI Pipelines ✅
+- `sagemaker` - AWS SageMaker Pipelines ✅
+- `kubernetes` - Kubernetes
+- `airflow` - Apache Airflow
+
+### Coming Soon
+- Vertex Model Registry & Endpoints
+- SageMaker Model Registry & Endpoints
+- Training Jobs & Batch Prediction
+- Feature Stores
+
+## ⚡ Automatic Dependency Management
+
+FlowyML handles all dependencies for you. Just specify what you want:
 
 ```bash
-pip install apache-airflow
+# FlowyML installs ZenML and the Kubernetes integration automatically
+flowyml zenml install kubernetes
+
+# Import the components and start using them
+flowyml zenml import kubernetes
 ```
 
-### To Use Custom Components:
+**How it works:** When you request a plugin, FlowyML:
+1. Installs the external framework if needed (ZenML, etc.)
+2. Installs the specific integration and all dependencies
+3. Wraps components to work seamlessly with FlowyML's API
+
+> [!TIP]
+> **Zero Manual Setup**: You don't need to install ZenML or run separate commands.
+> FlowyML manages the entire stack for you.
 
 ```bash
 # Install your package
@@ -67,26 +129,13 @@ No wrapper code needed. No manual adaptation. It just works.
 Discover, install, and manage plugins through a consistent CLI:
 
 ```bash
-# Search for plugins
-flowyml plugin search kubernetes
+# ZenML integration commands
+flowyml zenml list            # List available integrations
+flowyml zenml install aws     # Install an integration
+flowyml zenml import-all      # Import all components
 
-# Install a plugin
-flowyml plugin install zenml-kubeflow
-
-# List all available components
-flowyml component list
-```
-
-### 🔄 Stack Migration
-
-Automatically migrate existing stacks from other frameworks:
-
-```bash
-# Import a ZenML stack
-flowyml plugin import-zenml-stack production
-
-# Generates flowyml.yaml with all mappings
-flowyml run pipeline.py --stack production
+# General plugin commands
+flowyml component list        # List all available components
 ```
 
 ### 🎯 Entry Point Discovery
