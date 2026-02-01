@@ -47,9 +47,9 @@ services:
   backend:
     build:
       context: .
-      dockerfile: flowyml/ui/backend/Dockerfile
-    image: flowyml-backend:latest
-    container_name: flowyml-backend
+      dockerfile: Dockerfile
+    image: flowyml:latest
+    container_name: flowyml-app
     ports:
       - "${FLOWYML_PORT:-8080}:8080"
     environment:
@@ -62,7 +62,7 @@ services:
 
       # Server URLs (for client configuration)
       FLOWYML_REMOTE_SERVER_URL: ${FLOWYML_REMOTE_SERVER_URL:-http://localhost:8080}
-      FLOWYML_REMOTE_UI_URL: ${FLOWYML_REMOTE_UI_URL:-http://localhost:80}
+      FLOWYML_REMOTE_UI_URL: ${FLOWYML_REMOTE_UI_URL:-http://localhost:8080}
 
       # Authentication
       FLOWYML_AUTH_SECRET: ${FLOWYML_AUTH_SECRET:-change-this-secret-in-production}
@@ -79,25 +79,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    networks:
-      - flowyml-network
-    restart: unless-stopped
-
-  # ---------------------------------------------------------------------------
-  # FlowyML Frontend UI
-  # ---------------------------------------------------------------------------
-  frontend:
-    build:
-      context: flowyml/ui/frontend
-      dockerfile: Dockerfile
-    image: flowyml-frontend:latest
-    container_name: flowyml-frontend
-    ports:
-      - "${FLOWYML_UI_PORT:-8081}:80"
-    environment:
-      VITE_API_URL: ${FLOWYML_REMOTE_SERVER_URL:-http://localhost:8080}
-    depends_on:
-      - backend
     networks:
       - flowyml-network
     restart: unless-stopped

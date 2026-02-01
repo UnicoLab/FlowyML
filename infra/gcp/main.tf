@@ -13,13 +13,16 @@ provider "google" {
 }
 
 # Enable required APIs
+# Enable required APIs
 resource "google_project_service" "apis" {
   for_each = toset([
     "run.googleapis.com",
     "sqladmin.googleapis.com",
     "compute.googleapis.com",
     "servicenetworking.googleapis.com",
-    "secretmanager.googleapis.com"
+    "secretmanager.googleapis.com",
+    "artifactregistry.googleapis.com",
+    "cloudbuild.googleapis.com"
   ])
   service            = each.key
   disable_on_destroy = false
@@ -46,6 +49,21 @@ resource "google_vpc_access_connector" "connector" {
   network       = google_compute_network.vpc.id
 }
 
+# Private Service Access for Cloud SQL
+resource "google_compute_global_address" "private_ip" {
+  name          = "${var.app_name}-private-ip"
+  purpose       = "VPC_PEERING"
+  address_type  = "INTERNAL"
+  prefix_length = 16
+  network       = google_compute_network.vpc.id
+}
+
+resource "google_service_networking_connection" "private_vpc" {
+  network                 = google_compute_network.vpc.id
+  service                 = "servicenetworking.googleapis.com"
+  reserved_peering_ranges = [google_compute_global_address.private_ip.name]
+}
+
 # Cloud SQL Instance
 resource "google_sql_database_instance" "instance" {
   name             = "${var.app_name}-db-${random_id.db_suffix.hex}"
@@ -61,7 +79,7 @@ resource "google_sql_database_instance" "instance" {
   }
 
   deletion_protection = false # For easier cleanup in dev
-  depends_on          = [google_project_service.apis]
+  depends_on          = [google_service_networking_connection.private_vpc]
 }
 
 resource "random_id" "db_suffix" {
@@ -102,6 +120,15 @@ resource "google_project_iam_member" "sa_logging_writer" {
   project = var.project_id
   role    = "roles/logging.logWriter"
   member  = "serviceAccount:${google_service_account.cloud_run_sa.email}"
+}
+
+# Artifact Registry
+resource "google_artifact_registry_repository" "repo" {
+  location      = var.region
+  repository_id = var.app_name
+  description   = "Docker repository for ${var.app_name}"
+  format        = "DOCKER"
+  depends_on    = [google_project_service.apis]
 }
 
 resource "google_project_iam_member" "sa_secret_accessor" {
@@ -148,9 +175,9 @@ resource "google_secret_manager_secret_version" "api_token" {
   secret_data = var.api_token != "" ? var.api_token : "dummy_value_if_empty"
 }
 
-# Cloud Run Service - Backend
-resource "google_cloud_run_v2_service" "backend" {
-  name     = "${var.app_name}-backend"
+# Cloud Run Service (Unified)
+resource "google_cloud_run_v2_service" "app" {
+  name     = var.app_name
   location = var.region
   ingress  = "INGRESS_TRAFFIC_ALL"
 
@@ -163,7 +190,7 @@ resource "google_cloud_run_v2_service" "backend" {
     }
 
     containers {
-      image = var.backend_image
+      image = var.container_image
 
       env {
         name  = "FLOWYML_DATABASE_URL"
@@ -208,7 +235,7 @@ resource "google_cloud_run_v2_service" "backend" {
       resources {
         limits = {
           cpu    = "1000m"
-          memory = "512Mi"
+          memory = "1Gi"
         }
       }
 
@@ -219,48 +246,10 @@ resource "google_cloud_run_v2_service" "backend" {
   }
 }
 
-# Cloud Run Service - Frontend
-resource "google_cloud_run_v2_service" "frontend" {
-  name     = "${var.app_name}-frontend"
-  location = var.region
-  ingress  = "INGRESS_TRAFFIC_ALL"
-
-  template {
-    service_account = google_service_account.cloud_run_sa.email
-
-    containers {
-      image = var.frontend_image
-
-      env {
-        name  = "VITE_API_URL"
-        value = google_cloud_run_v2_service.backend.uri
-      }
-
-      resources {
-        limits = {
-          cpu    = "1000m"
-          memory = "256Mi"
-        }
-      }
-
-      ports {
-        container_port = 80
-      }
-    }
-  }
-}
-
-# Make services public
-resource "google_cloud_run_service_iam_member" "backend_public" {
-  location = google_cloud_run_v2_service.backend.location
-  service  = google_cloud_run_v2_service.backend.name
-  role     = "roles/run.invoker"
-  member   = "allUsers"
-}
-
-resource "google_cloud_run_service_iam_member" "frontend_public" {
-  location = google_cloud_run_v2_service.frontend.location
-  service  = google_cloud_run_v2_service.frontend.name
+# Make service public
+resource "google_cloud_run_service_iam_member" "public_access" {
+  location = google_cloud_run_v2_service.app.location
+  service  = google_cloud_run_v2_service.app.name
   role     = "roles/run.invoker"
   member   = "allUsers"
 }

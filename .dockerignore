@@ -114,3 +114,5 @@ Jenkinsfile
 # Inspiration / examples (not needed in production)
 inspiration-only/
 examples/
+.system_generated/
+docs/

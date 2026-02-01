@@ -17,6 +17,8 @@ from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.exporter.prometheus import PrometheusMetricReader
 from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from prometheus_client import make_asgi_app
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
 
 from flowyml.ui.backend.routers import (
     pipelines,
@@ -80,6 +82,59 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+class AuthMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        # 0. Skip if not in production to allow easy local development
+        if os.getenv("FLOWYML_ENV") != "production":
+            return await call_next(request)
+
+        # 1. Check if token auth is enabled via env var
+        api_token = os.getenv("FLOWYML_API_TOKEN")
+        if not api_token:
+            return await call_next(request)
+
+        # 2. Define public paths
+        path = request.url.path
+        if (
+            path in ["/api/health", "/metrics", "/docs", "/redoc", "/openapi.json"]
+            or path.startswith("/assets")
+            or path == "/"
+            or request.method == "OPTIONS"
+        ):
+            return await call_next(request)
+
+        # 3. Check Auth Header
+        auth_header = request.headers.get("Authorization")
+        if not auth_header:
+            token_param = request.query_params.get("token")
+            if token_param == api_token:
+                return await call_next(request)
+
+            return JSONResponse(
+                status_code=401,
+                content={"error": "Unauthorized", "message": "Missing authentication token"},
+            )
+
+        # 4. Validate Token
+        try:
+            scheme, token = auth_header.split()
+            if scheme.lower() != "bearer" or token != api_token:
+                return JSONResponse(
+                    status_code=401,
+                    content={"error": "Unauthorized", "message": "Invalid authentication token"},
+                )
+        except ValueError:
+            return JSONResponse(
+                status_code=401,
+                content={"error": "Unauthorized", "message": "Invalid Authorization header format"},
+            )
+
+        return await call_next(request)
+
+
+app.add_middleware(AuthMiddleware)
 
 
 # Health check endpoint

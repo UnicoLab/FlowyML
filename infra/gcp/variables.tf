@@ -6,7 +6,7 @@ variable "project_id" {
 variable "region" {
   description = "GCP Region"
   type        = string
-  default     = "us-central1"
+  default     = "europe-west1"
 }
 
 variable "app_name" {
@@ -15,13 +15,8 @@ variable "app_name" {
   default     = "flowyml"
 }
 
-variable "backend_image" {
-  description = "Docker image for backend"
-  type        = string
-}
-
-variable "frontend_image" {
-  description = "Docker image for frontend"
+variable "container_image" {
+  description = "Docker image for the application"
   type        = string
 }
 

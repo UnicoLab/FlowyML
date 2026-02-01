@@ -322,38 +322,127 @@ version: ## Show flowyml version
 # =============================================================================
 
 # Variables for deployment
-GCP_PROJECT ?= $(shell gcloud config get-value project)
-GCP_REGION ?= us-central1
+# Auto-detect GCP Project from secrets file, fallback to gcloud config
+GCP_SECRET_FILE := infra/gcp/terraform.tfvars.secret
+# Try to extract project_id from secret file, otherwise use gcloud config
+GCP_PROJECT ?= $(shell if [ -f $(GCP_SECRET_FILE) ]; then grep 'project_id' $(GCP_SECRET_FILE) | head -n 1 | cut -d '"' -f 2; else gcloud config get-value project 2>/dev/null; fi)
+GCP_REGION ?= europe-west1
 AWS_REGION ?= us-east-1
 IMAGE_TAG ?= latest
+APP_NAME ?= flowyml
 
-infra-init-gcp: ## Initialize Terraform for GCP
-	cd infra/gcp && terraform init
+# Artifact Registry Config (Defined early for expansion)
+ARTIFACT_REGISTRY_HOST = $(GCP_REGION)-docker.pkg.dev
+ARTIFACT_REGISTRY_REPO = $(ARTIFACT_REGISTRY_HOST)/$(GCP_PROJECT)/$(APP_NAME)
 
-infra-plan-gcp: ## Plan Terraform for GCP
-	cd infra/gcp && terraform plan \
+# Check if GCP_PROJECT is set
+check-gcp-project:
+	@if [ -z "$(GCP_PROJECT)" ]; then \
+		echo "❌ Error: GCP_PROJECT is not set."; \
+		echo "   Please run 'make gcp-setup-secrets' and edit the file,"; \
+		echo "   OR set it explicitly: make deploy-gcp GCP_PROJECT=my-project"; \
+		exit 1; \
+	fi
+	@echo "✅ Using GCP Project: $(GCP_PROJECT)"
+
+# =============================================================================
+# GCP Deployment Commands (Watchtower Compatible)
+# =============================================================================
+
+# Service Configuration
+# Service Configuration
+GCP_SERVICE = $(APP_NAME)
+GCP_IMAGE = $(ARTIFACT_REGISTRY_REPO)/flowyml:$(IMAGE_TAG)
+TERRAFORM_DIR = infra/gcp
+
+# Robust Authentication Check
+# Ensures both gcloud (for docker) and application-default (for terraform) are active
+gcp-auth-check: check-gcp-project
+	@echo "🔐 Checking GCP authentication..."
+	@gcloud auth print-access-token > /dev/null 2>&1 || (echo "⚠️  gcloud auth expired, re-authenticating..." && gcloud auth login)
+	@gcloud auth application-default print-access-token > /dev/null 2>&1 || (echo "⚠️  Application default credentials expired, re-authenticating..." && gcloud auth application-default login)
+	@CURRENT_PROJECT=$$(gcloud config get-value project 2>/dev/null); \
+	if [ "$$CURRENT_PROJECT" != "$(GCP_PROJECT)" ]; then \
+		echo "⚠️  Switching gcloud to project $(GCP_PROJECT)..."; \
+		gcloud config set project $(GCP_PROJECT); \
+	fi
+	@echo "✅ GCP authentication OK (project: $(GCP_PROJECT))"
+
+# Build Unified Docker Image
+gcp-build: check-gcp-project
+	@echo "🏗️  Building Docker image for GCP..."
+	docker build --platform linux/amd64 -f Dockerfile -t $(ARTIFACT_REGISTRY_REPO)/flowyml:$(IMAGE_TAG) .
+	@echo "✅ Image built: $(ARTIFACT_REGISTRY_REPO)/flowyml:$(IMAGE_TAG)"
+
+# Push to Artifact Registry
+gcp-push: gcp-auth-check
+	@echo "📤 Pushing image to GCP Artifact Registry..."
+	gcloud auth configure-docker $(ARTIFACT_REGISTRY_HOST) --quiet
+	gcloud services enable artifactregistry.googleapis.com --quiet
+	-gcloud artifacts repositories create $(APP_NAME) --repository-format=docker --location=$(GCP_REGION) --description="FlowyML Docker repository" --quiet 2>/dev/null || true
+	docker push $(GCP_IMAGE)
+	@echo "✅ Image pushed: $(GCP_IMAGE)"
+
+# Deploy infrastructure via Terraform
+gcp-infra-up: gcp-auth-check
+	@echo "🏗️  Applying Terraform infrastructure..."
+	cd $(TERRAFORM_DIR) && terraform init && terraform apply -auto-approve \
 		-var="project_id=$(GCP_PROJECT)" \
 		-var="region=$(GCP_REGION)" \
-		-var="backend_image=gcr.io/$(GCP_PROJECT)/flowyml-backend:$(IMAGE_TAG)" \
-		-var="frontend_image=gcr.io/$(GCP_PROJECT)/flowyml-frontend:$(IMAGE_TAG)" \
-		-var="db_password=$(DB_PASSWORD)"
-
-infra-apply-gcp: ## Apply Terraform for GCP
-	cd infra/gcp && terraform apply -auto-approve \
-		-var="project_id=$(GCP_PROJECT)" \
-		-var="region=$(GCP_REGION)" \
-		-var="backend_image=gcr.io/$(GCP_PROJECT)/flowyml-backend:$(IMAGE_TAG)" \
-		-var="frontend_image=gcr.io/$(GCP_PROJECT)/flowyml-frontend:$(IMAGE_TAG)" \
+		-var="app_name=$(APP_NAME)" \
+		-var="container_image=$(GCP_IMAGE)" \
 		$(if $(wildcard infra/gcp/terraform.tfvars.secret),-var-file="terraform.tfvars.secret",-var="db_password=$(DB_PASSWORD)")
 
-docker-push-gcp: ## Build and push images to GCR
-	gcloud auth configure-docker
-	docker build -f Dockerfile -t gcr.io/$(GCP_PROJECT)/flowyml-backend:$(IMAGE_TAG) .
-	docker build -f flowyml/ui/frontend/Dockerfile -t gcr.io/$(GCP_PROJECT)/flowyml-frontend:$(IMAGE_TAG) flowyml/ui/frontend
-	docker push gcr.io/$(GCP_PROJECT)/flowyml-backend:$(IMAGE_TAG)
-	docker push gcr.io/$(GCP_PROJECT)/flowyml-frontend:$(IMAGE_TAG)
+# Plan infrastructure changes
+gcp-plan: gcp-auth-check
+	@echo "📋 Terraform plan..."
+	cd $(TERRAFORM_DIR) && terraform plan \
+		-var="project_id=$(GCP_PROJECT)" \
+		-var="region=$(GCP_REGION)" \
+		-var="app_name=$(APP_NAME)" \
+		-var="container_image=$(GCP_IMAGE)" \
+		$(if $(wildcard infra/gcp/terraform.tfvars.secret),-var-file="terraform.tfvars.secret",-var="db_password=$(DB_PASSWORD)")
 
-deploy-gcp: docker-push-gcp infra-init-gcp infra-apply-gcp ## Full deployment to GCP
+# Destroy infrastructure
+gcp-infra-down: gcp-auth-check
+	@echo "⚠️  WARNING: This will destroy all GCP infrastructure!"
+	@read -p "Are you sure? Type 'yes' to confirm: " confirm && \
+	if [ "$$confirm" = "yes" ]; then \
+		cd $(TERRAFORM_DIR) && terraform destroy -auto-approve \
+		-var="project_id=$(GCP_PROJECT)" \
+		-var="region=$(GCP_REGION)" \
+		-var="app_name=$(APP_NAME)" \
+		-var="container_image=$(GCP_IMAGE)" \
+		$(if $(wildcard infra/gcp/terraform.tfvars.secret),-var-file="terraform.tfvars.secret",-var="db_password=$(DB_PASSWORD)"); \
+	else \
+		echo "Cancelled."; \
+	fi
+
+# Deployment Status
+gcp-status:
+	@echo ""
+	@echo "╔══════════════════════════════════════════════════════════════════════╗"
+	@echo "║                   🚀 FLOWYML GCP STATUS                               ║"
+	@echo "╠══════════════════════════════════════════════════════════════════════╣"
+	@echo "║                                                                      ║"
+	@gcloud run services describe $(GCP_SERVICE) --region $(GCP_REGION) --format "value(status.conditions[0].status,status.conditions[0].message)" 2>/dev/null | while read status msg; do \
+		printf "║  Status: %-60s ║\n" "$$status - $$msg"; \
+	done
+	@echo "║                                                                      ║"
+	@echo "╠══════════════════════════════════════════════════════════════════════╣"
+	@echo "║  🌐 URL:                                                             ║"
+	@printf "║  %-68s ║\n" "$$(gcloud run services describe $(GCP_SERVICE) --region $(GCP_REGION) --format 'value(status.url)' 2>/dev/null)"
+	@echo "║                                                                      ║"
+	@echo "╚══════════════════════════════════════════════════════════════════════╝"
+	@echo ""
+
+# Logs
+gcp-logs:
+	@echo "📜 Streaming Cloud Run logs (Ctrl+C to exit)..."
+	gcloud run services logs read $(GCP_SERVICE) --region $(GCP_REGION) --limit 100
+
+# Full Deployment Workflow
+gcp-deploy: gcp-build gcp-push gcp-infra-up gcp-status ## Full deployment to GCP
 
 infra-init-aws: ## Initialize Terraform for AWS
 	cd infra/aws && terraform init

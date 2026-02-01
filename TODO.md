@@ -33,3 +33,9 @@ Locally it's easy per project, but what if we centralize flowyml with data from 
 
 ## Pipeline Tempaltes
 Pipeline templates management ... create, edit, detele etc ...
+
+
+
+well we should make sure this flowyml instance is well secured and only I'll be able to communicate with it and all the api ports are well secured etc for remote server -> we should maybe user token for it or login and make it work with local cli etc ... ? also for the local development and stack we shoudl not require tokens or anything else to make it simple for user !
+
+We shoudl also implement uder authentification with default admin / flowyml user and password for remote server !!
