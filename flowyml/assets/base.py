@@ -41,6 +41,16 @@ class Asset:
     """Base class for all ML assets (datasets, models, features, etc).
 
     Assets are first-class objects in flowyml pipelines with full lineage tracking.
+
+    Args:
+        name: Asset name
+        version: Asset version (default: v1.0.0)
+        data: The actual data/object
+        parent: Parent asset for lineage tracking
+        tags: Key-value tags for categorization
+        properties: Additional metadata properties
+        upload: Whether to upload this artifact to remote storage (default: False).
+                Set to True to enable remote artifact upload when using remote logging.
     """
 
     def __init__(
@@ -51,11 +61,13 @@ class Asset:
         parent: Optional["Asset"] = None,
         tags: dict[str, str] | None = None,
         properties: dict[str, Any] | None = None,
+        upload: bool = False,
     ):
         self.name = name
         self.version = version or "v1.0.0"
         self.data = data
         self.asset_id = str(uuid4())
+        self.upload = upload  # Control whether to upload to remote storage
 
         # Metadata
         self.metadata = AssetMetadata(
@@ -94,6 +106,7 @@ class Asset:
         name: str | None = None,
         version: str | None = None,
         parent: Optional["Asset"] = None,
+        upload: bool = False,
         **kwargs: Any,
     ) -> "Asset":
         """Factory method to create an asset.
@@ -103,6 +116,7 @@ class Asset:
             name: Asset name
             version: Asset version
             parent: Parent asset for lineage
+            upload: Whether to upload this artifact to remote storage (default: False)
             **kwargs: Additional metadata
 
         Returns:
@@ -123,6 +137,7 @@ class Asset:
             parent=parent,
             tags=tags,
             properties=props,
+            upload=upload,
         )
 
     def get_hash(self) -> str:

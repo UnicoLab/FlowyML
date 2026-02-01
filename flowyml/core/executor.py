@@ -364,16 +364,28 @@ class LocalExecutor(Executor):
                         monitor_thread.join()
 
                 # Materialize output if artifact store is available
+                # Only upload if the result is an Asset with upload=True
                 artifact_uri = None
                 if artifact_store and result is not None and run_id:
-                    with contextlib.suppress(Exception):
-                        artifact_uri = artifact_store.materialize(
-                            obj=result,
-                            name="output",  # Default name for single output
-                            run_id=run_id,
-                            step_name=step.name,
-                            project_name=project_name,
-                        )
+                    # Check if result is an Asset and respects upload flag
+                    should_upload = True
+                    try:
+                        from flowyml.assets.base import Asset
+
+                        if isinstance(result, Asset):
+                            should_upload = getattr(result, "upload", False)
+                    except ImportError:
+                        pass
+
+                    if should_upload:
+                        with contextlib.suppress(Exception):
+                            artifact_uri = artifact_store.materialize(
+                                obj=result,
+                                name="output",  # Default name for single output
+                                run_id=run_id,
+                                step_name=step.name,
+                                project_name=project_name,
+                            )
 
                 # Type-based artifact routing
                 routing_result = None

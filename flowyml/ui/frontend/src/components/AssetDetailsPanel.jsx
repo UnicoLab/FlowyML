@@ -24,14 +24,15 @@ import {
     Hash,
     Gauge,
     LineChart,
-    Eye
+    Eye,
+    Rocket
 } from 'lucide-react';
 import { Card } from './ui/Card';
 import { Badge } from './ui/Badge';
 import { Button } from './ui/Button';
 import { format } from 'date-fns';
 import { downloadArtifactById } from '../utils/downloads';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ProjectSelector } from './ProjectSelector';
 import { fetchApi } from '../utils/api';
@@ -41,8 +42,21 @@ import { TrainingHistoryChart } from './TrainingHistoryChart';
 export function AssetDetailsPanel({ asset, onClose, hideHeader = false }) {
     const [activeTab, setActiveTab] = useState('overview');
     const [currentProject, setCurrentProject] = useState(asset?.project);
+    const navigate = useNavigate();
 
     if (!asset) return null;
+
+    // Check if this asset can be deployed (model-like)
+    const isDeployable = asset.type?.toLowerCase().includes('model') ||
+        asset.name?.toLowerCase().includes('model') ||
+        ['keras', 'pytorch', 'sklearn', 'tensorflow', 'xgboost', 'lightgbm', 'onnx']
+            .some(kw => (asset.type || '').toLowerCase().includes(kw) ||
+                (asset.name || '').toLowerCase().includes(kw));
+
+    const handleDeploy = async () => {
+        // Navigate to deployments page with pre-selected model
+        navigate(`/deployments?deploy=${encodeURIComponent(asset.artifact_id)}&name=${encodeURIComponent(asset.name)}`);
+    };
 
     const handleProjectUpdate = async (newProject) => {
         try {
@@ -334,6 +348,15 @@ export function AssetDetailsPanel({ asset, onClose, hideHeader = false }) {
                             <Download size={16} className="mr-2" />
                             Download Asset
                         </Button>
+                        {isDeployable && (
+                            <Button
+                                onClick={handleDeploy}
+                                className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white"
+                            >
+                                <Rocket size={16} className="mr-2" />
+                                Deploy
+                            </Button>
+                        )}
                         {asset.run_id && (
                             <Link to={`/runs/${asset.run_id}`}>
                                 <Button variant="outline">
@@ -624,11 +647,10 @@ function DatasetOverview({ properties }) {
                         {(Array.isArray(columns) ? columns : []).slice(0, 10).map((col, i) => (
                             <span
                                 key={i}
-                                className={`text-[10px] px-2 py-0.5 rounded ${
-                                    col === labelColumn
-                                        ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-medium'
-                                        : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-                                }`}
+                                className={`text-[10px] px-2 py-0.5 rounded ${col === labelColumn
+                                    ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-medium'
+                                    : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                                    }`}
                             >
                                 {col}{col === labelColumn && ' (target)'}
                             </span>

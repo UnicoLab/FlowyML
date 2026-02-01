@@ -15,7 +15,9 @@ import {
     ChevronLeft,
     ChevronRight,
     Menu,
-    Activity
+    Activity,
+    Rocket,
+    Microscope
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -33,6 +35,7 @@ const NAV_GROUPS = [
             { icon: PlayCircle, label: 'Pipelines', path: '/pipelines' },
             { icon: Calendar, label: 'Schedules', path: '/schedules' },
             { icon: PlayCircle, label: 'Runs', path: '/runs' },
+            { icon: Rocket, label: 'Deployments', path: '/deployments' },
         ],
     },
     {
@@ -40,6 +43,7 @@ const NAV_GROUPS = [
         items: [
             { icon: Trophy, label: 'Leaderboard', path: '/leaderboard' },
             { icon: FlaskConical, label: 'Experiments', path: '/experiments' },
+            { icon: Microscope, label: 'Model Explorer', path: '/model-explorer' },
         ],
     },
     {
@@ -61,6 +65,8 @@ const SETTINGS_LINKS = [
 export function Sidebar({ collapsed, setCollapsed }) {
     const location = useLocation();
 
+    const [logoError, setLogoError] = useState(false);
+
     return (
         <motion.aside
             initial={false}
@@ -68,20 +74,32 @@ export function Sidebar({ collapsed, setCollapsed }) {
             className="h-screen bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex flex-col shadow-sm z-20 relative"
         >
             {/* Logo Section */}
-            <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center gap-3 h-[73px]">
-                <div className="w-8 h-8 min-w-[32px] bg-primary-600 rounded-lg flex items-center justify-center shadow-lg shadow-primary-500/30">
-                    <PlayCircle className="text-white w-5 h-5" />
-                </div>
+            <div className="p-4 border-b border-slate-100 dark:border-slate-700 flex items-center gap-3 h-[73px]">
+                {logoError ? (
+                    <div className="w-12 h-12 min-w-[48px] rounded-lg shadow-lg bg-gradient-to-br from-primary-500 to-indigo-600 flex items-center justify-center text-white font-bold text-xl select-none">
+                        F
+                    </div>
+                ) : (
+                    <img
+                        src="/logo.png"
+                        alt="FlowyML"
+                        className="w-12 h-12 min-w-[48px] rounded-lg shadow-lg object-contain bg-white dark:bg-slate-800"
+                        onError={() => setLogoError(true)}
+                    />
+                )}
                 <AnimatePresence>
                     {!collapsed && (
-                        <motion.h1
+                        <motion.div
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: -10 }}
-                            className="text-xl font-bold text-slate-900 dark:text-white tracking-tight whitespace-nowrap overflow-hidden"
+                            className="flex flex-col"
                         >
-                            flowyml
-                        </motion.h1>
+                            <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight whitespace-nowrap overflow-hidden">
+                                FlowyML
+                            </h1>
+                            <span className="text-[10px] text-slate-400 dark:text-slate-500">by UnicoLab</span>
+                        </motion.div>
                     )}
                 </AnimatePresence>
             </div>
@@ -123,14 +141,19 @@ export function Sidebar({ collapsed, setCollapsed }) {
 
             {/* Footer */}
             <div className="p-4 border-t border-slate-100 dark:border-slate-700">
-                <div className={`bg-slate-50 dark:bg-slate-900 rounded-lg p-4 border border-slate-100 dark:border-slate-700 transition-all duration-200 ${collapsed ? 'p-2 flex justify-center' : ''}`}>
+                <div className={`bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 rounded-lg p-3 border border-slate-200 dark:border-slate-700 transition-all duration-200 ${collapsed ? 'p-2 flex justify-center' : ''}`}>
                     {!collapsed ? (
                         <>
-                            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 whitespace-nowrap">flowyml v1.3.0</p>
-                            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 whitespace-nowrap">Local Environment</p>
+                            <div className="flex items-center gap-2 mb-2">
+                                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                <p className="text-xs font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">FlowyML v1.3.0</p>
+                            </div>
+                            <p className="text-[10px] text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                                Made with ❤️ by <span className="font-medium text-primary-500">UnicoLab</span>
+                            </p>
                         </>
                     ) : (
-                        <div className="w-2 h-2 rounded-full bg-emerald-500" title="Online" />
+                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="Online" />
                     )}
                 </div>
             </div>

@@ -8,10 +8,14 @@ import logging
 import subprocess
 import json
 from typing import Any
+from flowyml.utils.observability import trace_execution
 
 from flowyml.plugins.base import ModelDeployerPlugin, PluginMetadata, PluginType
 
 logger = logging.getLogger(__name__)
+
+
+# import removed from here
 
 
 class GCPCloudRunDeployer(ModelDeployerPlugin):
@@ -55,6 +59,7 @@ class GCPCloudRunDeployer(ModelDeployerPlugin):
                 "gcloud CLI is required for GCP Cloud Run deployment. " "Please install the Google Cloud SDK.",
             )
 
+    @trace_execution(operation_name="cloud_run_deploy")
     def deploy(
         self,
         model_uri: str,
@@ -159,6 +164,7 @@ class GCPCloudRunDeployer(ModelDeployerPlugin):
         except subprocess.CalledProcessError:
             return None
 
+    @trace_execution(operation_name="cloud_run_undeploy")
     def undeploy(self, endpoint_name: str) -> bool:
         """Delete Cloud Run service."""
         try:
@@ -179,6 +185,7 @@ class GCPCloudRunDeployer(ModelDeployerPlugin):
             logger.error(f"Failed to delete service: {e}")
             return False
 
+    @trace_execution(operation_name="cloud_run_predict")
     def predict(self, endpoint: str, data: Any) -> Any:
         """Make prediction (helper using curl/requests if desired, but usually done via HTTP client)."""
         # Simple implementation using requests if available, or just printing instructions

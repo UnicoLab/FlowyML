@@ -68,6 +68,22 @@ class LocalOrchestrator(Orchestrator):
         result = PipelineResult(run_id, pipeline.name)
         result.attach_configs(resources, docker_config)
 
+        # Save run as "running" immediately so artifacts can reference run_id
+        # This ensures FK constraints are satisfied when artifacts are created during step execution
+        if pipeline.metadata_store:
+            try:
+                initial_metadata = {
+                    "run_id": run_id,
+                    "pipeline_name": pipeline.name,
+                    "status": "running",
+                    "start_time": result.start_time.isoformat() if result.start_time else None,
+                    "project": getattr(pipeline, "_project_name", None),
+                    "context": dict(pipeline.context) if pipeline.context else {},
+                }
+                pipeline.metadata_store.save_run(run_id, initial_metadata)
+            except Exception:
+                pass  # Silently continue if initial save fails
+
         # Run pipeline start hooks
         hooks = get_global_hooks()
         hooks.run_pipeline_start_hooks(pipeline)

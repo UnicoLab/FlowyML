@@ -73,6 +73,63 @@ class Stack:
         # In a real implementation, this would set the global active stack
         pass
 
+    def prepare_docker_image(self, docker_config: Any, pipeline_name: str, project_name: str | None = None) -> str:
+        """Prepare the Docker image for execution.
+
+        Args:
+            docker_config: Docker configuration object.
+            pipeline_name: Name of the pipeline being built.
+            project_name: Optional name of the project.
+
+        Returns:
+            str: The full URI of the docker image to use.
+
+        Raises:
+            ValueError: If image cannot be prepared (e.g. no registry configured for build).
+        """
+        # 1. If explicit image provided, use it
+        if docker_config.image:
+            return docker_config.image
+
+        # 2. If no registry, we cannot build/push for remote execution
+        if not self.container_registry:
+            raise ValueError(
+                "Remote execution requires a specific 'image' in DockerConfiguration "
+                "or a configured 'container_registry' in the Stack for automatic building.",
+            )
+
+        # 3. Trigger build and push
+        # Use safe naming: registry/project/pipeline:latest OR registry/pipeline:latest
+        if project_name:
+            image_name = f"{project_name}-{pipeline_name}"
+        else:
+            image_name = pipeline_name
+
+        # Clean image name to be docker compatible (lowercase, alphanumeric)
+        import re
+
+        safe_name = re.sub(r"[^a-zA-Z0-9_\-]", "_", image_name).lower()
+
+        image_tag = f"{self.container_registry.registry_uri}/{safe_name}:latest"
+
+        # Build
+        try:
+            from flowyml.core.image_builder import DockerImageBuilder
+
+            builder = DockerImageBuilder()
+            builder.build_image(docker_config, image_tag)
+        except ImportError:
+            # Fallback if file not found (shouldn't happen in prod)
+            print("Warning: DockerImageBuilder not found. Skipping build.")
+
+        # Push
+        print(f"🚀 Pushing image: {image_tag}")
+        try:
+            pushed_uri = self.container_registry.push_image(image_tag)
+            return pushed_uri
+        except Exception as e:
+            raise RuntimeError(f"Failed to push image to registry: {e}")
+
     def validate(self) -> bool:
         """Validate that all stack components are properly configured."""
         # Check that all components are properly configured

@@ -8,7 +8,16 @@ import traceback
 
 from flowyml.monitoring.alerts import alert_manager, AlertLevel
 
-# Include API routers
+# OpenTelemetry Imports
+from opentelemetry import trace, metrics
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.exporter.prometheus import PrometheusMetricReader
+from opentelemetry.sdk.resources import SERVICE_NAME, Resource
+from prometheus_client import make_asgi_app
+
 from flowyml.ui.backend.routers import (
     pipelines,
     runs,
@@ -21,17 +30,47 @@ from flowyml.ui.backend.routers import (
     leaderboard,
     execution,
     plugins,
-    metrics,
+    metrics as metrics_router,
     client,
     stats,
     websocket,
+    deployments,
+    model_explorer,
 )
+
+# Initialize OpenTelemetry
+resource = Resource(
+    attributes={
+        SERVICE_NAME: "flowyml-backend",
+    },
+)
+
+# Tracing
+trace_provider = TracerProvider(resource=resource)
+# For now, just console export or no-op if no collector.
+# In production, we'd add OTLPSpanExporter
+trace_provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
+trace.set_tracer_provider(trace_provider)
+
+# Metrics (Prometheus)
+reader = PrometheusMetricReader()
+meter_provider = MeterProvider(resource=resource, metric_readers=[reader])
+metrics.set_meter_provider(meter_provider)
+
+# Routers included above
 
 app = FastAPI(
     title="flowyml UI",
     description="Real-time UI for flowyml pipelines",
     version="0.1.0",
 )
+
+# Instrument FastAPI
+FastAPIInstrumentor.instrument_app(app)
+
+# Expose Prometheus metrics
+metrics_app = make_asgi_app()
+app.mount("/metrics", metrics_app)
 
 # Configure CORS
 app.add_middleware(
@@ -74,11 +113,13 @@ app.include_router(schedules.router, prefix="/api/schedules", tags=["schedules"]
 app.include_router(notifications.router, prefix="/api/notifications", tags=["notifications"])
 app.include_router(leaderboard.router, prefix="/api/leaderboard", tags=["leaderboard"])
 app.include_router(execution.router, prefix="/api/execution", tags=["execution"])
-app.include_router(metrics.router, prefix="/api/metrics", tags=["metrics"])
+app.include_router(metrics_router.router, prefix="/api/metrics", tags=["metrics"])
 app.include_router(plugins.router, prefix="/api", tags=["plugins"])
 app.include_router(client.router, prefix="/api/client", tags=["client"])
 app.include_router(stats.router, prefix="/api/stats", tags=["stats"])
 app.include_router(websocket.router, tags=["websocket"])
+app.include_router(deployments.router, prefix="/api", tags=["deployments"])
+app.include_router(model_explorer.router, prefix="/api", tags=["model-explorer"])
 
 
 # Static file serving for frontend

@@ -188,9 +188,26 @@ def show_stack(stack_name: str, config: str | None) -> None:
 @click.argument("stack_name")
 @click.option("--config", "-c", help="Path to flowyml.yaml")
 def set_active_stack(stack_name: str, config: str | None) -> None:
-    """Set the active stack."""
+    """Set the active stack (alias for switch)."""
+    switch_stack_impl(stack_name, config)
+
+
+@stack.command("switch")
+@click.argument("stack_name")
+@click.option("--config", "-c", help="Path to flowyml.yaml")
+@click.option("--validate/--no-validate", default=True, help="Validate stack configuration after switching")
+def switch_stack(stack_name: str, config: str | None, validate: bool) -> None:
+    """Switch to a different stack."""
+    switch_stack_impl(stack_name, config, validate)
+
+
+def switch_stack_impl(stack_name: str, config: str | None, validate: bool = False) -> None:
     from flowyml.plugins.stack_config import get_stack_manager
     from flowyml.plugins.config import get_config
+
+    from rich.console import Console
+
+    console = Console()
 
     # Initialize config if path provided
     if config:
@@ -199,12 +216,27 @@ def set_active_stack(stack_name: str, config: str | None) -> None:
     manager = get_stack_manager()
 
     if manager.set_active_stack(stack_name):
-        click.echo(f"✅ Active stack set to '{stack_name}'")
+        console.print(f"[bold green]✅ Active stack set to '{stack_name}'[/bold green]")
+
+        if validate:
+            stack = manager.get_stack(stack_name)
+            console.print(f"🔍 Validating stack '{stack_name}' environment...")
+
+            # Check for remote requirements
+            if stack.orchestrator and stack.orchestrator.get("type") != "local":
+                console.print("[yellow]Remote stack detected. Checking Docker configuration...[/yellow]")
+                if not stack.container_registry:
+                    console.print(
+                        "[bold red]❌ Warning: Remote stack usually requires a Container Registry for automatic builds.[/bold red]",
+                    )
+                    console.print(
+                        "   Please configure 'container_registry' in your stack or ensure you provide pre-built image URIs.",
+                    )
     else:
-        click.echo(f"❌ Stack '{stack_name}' not found", err=True)
+        console.print(f"[bold red]❌ Stack '{stack_name}' not found[/bold red]")
         available = manager.list_stacks()
         if available:
-            click.echo(f"Available stacks: {', '.join(available)}")
+            console.print(f"Available stacks: {', '.join(available)}")
         sys.exit(1)
 
 

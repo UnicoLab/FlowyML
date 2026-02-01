@@ -1,7 +1,25 @@
-version: '3.8'
+# =============================================================================
+# FlowyML Docker Compose - Local Development Stack
+# =============================================================================
+# This file defines the complete local development environment for FlowyML.
+#
+# Usage:
+#   make local-deploy     # Start all services
+#   make local-stop       # Stop all services
+#   make docker-build     # Rebuild images
+#
+# Services:
+#   - postgres:    PostgreSQL 15 database
+#   - backend:     FlowyML API server (port 8080)
+#   - frontend:    FlowyML Web UI (port 80)
+#   - prometheus:  Metrics collection (port 9090)
+#   - grafana:     Dashboards (port 3001)
+# =============================================================================
 
 services:
-  # PostgreSQL Database (Production-ready default)
+  # ---------------------------------------------------------------------------
+  # PostgreSQL Database
+  # ---------------------------------------------------------------------------
   postgres:
     image: postgres:15-alpine
     container_name: flowyml-postgres
@@ -9,34 +27,40 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-flowyml}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-flowyml_secure_password}
       POSTGRES_DB: ${POSTGRES_DB:-flowyml}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
-    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - flowyml-network
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U flowyml" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-flowyml} -d ${POSTGRES_DB:-flowyml}" ]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
+    restart: unless-stopped
 
+  # ---------------------------------------------------------------------------
   # FlowyML Backend API
+  # ---------------------------------------------------------------------------
   backend:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: flowyml/ui/backend/Dockerfile
+    image: flowyml-backend:latest
     container_name: flowyml-backend
     ports:
-      - "8080:8080"
+      - "${FLOWYML_PORT:-8080}:8080"
     environment:
-      # Database Configuration (PostgreSQL by default)
+      # Database Configuration
       FLOWYML_DATABASE_URL: ${FLOWYML_DATABASE_URL:-postgresql://flowyml:flowyml_secure_password@postgres:5432/flowyml}
 
       # Storage Configuration
       FLOWYML_METADATA_DB: ${FLOWYML_METADATA_DB:-/app/data/metadata.db}
       FLOWYML_ARTIFACTS_DIR: ${FLOWYML_ARTIFACTS_DIR:-/app/artifacts}
 
-      # Remote Server URLs (for client configuration)
+      # Server URLs (for client configuration)
       FLOWYML_REMOTE_SERVER_URL: ${FLOWYML_REMOTE_SERVER_URL:-http://localhost:8080}
       FLOWYML_REMOTE_UI_URL: ${FLOWYML_REMOTE_UI_URL:-http://localhost:80}
 
@@ -45,39 +69,100 @@ services:
       FLOWYML_API_TOKEN: ${FLOWYML_API_TOKEN:-}
 
       # Environment
-      FLOWYML_ENV: ${FLOWYML_ENV:-production}
+      FLOWYML_ENV: ${FLOWYML_ENV:-development}
+
+      # Logging
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
     volumes:
-      - metadata:/app/data
-      - artifacts:/app/artifacts
+      - flowyml_data:/app/data
+      - flowyml_artifacts:/app/artifacts
     depends_on:
       postgres:
         condition: service_healthy
+    networks:
+      - flowyml-network
     restart: unless-stopped
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
 
+  # ---------------------------------------------------------------------------
   # FlowyML Frontend UI
+  # ---------------------------------------------------------------------------
   frontend:
     build:
       context: flowyml/ui/frontend
       dockerfile: Dockerfile
+    image: flowyml-frontend:latest
     container_name: flowyml-frontend
     ports:
-      - "80:80"
+      - "${FLOWYML_UI_PORT:-8081}:80"
     environment:
       VITE_API_URL: ${FLOWYML_REMOTE_SERVER_URL:-http://localhost:8080}
     depends_on:
       - backend
+    networks:
+      - flowyml-network
     restart: unless-stopped
 
+  # ---------------------------------------------------------------------------
+  # Prometheus - Metrics Collection
+  # ---------------------------------------------------------------------------
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    container_name: flowyml-prometheus
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'
+      - '--web.enable-lifecycle'
+    networks:
+      - flowyml-network
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # Grafana - Dashboards & Visualization
+  # ---------------------------------------------------------------------------
+  grafana:
+    image: grafana/grafana:10.2.2
+    container_name: flowyml-grafana
+    ports:
+      - "${GRAFANA_PORT:-3001}:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-http://localhost:3001}
+    volumes:
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./docker/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    networks:
+      - flowyml-network
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+# -----------------------------------------------------------------------------
+# Volumes
+# -----------------------------------------------------------------------------
 volumes:
   postgres_data:
     driver: local
-  metadata:
+  flowyml_data:
     driver: local
-  artifacts:
+  flowyml_artifacts:
     driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+# -----------------------------------------------------------------------------
+# Networks
+# -----------------------------------------------------------------------------
+networks:
+  flowyml-network:
+    driver: bridge

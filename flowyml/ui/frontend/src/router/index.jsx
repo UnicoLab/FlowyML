@@ -18,6 +18,8 @@ import { Settings } from '../app/settings/page';
 import { TokenManagement } from '../app/tokens/page';
 import { RunComparisonPage } from '../app/compare/page';
 import { ExperimentComparisonPage } from '../app/experiments/compare/page';
+import { DeploymentLab } from '../app/deployments/page';
+import { ModelExplorer } from '../app/model-explorer/page';
 
 export const router = createBrowserRouter([
     {
@@ -42,6 +44,8 @@ export const router = createBrowserRouter([
             { path: 'plugins', element: <Plugins /> },
             { path: 'settings', element: <Settings /> },
             { path: 'tokens', element: <TokenManagement /> },
+            { path: 'deployments', element: <DeploymentLab /> },
+            { path: 'model-explorer', element: <ModelExplorer /> },
         ],
     },
 ]);

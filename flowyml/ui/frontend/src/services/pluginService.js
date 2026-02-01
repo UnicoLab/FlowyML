@@ -66,8 +66,10 @@ class PluginService {
         }
     }
 
-    async importZenMLStack(stackName) {
+    async importStack(stackName, type = 'zenml') {
         try {
+            // currently backend only supports zenml import at this endpoint
+            // in the future we can add ?type= param or body field
             const response = await fetch(`${API_BASE_URL}/plugins/import-stack`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

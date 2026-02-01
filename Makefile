@@ -23,26 +23,30 @@ help: ## Show this help message
 # =============================================================================
 
 docker-build: ## Build Docker images for backend and frontend
-	docker-compose build
+	docker compose build
+
+docker-build-clean: ## Build Docker images without cache
+	docker compose build --no-cache
 
 docker-up: ## Start Docker stack (backend + frontend)
-	docker-compose up -d
+	docker compose up -d
 
 docker-down: ## Stop Docker stack
-	docker-compose down
+	docker compose down
 
 docker-logs: ## View Docker logs
-	docker-compose logs -f
+	docker compose logs -f
 
 docker-clean: ## Stop Docker stack and clean volumes
-	docker-compose down -v
+	docker compose down -v --remove-orphans
+	docker system prune -f
 	rm -rf .flowyml/metadata.db .flowyml/artifacts
 
 docker-restart: ## Restart Docker stack
-	docker-compose restart
+	docker compose restart
 
 docker-ps: ## Show running Docker containers
-	docker-compose ps
+	docker compose ps
 
 # =============================================================================
 # Setup and Installation
@@ -233,6 +237,39 @@ all-dev: docker-up ## Start full stack with Docker
 	@echo "Backend: http://localhost:8080"
 	@echo "Frontend: http://localhost:80"
 
+
+local-deploy: ## Start full local stack (App, DB, Observability)
+	@echo "🚀 Starting FlowyML local stack..."
+	docker compose up -d
+	@echo ""
+	@echo "✅ FlowyML local stack is running!"
+	@echo ""
+	@echo "📊 Services:"
+	@echo "   Frontend:   http://localhost:80"
+	@echo "   Backend:    http://localhost:8080"
+	@echo "   API Docs:   http://localhost:8080/docs"
+	@echo "   Grafana:    http://localhost:3001 (admin/admin)"
+	@echo "   Prometheus: http://localhost:9090"
+	@echo ""
+	@echo "Run 'make docker-logs' to view logs"
+	@echo "Run 'make local-stop' to stop the stack"
+
+local-stop: docker-down ## Stop local stack
+	@echo "🛑 FlowyML local stack stopped."
+
+local-health: ## Check health of local stack services
+	@echo "🔍 Checking service health..."
+	@echo ""
+	@curl -sf http://localhost:8080/api/health && echo "✅ Backend:  healthy" || echo "❌ Backend:  unhealthy"
+	@curl -sf http://localhost:80 > /dev/null && echo "✅ Frontend: healthy" || echo "❌ Frontend: unhealthy"
+	@curl -sf http://localhost:9090/-/healthy > /dev/null && echo "✅ Prometheus: healthy" || echo "❌ Prometheus: unhealthy"
+	@curl -sf http://localhost:3001/api/health > /dev/null && echo "✅ Grafana: healthy" || echo "❌ Grafana: unhealthy"
+
+local-test: ## Run a test pipeline against the local stack
+	@echo "Running local stack health check..."
+	@curl -s http://localhost:8080/api/health | python3 -m json.tool || echo "Backend not responding"
+	@echo "Test completed."
+
 # =============================================================================
 # CI/CD
 # =============================================================================
@@ -279,3 +316,67 @@ info: ## Show project information
 
 version: ## Show flowyml version
 	$(flowyml) --version
+
+# =============================================================================
+# Infrastructure & Deployment
+# =============================================================================
+
+# Variables for deployment
+GCP_PROJECT ?= $(shell gcloud config get-value project)
+GCP_REGION ?= us-central1
+AWS_REGION ?= us-east-1
+IMAGE_TAG ?= latest
+
+infra-init-gcp: ## Initialize Terraform for GCP
+	cd infra/gcp && terraform init
+
+infra-plan-gcp: ## Plan Terraform for GCP
+	cd infra/gcp && terraform plan \
+		-var="project_id=$(GCP_PROJECT)" \
+		-var="region=$(GCP_REGION)" \
+		-var="backend_image=gcr.io/$(GCP_PROJECT)/flowyml-backend:$(IMAGE_TAG)" \
+		-var="frontend_image=gcr.io/$(GCP_PROJECT)/flowyml-frontend:$(IMAGE_TAG)" \
+		-var="db_password=$(DB_PASSWORD)"
+
+infra-apply-gcp: ## Apply Terraform for GCP
+	cd infra/gcp && terraform apply -auto-approve \
+		-var="project_id=$(GCP_PROJECT)" \
+		-var="region=$(GCP_REGION)" \
+		-var="backend_image=gcr.io/$(GCP_PROJECT)/flowyml-backend:$(IMAGE_TAG)" \
+		-var="frontend_image=gcr.io/$(GCP_PROJECT)/flowyml-frontend:$(IMAGE_TAG)" \
+		$(if $(wildcard infra/gcp/terraform.tfvars.secret),-var-file="terraform.tfvars.secret",-var="db_password=$(DB_PASSWORD)")
+
+docker-push-gcp: ## Build and push images to GCR
+	gcloud auth configure-docker
+	docker build -f Dockerfile -t gcr.io/$(GCP_PROJECT)/flowyml-backend:$(IMAGE_TAG) .
+	docker build -f flowyml/ui/frontend/Dockerfile -t gcr.io/$(GCP_PROJECT)/flowyml-frontend:$(IMAGE_TAG) flowyml/ui/frontend
+	docker push gcr.io/$(GCP_PROJECT)/flowyml-backend:$(IMAGE_TAG)
+	docker push gcr.io/$(GCP_PROJECT)/flowyml-frontend:$(IMAGE_TAG)
+
+deploy-gcp: docker-push-gcp infra-init-gcp infra-apply-gcp ## Full deployment to GCP
+
+infra-init-aws: ## Initialize Terraform for AWS
+	cd infra/aws && terraform init
+
+infra-plan-aws: ## Plan Terraform for AWS
+	cd infra/aws && terraform plan \
+		-var="region=$(AWS_REGION)" \
+		-var="backend_image=$(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/flowyml-backend:$(IMAGE_TAG)" \
+		-var="frontend_image=$(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/flowyml-frontend:$(IMAGE_TAG)" \
+		-var="db_password=$(DB_PASSWORD)"
+
+infra-apply-aws: ## Apply Terraform for AWS
+	cd infra/aws && terraform apply -auto-approve \
+		-var="region=$(AWS_REGION)" \
+		-var="backend_image=$(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/flowyml-backend:$(IMAGE_TAG)" \
+		-var="frontend_image=$(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/flowyml-frontend:$(IMAGE_TAG)" \
+		$(if $(wildcard infra/aws/terraform.tfvars.secret),-var-file="terraform.tfvars.secret",-var="db_password=$(DB_PASSWORD)")
+
+docker-push-aws: ## Build and push images to ECR
+	aws ecr get-login-password --region $(AWS_REGION) | docker login --username AWS --password-stdin $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com
+	docker build -f Dockerfile -t $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/flowyml-backend:$(IMAGE_TAG) .
+	docker build -f flowyml/ui/frontend/Dockerfile -t $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/flowyml-frontend:$(IMAGE_TAG) flowyml/ui/frontend
+	docker push $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/flowyml-backend:$(IMAGE_TAG)
+	docker push $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/flowyml-frontend:$(IMAGE_TAG)
+
+deploy-aws: docker-push-aws infra-init-aws infra-apply-aws ## Full deployment to AWS

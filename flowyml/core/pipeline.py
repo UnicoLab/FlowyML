@@ -70,13 +70,15 @@ class PipelineResult:
             "start_time": self.start_time.isoformat(),
             "end_time": self.end_time.isoformat() if self.end_time else None,
             "duration_seconds": self.duration_seconds,
-            "resource_config": self.resource_config.to_dict()
-            if hasattr(self.resource_config, "to_dict")
-            else self.resource_config,
-            "docker_config": self.docker_config.to_dict()
-            if hasattr(self.docker_config, "to_dict")
-            else self.docker_config,
-            "remote_job_id": self.remote_job_id,
+            "metadata": {
+                "resources": self.resource_config.to_dict()
+                if hasattr(self.resource_config, "to_dict")
+                else self.resource_config,
+                "docker": self.docker_config.to_dict()
+                if hasattr(self.docker_config, "to_dict")
+                else self.docker_config,
+                "remote_job_id": self.remote_job_id,
+            },
             "steps": {
                 name: {
                     "success": result.success,
@@ -243,10 +245,17 @@ class Pipeline:
         # Metadata store for UI integration - use same store as UI
         from flowyml.storage.metadata import SQLiteMetadataStore
         from flowyml.utils.config import get_config
+        import os
 
         config = get_config()
-        # Use the same metadata database path as the UI to ensure visibility
-        self.metadata_store = SQLiteMetadataStore(db_path=str(config.metadata_db))
+        # Use simple environment variable check to allow connecting to shared DB
+        db_url = os.environ.get("FLOWYML_DATABASE_URL")
+
+        if db_url:
+            self.metadata_store = SQLiteMetadataStore(db_url=db_url)
+        else:
+            # Use the same metadata database path as the UI to ensure visibility
+            self.metadata_store = SQLiteMetadataStore(db_path=str(config.metadata_db))
 
         if stack:
             self._apply_stack(stack, locked=True)
@@ -487,6 +496,21 @@ class Pipeline:
 
         resource_config = self._coerce_resource_config(resources)
         docker_cfg = self._coerce_docker_config(docker_config)
+
+        # Prepare Docker Image if running on a stack
+        if self.stack and docker_cfg:
+            try:
+                # This handles building/pushing or validating the URI
+                project_name = getattr(self, "project_name", None)
+                docker_cfg.image = self.stack.prepare_docker_image(
+                    docker_cfg,
+                    pipeline_name=self.name,
+                    project_name=project_name,
+                )
+            except Exception as e:
+                # If preparation fails (e.g. build error), we should probably fail the run
+                # or at least warn. For now, we'll fail to prevent running with bad config
+                raise RuntimeError(f"Failed to prepare docker image: {e}") from e
 
         # Initialize display system for beautiful CLI output
         display = None

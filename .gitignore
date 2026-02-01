@@ -61,3 +61,11 @@ docs/_build/
 
 node_modules/
 .flowyml_scheduler.db
+
+# Terraform
+*.tfstate
+*.tfstate.backup
+.terraform/
+*.tfvars
+*.tfvars.secret
+.terraform.lock.hcl

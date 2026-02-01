@@ -184,6 +184,15 @@ def get_config() -> FlowymlConfig:
             # Load from default location
             _global_config = FlowymlConfig.load()
 
+        # Apply environment variable overrides
+        env_config = get_env_config()
+        for key, value in env_config.items():
+            if hasattr(_global_config, key):
+                setattr(_global_config, key, value)
+
+        # Re-normalize paths after env var overrides (env vars are strings, not Path objects)
+        _global_config.__post_init__()
+
         # Create necessary directories
         _global_config.create_directories()
 
@@ -202,9 +211,19 @@ def set_config(config: FlowymlConfig) -> None:
 
 
 def reset_config() -> None:
-    """Reset global configuration to defaults."""
+    """Reset global configuration to defaults and apply environment variable overrides."""
     global _global_config
     _global_config = FlowymlConfig()
+
+    # Apply environment variable overrides
+    env_config = get_env_config()
+    for key, value in env_config.items():
+        if hasattr(_global_config, key):
+            setattr(_global_config, key, value)
+
+    # Re-normalize paths after env var overrides (env vars are strings, not Path objects)
+    _global_config.__post_init__()
+
     _global_config.create_directories()
 
 
@@ -272,20 +291,20 @@ def get_env_config() -> dict[str, Any]:
 
     # Map environment variables to config fields
     env_mappings = {
-        "flowyml_HOME": "flowyml_home",
-        "flowyml_ARTIFACTS_DIR": "artifacts_dir",
-        "flowyml_METADATA_DB": "metadata_db",
-        "flowyml_CACHE_DIR": "cache_dir",
-        "flowyml_DEFAULT_STACK": "default_stack",
-        "flowyml_EXECUTION_MODE": "execution_mode",
-        "flowyml_REMOTE_SERVER_URL": "remote_server_url",
-        "flowyml_REMOTE_UI_URL": "remote_ui_url",
-        "flowyml_SERVER_URL": "remote_ui_url",  # Alias for FLOWYML_SERVER_URL -> remote_ui_url
-        "flowyml_ENABLE_CACHING": "enable_caching",
-        "flowyml_LOG_LEVEL": "log_level",
-        "flowyml_UI_HOST": "ui_host",
-        "flowyml_UI_PORT": "ui_port",
-        "flowyml_DEBUG": "debug_mode",
+        "FLOWYML_HOME": "flowyml_home",
+        "FLOWYML_ARTIFACTS_DIR": "artifacts_dir",
+        "FLOWYML_METADATA_DB": "metadata_db",
+        "FLOWYML_CACHE_DIR": "cache_dir",
+        "FLOWYML_DEFAULT_STACK": "default_stack",
+        "FLOWYML_EXECUTION_MODE": "execution_mode",
+        "FLOWYML_REMOTE_SERVER_URL": "remote_server_url",
+        "FLOWYML_REMOTE_UI_URL": "remote_ui_url",
+        "FLOWYML_SERVER_URL": "remote_server_url",  # Alias
+        "FLOWYML_ENABLE_CACHING": "enable_caching",
+        "FLOWYML_LOG_LEVEL": "log_level",
+        "FLOWYML_UI_HOST": "ui_host",
+        "FLOWYML_UI_PORT": "ui_port",
+        "FLOWYML_DEBUG": "debug_mode",
     }
 
     for env_var, config_key in env_mappings.items():

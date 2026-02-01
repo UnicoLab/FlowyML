@@ -1,7 +1,6 @@
 from fastapi import APIRouter, HTTPException, UploadFile, File
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
-from flowyml.storage.metadata import SQLiteMetadataStore
 from flowyml.core.project import ProjectManager
 from pathlib import Path
 from flowyml.ui.backend.dependencies import get_store
@@ -18,7 +17,8 @@ def _save_file_sync(src, dst):
 
 
 def _iter_metadata_stores():
-    stores = [(None, SQLiteMetadataStore())]
+    # Use the main configured store (PostgreSQL in Docker deployment)
+    stores = [(None, get_store())]
     try:
         manager = ProjectManager()
         for project_meta in manager.list_projects():
@@ -51,6 +51,14 @@ async def list_assets(limit: int = 50, asset_type: str = None, run_id: str = Non
     """List all assets, optionally filtered by project."""
     try:
         combined = []
+        project_run_ids = set()
+
+        # If filtering by project, first get all run_ids for that project
+        if project:
+            main_store = get_store()
+            all_runs = main_store.list_runs(limit=1000)
+            project_run_ids = {r.get("run_id") for r in all_runs if r.get("project") == project}
+
         for project_name, store in _iter_metadata_stores():
             if project and project_name and project != project_name:
                 continue
@@ -61,14 +69,25 @@ async def list_assets(limit: int = 50, asset_type: str = None, run_id: str = Non
             if run_id:
                 filters["run_id"] = run_id
 
-            assets = store.list_assets(limit=limit, **filters)
+            assets = store.list_assets(limit=limit * 2, **filters)  # Get more to filter
             for asset in assets:
                 combined.append((asset, project_name))
 
         assets = _dedupe_assets(combined)
 
+        # Enhanced filtering: include artifacts that either:
+        # 1. Have project field matching
+        # 2. Have run_id that belongs to the project
         if project:
-            assets = [a for a in assets if a.get("project") == project]
+            filtered_assets = []
+            for a in assets:
+                if a.get("project") == project:
+                    filtered_assets.append(a)
+                elif a.get("run_id") in project_run_ids:
+                    # Also include and tag with project
+                    a["project"] = project
+                    filtered_assets.append(a)
+            assets = filtered_assets
 
         assets = assets[:limit]
 

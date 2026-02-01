@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Package, Download, RefreshCw, Server } from 'lucide-react';
+import { Package, Download, Import } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
 import { PluginBrowser } from './PluginBrowser';
 import { InstalledPlugins } from './InstalledPlugins';
-import { ZenMLIntegration } from './ZenMLIntegration';
+import { StackImport } from './StackImport';
 
 export function PluginManager() {
     const [activeTab, setActiveTab] = useState('browser');
@@ -11,7 +11,7 @@ export function PluginManager() {
     const tabs = [
         { id: 'browser', label: 'Plugin Browser', icon: Package },
         { id: 'installed', label: 'Installed', icon: Download },
-        { id: 'zenml', label: 'ZenML Integration', icon: Server },
+        { id: 'import', label: 'Import Stack', icon: Import },
     ];
 
     return (
@@ -53,7 +53,7 @@ export function PluginManager() {
             <CardContent className="p-6">
                 {activeTab === 'browser' && <PluginBrowser />}
                 {activeTab === 'installed' && <InstalledPlugins />}
-                {activeTab === 'zenml' && <ZenMLIntegration />}
+                {activeTab === 'import' && <StackImport />}
             </CardContent>
         </Card>
     );

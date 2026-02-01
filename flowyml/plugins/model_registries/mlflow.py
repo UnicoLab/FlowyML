@@ -6,10 +6,14 @@ allowing distinct management from Experiment Tracking.
 
 import logging
 from typing import Any
+from flowyml.utils.observability import trace_execution
 
 from flowyml.plugins.base import ModelRegistryPlugin, PluginMetadata, PluginType
 
 logger = logging.getLogger(__name__)
+
+
+# import removed from here
 
 
 class MLflowModelRegistry(ModelRegistryPlugin):
@@ -58,6 +62,7 @@ class MLflowModelRegistry(ModelRegistryPlugin):
                 "mlflow is required. Install with: pip install mlflow",
             )
 
+    @trace_execution(operation_name="mlflow_register_model")
     def register_model(
         self,
         name: str,
@@ -97,6 +102,7 @@ class MLflowModelRegistry(ModelRegistryPlugin):
         logger.info(f"Registered model '{name}' version {mv.version}")
         return mv.version
 
+    @trace_execution(operation_name="mlflow_get_model")
     def get_model(self, name: str, version: str = None) -> Any:
         """Get model version details (metadata).
         To load the actual model object, use ExperimentTracker.load_model or standard mlflow.load_model.
@@ -109,6 +115,7 @@ class MLflowModelRegistry(ModelRegistryPlugin):
             # MLflow specific: get latest versions for all stages
             return self._client.get_latest_versions(name, stages=None)
 
+    @trace_execution(operation_name="mlflow_list_models")
     def list_models(self, name: str = None) -> list[dict]:
         """List registered models."""
         self.initialize()
@@ -124,6 +131,7 @@ class MLflowModelRegistry(ModelRegistryPlugin):
             for m in models
         ]
 
+    @trace_execution(operation_name="mlflow_transition_stage")
     def transition_model_stage(
         self,
         name: str,

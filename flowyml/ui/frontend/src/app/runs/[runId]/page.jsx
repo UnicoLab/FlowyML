@@ -14,6 +14,7 @@ import { ProjectSelector } from '../../../components/ProjectSelector';
 import { CodeSnippet } from '../../../components/ui/CodeSnippet';
 import { TrainingMetricsPanel } from '../../../components/TrainingMetricsPanel';
 import { TrainingHistoryChart } from '../../../components/TrainingHistoryChart';
+import { RunMetaPanel } from '../../../components/RunMetaPanel';
 
 export function RunDetails() {
     const { runId } = useParams();
@@ -231,12 +232,16 @@ export function RunDetails() {
                 />
             </div>
 
+            {/* Environment & Metadata Panel */}
+            <RunMetaPanel run={run} />
+
             {/* Main Content - Dynamic Split View */}
-            <div className={`grid gap-6 transition-all duration-300 ${
-                stepPanelExpanded
+
+            {/* Main Content - Dynamic Split View */}
+            <div className={`grid gap-6 transition-all duration-300 ${stepPanelExpanded
                     ? 'grid-cols-1 lg:grid-cols-2'
                     : 'grid-cols-1 lg:grid-cols-3'
-            }`}>
+                }`}>
                 {/* DAG Visualization */}
                 <div className={stepPanelExpanded ? 'lg:col-span-1' : 'lg:col-span-2'}>
                     <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
@@ -278,7 +283,7 @@ export function RunDetails() {
                                             found = artifacts.find(a =>
                                                 a.type === expectedType &&
                                                 (a.name.toLowerCase().includes(suffix.toLowerCase()) ||
-                                                 suffix.toLowerCase().includes(a.name.toLowerCase().replace(/_/g, '')))
+                                                    suffix.toLowerCase().includes(a.name.toLowerCase().replace(/_/g, '')))
                                             );
                                         }
 
@@ -322,9 +327,8 @@ export function RunDetails() {
                     </div>
 
                     {selectedStepData ? (
-                        <Card className={`overflow-hidden transition-all duration-300 ${
-                            stepPanelExpanded ? 'h-auto' : ''
-                        }`}>
+                        <Card className={`overflow-hidden transition-all duration-300 ${stepPanelExpanded ? 'h-auto' : ''
+                            }`}>
                             {/* Step Header */}
                             <div className="pb-4 border-b border-slate-100 dark:border-slate-700">
                                 <div className="flex items-center justify-between">
@@ -385,9 +389,8 @@ export function RunDetails() {
                             </div>
 
                             {/* Tab Content - Larger when expanded */}
-                            <div className={`mt-4 overflow-y-auto transition-all duration-300 ${
-                                stepPanelExpanded ? 'max-h-[600px]' : 'max-h-[450px]'
-                            }`}>
+                            <div className={`mt-4 overflow-y-auto transition-all duration-300 ${stepPanelExpanded ? 'max-h-[600px]' : 'max-h-[450px]'
+                                }`}>
                                 {activeTab === 'overview' && (
                                     <OverviewTab
                                         stepData={selectedStepData}
@@ -952,8 +955,8 @@ function ArtifactModal({ artifact, onClose }) {
                         <div className="flex gap-1 px-6 py-3 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
                             <TabBtn active={activeTab === 'visualization'} onClick={() => setActiveTab('visualization')}>
                                 {isModel ? <><LineChart size={14} /> Visualization</> :
-                                 isDataset ? <><BarChart2 size={14} /> Statistics</> :
-                                 <><Activity size={14} /> Metrics</>}
+                                    isDataset ? <><BarChart2 size={14} /> Statistics</> :
+                                        <><Activity size={14} /> Metrics</>}
                             </TabBtn>
                             {displayableProps.length > 0 && (
                                 <TabBtn active={activeTab === 'properties'} onClick={() => setActiveTab('properties')}>
@@ -1059,8 +1062,8 @@ function ArtifactModal({ artifact, onClose }) {
                                                 </span>
                                                 <span className="text-sm font-mono font-semibold text-slate-900 dark:text-white break-all">
                                                     {typeof value === 'object' ? JSON.stringify(value, null, 2) :
-                                                     typeof value === 'number' ? value.toLocaleString() :
-                                                     String(value)}
+                                                        typeof value === 'number' ? value.toLocaleString() :
+                                                            String(value)}
                                                 </span>
                                             </div>
                                         ))}
@@ -1139,11 +1142,10 @@ function TabBtn({ active, onClick, children }) {
     return (
         <button
             onClick={onClick}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all ${
-                active
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all ${active
                     ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-700/50'
-            }`}
+                }`}
         >
             {children}
         </button>
@@ -1176,9 +1178,9 @@ function MetricDisplayCard({ name, value, index }) {
 
     // Determine if this is a "good" metric (accuracy, score) or "bad" (loss, error)
     const isLossLike = name.toLowerCase().includes('loss') ||
-                       name.toLowerCase().includes('error') ||
-                       name.toLowerCase().includes('mse') ||
-                       name.toLowerCase().includes('mae');
+        name.toLowerCase().includes('error') ||
+        name.toLowerCase().includes('mse') ||
+        name.toLowerCase().includes('mae');
 
     return (
         <motion.div

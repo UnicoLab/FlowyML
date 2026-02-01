@@ -10,7 +10,7 @@ import ReactFlow, {
     Position
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { CheckCircle, XCircle, Clock, Loader, Database, Box, BarChart2, FileText, Layers } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Loader, Database, Box, BarChart2, FileText, Layers, GitFork, User } from 'lucide-react';
 import dagre from 'dagre';
 
 const stepNodeWidth = 240;
@@ -115,6 +115,11 @@ export function PipelineGraph({ dag, steps, selectedStep, onStepSelect, onArtifa
             const executionGroup = stepData.execution_group;
             const groupColor = executionGroup ? groupColors[executionGroup] : null;
 
+            // Detect special step types
+            const isConditional = node.name.toLowerCase().startsWith('if') || node.name.includes('condition');
+            const isHumanInLoop = node.name.toLowerCase().includes('approve') || node.name.includes('review') || node.name.includes('human');
+
+
             nodes.push({
                 id: node.id,
                 type: 'step',
@@ -125,7 +130,11 @@ export function PipelineGraph({ dag, steps, selectedStep, onStepSelect, onArtifa
                     cached: stepData.cached,
                     selected: selectedStep === node.id,
                     execution_group: executionGroup,
-                    groupColor: groupColor
+                    groupColor: groupColor,
+                    isConditional: isConditional,
+                    isHumanInLoop: isHumanInLoop,
+                    inputs: node.inputs || [],
+                    outputs: node.outputs || []
                 }
             });
 
@@ -266,6 +275,39 @@ function CustomStepNode({ data }) {
     const groupColor = data.groupColor;
     const hasGroup = data.execution_group && groupColor;
 
+    // Special styling for conditional nodes
+    if (data.isConditional) {
+        return (
+            <div
+                className={`
+                    relative px-4 py-3 rounded-xl border-2 transition-all duration-200 flex flex-col justify-center items-center text-center
+                    ${config.bg} border-violet-400 dark:border-violet-500
+                    ${data.selected ? 'ring-4 ring-violet-200 dark:ring-violet-900 shadow-lg scale-105' : 'hover:shadow-md'}
+                    transform rotate-0
+                `}
+                style={{ width: 180, height: 100 }} // Slightly different size for conditional
+            >
+                <Handle type="target" position={Position.Top} className="!bg-violet-400 !w-3 !h-3" />
+
+                <div className="bg-violet-100 dark:bg-violet-900/50 p-2 rounded-full mb-2">
+                    <GitFork size={20} className="text-violet-600 dark:text-violet-300" />
+                </div>
+                <div className="font-bold text-xs text-violet-900 dark:text-violet-100 uppercase tracking-wider mb-1">Decision</div>
+                <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 line-clamp-2 leading-tight">
+                    {data.label}
+                </div>
+
+                {data.status !== 'pending' && (
+                    <div className={`absolute -right-2 -top-2 rounded-full p-1 border-2 border-white dark:border-slate-900 ${config.bg}`}>
+                        <div className={config.color}>{config.icon}</div>
+                    </div>
+                )}
+
+                <Handle type="source" position={Position.Bottom} className="!bg-violet-400 !w-3 !h-3" />
+            </div>
+        );
+    }
+
     return (
         <div
             className={`
@@ -273,6 +315,7 @@ function CustomStepNode({ data }) {
                 ${hasGroup ? groupColor.bg : config.bg}
                 ${hasGroup ? groupColor.border : config.border}
                 ${data.selected ? `ring-4 ${config.ring} shadow-lg` : `hover:shadow-md ${config.shadow}`}
+                ${data.isHumanInLoop ? 'border-dashed border-amber-400 dark:border-amber-500' : ''}
             `}
             style={{ width: stepNodeWidth, height: stepNodeHeight }}
         >
@@ -280,8 +323,13 @@ function CustomStepNode({ data }) {
 
             <div className="flex flex-col h-full justify-between">
                 <div className="flex items-start gap-3">
-                    <div className={`p-1.5 rounded-md bg-slate-50 border border-slate-100 ${config.color}`}>
+                    <div className={`p-1.5 rounded-md bg-slate-50 border border-slate-100 ${config.color} relative`}>
                         {config.icon}
+                        {data.isHumanInLoop && (
+                            <div className="absolute -bottom-1 -right-1 bg-amber-100 text-amber-600 rounded-full p-0.5 border border-white" title="Human in the loop">
+                                <User size={10} />
+                            </div>
+                        )}
                     </div>
                     <div className="min-w-0 flex-1">
                         <h3 className={`font-bold text-sm truncate ${hasGroup ? groupColor.text : 'text-slate-900 dark:text-white'}`} title={data.label}>
@@ -298,24 +346,26 @@ function CustomStepNode({ data }) {
                     </div>
                 </div>
 
-                {data.duration !== undefined && (
-                    <div className="flex items-center justify-between pt-2 border-t border-slate-100 mt-1">
-                        <span className="text-xs text-slate-400 font-mono">
-                            {data.duration.toFixed(2)}s
+                <div className="flex items-center justify-between pt-2 border-t border-slate-100 mt-1">
+                    {data.duration !== undefined ? (
+                        <span className="text-xs text-slate-400 font-mono flex items-center gap-1">
+                            <Clock size={10} /> {data.duration.toFixed(2)}s
                         </span>
-                        {data.cached && (
-                            <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded uppercase tracking-wider">
-                                Cached
-                            </span>
-                        )}
-                    </div>
-                )}
+                    ) : <span className="text-xs text-slate-300">-</span>}
+
+                    {data.cached && (
+                        <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm">
+                            <Database size={8} /> Cached
+                        </span>
+                    )}
+                </div>
             </div>
 
             <Handle type="source" position={Position.Bottom} className="!bg-slate-400 !w-2 !h-2" />
         </div>
     );
 }
+
 
 
 function CustomArtifactNode({ data }) {
@@ -326,8 +376,8 @@ function CustomArtifactNode({ data }) {
         if (lowerLabel.includes('model') || lowerLabel.includes('weights')) {
             return {
                 icon: Box,
-                bgColor: 'bg-purple-100 dark:bg-purple-900/30',
-                borderColor: 'border-purple-400 dark:border-purple-600',
+                bgColor: 'bg-purple-100 dark:bg-purple-900/40',
+                borderColor: 'border-purple-300 dark:border-purple-600',
                 iconColor: 'text-purple-600 dark:text-purple-400',
                 textColor: 'text-purple-900 dark:text-purple-100'
             };
@@ -335,8 +385,8 @@ function CustomArtifactNode({ data }) {
         if (lowerLabel.includes('feature') || lowerLabel.includes('train_set') || lowerLabel.includes('test_set')) {
             return {
                 icon: Layers,
-                bgColor: 'bg-emerald-100 dark:bg-emerald-900/30',
-                borderColor: 'border-emerald-400 dark:border-emerald-600',
+                bgColor: 'bg-emerald-100 dark:bg-emerald-900/40',
+                borderColor: 'border-emerald-300 dark:border-emerald-600',
                 iconColor: 'text-emerald-600 dark:text-emerald-400',
                 textColor: 'text-emerald-900 dark:text-emerald-100'
             };
@@ -344,8 +394,8 @@ function CustomArtifactNode({ data }) {
         if (lowerLabel.includes('data') || lowerLabel.includes('batch') || lowerLabel.includes('set')) {
             return {
                 icon: Database,
-                bgColor: 'bg-blue-100 dark:bg-blue-900/30',
-                borderColor: 'border-blue-400 dark:border-blue-600',
+                bgColor: 'bg-blue-100 dark:bg-blue-900/40',
+                borderColor: 'border-blue-300 dark:border-blue-600',
                 iconColor: 'text-blue-600 dark:text-blue-400',
                 textColor: 'text-blue-900 dark:text-blue-100'
             };
@@ -353,8 +403,8 @@ function CustomArtifactNode({ data }) {
         if (lowerLabel.includes('metrics') || lowerLabel.includes('report') || lowerLabel.includes('status')) {
             return {
                 icon: BarChart2,
-                bgColor: 'bg-orange-100 dark:bg-orange-900/30',
-                borderColor: 'border-orange-400 dark:border-orange-600',
+                bgColor: 'bg-orange-100 dark:bg-orange-900/40',
+                borderColor: 'border-orange-300 dark:border-orange-600',
                 iconColor: 'text-orange-600 dark:text-orange-400',
                 textColor: 'text-orange-900 dark:text-orange-100'
             };
@@ -362,8 +412,8 @@ function CustomArtifactNode({ data }) {
         if (lowerLabel.includes('image') || lowerLabel.includes('docker')) {
             return {
                 icon: Box,
-                bgColor: 'bg-cyan-100 dark:bg-cyan-900/30',
-                borderColor: 'border-cyan-400 dark:border-cyan-600',
+                bgColor: 'bg-cyan-100 dark:bg-cyan-900/40',
+                borderColor: 'border-cyan-300 dark:border-cyan-600',
                 iconColor: 'text-cyan-600 dark:text-cyan-400',
                 textColor: 'text-cyan-900 dark:text-cyan-100'
             };
@@ -384,13 +434,13 @@ function CustomArtifactNode({ data }) {
 
     return (
         <div
-            className={`px-3 py-2 rounded-lg ${style.bgColor} border-2 ${style.borderColor} flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all min-w-[140px] cursor-pointer`}
-            style={{ height: artifactNodeHeight }}
+            className={`px-4 py-1.5 rounded-full ${style.bgColor} border ${style.borderColor} flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all min-w-[120px] cursor-pointer`}
+            style={{ height: 36 }}
         >
             <Handle type="target" position={Position.Top} className="!bg-slate-400 !w-2 !h-2" />
 
-            <Icon size={14} className={style.iconColor} />
-            <span className={`text-xs font-semibold ${style.textColor} truncate max-w-[100px]`} title={data.label}>
+            <Icon size={12} className={style.iconColor} />
+            <span className={`text-[11px] font-bold ${style.textColor} truncate max-w-[120px] uppercase tracking-wide`} title={data.label}>
                 {data.label}
             </span>
 

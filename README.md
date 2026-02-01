@@ -246,9 +246,66 @@ if drift['drift_detected']:
 
 ### 18. 🏢 Centralized Hub & Docker
 Ready for the enterprise. Run locally per project or deploy as a centralized entity for the company.
-- **Docker Ready**: Backend and Frontend are fully dockerized.
+- **Docker Ready**: Backend and Frontend are fully dockerized with optimized multi-stage builds.
 - **Centralized Hub**: Share pipelines, artifacts, and experiments across the team.
 - **Remote Execution**: Configure local clients to execute on the remote hub.
+
+## 🐳 Local Stack Setup (Docker)
+
+Get the complete FlowyML stack running locally in minutes with Docker.
+
+### Prerequisites
+
+- Docker v24.0+ and Docker Compose v2.20+
+- 4GB RAM minimum (8GB recommended)
+
+### Quick Start
+
+```bash
+# Clone the repository
+git clone https://github.com/UnicoLab/FlowyML.git
+cd FlowyML
+
+# Start the complete stack
+make local-deploy
+
+# Check health of all services
+make local-health
+```
+
+### Access Services
+
+| Service          | URL                          | Credentials     |
+|------------------|------------------------------|-----------------|
+| **Frontend UI**  | http://localhost:80          | -               |
+| **Backend API**  | http://localhost:8080        | -               |
+| **API Docs**     | http://localhost:8080/docs   | -               |
+| **Prometheus**   | http://localhost:9090        | -               |
+| **Grafana**      | http://localhost:3001        | admin / admin   |
+
+### Common Commands
+
+```bash
+# Start the stack
+make local-deploy
+
+# Stop the stack
+make local-stop
+
+# View logs
+make docker-logs
+
+# Rebuild images (after code changes)
+make docker-build
+
+# Clean rebuild (no cache)
+make docker-build-clean
+
+# Check service health
+make local-health
+```
+
+For detailed setup instructions, troubleshooting, and configuration options, see the [Local Stack Setup Guide](docs/local-stack-setup.md).
 
 ### 19. 🔌 Universal Integrations
 - **ML Frameworks**: PyTorch, TensorFlow, Keras, Scikit-learn, HuggingFace.

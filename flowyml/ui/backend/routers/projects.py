@@ -14,10 +14,42 @@ def get_projects_manager() -> ProjectManager:
 
 @router.get("/")
 async def list_projects(manager: ProjectManager = Depends(get_projects_manager)):
-    """List all projects."""
+    """List all projects, including those discovered from run metadata."""
     try:
-        projects = manager.list_projects()
-        return {"projects": projects}
+        # Get explicitly created projects
+        explicit_projects = manager.list_projects()
+        project_names = {p.get("name") for p in explicit_projects if p.get("name")}
+
+        # Also discover projects from run metadata in global store
+        from flowyml.ui.backend.dependencies import get_store
+
+        store = get_store()
+
+        discovered_projects = []
+        try:
+            # Get all runs and extract unique project names
+            runs = store.list_runs(limit=1000)
+            for run in runs:
+                project_name = run.get("project")
+                if project_name and project_name not in project_names:
+                    project_names.add(project_name)
+                    # Create a synthetic project entry for discovered projects
+                    discovered_projects.append(
+                        {
+                            "name": project_name,
+                            "description": "Auto-discovered from pipeline runs",
+                            "created_at": run.get("start_time"),
+                            "pipelines": [],
+                            "tags": {},
+                            "discovered": True,  # Flag to indicate this wasn't explicitly created
+                        },
+                    )
+        except Exception:
+            pass  # Store might not be initialized
+
+        # Combine explicit and discovered projects
+        all_projects = explicit_projects + discovered_projects
+        return {"projects": all_projects}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -93,14 +125,65 @@ async def get_project_metrics(
     limit: int = 100,
     manager: ProjectManager = Depends(get_projects_manager),
 ):
-    """Get logged production metrics for a project."""
-    project = manager.get_project(project_name)
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+    """Get logged metrics for a project (from model_metrics table and Metrics artifacts)."""
+    metrics = []
+
+    from flowyml.ui.backend.dependencies import get_store
+
+    store = get_store()
+
+    try:
+        # Get all runs for this project
+        all_runs = store.list_runs(limit=1000)
+        project_run_ids = {r.get("run_id") for r in all_runs if r.get("project") == project_name}
+
+        # 1. Try to get metrics from model_metrics table
+        all_model_metrics = store.list_model_metrics(limit=limit * 2)
+        for m in all_model_metrics:
+            if m.get("run_id") in project_run_ids or m.get("project") == project_name:
+                metrics.append(m)
+
+        # 2. Also extract metrics from Metrics artifacts
+        all_assets = store.list_assets(limit=500)
+        for asset in all_assets:
+            # Check if it's a metrics artifact for this project (case-insensitive type check)
+            asset_type = str(asset.get("type", "")).lower()
+            if asset_type == "metrics" and asset.get("run_id") in project_run_ids:
+                # Get properties which contain the metric values
+                props = asset.get("properties", {})
+                created_at = asset.get("created_at", "")
+                run_id = asset.get("run_id", "")
+                asset_name = asset.get("name", "evaluation")
+
+                # Convert artifact properties to metric entries
+                for key, value in props.items():
+                    if isinstance(value, (int, float)) and key not in ["samples"]:
+                        metrics.append(
+                            {
+                                "project": project_name,
+                                "model_name": asset_name,
+                                "run_id": run_id,
+                                "metric_name": key,
+                                "metric_value": value,
+                                "environment": "evaluation",
+                                "tags": {"source": "artifact"},
+                                "created_at": created_at,
+                            },
+                        )
+    except Exception as e:
+        import logging
+
+        logging.getLogger(__name__).warning(f"Error fetching metrics: {e}")
+
+    # Try explicit project as fallback
+    if not metrics:
+        project = manager.get_project(project_name)
+        if project:
+            metrics = project.list_model_metrics(model_name=model_name, limit=limit)
 
     return {
         "project": project_name,
-        "metrics": project.list_model_metrics(model_name=model_name, limit=limit),
+        "metrics": metrics[:limit],
     }
 
 

@@ -204,6 +204,17 @@ class SQLMetadataStore(MetadataStore):
             Column("updated_at", String, nullable=False),
         )
 
+        # Projects table for proper project storage
+        self.projects = Table(
+            "projects",
+            self.metadata,
+            Column("name", String, primary_key=True),
+            Column("description", Text),
+            Column("tags", Text),  # JSON
+            Column("created_at", String, server_default=func.current_timestamp()),
+            Column("updated_at", String),
+        )
+
         # Create tables
         self.metadata.create_all(self.engine)
 
@@ -967,3 +978,66 @@ class SQLMetadataStore(MetadataStore):
                 "total_experiments": total_experiments,
                 "total_models": total_models,
             }
+
+    # ==================== Project CRUD ====================
+
+    def save_project(self, name: str, description: str = "", tags: dict = None) -> None:
+        """Save or update a project."""
+        now = datetime.now(UTC).isoformat()
+        with self.engine.connect() as conn:
+            stmt = select(self.projects).where(self.projects.c.name == name)
+            existing = conn.execute(stmt).fetchone()
+
+            values = {
+                "name": name,
+                "description": description,
+                "tags": json.dumps(tags or {}),
+                "updated_at": now,
+            }
+
+            if existing:
+                conn.execute(
+                    update(self.projects).where(self.projects.c.name == name).values(**values),
+                )
+            else:
+                values["created_at"] = now
+                conn.execute(insert(self.projects).values(**values))
+
+            conn.commit()
+
+    def get_project(self, name: str) -> dict | None:
+        """Get a project by name."""
+        with self.engine.connect() as conn:
+            stmt = select(self.projects).where(self.projects.c.name == name)
+            row = conn.execute(stmt).fetchone()
+            if row:
+                return {
+                    "name": row.name,
+                    "description": row.description,
+                    "tags": json.loads(row.tags) if row.tags else {},
+                    "created_at": row.created_at,
+                    "updated_at": row.updated_at,
+                }
+            return None
+
+    def list_projects(self) -> list[dict]:
+        """List all projects."""
+        with self.engine.connect() as conn:
+            stmt = select(self.projects).order_by(self.projects.c.created_at.desc())
+            rows = conn.execute(stmt).fetchall()
+            return [
+                {
+                    "name": row.name,
+                    "description": row.description,
+                    "tags": json.loads(row.tags) if row.tags else {},
+                    "created_at": row.created_at,
+                    "updated_at": row.updated_at,
+                }
+                for row in rows
+            ]
+
+    def delete_project(self, name: str) -> None:
+        """Delete a project."""
+        with self.engine.connect() as conn:
+            conn.execute(delete(self.projects).where(self.projects.c.name == name))
+            conn.commit()

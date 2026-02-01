@@ -34,6 +34,7 @@ class ModelVersion:
     framework: str
     metrics: dict[str, float] = field(default_factory=dict)
     tags: dict[str, str] = field(default_factory=dict)
+    schema: dict[str, Any] = field(default_factory=dict)
     description: str = ""
     author: str | None = None
     parent_version: str | None = None
@@ -115,6 +116,7 @@ class ModelRegistry:
         stage: ModelStage = ModelStage.DEVELOPMENT,
         metrics: dict[str, float] | None = None,
         tags: dict[str, str] | None = None,
+        schema: dict[str, Any] | None = None,
         description: str = "",
         author: str | None = None,
         parent_version: str | None = None,
@@ -129,6 +131,7 @@ class ModelRegistry:
             stage: Deployment stage
             metrics: Model metrics
             tags: Model tags
+            schema: Optional explicit schema (overrides introspection)
             description: Model description
             author: Model author
             parent_version: Parent version if this is an update
@@ -144,6 +147,15 @@ class ModelRegistry:
             existing_versions = [v["version"] for v in self._metadata[name]]
             if version in existing_versions:
                 raise ValueError(f"Version {version} already exists for model {name}")
+
+        # Introspect model schema if not provided
+        from flowyml.utils.model_introspection import introspect_model
+
+        inferred_schema = introspect_model(model, framework)
+        # Merge inferred schema with provided schema (provided takes precedence)
+        final_schema = inferred_schema
+        if schema:
+            final_schema.update(schema)
 
         # Create model directory
         model_dir = self.registry_path / name / version
@@ -165,6 +177,7 @@ class ModelRegistry:
             framework=framework,
             metrics=metrics or {},
             tags=tags or {},
+            schema=final_schema,
             description=description,
             author=author,
             parent_version=parent_version,
