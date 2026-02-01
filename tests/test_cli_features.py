@@ -23,10 +23,16 @@ class TestCLIFeatures(unittest.TestCase):
         self.original_cwd = os.getcwd()
         os.chdir(self.test_dir)
 
-        # Reset global registry to force re-initialization in new CWD
+        # Reset global registries to force re-initialization in new CWD
         from flowyml.stacks import registry
+        from flowyml.plugins.stack_config import StackManager
+        from flowyml.plugins import config
+        from flowyml.stacks import plugins
 
         registry._global_registry = None
+        StackManager.reset()
+        config._config = None  # Reset global config singleton
+        plugins._global_component_registry = None  # Reset global component registry singleton
         get_registry()  # This will create .flowyml directory in new CWD
 
     def tearDown(self):
@@ -63,8 +69,8 @@ default_stack: dev
         )
         result = self.runner.invoke(cli, ["stack", "list"])
         self.assertEqual(result.exit_code, 0)
-        self.assertIn("dev (default) [local]", result.output)
-        self.assertIn("prod [gcp]", result.output)
+        self.assertIn("dev ✓ (active) [orchestrator: local]", result.output)
+        self.assertIn("prod [orchestrator: local]", result.output)
 
     def test_stack_show(self):
         """Test 'stack show' command."""
@@ -84,15 +90,17 @@ stacks:
 
     def test_stack_set_default(self):
         """Test 'stack set-default' command."""
-        # Register stacks in registry since set-default uses registry
-        registry = get_registry()
-        registry.register_stack(LocalStack("dev"))
-        registry.register_stack(LocalStack("prod"))
+        # Register stacks in manager since set-default uses StackManager
+        from flowyml.plugins.stack_config import get_stack_manager, StackConfig
+
+        manager = get_stack_manager()
+        manager.register_stack("dev", StackConfig(name="dev", orchestrator={"type": "local"}))
+        manager.register_stack("prod", StackConfig(name="prod", orchestrator={"type": "local"}))
 
         result = self.runner.invoke(cli, ["stack", "set-default", "prod"])
         self.assertEqual(result.exit_code, 0)
-        self.assertIn("Set 'prod' as active stack", result.output)
-        self.assertEqual(registry.get_active_stack().name, "prod")
+        self.assertIn("Active stack set to 'prod'", result.output)
+        self.assertEqual(manager.active_stack_name, "prod")
 
     def test_component_list(self):
         """Test 'component list' command."""

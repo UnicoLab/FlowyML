@@ -83,7 +83,7 @@ class TestZenMLBridge(unittest.TestCase):
         self.assertEqual(instance.component_type, ComponentType.ORCHESTRATOR)
 
         # Verify run_pipeline works
-        result = instance.run_pipeline(None)
+        result = instance.run_pipeline(None, run_id="test-run")
         self.assertEqual(result["status"], "success")
 
     def test_wrap_artifact_store(self):

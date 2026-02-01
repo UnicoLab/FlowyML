@@ -184,7 +184,7 @@ def show_stack(stack_name: str, config: str | None) -> None:
     click.echo()
 
 
-@stack.command("set")
+@stack.command("set-default")
 @click.argument("stack_name")
 @click.option("--config", "-c", help="Path to flowyml.yaml")
 def set_active_stack(stack_name: str, config: str | None) -> None:
