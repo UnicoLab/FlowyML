@@ -18,6 +18,7 @@ class ComponentType(Enum):
     CONTAINER_REGISTRY = "container_registry"
     METADATA_STORE = "metadata_store"
     EXECUTOR = "executor"
+    MODEL_DEPLOYER = "model_deployer"
 
 
 @dataclass
@@ -129,6 +130,17 @@ class Orchestrator(StackComponent):
     def get_run_status(self, run_id: str) -> str:
         """Get status of a pipeline run."""
         pass
+
+    def get_run_logs(self, run_id: str) -> str:
+        """Get logs for a pipeline run.
+
+        Args:
+            run_id: The run identifier.
+
+        Returns:
+            String containing the logs.
+        """
+        return "Logs not available for this orchestrator."
 
 
 class ArtifactStore(StackComponent):

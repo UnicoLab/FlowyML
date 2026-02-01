@@ -290,6 +290,45 @@ class AWSBatchOrchestrator(RemoteOrchestrator):
             print(f"Error fetching job status: {e}")
             return ExecutionStatus.FAILED
 
+    def get_run_logs(self, job_id: str) -> str:
+        """Get logs for an AWS Batch job.
+
+        Args:
+            job_id: The job ID.
+
+        Returns:
+            String containing the logs.
+        """
+        import boto3
+
+        try:
+            client = self._client()
+            response = client.describe_jobs(jobs=[job_id])
+
+            if not response.get("jobs"):
+                return "Job not found."
+
+            job = response["jobs"][0]
+            if "container" not in job or "logStreamName" not in job["container"]:
+                # Job might not have started yet or failed before logging
+                return "Logs not available yet (no log stream)."
+
+            log_stream_name = job["container"]["logStreamName"]
+            logs_client = boto3.client("logs", region_name=self.region)
+
+            log_events = logs_client.get_log_events(
+                logGroupName="/aws/batch/job",
+                logStreamName=log_stream_name,
+                limit=100,
+                startFromHead=False,
+            )
+
+            messages = [event["message"] for event in log_events.get("events", [])]
+            return "\n".join(messages) if messages else "No log messages found."
+
+        except Exception as e:
+            return f"Failed to fetch logs: {e}"
+
     def stop_run(self, job_id: str, graceful: bool = True) -> None:
         """Stop an AWS Batch job.
 
@@ -516,6 +555,52 @@ class SageMakerOrchestrator(RemoteOrchestrator):
             print(f"Error fetching training job status: {e}")
             return ExecutionStatus.FAILED
 
+    def get_run_logs(self, job_id: str) -> str:
+        """Get logs for a SageMaker training job.
+
+        Args:
+            job_id: The training job name.
+
+        Returns:
+            String containing the logs.
+        """
+        import boto3
+
+        try:
+            self._client()
+            logs_client = boto3.client("logs", region_name=self.region)
+
+            # SageMaker logs to /aws/sagemaker/TrainingJobs
+            log_group_name = "/aws/sagemaker/TrainingJobs"
+
+            # Find log stream
+            # Streams are usually like <job_name>/algo-1-123456789
+            streams = logs_client.describe_log_streams(
+                logGroupName=log_group_name,
+                logStreamNamePrefix=job_id,
+                orderBy="LastEventTime",
+                descending=True,
+                limit=1,
+            )
+
+            if not streams.get("logStreams"):
+                return "No log streams found for this job."
+
+            log_stream_name = streams["logStreams"][0]["logStreamName"]
+
+            log_events = logs_client.get_log_events(
+                logGroupName=log_group_name,
+                logStreamName=log_stream_name,
+                limit=100,
+                startFromHead=False,
+            )
+
+            messages = [event["message"] for event in log_events.get("events", [])]
+            return "\n".join(messages) if messages else "No log messages found."
+
+        except Exception as e:
+            return f"Failed to fetch logs: {e}"
+
     def stop_run(self, job_id: str, graceful: bool = True) -> None:
         """Stop a SageMaker training job.
 
@@ -556,6 +641,7 @@ class AWSStack(Stack):
         orchestrator_type: str = "batch",
         role_arn: str | None = None,
         metadata_store: Any | None = None,
+        model_deployer: Any | None = None,
     ):
         orchestrator: Orchestrator
         if orchestrator_type == "sagemaker":
@@ -569,6 +655,11 @@ class AWSStack(Stack):
         if metadata_store is None:
             metadata_store = SQLiteMetadataStore()
 
+        if model_deployer is None:
+            from flowyml.plugins.deployers.sagemaker import SageMakerEndpointDeployer
+
+            model_deployer = SageMakerEndpointDeployer(region=region, role_arn=role_arn)
+
         super().__init__(
             name=name,
             executor=None,
@@ -576,6 +667,7 @@ class AWSStack(Stack):
             metadata_store=metadata_store,
             container_registry=container_registry,
             orchestrator=orchestrator,
+            model_deployer=model_deployer,
         )
 
         self.region = region
@@ -596,4 +688,5 @@ class AWSStack(Stack):
             "orchestrator": self.orchestrator.to_dict(),
             "artifact_store": self.artifact_store.to_dict(),
             "container_registry": self.container_registry.to_dict(),
+            "model_deployer": self.model_deployer.to_dict() if self.model_deployer else None,
         }

@@ -2,7 +2,7 @@
 
 ## Overview
 
-flowyml's stack system is built on a powerful plugin architecture that makes it easy to extend with custom components, integrate with existing tools, and even reuse components from the ZenML ecosystem.
+flowyml's stack system is built on a powerful plugin architecture that makes it easy to extend with custom components and integrate with existing tools.
 
 ## 📚 Table of Contents
 
@@ -12,7 +12,6 @@ flowyml's stack system is built on a powerful plugin architecture that makes it 
 - [Component Registration](#component-registration)
 - [Using Custom Components](#using-custom-components)
 - [Publishing Components](#publishing-components)
-- [ZenML Integration](#zenml-integration)
 - [API Reference](#api-reference)
 
 ## Core Concepts
@@ -418,9 +417,6 @@ load_component("my_package.components")
 
 # From file
 load_component("/path/to/component.py:MyClass")
-
-# From ZenML
-load_component("zenml:zenml.orchestrators.kubernetes.KubernetesOrchestrator")
 ```
 
 **Advantages:**
@@ -616,72 +612,6 @@ flowyml run pipeline.py --stack airflow_stack
 Apache-2.0
 ```
 
-## ZenML Integration
-
-### Wrapping ZenML Components
-
-```python
-from flowyml.stacks.plugins import get_component_registry
-
-# Import ZenML component
-from zenml.integrations.kubernetes.orchestrators import KubernetesOrchestrator
-
-# Wrap it
-registry = get_component_registry()
-registry.wrap_zenml_component(
-    KubernetesOrchestrator,
-    name="k8s"
-)
-
-# Use immediately!
-```
-
-### Via Configuration
-
-```yaml
-# flowyml.yaml
-components:
-  - zenml: zenml.integrations.kubernetes.orchestrators.KubernetesOrchestrator
-    name: k8s
-
-  - zenml: zenml.integrations.aws.artifact_stores.S3ArtifactStore
-    name: s3
-
-stacks:
-  zenml_stack:
-    orchestrator:
-      type: k8s
-    artifact_store:
-      type: s3
-```
-
-### Complete Stack Migration
-
-```python
-from zenml.client import Client
-from flowyml.stacks.plugins import get_component_registry
-from flowyml.stacks import Stack
-
-# Get ZenML stack
-zenml_client = Client()
-zenml_stack = zenml_client.active_stack
-
-# Wrap all components
-registry = get_component_registry()
-registry.wrap_zenml_component(zenml_stack.orchestrator, "orch")
-registry.wrap_zenml_component(zenml_stack.artifact_store, "store")
-
-# Create flowyml stack
-flowyml_stack = Stack(
-    name=f"migrated_{zenml_stack.name}",
-    orchestrator=registry.get_orchestrator("orch"),
-    artifact_store=registry.get_artifact_store("store"),
-    metadata_store=None,  # Use local
-)
-
-# Use with flowyml pipelines!
-```
-
 ## API Reference
 
 ### ComponentRegistry
@@ -700,9 +630,6 @@ List all registered components.
 
 **`load_from_module(module_path)`**
 Load all components from a module.
-
-**`wrap_zenml_component(zenml_class, name)`**
-Wrap a ZenML component for flowyml.
 
 ### Decorators
 
@@ -773,7 +700,6 @@ except Exception as e:
 
 See:
 - [`examples/custom_components/my_components.py`](https://github.com/UnicoLab/FlowyML/blob/main/examples/custom_components/my_components.py)
-- [`examples/custom_components/zenml_integration.py`](https://github.com/UnicoLab/FlowyML/blob/main/examples/custom_components/zenml_integration.py)
 - [`examples/custom_components/PACKAGE_TEMPLATE.md`](https://github.com/UnicoLab/FlowyML/blob/main/examples/custom_components/PACKAGE_TEMPLATE.md)
 
 ## Next Steps

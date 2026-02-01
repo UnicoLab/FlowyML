@@ -1,344 +1,296 @@
-# 🔄 Using External Frameworks (ZenML, Airflow, etc.)
+# 🔄 Using External Frameworks
 
 FlowyML's plugin system allows you to use components from **any ML framework** without modification. This guide shows practical examples.
 
-## Supported Frameworks
+## Overview
 
-| Framework | Components Available | Installation |
-|-----------|---------------------|--------------|
-| **ZenML** | Orchestrators, Artifact Stores, Model Registries, Experiment Trackers | `pip install zenml` |
-| **Airflow** | Operators, Sensors (coming soon) | `pip install apache-airflow` |
-| **MLflow** | Tracking, Model Registry | `pip install mlflow` |
-| **Custom** | Any Python class | Your package |
+FlowyML provides a bridge system that lets you integrate external tools and libraries seamlessly. Whether you're using MLflow for experiment tracking, Airflow for orchestration, or custom in-house tools, FlowyML can wrap them to work with its unified API.
 
-## ZenML Integration
+## Supported Integrations
 
-### Quick Start with ZenML
+| Category | Integrations Available |
+|----------|----------------------|
+| **Experiment Tracking** | MLflow, Weights & Biases, Neptune, TensorBoard |
+| **Orchestration** | Kubernetes, Airflow, Kubeflow, Ray |
+| **Artifact Storage** | S3, GCS, Azure Blob, MinIO |
+| **Container Registries** | ECR, GCR, ACR, Docker Hub |
+| **Feature Stores** | Feast |
+| **Data Validation** | Great Expectations, Pandera |
 
-**1. Install ZenML and integrations:**
+## MLflow Integration
+
+### Quick Start
+
 ```bash
-pip install zenml
-zenml integration install kubernetes mlflow s3
+# Install MLflow plugin
+flowyml plugin install mlflow
 ```
 
-**2. Load ZenML components:**
-
-Via CLI:
-```bash
-flowyml component load zenml:zenml.integrations.kubernetes.orchestrators.KubernetesOrchestrator --name k8s
-```
-
-Via Python:
 ```python
-from flowyml.stacks.plugins import load_component
+from flowyml.plugins import get_plugin
 
-load_component(
-    "zenml:zenml.integrations.kubernetes.orchestrators.KubernetesOrchestrator",
-    name="k8s"
+# Create tracker instance
+tracker = get_plugin("mlflow",
+    tracking_uri="http://localhost:5000",
+    experiment_name="my_experiments"
+)
+
+# Track an experiment
+tracker.start_run("training_v1")
+tracker.log_params({
+    "model_type": "random_forest",
+    "n_estimators": 100,
+    "max_depth": 10,
+})
+
+for epoch in range(10):
+    tracker.log_metrics({
+        "train_loss": 0.5 - (epoch * 0.04),
+        "val_accuracy": 0.7 + (epoch * 0.02),
+    }, step=epoch)
+
+tracker.log_model(model, "models/classifier", model_type="sklearn")
+tracker.end_run()
+```
+
+## Cloud Storage Integration
+
+### S3 Artifact Store
+
+```python
+from flowyml.plugins import get_plugin
+
+store = get_plugin("s3",
+    bucket="my-ml-artifacts",
+    prefix="experiments/run_001/",
+    region="us-east-1"
+)
+
+# Save artifacts
+store.save({"accuracy": 0.95, "f1": 0.92}, "metrics.json")
+store.save(model, "model.pkl")
+store.save_file("./results/report.html", "reports/report.html")
+
+# Load artifacts
+metrics = store.load("metrics.json")
+model = store.load("model.pkl")
+```
+
+### GCS Artifact Store
+
+```python
+from flowyml.plugins import get_plugin
+
+store = get_plugin("gcs",
+    bucket="my-ml-bucket",
+    prefix="experiments/"
+)
+
+store.save(model, "models/latest.pkl")
+```
+
+### Azure Blob Store
+
+```python
+from flowyml.plugins import get_plugin
+
+store = get_plugin("azure_blob",
+    container="ml-artifacts",
+    connection_string="${AZURE_CONNECTION_STRING}"
 )
 ```
 
-**3. Use in your pipeline:**
+## Orchestration Integration
+
+### Vertex AI Pipelines
+
+```yaml
+# flowyml.yaml
+plugins:
+  orchestrator:
+    type: vertex_ai
+    project: my-gcp-project
+    region: us-central1
+    service_account: ml-sa@project.iam.gserviceaccount.com
+```
+
 ```python
 from flowyml import Pipeline, step
-from flowyml.stacks.plugins import get_component_registry
-
-registry = get_component_registry()
-k8s_orch = registry.get_orchestrator("k8s")
 
 @step(resources={"cpu": "4", "memory": "16Gi"})
-def train():
-    # This runs on Kubernetes via ZenML!
-    return train_model()
-
-pipeline = Pipeline("k8s_pipeline")
-pipeline.stack.orchestrator = k8s_orch()
-result = pipeline.run()
-```
-
-### Example 1: Kubernetes Orchestration with ZenML
-
-```python
-from flowyml.stacks.plugins import load_component
-from flowyml import Pipeline, step
-
-# Load ZenML's Kubernetes orchestrator
-load_component(
-    "zenml:zenml.integrations.kubernetes.orchestrators.KubernetesOrchestrator",
-    name="k8s"
-)
-
-@step(resources={"cpu": "8", "memory": "32Gi", "gpu": "1"})
-def train_on_k8s():
-    """This step runs on Kubernetes cluster"""
-    model = train_large_model()
+def train_model():
+    # Training code
     return model
 
-pipeline = Pipeline("production_training")
-pipeline.add_step(train_on_k8s)
-
-# Runs on Kubernetes!
-pipeline.run(stack="kubernetes")
+pipeline = Pipeline("training_pipeline")
+pipeline.add_step(train_model)
+pipeline.run()  # Runs on Vertex AI
 ```
 
-### Example 2: MLflow Experiment Tracking
+### SageMaker Pipelines
+
+```yaml
+# flowyml.yaml
+plugins:
+  orchestrator:
+    type: sagemaker
+    region: us-east-1
+    role_arn: arn:aws:iam::123456789:role/SageMakerRole
+```
+
+### Kubernetes
+
+```yaml
+# flowyml.yaml
+plugins:
+  orchestrator:
+    type: kubernetes
+    namespace: ml-pipelines
+    service_account: flowyml-runner
+```
+
+## Airflow Integration
+
+FlowyML can generate Airflow DAGs from your pipelines:
 
 ```python
-from flowyml.stacks.plugins import load_component
-
-# Load MLflow tracker from ZenML
-load_component(
-    "zenml:zenml.integrations.mlflow.experiment_trackers.MLflowExperimentTracker",
-    name="mlflow"
-)
+from flowyml import Pipeline, step
+from flowyml.plugins import get_plugin
 
 @step
-def train_with_tracking():
-    import mlflow
+def extract_data():
+    return load_data_from_source()
 
-    with mlflow.start_run():
-        # Log parameters
-        mlflow.log_param("learning_rate", 0.001)
-        mlflow.log_param("batch_size", 32)
+@step
+def transform_data(data):
+    return preprocess(data)
 
-        # Training
-        model, metrics = train_model()
+@step
+def train_model(data):
+    return fit_model(data)
 
-        # Log metrics
-        mlflow.log_metric("accuracy", metrics["accuracy"])
-        mlflow.log_metric("f1_score", metrics["f1"])
+# Create pipeline
+pipeline = Pipeline("etl_training")
+pipeline.add_step(extract_data)
+pipeline.add_step(transform_data)
+pipeline.add_step(train_model)
 
-        # Log model
-        mlflow.sklearn.log_model(model, "model")
-
-    return model
+# Export as Airflow DAG
+airflow_orch = get_plugin("airflow", dag_folder="~/airflow/dags")
+airflow_orch.export_pipeline(pipeline, "ml_training_dag")
 ```
 
-### Example 3: Cloud Artifact Storage (S3, GCS, Azure)
+## Creating Custom Integrations
+
+You can wrap any external tool using FlowyML's plugin base classes:
 
 ```python
-from flowyml.stacks.plugins import load_component
+from flowyml.plugins.base import ExperimentTracker, PluginMetadata, PluginType
 
-# Load S3 artifact store from ZenML
-load_component(
-    "zenml:zenml.integrations.s3.artifact_stores.S3ArtifactStore",
-    name="s3_store"
-)
+class MyCustomTracker(ExperimentTracker):
+    """Custom experiment tracker integration."""
 
-# Or GCS
-load_component(
-    "zenml:zenml.integrations.gcp.artifact_stores.GCPArtifactStore",
-    name="gcs_store"
-)
+    METADATA = PluginMetadata(
+        name="my_tracker",
+        description="My custom tracking solution",
+        plugin_type=PluginType.EXPERIMENT_TRACKER,
+        packages=["my-tracking-lib>=1.0"],
+    )
 
-# Or Azure
-load_component(
-    "zenml:zenml.integrations.azure.artifact_stores.AzureBlobArtifactStore",
-    name="azure_store"
-)
+    def __init__(self, api_key: str, **kwargs):
+        super().__init__(**kwargs)
+        self._client = MyTrackingClient(api_key)
+
+    def start_run(self, run_name: str, **kwargs) -> str:
+        return self._client.create_run(run_name)
+
+    def end_run(self, status: str = "FINISHED") -> None:
+        self._client.finish_run(status)
+
+    def log_params(self, params: dict) -> None:
+        self._client.log_parameters(params)
+
+    def log_metrics(self, metrics: dict, step: int = None) -> None:
+        self._client.log_metrics(metrics, step=step)
 ```
 
-Configure in `flowyml.yaml`:
-```yaml
-stacks:
-  production:
-    orchestrator: k8s
-    artifact_store:
-      plugin: s3_store
-      config:
-        bucket: my-ml-artifacts
-        region: us-west-2
+### Publishing Your Integration
+
+Register your plugin via entry points:
+
+```toml
+# pyproject.toml
+[project.entry-points."flowyml.plugins"]
+my_tracker = "my_package.plugins:MyCustomTracker"
 ```
 
-### Example 4: Vertex AI on GCP
+When users install your package, FlowyML automatically discovers it:
 
-```python
-from flowyml.stacks.plugins import load_component
-
-# Load Vertex AI orchestrator
-load_component(
-    "zenml:zenml.integrations.gcp.orchestrators.VertexOrchestrator",
-    name="vertex"
-)
-
-# Load GCS artifact store
-load_component(
-    "zenml:zenml.integrations.gcp.artifact_stores.GCPArtifactStore",
-    name="gcs"
-)
+```bash
+pip install my-flowyml-plugin
+flowyml plugin list --installed  # Shows your plugin
 ```
+
+## Configuration Examples
+
+### Multi-Cloud Setup
 
 ```yaml
 # flowyml.yaml
 stacks:
   gcp_production:
-    orchestrator:
-      plugin: vertex
-      config:
-        project: my-gcp-project
-        location: us-central1
-    artifact_store:
-      plugin: gcs
-      config:
-        bucket: gs://my-ml-bucket
+    plugins:
+      artifact_store:
+        type: gcs
+        bucket: ml-artifacts-prod
+      orchestrator:
+        type: vertex_ai
+        project: prod-project
+
+  aws_staging:
+    plugins:
+      artifact_store:
+        type: s3
+        bucket: ml-artifacts-staging
+      orchestrator:
+        type: sagemaker
+        region: us-west-2
 ```
-
-## Migrating Existing ZenML Stacks
-
-If you already use ZenML, you can import your stacks directly:
-
-### Step 1: List ZenML Stacks
-
-```bash
-zenml stack list
-```
-
-Output:
-```
-┏━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┓
-┃ Name         ┃ Orchestrator ┃ Artifact Store ┃
-┡━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━┩
-│ default      │ local        │ local         │
-│ production   │ kubernetes   │ s3            │
-│ staging      │ kubeflow     │ gcs           │
-└──────────────┴──────────────┴──────────────┘
-```
-
-### Step 2: Import Stack to FlowyML
-
-```bash
-flowyml plugin import-zenml-stack production
-```
-
-This generates `flowyml.yaml`:
-```yaml
-# Auto-generated from ZenML stack 'production'
-plugins:
-  - name: kubernetes_orchestrator
-    source: zenml.integrations.kubernetes.orchestrators.KubernetesOrchestrator
-    component_type: orchestrator
-
-  - name: s3_artifact_store
-    source: zenml.integrations.s3.artifact_stores.S3ArtifactStore
-    component_type: artifact_store
-
-stacks:
-  production:
-    orchestrator: kubernetes_orchestrator
-    artifact_store: s3_artifact_store
-```
-
-### Step 3: Use Imported Stack
-
-```bash
-flowyml run my_pipeline.py --stack production
-```
-
-## Available ZenML Integrations
-
-### Orchestrators
-- **Kubernetes** - `zenml.integrations.kubernetes.orchestrators.KubernetesOrchestrator`
-- **Kubeflow** - `zenml.integrations.kubeflow.orchestrators.KubeflowOrchestrator`
-- **Vertex AI** - `zenml.integrations.gcp.orchestrators.VertexOrchestrator`
-- **SageMaker** - `zenml.integrations.aws.orchestrators.SagemakerOrchestrator`
-- **Airflow** - `zenml.integrations.airflow.orchestrators.AirflowOrchestrator`
-- **Azure ML** - `zenml.integrations.azure.orchestrators.AzureMLOrchestrator`
-
-### Artifact Stores
-- **S3** - `zenml.integrations.s3.artifact_stores.S3ArtifactStore`
-- **GCS** - `zenml.integrations.gcp.artifact_stores.GCPArtifactStore`
-- **Azure Blob** - `zenml.integrations.azure.artifact_stores.AzureBlobArtifactStore`
-- **MinIO** - `zenml.integrations.minio.artifact_stores.MinIOArtifactStore`
-
-### Experiment Trackers
-- **MLflow** - `zenml.integrations.mlflow.experiment_trackers.MLflowExperimentTracker`
-- **Weights & Biases** - `zenml.integrations.wandb.experiment_trackers.WandbExperimentTracker`
-- **Neptune** - `zenml.integrations.neptune.experiment_trackers.NeptuneExperimentTracker`
-
-### Model Registries
-- **MLflow** - `zenml.integrations.mlflow.model_registries.MLflowModelRegistry`
-- **Vertex AI** - `zenml.integrations.gcp.model_registries.VertexModelRegistry`
-
-## Advanced: Custom Bridge Rules
-
-For fine control over component adaptation:
 
 ```python
-from flowyml.stacks.bridge import GenericBridge, AdaptationRule
-from flowyml.stacks.components import ComponentType
+from flowyml.plugins import use_stack
 
-# Define custom adaptation rules
-rules = [
-    AdaptationRule(
-        source_type="zenml.orchestrators.custom.MyOrchestrator",
-        target_type=ComponentType.ORCHESTRATOR,
-        method_mapping={
-            "run_pipeline": "execute",
-            "get_orchestrator_run_id": "get_run_id"
-        },
-        attribute_mapping={
-            "config": "settings"
-        }
-    )
-]
+# Use GCP for production
+with use_stack("gcp_production"):
+    pipeline.run()
 
-# Register custom bridge
-from flowyml.stacks.plugins import get_component_registry
-registry = get_component_registry()
-registry.register_bridge("custom", GenericBridge(rules=rules))
-
-# Use custom bridge
-load_component("custom:path.to.MyOrchestrator")
-```
-
-## Comparison: Pure ZenML vs FlowyML + ZenML
-
-| Feature | Pure ZenML | FlowyML + ZenML Plugin |
-|---------|-----------|------------------------|
-| **UI** | Basic CLI | ✅ Modern Web UI |
-| **Orchestrators** | Many | ✅ Same + FlowyML's |
-| **Project Management** | Basic | ✅ Rich structure |
-| **Metrics Dashboard** | External | ✅ Built-in |
-| **Pipeline Syntax** | Complex | ✅ Simpler |
-| **Ecosystem** | ZenML only | ✅ ZenML + Airflow + more |
-
-## Troubleshooting
-
-### Component Not Loading
-
-```bash
-# Check ZenML integration
-zenml integration list
-
-# Install if needed
-zenml integration install kubernetes
-
-# Verify import
-python -c "from zenml.integrations.kubernetes.orchestrators import KubernetesOrchestrator"
-```
-
-### Missing Dependencies
-
-```bash
-# Install ZenML with integrations
-pip install "zenml[kubernetes,mlflow,s3]"
+# Use AWS for staging
+with use_stack("aws_staging"):
+    pipeline.run()
 ```
 
 ## Best Practices
 
-1. **Pin Versions** - Specify ZenML version in requirements
+1. **Pin Versions** - Specify tool versions in requirements
    ```
-   zenml==0.50.0
+   mlflow>=2.0.0
+   boto3>=1.28.0
    ```
 
 2. **Use YAML Config** - Define stacks in `flowyml.yaml` for reproducibility
 
 3. **Test Locally** - Verify components before cloud deployment
 
-4. **Secure Credentials** - Use environment variables for secrets
+4. **Secure Credentials** - Use environment variables for secrets:
+   ```yaml
+   plugins:
+     artifact_store:
+       type: s3
+       bucket: ${AWS_BUCKET}
+   ```
 
 ## Next Steps
 
 - [Plugin System Overview](./overview.md)
 - [Creating Custom Plugins](./creating-plugins.md)
-- [Stack Configuration Guide](../user-guide/configuration.md)
+- [Stack Configuration Guide](./stack-configuration.md)

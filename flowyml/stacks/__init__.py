@@ -21,8 +21,23 @@ from flowyml.stacks.plugins import (
 
 
 # ZenML integration - lazy imports to avoid errors when ZenML is not installed
+# NOTE: These functions are deprecated. Use native FlowyML plugins instead.
+# See: https://docs.flowyml.ai/plugins/native-plugins/
 def get_zenml_bridge():
-    """Get a ZenML bridge for importing ZenML components."""
+    """Get a ZenML bridge for importing ZenML components.
+
+    .. deprecated::
+        ZenML integration is deprecated. Use native FlowyML plugins instead.
+        See the Native Plugins documentation for the recommended approach.
+    """
+    import warnings
+
+    warnings.warn(
+        "get_zenml_bridge() is deprecated. Use native FlowyML plugins instead. "
+        "See: https://docs.flowyml.ai/plugins/native-plugins/",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     from flowyml.stacks.zenml_bridge import ZenMLBridge
 
     return ZenMLBridge()
@@ -31,13 +46,22 @@ def get_zenml_bridge():
 def import_all_zenml():
     """Import all components from all installed ZenML integrations.
 
-    This is the easiest way to make all ZenML components available
-    in FlowyML with a single call.
+    .. deprecated::
+        ZenML integration is deprecated. Use native FlowyML plugins instead.
+        See the Native Plugins documentation for the recommended approach.
 
     Example:
         >>> from flowyml.stacks import import_all_zenml
         >>> components = import_all_zenml()
     """
+    import warnings
+
+    warnings.warn(
+        "import_all_zenml() is deprecated. Use native FlowyML plugins instead. "
+        "See: https://docs.flowyml.ai/plugins/native-plugins/",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     from flowyml.stacks.zenml_bridge import import_all_zenml as _import_all
 
     return _import_all()

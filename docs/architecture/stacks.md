@@ -2,9 +2,10 @@
 
 ## Overview
 
-flowyml's stack system provides a flexible, modular architecture for running pipelines across different infrastructure environments. Similar to ZenML, stacks are composable collections of components that define where and how your pipelines execute.
+flowyml's stack system provides a flexible, modular architecture for running pipelines across different infrastructure environments. Stacks are composable collections of components that define where and how your pipelines execute.
 
 ## Core Concepts
+
 
 ### Stack Components
 

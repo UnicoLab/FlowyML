@@ -41,6 +41,9 @@ class PluginType(Enum):
     # Notifications & Alerts
     ALERTER = "alerter"
 
+    # Deployment
+    MODEL_DEPLOYER = "model_deployer"
+
     # Other
     CUSTOM = "custom"
 
@@ -682,7 +685,7 @@ class ModelDeployerPlugin(BasePlugin):
 
     @property
     def plugin_type(self) -> PluginType:
-        return PluginType.CUSTOM  # Will be MODEL_DEPLOYER when added to enum
+        return PluginType.MODEL_DEPLOYER
 
     @abstractmethod
     def deploy(

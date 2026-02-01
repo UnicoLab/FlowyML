@@ -266,6 +266,15 @@ PLUGIN_CATALOG: dict[str, PluginInfo] = {
         documentation_url="https://pandera.readthedocs.io/",
         tags=["data-validation", "pandas", "schema"],
     ),
+    "deepchecks": PluginInfo(
+        name="deepchecks",
+        description="Deepchecks Data Validator",
+        plugin_type=PluginType.DATA_VALIDATOR,
+        packages=["deepchecks>=0.17.0"],
+        wrapper_path="flowyml.plugins.validators.deepchecks:DeepchecksValidator",
+        documentation_url="https://docs.deepchecks.com/stable/general/usage/tabular/index.html",
+        tags=["data-validation", "drift", "integrity"],
+    ),
     # -------------------------------------------------------------------------
     # ALERTERS
     # -------------------------------------------------------------------------
@@ -337,6 +346,24 @@ PLUGIN_CATALOG: dict[str, PluginInfo] = {
         wrapper_path="flowyml.plugins.deployers.sagemaker:SageMakerEndpointDeployer",
         documentation_url="https://docs.aws.amazon.com/sagemaker/latest/dg/deploy-model.html",
         tags=["model-deployer", "aws", "cloud", "sagemaker", "inference"],
+    ),
+    "gcp_cloud_run": PluginInfo(
+        name="gcp_cloud_run",
+        description="Google Cloud Run Deployer",
+        plugin_type=PluginType.CUSTOM,  # MODEL_DEPLOYER type
+        packages=["google-cloud-run>=0.10.0"],
+        wrapper_path="flowyml.plugins.deployers.gcp_cloud_run:GCPCloudRunDeployer",
+        documentation_url="https://cloud.google.com/run/docs",
+        tags=["model-deployer", "gcp", "serverless", "container"],
+    ),
+    "mlflow_registry": PluginInfo(
+        name="mlflow_registry",
+        description="MLflow Model Registry",
+        plugin_type=PluginType.CUSTOM,  # MODEL_REGISTRY type
+        packages=["mlflow>=2.0"],
+        wrapper_path="flowyml.plugins.model_registries.mlflow:MLflowModelRegistry",
+        documentation_url="https://mlflow.org/docs/latest/model-registry.html",
+        tags=["model-registry", "mlflow", "versioning"],
     ),
 }
 

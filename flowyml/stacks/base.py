@@ -14,6 +14,7 @@ class StackConfig:
     metadata_store: str
     container_registry: str | None = None
     orchestrator: str | None = None
+    model_deployer: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
@@ -24,6 +25,7 @@ class StackConfig:
             "metadata_store": self.metadata_store,
             "container_registry": self.container_registry,
             "orchestrator": self.orchestrator,
+            "model_deployer": self.model_deployer,
         }
 
 
@@ -46,6 +48,7 @@ class Stack:
         metadata_store: Any,
         container_registry: Any | None = None,
         orchestrator: Any | None = None,
+        model_deployer: Any | None = None,
     ):
         self.name = name
         self.executor = executor
@@ -53,6 +56,7 @@ class Stack:
         self.metadata_store = metadata_store
         self.container_registry = container_registry
         self.orchestrator = orchestrator
+        self.model_deployer = model_deployer
 
         self.config = StackConfig(
             name=name,
@@ -61,6 +65,7 @@ class Stack:
             metadata_store=type(metadata_store).__name__,
             container_registry=type(container_registry).__name__ if container_registry else None,
             orchestrator=type(orchestrator).__name__ if orchestrator else None,
+            model_deployer=type(model_deployer).__name__ if model_deployer else None,
         )
 
     def activate(self) -> None:

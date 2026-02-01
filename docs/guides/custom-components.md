@@ -219,46 +219,6 @@ components:
   - file: /path/to/custom.py:CustomComponent
 ```
 
-## Using ZenML Components
-
-### Wrap ZenML Component
-
-```python
-from flowyml.stacks.plugins import get_component_registry
-
-# Load ZenML component
-registry = get_component_registry()
-registry.wrap_zenml_component(
-    zenml_component_class=KubernetesOrchestrator,
-    name="k8s"
-)
-```
-
-### Via Configuration
-
-```yaml
-# flowyml.yaml
-components:
-  - zenml: zenml.orchestrators.kubernetes.KubernetesOrchestrator
-    name: k8s
-
-stacks:
-  k8s_stack:
-    orchestrator:
-      type: k8s
-      # ZenML config
-```
-
-### Using the CLI
-
-```bash
-# Load ZenML component
-flowyml component load zenml:zenml.orchestrators.kubernetes.KubernetesOrchestrator
-
-# List available components
-flowyml component list
-```
-
 ## Component Discovery
 
 flowyml automatically discovers components from:
@@ -328,53 +288,6 @@ version = "0.1.0"
 [project.entry-points."flowyml.stack_components"]
 airflow = "my_flowyml_components.airflow_orchestrator:AirflowOrchestrator"
 minio = "my_flowyml_components.minio_store:MinIOArtifactStore"
-```
-
-## Advanced: ZenML Integration
-
-### Complete ZenML Compatibility
-
-```python
-from zenml.stack import Stack as ZenMLStack
-from flowyml.stacks.plugins import get_component_registry
-
-# Import all ZenML components
-def import_zenml_stack(zenml_stack: ZenMLStack):
-    registry = get_component_registry()
-
-    # Wrap each component
-    registry.wrap_zenml_component(
-        zenml_stack.orchestrator,
-        "zenml_orchestrator"
-    )
-
-    registry.wrap_zenml_component(
-        zenml_stack.artifact_store,
-        "zenml_artifact_store"
-    )
-
-    # Now use in flowyml!
-```
-
-### Gradual Migration from ZenML
-
-```python
-# Keep using ZenML components
-from zenml.integrations.kubernetes import KubernetesOrchestrator
-
-# Use in flowyml
-from flowyml.stacks import Stack
-from flowyml.stacks.plugins import get_component_registry
-
-registry = get_component_registry()
-registry.wrap_zenml_component(KubernetesOrchestrator, "k8s")
-
-# Create flowyml stack with ZenML component
-stack = Stack(
-    name="hybrid",
-    orchestrator=registry.get_orchestrator("k8s"),
-    # ... other components
-)
 ```
 
 ## Examples

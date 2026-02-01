@@ -282,29 +282,8 @@ pip install my-flowyml-plugin
 flowyml plugin list --installed  # Shows your plugin
 ```
 
-## Comparison: Native Plugins vs ZenML Integration
+## Need Help?
 
-FlowyML supports two approaches to plugin integrations:
-
-### Native Plugins (Recommended)
-
-```bash
-flowyml plugin install mlflow
-```
-
-- ✅ No framework dependencies
-- ✅ Installs only what you need
-- ✅ Full control over configuration
-- ✅ Direct access to underlying tools
-
-### ZenML Integration (Legacy)
-
-```bash
-flowyml zenml install mlflow
-```
-
-- ⚠️ Requires ZenML as a dependency
-- ⚠️ Larger install footprint
-- ⚠️ Bound to ZenML's configuration
-
-**We recommend using native plugins** for new projects. The ZenML integration is still available for users migrating from ZenML or those who specifically need ZenML features.
+- 💬 Join our [Discord community](https://discord.gg/flowyml)
+- 📖 Read the [API Reference](../api/plugins.md)
+- 🐛 Report issues on [GitHub](https://github.com/UnicoLab/FlowyML/issues)

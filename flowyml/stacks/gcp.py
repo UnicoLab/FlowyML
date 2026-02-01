@@ -176,6 +176,36 @@ class VertexAIOrchestrator(RemoteOrchestrator):
             print(f"Error fetching job status: {e}")
             return ExecutionStatus.FAILED
 
+    def get_run_logs(self, job_id: str) -> str:
+        """Get logs for a Vertex AI job.
+
+        Args:
+            job_id: The job resource name.
+
+        Returns:
+            String containing the logs.
+        """
+        try:
+            from google.cloud import logging
+
+            client = logging.Client(project=self.project_id)
+            job_name = job_id.split("/")[-1]
+
+            # Filter logs for this job
+            # Note: This is a simplified filter; exact filter depends on Vertex AI logging format
+            filter_str = f'resource.type="ml_job" AND conversion_id="{job_name}"'
+
+            entries = client.list_entries(filter_=filter_str, order_by=logging.DESCENDING, max_results=100)
+            logs = []
+            for entry in entries:
+                if entry.payload:
+                    logs.append(str(entry.payload))
+
+            return "\n".join(reversed(logs)) if logs else "No logs found."
+
+        except Exception as e:
+            return f"Failed to fetch logs: {e}"
+
     def stop_run(self, job_id: str, graceful: bool = True) -> None:
         """Cancel a Vertex AI job."""
         from google.cloud import aiplatform
@@ -494,6 +524,7 @@ class GCPStack(Stack):
         registry_uri: str | None = None,
         service_account: str | None = None,
         metadata_store: Any | None = None,
+        model_deployer: Any | None = None,
     ):
         """Initialize GCP stack.
 
@@ -505,6 +536,7 @@ class GCPStack(Stack):
             registry_uri: Container registry URI
             service_account: Service account for job execution
             metadata_store: Metadata store (optional, defaults to local SQLite)
+            model_deployer: Optional model deployer
         """
         # Create GCP components
         orchestrator = VertexAIOrchestrator(
@@ -524,11 +556,12 @@ class GCPStack(Stack):
             region=region,
         )
 
-        # Use local metadata store if not provided
-        if metadata_store is None:
-            from flowyml.storage.metadata import SQLiteMetadataStore
+        # Use new generic deployer if provided, else use CloudRun default if desired,
+        # but better to stick to generic injection or default creation
+        if model_deployer is None:
+            from flowyml.plugins.deployers.gcp_cloud_run import GCPCloudRunDeployer
 
-            metadata_store = SQLiteMetadataStore()
+            model_deployer = GCPCloudRunDeployer(project_id=project_id, region=region)
 
         # Initialize base stack
         super().__init__(
@@ -538,12 +571,13 @@ class GCPStack(Stack):
             metadata_store=metadata_store,
             container_registry=container_registry,
             orchestrator=orchestrator,
+            model_deployer=model_deployer,
         )
 
         self.project_id = project_id
         self.region = region
+        # Legacy helpers kept for backward compatibility if needed, but stack now uses proper components
         self.vertex_endpoints = VertexEndpointManager(project_id=project_id, region=region)
-        self.cloud_run = CloudRunDeployer(project_id=project_id, region=region)
 
     def validate(self) -> bool:
         """Validate all GCP stack components."""
@@ -562,6 +596,7 @@ class GCPStack(Stack):
             "orchestrator": self.orchestrator.to_dict(),
             "artifact_store": self.artifact_store.to_dict(),
             "container_registry": self.container_registry.to_dict(),
+            "model_deployer": self.model_deployer.to_dict() if self.model_deployer else None,
         }
 
 
