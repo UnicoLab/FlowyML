@@ -12,6 +12,7 @@ import ctypes
 import requests
 import os
 import inspect
+import psutil
 
 
 class StopExecutionError(Exception):
@@ -133,10 +134,25 @@ class MonitorThread(threading.Thread):
     def run(self):
         while not self._stop_event.is_set():
             try:
-                # Send heartbeat
+                # Collect metrics
+                process = psutil.Process()
+                with process.oneshot():
+                    cpu_percent = process.cpu_percent(interval=None)
+                    memory_info = process.memory_info()
+                    memory_mb = memory_info.rss / 1024 / 1024
+
+                # Send heartbeat with metrics
                 response = requests.post(
                     f"{self.api_url}/api/runs/{self.run_id}/steps/{self.step_name}/heartbeat",
-                    json={"step_name": self.step_name, "status": "running"},
+                    json={
+                        "step_name": self.step_name,
+                        "status": "running",
+                        "metrics": {
+                            "cpu_percent": cpu_percent,
+                            "memory_mb": memory_mb,
+                            "timestamp": datetime.now().isoformat(),
+                        },
+                    },
                     timeout=2,
                 )
                 if response.status_code == 200:

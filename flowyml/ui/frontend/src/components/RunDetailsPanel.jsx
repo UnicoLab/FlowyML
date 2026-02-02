@@ -232,11 +232,41 @@ export function RunDetailsPanel({ run, onClose }) {
                                                     {step.duration ? `${step.duration.toFixed(2)}s` : '-'}
                                                 </span>
                                             </div>
-                                            {step.error && (
-                                                <div className="text-xs text-rose-600 bg-rose-50 dark:bg-rose-900/20 p-2 rounded mt-2 font-mono">
-                                                    {step.error}
-                                                </div>
-                                            )}
+                                            {
+                                                step.source_file && (
+                                                    <div className="flex justify-end mb-2">
+                                                        <a
+                                                            href={`vscode://file/${step.source_file}:${step.source_line || 1}`}
+                                                            className="text-xs flex items-center gap-1 text-slate-500 hover:text-blue-600 transition-colors"
+                                                            title="Open in VS Code"
+                                                        >
+                                                            <Terminal size={12} />
+                                                            <span className="font-mono">{step.source_file.split('/').pop()}:{step.source_line}</span>
+                                                        </a>
+                                                    </div>
+                                                )
+                                            }
+                                            {
+                                                step.metrics && (
+                                                    <div className="flex gap-4 mb-2 justify-end text-xs text-slate-500 font-mono">
+                                                        <div className="flex items-center gap-1.5" title="CPU Usage">
+                                                            <Cpu size={12} className="text-slate-400" />
+                                                            <span>{step.metrics.cpu_percent?.toFixed(1) || 0}%</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-1.5" title="Memory Usage">
+                                                            <Activity size={12} className="text-slate-400" />
+                                                            <span>{step.metrics.memory_mb?.toFixed(0) || 0} MB</span>
+                                                        </div>
+                                                    </div>
+                                                )
+                                            }
+                                            {
+                                                step.error && (
+                                                    <div className="text-xs text-rose-600 bg-rose-50 dark:bg-rose-900/20 p-2 rounded mt-2 font-mono">
+                                                        {step.error}
+                                                    </div>
+                                                )
+                                            }
                                         </div>
                                     ))}
                                     {(!runData.steps || Object.keys(runData.steps).length === 0) && (
@@ -280,7 +310,7 @@ export function RunDetailsPanel({ run, onClose }) {
                     )}
                 </div>
             </div>
-        </div>
+        </div >
     );
 }
 

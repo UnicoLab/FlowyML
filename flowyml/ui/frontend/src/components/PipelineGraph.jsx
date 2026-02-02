@@ -259,7 +259,7 @@ function CustomStepNode({ data }) {
             bg: 'bg-white dark:bg-slate-800',
             border: 'border-amber-500 dark:border-amber-500',
             ring: 'ring-amber-200 dark:ring-amber-900',
-            shadow: 'shadow-amber-100 dark:shadow-none'
+            shadow: 'shadow-amber-100 dark:shadow-none animate-pulse ring-2 ring-amber-400/50'
         },
         pending: {
             icon: <Clock size={18} />,

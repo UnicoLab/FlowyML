@@ -163,6 +163,9 @@ async def get_run(run_id: str):
             for step_name, ts in _heartbeat_timestamps[run_id].items():
                 if step_name in run.get("steps", {}):
                     run["steps"][step_name]["last_heartbeat"] = ts
+            for step_name, metrics in _step_metrics.get(run_id, {}).items():
+                if step_name in run.get("steps", {}):
+                    run["steps"][step_name]["metrics"] = metrics
 
     return run
 
@@ -296,11 +299,14 @@ async def get_cloud_status(run_id: str):
 class HeartbeatRequest(BaseModel):
     step_name: str
     status: str = "running"
+    metrics: dict | None = None
 
 
-# In-memory storage for heartbeat timestamps
+# In-memory storage for heartbeat timestamps and metrics
 # Format: {run_id: {step_name: last_heartbeat_timestamp}}
 _heartbeat_timestamps: dict[str, dict[str, float]] = {}
+# Format: {run_id: {step_name: metrics_dict}}
+_step_metrics: dict[str, dict[str, dict]] = {}
 _heartbeat_lock = __import__("threading").Lock()
 
 # Heartbeat interval in seconds (should match executor's interval)
@@ -317,6 +323,14 @@ def _record_heartbeat(run_id: str, step_name: str) -> None:
         if run_id not in _heartbeat_timestamps:
             _heartbeat_timestamps[run_id] = {}
         _heartbeat_timestamps[run_id][step_name] = time.time()
+
+
+def _record_step_metrics(run_id: str, step_name: str, metrics: dict) -> None:
+    """Record metrics for a step."""
+    with _heartbeat_lock:
+        if run_id not in _step_metrics:
+            _step_metrics[run_id] = {}
+        _step_metrics[run_id][step_name] = metrics
 
 
 def _get_dead_steps(run_id: str) -> list[str]:
@@ -342,6 +356,7 @@ def _cleanup_heartbeats(run_id: str) -> None:
     """Remove heartbeat tracking for a completed run."""
     with _heartbeat_lock:
         _heartbeat_timestamps.pop(run_id, None)
+        _step_metrics.pop(run_id, None)
 
 
 @router.post("/{run_id}/steps/{step_name}/heartbeat")
@@ -355,6 +370,10 @@ async def step_heartbeat(run_id: str, step_name: str, heartbeat: HeartbeatReques
 
     # Record heartbeat timestamp
     _record_heartbeat(run_id, step_name)
+
+    # Record metrics if present
+    if heartbeat.metrics:
+        _record_step_metrics(run_id, step_name, heartbeat.metrics)
 
     # Check if run is marked for stopping
     run = store.load_run(run_id)

@@ -31,6 +31,8 @@ class StepConfig:
     tags: dict[str, str] = field(default_factory=dict)
     condition: Callable | None = None
     execution_group: str | None = None
+    source_file: str | None = None
+    source_line: int | None = None
 
     def __hash__(self):
         """Make StepConfig hashable."""
@@ -84,11 +86,15 @@ class Step:
         self.condition = condition
         self.execution_group = execution_group
 
-        # Capture source code for UI display
+        # Capture source code and location for UI display
         try:
             self.source_code = inspect.getsource(func)
+            self.source_file = inspect.getsourcefile(func)
+            _, self.source_line = inspect.getsourcelines(func)
         except (OSError, TypeError):
             self.source_code = "# Source code not available"
+            self.source_file = None
+            self.source_line = None
 
         self.config = StepConfig(
             name=self.name,
@@ -102,6 +108,8 @@ class Step:
             tags=self.tags,
             condition=self.condition,
             execution_group=self.execution_group,
+            source_file=self.source_file,
+            source_line=self.source_line,
         )
 
     def __call__(self, *args, **kwargs):
