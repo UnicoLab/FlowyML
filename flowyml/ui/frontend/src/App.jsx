@@ -5,17 +5,20 @@ import { RouterProvider } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ProjectProvider } from './contexts/ProjectContext';
 import { ToastProvider } from './contexts/ToastContext';
+import { AIAssistantProvider } from './contexts/AIAssistantContext';
 import { router } from './router';
 
 function App() {
     return (
-        <ThemeProvider>
-            <ProjectProvider>
-                <ToastProvider>
-                    <RouterProvider router={router} />
-                </ToastProvider>
-            </ProjectProvider>
-        </ThemeProvider>
+        <AIAssistantProvider>
+            <ThemeProvider>
+                <ProjectProvider>
+                    <ToastProvider>
+                        <RouterProvider router={router} />
+                    </ToastProvider>
+                </ProjectProvider>
+            </ThemeProvider>
+        </AIAssistantProvider>
     );
 }
 

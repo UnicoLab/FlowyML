@@ -15,6 +15,7 @@ import { CodeSnippet } from '../../../components/ui/CodeSnippet';
 import { TrainingMetricsPanel } from '../../../components/TrainingMetricsPanel';
 import { TrainingHistoryChart } from '../../../components/TrainingHistoryChart';
 import { RunMetaPanel } from '../../../components/RunMetaPanel';
+import { useAIContext } from '../../../hooks/useAIContext';
 
 export function RunDetails() {
     const { runId } = useParams();
@@ -31,6 +32,15 @@ export function RunDetails() {
     const [stepLogs, setStepLogs] = useState({});
     const [stepPanelExpanded, setStepPanelExpanded] = useState(false);
     const [hasTrainingHistory, setHasTrainingHistory] = useState(false);
+
+    // Share run context with AI assistant
+    useAIContext({
+        pageType: 'run',
+        resourceId: runId,
+        includeLogs: true,
+        includeCode: true,
+        includeMetrics: true
+    });
 
     const handleStopRun = async () => {
         if (!confirm('Are you sure you want to stop this run?')) return;
@@ -239,8 +249,8 @@ export function RunDetails() {
 
             {/* Main Content - Dynamic Split View */}
             <div className={`grid gap-6 transition-all duration-300 ${stepPanelExpanded
-                    ? 'grid-cols-1 lg:grid-cols-2'
-                    : 'grid-cols-1 lg:grid-cols-3'
+                ? 'grid-cols-1 lg:grid-cols-2'
+                : 'grid-cols-1 lg:grid-cols-3'
                 }`}>
                 {/* DAG Visualization */}
                 <div className={stepPanelExpanded ? 'lg:col-span-1' : 'lg:col-span-2'}>
@@ -1143,8 +1153,8 @@ function TabBtn({ active, onClick, children }) {
         <button
             onClick={onClick}
             className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all ${active
-                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-700/50'
+                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-700/50'
                 }`}
         >
             {children}

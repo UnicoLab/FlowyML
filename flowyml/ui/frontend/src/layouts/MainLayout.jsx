@@ -4,6 +4,8 @@ import { Sidebar } from '../components/sidebar/Sidebar';
 import { Header } from '../components/header/Header';
 
 import { ErrorBoundary } from '../components/ui/ErrorBoundary';
+import { AIAssistantButton } from '../components/ai/AIAssistantButton';
+import { AIAssistantPanel } from '../components/ai/AIAssistantPanel';
 
 export function MainLayout() {
     const [collapsed, setCollapsed] = useState(false);
@@ -22,6 +24,10 @@ export function MainLayout() {
                     </div>
                 </main>
             </div>
+
+            {/* AI Assistant - Floating button and slide-out panel */}
+            <AIAssistantButton />
+            <AIAssistantPanel />
         </div>
     );
 }

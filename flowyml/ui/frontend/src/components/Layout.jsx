@@ -3,6 +3,8 @@ import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, PlayCircle, FolderKanban, FlaskConical, Database, Settings, Trophy, Calendar, MessageSquare, Moon, Sun, Key, Package } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { ProjectSelector } from './ui/ProjectSelector';
+import { AIAssistantButton } from './ai/AIAssistantButton';
+import { AIAssistantPanel } from './ai/AIAssistantPanel';
 
 function NavLink({ to, icon, label }) {
     const location = useLocation();
@@ -103,6 +105,10 @@ export function Layout({ children }) {
                     {children}
                 </div>
             </main>
+
+            {/* AI Assistant */}
+            <AIAssistantButton />
+            <AIAssistantPanel />
         </div>
     );
 }

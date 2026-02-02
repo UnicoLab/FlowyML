@@ -40,6 +40,7 @@ from flowyml.ui.backend.routers import (
     model_explorer,
     auth,  # New Auth Router
     templates,  # Pipeline Templates
+    ai_context,  # AI Assistant Context
 )
 
 # Initialize OpenTelemetry
@@ -214,6 +215,7 @@ app.include_router(deployments.router, prefix="/api", tags=["deployments"])
 app.include_router(model_explorer.router, prefix="/api", tags=["model-explorer"])
 app.include_router(auth.router, prefix="/api", tags=["auth"])
 app.include_router(templates.router, tags=["templates"])
+app.include_router(ai_context.router, tags=["ai"])  # AI Context for assistant
 
 
 # Static file serving for frontend
