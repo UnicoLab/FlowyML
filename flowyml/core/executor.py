@@ -275,7 +275,21 @@ class LocalExecutor(Executor):
         project_name: str = "default",
         all_outputs: dict[str, Any] | None = None,
     ) -> ExecutionResult:
-        """Execute step locally with retry, caching, and materialization."""
+        """Execute step locally with retry, caching, and materialization.
+
+        Args:
+            step: Step to execute
+            inputs: Input data for the step
+            context_params: Parameters from context
+            cache_store: Cache store for caching
+            artifact_store: Artifact store for logging results
+            run_id: Unique ID for this pipeline run
+            project_name: Name of the project
+            all_outputs: Collection of all step outputs for conditional evaluation
+
+        Returns:
+            ExecutionResult with output or error
+        """
         start_time = time.time()
         retries = 0
 
@@ -652,33 +666,76 @@ class DistributedExecutor(Executor):
         inputs: dict[str, Any],
         context_params: dict[str, Any],
         cache_store: Any | None = None,
-    ) -> ExecutionResult:
-        """Execute step in distributed manner."""
-        # Placeholder - would use Ray, Dask, or similar
-        # For now, fall back to local execution
-        local_executor = LocalExecutor()
-        return local_executor.execute_step(step, inputs, context_params, cache_store)
-
-    def execute_step_group(
-        self,
-        step_group,  # StepGroup
-        inputs: dict[str, Any],
-        context_params: dict[str, Any],
-        cache_store: Any | None = None,
         artifact_store: Any | None = None,
         run_id: str | None = None,
         project_name: str = "default",
-    ) -> list[ExecutionResult]:
-        """Execute step group in distributed manner."""
-        # Placeholder - in real implementation, would send entire group to remote worker
+        all_outputs: dict[str, Any] | None = None,
+    ) -> ExecutionResult:
+        """Execute step in distributed manner.
+
+        Args:
+            step: Step to execute
+            inputs: Input data for the step
+            context_params: Parameters from context
+            cache_store: Cache store for caching
+            artifact_store: Artifact store for logging results
+            run_id: Unique ID for this pipeline run
+            project_name: Name of the project
+            all_outputs: Collection of all step outputs for conditional evaluation
+
+        Returns:
+            ExecutionResult with output or error
+        """
+        # Placeholder - would use Ray, Dask, or similar
         # For now, fall back to local execution
         local_executor = LocalExecutor()
-        return local_executor.execute_step_group(
-            step_group,
+        return local_executor.execute_step(
+            step,
             inputs,
             context_params,
             cache_store,
             artifact_store,
             run_id,
             project_name,
+            all_outputs,
+        )
+
+    def execute_step_group(
+        self,
+        step_group,  # StepGroup
+        inputs: dict[str, Any],
+        context: Any | None = None,  # Context object for per-step injection
+        context_params: dict[str, Any] | None = None,  # Deprecated: use context instead
+        cache_store: Any | None = None,
+        artifact_store: Any | None = None,
+        run_id: str | None = None,
+        project_name: str = "default",
+    ) -> list[ExecutionResult]:
+        """Execute step group in distributed manner.
+
+        Args:
+            step_group: StepGroup to execute
+            inputs: Input data available to the group
+            context: Context object for per-step parameter injection (preferred)
+            context_params: Parameters from context (deprecated, use context instead)
+            cache_store: Cache store for caching
+            artifact_store: Artifact store for materialization
+            run_id: Run identifier
+            project_name: Project name
+
+        Returns:
+            List of ExecutionResult (one per step)
+        """
+        # Placeholder - in real implementation, would send entire group to remote worker
+        # For now, fall back to local execution
+        local_executor = LocalExecutor()
+        return local_executor.execute_step_group(
+            step_group=step_group,
+            inputs=inputs,
+            context=context,
+            context_params=context_params,
+            cache_store=cache_store,
+            artifact_store=artifact_store,
+            run_id=run_id,
+            project_name=project_name,
         )
