@@ -7,8 +7,9 @@ rich context for the in-browser AI assistant.
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from ..database import get_db_session
-from ..models import Run, Metric, StepLog
+from ..dependencies import get_store
+import json
+from flowyml.utils.config import get_config
 
 router = APIRouter(prefix="/api/ai", tags=["ai"])
 
@@ -34,13 +35,20 @@ class AIContextResponse(BaseModel):
     suggestions: list[str] = []
 
 
-def _summarize_run(run: Run, include_logs: bool = True, include_code: bool = True, max_log_lines: int = 100) -> dict:
+def _summarize_run(run: dict, include_logs: bool = True, include_code: bool = True, max_log_lines: int = 100) -> dict:
     """Generate a comprehensive summary of a run for AI context."""
     steps_info = []
     failed_steps = []
 
-    if run.steps:
-        for name, step_data in run.steps.items():
+    steps = run.get("steps", {})
+    if isinstance(steps, str):
+        try:
+            steps = json.loads(steps)
+        except Exception:
+            steps = {}
+
+    if steps:
+        for name, step_data in steps.items():
             step_summary = {
                 "name": name,
                 "status": "success"
@@ -52,7 +60,7 @@ def _summarize_run(run: Run, include_logs: bool = True, include_code: bool = Tru
 
             # Include error details for failed steps
             if step_data.get("error"):
-                step_summary["error"] = step_data["error"][:500]  # Truncate long errors
+                step_summary["error"] = str(step_data["error"])[:500]  # Truncate long errors
                 failed_steps.append(name)
 
             # Include source code if requested
@@ -66,53 +74,44 @@ def _summarize_run(run: Run, include_logs: bool = True, include_code: bool = Tru
             steps_info.append(step_summary)
 
     summary = {
-        "run_id": str(run.run_id),
-        "pipeline_name": run.pipeline_name,
-        "status": run.status,
-        "duration": f"{run.duration:.2f}s" if run.duration else None,
-        "start_time": run.start_time.isoformat() if run.start_time else None,
-        "end_time": run.end_time.isoformat() if run.end_time else None,
+        "run_id": str(run.get("run_id")),
+        "pipeline_name": run.get("pipeline_name"),
+        "status": run.get("status"),
+        "duration": f"{run.get('duration', 0):.2f}s" if run.get("duration") else None,
+        "start_time": run.get("start_time"),
+        "end_time": run.get("end_time"),
         "total_steps": len(steps_info),
         "successful_steps": len([s for s in steps_info if s["status"] == "success"]),
         "failed_steps": len(failed_steps),
         "cached_steps": len([s for s in steps_info if s["cached"]]),
         "steps": steps_info,
         "failed_step_names": failed_steps,
-        "context_params": run.context or {},
-        "environment": run.environment or {},
+        "context_params": run.get("context") or {},
+        "environment": run.get("environment") or {},
     }
 
     return summary
 
 
 def _get_run_logs(run_id: str, max_lines: int = 100) -> dict:
-    """Fetch recent logs for a run."""
+    """Fetch recent logs for a run from filesystem."""
     logs_by_step = {}
+    runs_dir = get_config().runs_dir
+    log_dir = runs_dir / run_id / "logs"
 
-    with get_db_session() as session:
-        # Fetch step logs
-        step_logs = (
-            session.query(StepLog)
-            .filter(
-                StepLog.run_id == run_id,
-            )
-            .order_by(StepLog.timestamp.desc())
-            .limit(max_lines * 10)
-            .all()
-        )  # Get extra then filter
+    if not log_dir.exists():
+        return {}
 
-        for log in step_logs:
-            step_name = log.step_name
-            if step_name not in logs_by_step:
-                logs_by_step[step_name] = []
-            if len(logs_by_step[step_name]) < max_lines:
-                logs_by_step[step_name].append(
-                    {
-                        "level": log.level,
-                        "message": log.message[:500],  # Truncate long messages
-                        "timestamp": log.timestamp.isoformat() if log.timestamp else None,
-                    },
-                )
+    for log_file in log_dir.glob("*.log"):
+        step_name = log_file.stem
+        try:
+            with open(log_file) as f:
+                lines = f.readlines()
+                # Get last N lines
+                recent_lines = lines[-max_lines:]
+                logs_by_step[step_name] = [{"message": line.strip(), "level": "INFO"} for line in recent_lines]
+        except Exception:
+            continue
 
     return logs_by_step
 
@@ -120,23 +119,16 @@ def _get_run_logs(run_id: str, max_lines: int = 100) -> dict:
 def _get_run_metrics(run_id: str) -> list:
     """Fetch metrics for a run."""
     metrics = []
+    store = get_store()
 
-    with get_db_session() as session:
-        db_metrics = (
-            session.query(Metric)
-            .filter(
-                Metric.run_id == run_id,
-            )
-            .limit(50)
-            .all()
-        )
-
-        for m in db_metrics:
+    db_metrics = store.get_metrics(run_id)
+    if db_metrics:
+        for m in db_metrics[:50]:
             metrics.append(
                 {
-                    "name": m.name,
-                    "value": m.value if isinstance(m.value, (int, float)) else str(m.value)[:100],
-                    "step": m.step,
+                    "name": m.get("name"),
+                    "value": m.get("value"),
+                    "step": m.get("step"),
                 },
             )
 
@@ -153,8 +145,14 @@ def _generate_suggestions(summary: dict) -> list[str]:
     if summary.get("cached_steps", 0) == 0 and summary.get("total_steps", 0) > 3:
         suggestions.append("Consider enabling caching for frequently-run steps")
 
-    if summary.get("duration") and float(summary["duration"].replace("s", "")) > 300:
-        suggestions.append("The run took over 5 minutes - consider optimization opportunities")
+    duration_str = summary.get("duration")
+    if duration_str:
+        try:
+            duration = float(duration_str.replace("s", ""))
+            if duration > 300:
+                suggestions.append("The run took over 5 minutes - consider optimization opportunities")
+        except (ValueError, AttributeError):
+            pass
 
     return suggestions
 
@@ -169,21 +167,21 @@ async def get_ai_context(request: AIContextRequest):
     """
     if request.page_type == "run":
         # Fetch run data
-        with get_db_session() as session:
-            run = session.query(Run).filter(Run.run_id == request.resource_id).first()
+        store = get_store()
+        run = store.load_run(request.resource_id)
 
-            if not run:
-                raise HTTPException(status_code=404, detail="Run not found")
+        if not run:
+            raise HTTPException(status_code=404, detail="Run not found")
 
-            # Generate comprehensive summary
-            summary = _summarize_run(
-                run,
-                include_logs=request.include_logs,
-                include_code=request.include_code,
-                max_log_lines=request.max_log_lines,
-            )
+        # Generate comprehensive summary
+        summary = _summarize_run(
+            run,
+            include_logs=request.include_logs,
+            include_code=request.include_code,
+            max_log_lines=request.max_log_lines,
+        )
 
-        # Fetch additional data outside the session
+        # Fetch additional data
         details = {}
 
         if request.include_logs:

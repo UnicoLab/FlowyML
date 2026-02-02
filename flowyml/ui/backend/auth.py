@@ -23,8 +23,18 @@ class TokenManager:
     def _load_tokens(self) -> None:
         """Load tokens from file."""
         if self.tokens_file.exists():
-            with open(self.tokens_file) as f:
-                self.tokens = json.load(f)
+            try:
+                with open(self.tokens_file) as f:
+                    content = f.read().strip()
+                    if not content:
+                        self.tokens = {}
+                        self._save_tokens()
+                    else:
+                        self.tokens = json.loads(content)
+            except (json.JSONDecodeError, OSError) as e:
+                print(f"Warning: Failed to load tokens from {self.tokens_file}: {e}")
+                self.tokens = {}
+                self._save_tokens()
         else:
             self.tokens = {}
             self._save_tokens()

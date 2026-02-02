@@ -6,9 +6,7 @@ from flowyml.ui.backend.main import app
 from flowyml.ui.backend.auth import TokenManager
 from pathlib import Path
 
-# Skip all tests in this module due to pre-existing TestClient configuration issues
-# These are unrelated to the FlowyML rebranding and will be fixed separately
-pytestmark = pytest.mark.skip(reason="Pre-existing TestClient infrastructure issue - to be fixed separately")
+# pytestmark = pytest.mark.skip(reason="Pre-existing TestClient infrastructure issue - to be fixed separately")
 
 
 @pytest.fixture

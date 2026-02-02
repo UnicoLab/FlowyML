@@ -92,11 +92,15 @@ class PluginManager:
             # Handle packages with dashes vs underscores
             pkg_name = pkg_name.replace("-", "_")
 
-            if importlib.util.find_spec(pkg_name) is None:
-                # Try with dashes
-                pkg_name_dash = pkg_name.replace("_", "-")
-                if importlib.util.find_spec(pkg_name_dash) is None:
-                    return False
+            try:
+                if importlib.util.find_spec(pkg_name) is None:
+                    # Try with dashes
+                    pkg_name_dash = pkg_name.replace("_", "-")
+                    if importlib.util.find_spec(pkg_name_dash) is None:
+                        return False
+            except (ValueError, AttributeError):
+                # This can happen if a module is partially loaded or mocked without __spec__
+                return False
         return True
 
     # =========================================================================
