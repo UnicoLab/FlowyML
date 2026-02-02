@@ -2,7 +2,6 @@
 
 import pytest
 from fastapi.testclient import TestClient
-from flowyml.ui.backend.main import app
 from flowyml.ui.backend.auth import TokenManager
 from pathlib import Path
 
@@ -10,9 +9,24 @@ from pathlib import Path
 
 
 @pytest.fixture
-def client():
-    """Create test client."""
-    return TestClient(app)
+def client(tmp_path):
+    """Create test client with isolated environment."""
+    from flowyml.utils.config import update_config, reset_config, get_config
+
+    test_home = tmp_path / ".flowyml"
+    update_config(
+        flowyml_home=test_home,
+        metadata_db=test_home / "metadata.db",
+        enable_ui=False,
+    )
+    get_config().create_directories()
+
+    from flowyml.ui.backend.main import app
+
+    with TestClient(app) as client:
+        yield client
+
+    reset_config()
 
 
 @pytest.fixture

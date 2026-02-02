@@ -4,11 +4,16 @@ from flowyml.core.scheduler import PipelineScheduler
 from flowyml.registry.pipeline_registry import pipeline_registry
 
 router = APIRouter()
-# Note: In a real app, the scheduler instance should be a singleton managed by the app state
-# For now, we instantiate it here, but it might not persist state across reloads if not handled carefully.
-# Ideally, the scheduler is started when the backend starts.
-scheduler = PipelineScheduler()
-scheduler.start()  # Start the scheduler thread
+_scheduler = None
+
+
+def get_scheduler():
+    """Get or initialize the scheduler singleton."""
+    global _scheduler
+    if _scheduler is None:
+        _scheduler = PipelineScheduler()
+        _scheduler.start()
+    return _scheduler
 
 
 class ScheduleRequest(BaseModel):
@@ -32,7 +37,7 @@ async def list_schedules():
     """
     # First, get schedules from the in-memory scheduler
     memory_schedules = []
-    for s in scheduler.list_schedules():
+    for s in get_scheduler().list_schedules():
         memory_schedules.append(
             {
                 "pipeline_name": s.pipeline_name,
@@ -48,8 +53,8 @@ async def list_schedules():
     # Also read directly from the persistence database to get schedules
     # created by other processes (e.g., user scripts)
     db_schedules = []
-    if scheduler._persistence:
-        db_schedules = scheduler._persistence.list_all_schedules()
+    if get_scheduler()._persistence:
+        db_schedules = get_scheduler()._persistence.list_all_schedules()
 
     # Merge: prefer memory schedules (more up-to-date), but include db-only ones
     memory_names = {s["pipeline_name"] for s in memory_schedules}
@@ -65,7 +70,7 @@ async def list_schedules():
 @router.get("/health")
 async def get_scheduler_health():
     """Get scheduler health metrics."""
-    return scheduler.health_check()
+    return get_scheduler().health_check()
 
 
 @router.post("/")
@@ -133,7 +138,7 @@ async def create_schedule(schedule: ScheduleRequest):
     # 2. Schedule it
     try:
         if schedule.schedule_type == "daily":
-            scheduler.schedule_daily(
+            get_scheduler().schedule_daily(
                 name=schedule.name,
                 pipeline_func=pipeline_func,
                 hour=schedule.hour,
@@ -141,14 +146,14 @@ async def create_schedule(schedule: ScheduleRequest):
                 timezone=schedule.timezone,
             )
         elif schedule.schedule_type == "hourly":
-            scheduler.schedule_hourly(
+            get_scheduler().schedule_hourly(
                 name=schedule.name,
                 pipeline_func=pipeline_func,
                 minute=schedule.minute,
                 timezone=schedule.timezone,
             )
         elif schedule.schedule_type == "interval":
-            scheduler.schedule_interval(
+            get_scheduler().schedule_interval(
                 name=schedule.name,
                 pipeline_func=pipeline_func,
                 seconds=schedule.interval_seconds,
@@ -157,7 +162,7 @@ async def create_schedule(schedule: ScheduleRequest):
         elif schedule.schedule_type == "cron":
             if not schedule.cron_expression:
                 raise HTTPException(status_code=400, detail="Cron expression required for cron schedule")
-            scheduler.schedule_cron(
+            get_scheduler().schedule_cron(
                 name=schedule.name,
                 pipeline_func=pipeline_func,
                 cron_expression=schedule.cron_expression,
@@ -177,28 +182,28 @@ async def create_schedule(schedule: ScheduleRequest):
 @router.delete("/{schedule_name}")
 async def delete_schedule(schedule_name: str):
     """Remove a schedule."""
-    scheduler.unschedule(schedule_name)
+    get_scheduler().unschedule(schedule_name)
     return {"status": "success", "message": f"Schedule {schedule_name} removed"}
 
 
 @router.post("/{schedule_name}/enable")
 async def enable_schedule(schedule_name: str):
     """Enable a schedule."""
-    scheduler.enable(schedule_name)
+    get_scheduler().enable(schedule_name)
     return {"status": "success"}
 
 
 @router.post("/{schedule_name}/disable")
 async def disable_schedule(schedule_name: str):
     """Disable a schedule."""
-    scheduler.disable(schedule_name)
+    get_scheduler().disable(schedule_name)
     return {"status": "success"}
 
 
 @router.get("/{schedule_name}/history")
 async def get_schedule_history(schedule_name: str, limit: int = 50):
     """Get execution history for a schedule."""
-    return scheduler.get_history(schedule_name, limit)
+    return get_scheduler().get_history(schedule_name, limit)
 
 
 @router.get("/registered-pipelines")

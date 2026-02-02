@@ -4,8 +4,6 @@ Tests for stack integration with pipelines.
 Tests that pipelines correctly use stacks, resources, and configurations.
 """
 
-import unittest
-import tempfile
 import shutil
 from pathlib import Path
 
@@ -15,14 +13,15 @@ from flowyml.stacks.components import ResourceConfig, DockerConfig
 from flowyml.stacks.registry import StackRegistry, get_registry
 
 
-class TestStackIntegration(unittest.TestCase):
+from tests.base import BaseTestCase
+
+
+class TestStackIntegration(BaseTestCase):
     """Test stack integration with pipelines."""
 
     def setUp(self):
         """Set up test environment."""
-        self.test_dir = tempfile.mkdtemp()
-        self.addCleanup(shutil.rmtree, self.test_dir)
-
+        super().setUp()
         # Clear global registry
         get_registry().clear()
 
@@ -48,7 +47,7 @@ class TestStackIntegration(unittest.TestCase):
 
     def test_pipeline_with_stack_registry(self):
         """Test pipeline uses stack from registry."""
-        stack = LocalStack(name="registered")
+        stack = LocalStack(name="registered", artifact_path=f"{self.test_dir}/artifacts")
 
         registry = get_registry()
         registry.register_stack(stack, set_active=True)
@@ -106,7 +105,7 @@ class TestStackIntegration(unittest.TestCase):
         self.assertIsNotNone(result2)
 
 
-class TestResourceConfiguration(unittest.TestCase):
+class TestResourceConfiguration(BaseTestCase):
     """Test resource configuration with pipelines."""
 
     def test_resource_config_creation(self):
@@ -141,7 +140,7 @@ class TestResourceConfiguration(unittest.TestCase):
         self.assertEqual(config.gpu_count, 0)
 
 
-class TestDockerConfiguration(unittest.TestCase):
+class TestDockerConfiguration(BaseTestCase):
     """Test Docker configuration."""
 
     def test_docker_config_with_image(self):
@@ -191,11 +190,12 @@ class TestDockerConfiguration(unittest.TestCase):
         self.assertIn("env_vars", config_dict)
 
 
-class TestStackRegistry(unittest.TestCase):
+class TestStackRegistry(BaseTestCase):
     """Test stack registry functionality."""
 
     def setUp(self):
         """Clear registry before each test."""
+        super().setUp()
         get_registry().clear()
 
     def test_register_stack(self):
@@ -249,6 +249,8 @@ class TestStackRegistry(unittest.TestCase):
         stack = LocalStack(name="describable")
 
         registry.register_stack(stack, set_active=True)
+        # Ensure stack uses isolated path to avoid collisions
+        stack.artifact_path = f"{self.test_dir}/desc_artifacts"
         description = registry.describe_stack("describable")
 
         self.assertIn("name", description)
@@ -256,13 +258,12 @@ class TestStackRegistry(unittest.TestCase):
         self.assertTrue(description["is_active"])
 
 
-class TestPipelineStackIntegration(unittest.TestCase):
+class TestPipelineStackIntegration(BaseTestCase):
     """Integration tests for pipeline and stack interaction."""
 
     def setUp(self):
         """Set up test environment."""
-        self.test_dir = tempfile.mkdtemp()
-        self.addCleanup(shutil.rmtree, self.test_dir)
+        super().setUp()
         get_registry().clear()
 
     def test_end_to_end_pipeline_with_stack(self):
