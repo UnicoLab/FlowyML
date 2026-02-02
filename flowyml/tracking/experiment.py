@@ -42,8 +42,12 @@ class Experiment:
         description: str = "",
         tags: dict[str, str] | None = None,
         parameters: dict[str, Any] | None = None,
-        experiment_dir: str = ".flowyml/experiments",
+        experiment_dir: str | None = None,
+        metadata_store: Any = None,
     ):
+        from flowyml.utils.config import get_config
+        from flowyml.storage.sql import SQLMetadataStore
+
         self.name = name
         self.description = description
         self.config = ExperimentConfig(
@@ -54,13 +58,12 @@ class Experiment:
         )
 
         # Storage
-        self.experiment_dir = Path(experiment_dir) / name
+        base_dir = Path(experiment_dir) if experiment_dir else get_config().experiments_dir
+        self.experiment_dir = base_dir / name
         self.experiment_dir.mkdir(parents=True, exist_ok=True)
 
         # Metadata store for UI
-        from flowyml.storage.metadata import SQLiteMetadataStore
-
-        self.metadata_store = SQLiteMetadataStore()
+        self.metadata_store = metadata_store or SQLMetadataStore(db_path=str(get_config().metadata_db))
 
         # Save experiment to DB
         self.metadata_store.save_experiment(

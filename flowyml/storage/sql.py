@@ -688,6 +688,33 @@ class SQLMetadataStore(MetadataStore):
                 )
             return experiments
 
+    def list_experiment_runs(self, experiment_id: str) -> list[dict]:
+        """List all runs in an experiment."""
+        with self.engine.connect() as conn:
+            stmt = (
+                select(
+                    self.experiment_runs.c.run_id,
+                    self.experiment_runs.c.metrics,
+                    self.experiment_runs.c.parameters,
+                    self.experiment_runs.c.timestamp,
+                )
+                .where(
+                    self.experiment_runs.c.experiment_id == experiment_id,
+                )
+                .order_by(self.experiment_runs.c.timestamp.desc())
+            )
+
+            rows = conn.execute(stmt).fetchall()
+            return [
+                {
+                    "run_id": row[0],
+                    "metrics": json.loads(row[1]) if row[1] else {},
+                    "parameters": json.loads(row[2]) if row[2] else {},
+                    "created_at": str(row[3]),
+                }
+                for row in rows
+            ]
+
     def update_experiment_project(self, experiment_name: str, project_name: str) -> None:
         """Update the project for an experiment."""
         with self.engine.connect() as conn:

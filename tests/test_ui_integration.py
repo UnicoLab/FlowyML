@@ -1,60 +1,57 @@
 """
 Test pipeline to verify UI integration works.
-This should populate the database and show in the UI.
 """
 
-# Note: Module reloading removed as it causes test pollution and isinstance failures
-
-import sys
-
-from flowyml import Pipeline, step, context
+import pytest
 import time
-
-# Define context with parameters
-ctx = context(
-    learning_rate=0.001,
-    epochs=5,
-    batch_size=32,
-)
+from flowyml import Pipeline, step, context
+from flowyml.utils.config import update_config, reset_config, get_config
 
 
-# Define steps
-@step(outputs=["data/processed"])
-def load_and_preprocess():
-    """Load and preprocess data."""
-    print("📥 Loading and preprocessing data...")
-    time.sleep(0.5)
-    return {"samples": 1000, "features": 20}
+def test_ui_integration(tmp_path):
+    """Test pipeline execution and UI integration with isolated config."""
+    # Isolate test environment
+    test_home = tmp_path / ".flowyml"
+    update_config(
+        flowyml_home=test_home,
+        artifacts_dir=test_home / "artifacts",
+        metadata_db=test_home / "metadata.db",
+        cache_dir=test_home / "cache",
+        runs_dir=test_home / "runs",
+        enable_ui=False,
+    )
+    get_config().create_directories()
 
+    try:
+        # Define context with parameters
+        ctx = context(
+            learning_rate=0.001,
+            epochs=5,
+            batch_size=32,
+        )
 
-@step(inputs=["data/processed"], outputs=["model/trained"])
-def train_model(data, learning_rate: float, epochs: int):
-    """Train a model with auto-injected parameters."""
-    print(f"🚀 Training model with lr={learning_rate}, epochs={epochs}")
-    print(f"   Data: {data}")
-    time.sleep(0.5)
-    return {"accuracy": 0.95, "loss": 0.05}
+        # Define steps
+        @step(outputs=["data/processed"])
+        def load_and_preprocess():
+            """Load and preprocess data."""
+            time.sleep(0.1)
+            return {"samples": 1000, "features": 20}
 
+        @step(inputs=["data/processed"], outputs=["model/trained"])
+        def train_model(data, learning_rate: float, epochs: int):
+            """Train a model with auto-injected parameters."""
+            time.sleep(0.1)
+            return {"accuracy": 0.95, "loss": 0.05}
 
-# Create and run pipeline
-print("\n" + "=" * 70)
-print("🧪 Testing flowyml UI Integration")
-print("=" * 70)
+        # Create and run pipeline
+        pipeline = Pipeline("ui_test_pipeline", context=ctx)
+        pipeline.add_step(load_and_preprocess)
+        pipeline.add_step(train_model)
 
-pipeline = Pipeline("ui_test_pipeline", context=ctx)
-pipeline.add_step(load_and_preprocess)
-pipeline.add_step(train_model)
+        result = pipeline.run(debug=True)
 
-result = pipeline.run(debug=True)
-
-if result.success:
-    print(f"\n✅ Pipeline completed in {result.duration_seconds:.2f}s")
-    print(f"📊 Model accuracy: {result.outputs['model/trained']['accuracy']}")
-    print(f"\n🌐 View in UI:")
-    print(f"   Dashboard: http://localhost:8080")
-    print(f"   This run: http://localhost:8080/runs/{result.run_id}")
-    print("\n💡 Refresh your browser to see the run!")
-else:
-    print(f"\n❌ Pipeline failed")
-
-print("=" * 70)
+        assert result.success is True
+        assert "model/trained" in result.outputs
+        assert result.outputs["model/trained"]["accuracy"] == 0.95
+    finally:
+        reset_config()
