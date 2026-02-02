@@ -9,7 +9,9 @@ from pathlib import Path
 try:
     from datetime import UTC
 except ImportError:
-    UTC = UTC
+    from datetime import timezone
+
+    UTC = timezone.utc
 
 from sqlalchemy import (
     Column,

@@ -139,7 +139,7 @@ target-version = ['py310', 'py311', 'py312']
 
 [tool.ruff]
 line-length = 100
-target-version = "py311"
+target-version = "py310"
 exclude = ["inspiration-only", "flowyml/ui/frontend"]
 
 [tool.ruff.lint]
