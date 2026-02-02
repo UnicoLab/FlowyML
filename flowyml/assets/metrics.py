@@ -37,6 +37,11 @@ class Metrics(Asset):
         # Store metrics in properties for easy access
         self.metadata.properties.update(all_metrics)
 
+    @property
+    def values(self) -> dict[str, Any]:
+        """Alias for data to support common usage patterns."""
+        return self.data or {}
+
     def get_metric(self, name: str, default: Any = None) -> Any:
         """Get a specific metric value."""
         if self.data and name in self.data:

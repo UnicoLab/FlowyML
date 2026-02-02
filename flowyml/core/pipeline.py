@@ -1006,7 +1006,7 @@ class Pipeline:
                         # For Dataset assets, include the full data for visualization
                         # This enables histograms and statistics in the UI
                         data_value = None
-                        if asset_type == "Dataset" and value.data:
+                        if asset_type == "Dataset" and value.data is not None:
                             try:
                                 # Store full data as JSON-serializable dict
                                 data_value = self._sanitize_for_json(value.data)

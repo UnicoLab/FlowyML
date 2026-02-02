@@ -22,7 +22,7 @@ import pandas as pd
 # Pure pipeline logic - no infrastructure code!
 
 
-@step
+@step(outputs=["dataset"])
 def load_data(data_path: str):
     """Load training data."""
     print(f"Loading data from {data_path}")
@@ -44,7 +44,7 @@ def load_data(data_path: str):
     )
 
 
-@step
+@step(outputs=["datasets"])
 def preprocess(dataset: Dataset):
     """Preprocess data."""
     df = dataset.data
@@ -59,7 +59,7 @@ def preprocess(dataset: Dataset):
     }
 
 
-@step
+@step(outputs=["model"])
 def train_model(datasets: dict):
     """Train ML model."""
     train_data = datasets["train"].data
@@ -76,7 +76,7 @@ def train_model(datasets: dict):
     )
 
 
-@step
+@step(outputs=["metrics"])
 def evaluate(model: Model, datasets: dict):
     """Evaluate model."""
     val_data = datasets["val"].data

@@ -5,12 +5,25 @@
 
 ## System Requirements
 
-- **Python**: 3.8 or higher (3.10+ recommended for best performance)
-- **Operating System**: Linux, macOS, Windows (WSL2 recommended for Windows)
-- **Memory**: Minimum 4GB RAM (8GB+ for larger pipelines)
-- **Disk Space**: 500MB for full installation
+<div class="grid cards" markdown>
 
-**Why these requirements**: FlowyML is designed to run anywhere Python runs. The minimum specs support local development; production workloads scale based on your pipeline needs.
+-   :material-language-python: **Python 3.10+**
+    ---
+    Recommended for best performance and type safety features.
+
+-   :material-microsoft-windows-classic: **OS Agnostic**
+    ---
+    Native support for Linux, macOS, and Windows (WSL2 recommended).
+
+-   :material-memory: **8GB+ RAM**
+    ---
+    Recommended for handling large ML models and intensive pipelines.
+
+</div>
+
+**Why FlowyML?** We focus on **lightweight core** and **extensible extras**. Install only what you need for your production environment to keep your Docker images slim and secure.
+
+---
 
 ## Installation Options
 
@@ -65,10 +78,10 @@ pip install "flowyml[sklearn]"
 # Google Cloud Platform (Vertex AI, GCS, Container Registry)
 pip install "flowyml[gcp]"
 
-# AWS support (coming soon)
+# AWS support (SageMaker, S3, ECR)
 pip install "flowyml[aws]"
 
-# Azure support (coming soon)
+# Azure support (Azure ML, Blob Storage, ACR)
 pip install "flowyml[azure]"
 ```
 

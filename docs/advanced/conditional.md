@@ -68,38 +68,98 @@ def upload_to_s3(data):
     s3.upload(data)
 ```
 
+## The Execution Context (`ctx`)
+
+When writing conditions, you have access to a rich `ctx` object that allows you to inspect the state of the entire pipeline run.
+
+### Accessing Step Outputs
+
+You can access the outputs of previous steps using `ctx.steps`:
+
+```python
+# Accessing a simple value
+condition=lambda ctx: ctx.steps['evaluate'].outputs['accuracy'] > 0.9
+
+# Accessing multiple outputs
+condition=lambda ctx: ctx.steps['data_loader'].outputs['train_size'] > 1000
+```
+
+### Working with Assets (Typed Artifacts)
+
+If your steps return `Model`, `Dataset`, or `Metrics` objects, you can access their metadata directly:
+
+```python
+# Accessing Model accuracy from metadata
+condition=lambda ctx: ctx.steps['train'].outputs['model'].metadata['accuracy'] > 0.9
+
+# Accessing Dataset statistics
+condition=lambda ctx: ctx.steps['load'].outputs['dataset'].statistics['row_count'] > 0
+```
+
+> [!NOTE]
+> **Asset Metadata**: The `metadata` attribute in the context is a merged dictionary containing both the Asset's `properties` and `tags`.
+
+### Accessing Context Parameters
+
+You can access pipeline parameters defined in your `context()`:
+
+```python
+# Using context parameters in conditions
+condition=lambda ctx: ctx.params['environment'] == 'production'
+```
+
+## Detailed Pattern Examples
+
+### Pattern 1: Metrics-Based Deployment
+Use `Metrics` assets to make complex decisions.
+
+```python
+from flowyml import Pipeline, step, If, Metrics
+
+@step(outputs=["eval_metrics"])
+def evaluate() -> Metrics:
+    return Metrics({"f1_score": 0.92, "latency_ms": 150})
+
+pipeline.add_control_flow(
+    If(
+        condition=lambda ctx: (
+            ctx.steps['evaluate'].outputs['eval_metrics']['f1_score'] > 0.9 and
+            ctx.steps['evaluate'].outputs['eval_metrics']['latency_ms'] < 200
+        ),
+        then_step=deploy_prod,
+        else_step=send_alert
+    )
+)
+```
+
+### Pattern 2: Multi-Environment Logic
+Build one pipeline that behaves differently based on the environment.
+
+```python
+@step
+def smoke_test():
+    print("Running quick smoke test...")
+
+@step
+def full_validation():
+    print("Running comprehensive validation suite...")
+
+pipeline.add_control_flow(
+    If(
+        condition=lambda ctx: ctx.params['env'] == 'dev',
+        then_step=smoke_test,
+        else_step=full_validation
+    )
+)
+```
+
 ## Decision Guide: Control Flow
 
 | Pattern | Use When | Example |
 |---------|----------|---------|
 | `If / Switch` | **Branching logic**: Choose between different paths | Deploy vs. Retrain |
 | `skip_if` | **Optional steps**: Skip a step based on a flag | Skip upload in `dry_run` |
-| Dynamic DAG | **Complex routing**: Structure depends on data | Route A for images, Route B for text |
-
-### Pattern 1: The Deployment Gate
-
-The most common pattern: only deploy if the model meets a threshold.
-
-```python
-from flowyml import If
-
-pipeline.add_control_flow(
-    If(condition=lambda ctx: ctx["accuracy"] > 0.95)
-    .then(deploy_to_prod)
-    .else_(notify_slack_failure)
-)
-```
-
-### Pattern 2: The Dry Run
-
-Skip side-effects when testing.
-
-```python
-@step(skip_if=lambda ctx: ctx.params.get("dry_run", False))
-def upload_to_s3(data):
-    # This won't run if dry_run=True
-    s3.upload(data)
-```
+| `Asset Access` | **Data-driven decisions**: Branch based on metrics | Deploy if F1 > 0.9 |
 
 > [!TIP]
 > **Best Practice**: Keep conditions simple. If your logic is complex, move it into a dedicated `@step` that outputs a boolean flag, then check that flag in the `If` condition.

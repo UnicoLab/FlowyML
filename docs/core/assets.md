@@ -34,6 +34,19 @@ flowyml provides specialized classes for different ML artifact types:
 - **Metrics**: Represents evaluation results (accuracy, loss).
 - **FeatureSet**: Represents engineered features.
 
+## Type-Based Routing & Infrastructure 🌍
+
+Assets are the primary mechanism for **Type-Based Routing**. When a step returns an Asset (like a `Model`), FlowyML inspects its type and routes it according to your **Stack Configuration**.
+
+| Asset Type | Primary Storage | Default Registry |
+|------------|-----------------|------------------|
+| `Dataset` | Artifact Store (GCS/S3) | Feature Store (optional) |
+| `Model` | Artifact Store (GCS/S3) | Model Registry (Vertex/SageMaker) |
+| `Metrics` | Metadata Store (SQL) | External Trackers (MLflow/W&B) |
+
+> [!TIP]
+> **The Benefit**: You can switch from local JSON storage to a production-grade Vertex AI Model Registry without changing a single line of your model training code.
+
 ## Creating Assets 🔨
 
 You can create assets explicitly using the `.create()` factory method. This automatically handles versioning, metadata generation, and lineage tracking.

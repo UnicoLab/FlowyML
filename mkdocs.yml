@@ -73,10 +73,33 @@ nav:
     - ☊ Steps: core/steps.md
     - 📜 Context: core/context.md
     - 📦 Assets: core/assets.md
+  - 🔌 Plugins & Stacks:
+    - 📚 Overview: plugins/overview.md
+    - 📥 Type-Based Routing: plugins/type_routing.md
+    - 🌍 Stack Configuration: plugins/stack-configuration.md
+    - 🎯 Native Plugins: plugins/native-plugins.md
+    - 🔄 External Frameworks: plugins/external-frameworks.md
+    - 🔧 Creating Plugins: plugins/creating-plugins.md
+    - 🎯 Practical Examples: plugins/practical-examples.md
+  - ⚡ Advanced Features:
+    - 🏪 Caching: advanced/caching.md
+    - 💾 Checkpointing: advanced/checkpointing.md
+    - 🕵️ LLM Tracing: advanced/llm-tracing.md
+    - ✋ Human-in-the-Loop: advanced/human-in-the-loop.md
+    - 🔀 Step Grouping: advanced/step-grouping.md
+    - 🚀 Parallel Execution: advanced/parallel.md
+    - 🔀 Conditional Execution: advanced/conditional.md
+    - 🛡️ Error Handling: advanced/error-handling.md
+    - 🔔 Notifications: advanced/notifications.md
+    - ⏰ Scheduling: user-guide/scheduling.md
+    - 🏆 Model Leaderboard: advanced/model-leaderboard.md
+    - 📉 Data Drift: advanced/data-drift.md
+    - 📋 Templates: advanced/templates.md
+    - 🐛 Debugging: advanced/debugging.md
+    - 📦 Materializers: advanced/materializers.md
   - 📖 User Guide:
     - 📁 Projects: user-guide/projects.md
     - 🔄 Versioning: user-guide/versioning.md
-    - ⏰ Scheduling: user-guide/scheduling.md
     - ⚙️ Configuration: user-guide/configuration.md
     - 💻 Resources: resources.md
     - 🔧 Components: user-guide/components.md
@@ -86,31 +109,12 @@ nav:
     - 🚨 Monitoring: user-guide/monitoring.md
     - 💻 UI Guide: user-guide/ui.md
     - 🛠 CLI: user-guide/cli.md
-  - ⚡ Advanced Features:
-    - 🏪 Caching: advanced/caching.md
-    - 💾 Checkpointing: advanced/checkpointing.md
-    - 🕵️ LLM Tracing: advanced/llm-tracing.md
-    - ✋ Human-in-the-Loop: advanced/human-in-the-loop.md
-    - 🔔 Notifications: advanced/notifications.md
-    - 🏆 Model Leaderboard: advanced/model-leaderboard.md
-    - 📉 Data Drift: advanced/data-drift.md
-    - 🛡️ Error Handling: advanced/error-handling.md
-    - 🚀 Parallel Execution: advanced/parallel.md
-    - 🔀 Conditional Execution: advanced/conditional.md
-    - 📋 Templates: advanced/templates.md
-    - 🐛 Debugging: advanced/debugging.md
-    - 📦 Materializers: advanced/materializers.md
   - 🔌 Integrations:
     - 🧠 Keras: integrations/keras.md
     - 📊 Keras Training History: integrations/keras-training-history.md
     - 🔥 PyTorch: integrations/pytorch.md
     - 🔬 Scikit-learn: integrations/sklearn.md
     - ☁️ GCP: integrations/gcp.md
-  - 🔌 Plugins:
-     - 📚 Overview: plugins/overview.md
-     - 🎯 Practical Examples: plugins/practical-examples.md
-     - 🔄 External Frameworks: plugins/external-frameworks.md
-     - 🔧 Creating Plugins: plugins/creating-plugins.md
   - 🎓 Tutorials:
     - 🔧 Extensible Pipeline: tutorials/extensible-pipeline.md
   - 📐 Guides:

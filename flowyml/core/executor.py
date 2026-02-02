@@ -210,6 +210,10 @@ class Executor:
         inputs: dict[str, Any],
         context_params: dict[str, Any],
         cache_store: Any | None = None,
+        artifact_store: Any | None = None,
+        run_id: str | None = None,
+        project_name: str = "default",
+        all_outputs: dict[str, Any] | None = None,
     ) -> ExecutionResult:
         """Execute a single step.
 
@@ -218,6 +222,10 @@ class Executor:
             inputs: Input data for the step
             context_params: Parameters from context
             cache_store: Cache store for caching
+            artifact_store: Artifact store for logging results
+            run_id: Unique ID for this pipeline run
+            project_name: Name of the project
+            all_outputs: Collection of all step outputs for conditional evaluation
 
         Returns:
             ExecutionResult with output or error
@@ -265,6 +273,7 @@ class LocalExecutor(Executor):
         artifact_store: Any | None = None,
         run_id: str | None = None,
         project_name: str = "default",
+        all_outputs: dict[str, Any] | None = None,
     ) -> ExecutionResult:
         """Execute step locally with retry, caching, and materialization."""
         start_time = time.time()
@@ -273,13 +282,20 @@ class LocalExecutor(Executor):
         # Check condition
         if step.condition:
             try:
-                # We pass inputs and context params to condition if it accepts them
-                # For simplicity, let's try to inspect the condition function
-                # or just pass what we can.
-                # A simple approach: pass nothing if it takes no args, or kwargs if it does.
-                # But inspect is safer.
+                # Prepare kwargs for condition: inputs + context_params + all_outputs
                 sig = inspect.signature(step.condition)
-                kwargs = {**inputs, **context_params}
+                kwargs = {**context_params}
+
+                # Add all outputs so far (paths like 'data/processed')
+                if all_outputs:
+                    kwargs.update(all_outputs)
+                    # Also flatten dict outputs to allow access to keys like 'quality_score'
+                    for val in all_outputs.values():
+                        if isinstance(val, dict):
+                            kwargs.update({k: v for k, v in val.items() if k not in kwargs})
+
+                # Add direct inputs (might override all_outputs if paths match)
+                kwargs.update(inputs)
 
                 # Filter kwargs to only what condition accepts
                 cond_kwargs = {k: v for k, v in kwargs.items() if k in sig.parameters}
@@ -353,7 +369,12 @@ class LocalExecutor(Executor):
                         )
                         monitor_thread.start()
 
-                    result = step.func(**kwargs)
+                    # Filter kwargs to only what the function accepts
+                    func_sig = inspect.signature(step.func)
+                    # Handle *args/**kwargs if needed, but for now strict matching is safer for steps
+                    filtered_kwargs = {k: v for k, v in kwargs.items() if k in func_sig.parameters}
+
+                    result = step.func(**filtered_kwargs)
                 except StopExecution:
                     duration = time.time() - start_time
                     return ExecutionResult(

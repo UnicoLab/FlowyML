@@ -84,37 +84,66 @@ def train(data):
 
 **Why**: Separation of code and config enables dev/staging/prod with one codebase.
 
+### 4. **Use Type-Based Routing (New in 1.8.0)**
+
+Instead of manual wiring, use return type hints to let FlowyML route your assets.
+
+```python
+from flowyml import Model
+
+# ✅ Good: Auto-routed to your Model Registry & Artifact Store
+@step
+def train(...) -> Model:
+    return Model(obj, name="my_model")
+```
+
+**Why**: Decouples your ML code from infrastructure. You define *what* it is, FlowyML handles *where* it goes.
+
+## The Pipeline Lifecycle 🔄
+
+Understanding the lifecycle of a FlowyML pipeline helps you build better production systems:
+
+1.  **Define**: Create your steps using the `@step` decorator and return typed Assets.
+2.  **Configure**: Create a `context()` with your hyperparameters and choose a `Stack`.
+3.  **Build**: Assemble your DAG using `pipeline.add_step()`. FlowyML validates your data flow here.
+4.  **Execute**: Call `pipeline.run()`. FlowyML handles caching, routing, and lineage.
+5.  **Observe**: Use the UI to monitor the run real-time and inspect the resulting artifacts.
+
+---
+
 ## Creating Your First Pipeline
 
 Here's a complete, runnable example:
 
 ```python
-from flowyml import Pipeline, step, context
+import pandas as pd
+from flowyml import Pipeline, step, Dataset
 
 # Define steps
 @step(outputs=["raw_data"])
-def extract():
-    return [1, 2, 3, 4, 5]
+def extract() -> Dataset:
+    df = pd.DataFrame({"val": [1, 2, 3, 4, 5]})
+    return Dataset(df, name="raw_numbers")
 
 @step(inputs=["raw_data"], outputs=["processed_data"])
-def transform(raw_data):
-    return [x * 2 for x in raw_data]
+def transform(raw_data: pd.DataFrame):
+    return raw_data * 2
 
 # Create pipeline
 pipeline = Pipeline("etl_pipeline")
 
-# Add steps in execution order
-pipeline.add_step(extract)
-pipeline.add_step(transform)
+# Chaining steps
+pipeline.add_step(extract).add_step(transform)
 
 # Run the pipeline
 result = pipeline.run()
 
 if result.success:
-    print(f"✓ Processed data: {result.outputs['processed_data']}")
+    print(f"✓ Pipeline run complete: {result.run_id}")
 ```
 
-**What just happened**: flowyml built a DAG, determined execution order, and ran your steps. No Airflow DAG files, no Kubeflow YAML, just Python.
+> [!TIP]
+> **Visualization**: You can view the DAG of any pipeline before running it by calling `pipeline.build()` followed by `print(pipeline.dag.visualize())`.
 
 ## Pipeline Configuration ⚙️
 

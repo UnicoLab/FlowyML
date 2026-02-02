@@ -146,7 +146,23 @@ Artifacts: {stats['total_artifacts']}
 
 ## Multi-Tenant Architecture 🏘️
 
-### Isolating Client Data
+FlowyML is built for scale. You can isolate different teams, clients, or environments into dedicated projects.
+
+### How Isolation Works
+
+Every project has its own **isolated resources**:
+
+```text
+Project A (Team Growth)          Project B (Team Finance)
+├── Metadata (SQL)               ├── Metadata (SQL)
+├── Artifacts (S3 Bucket A)      ├── Artifacts (S3 Bucket B)
+└── Runs (isolated folder)       └── Runs (isolated folder)
+```
+
+**Key Benefits**:
+-   🔒 **Security**: Team Growth cannot see Team Finance's data or models.
+-   ⚡ **Performance**: Metadata queries are scoped to the project, keeping them fast.
+-   📊 **Accounting**: Easily track cloud storage costs per project/team.
 
 ```python
 # Setup for multiple clients

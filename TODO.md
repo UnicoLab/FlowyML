@@ -1,3 +1,0 @@
-
-## Pipeline Tempaltes
-Pipeline templates management ... create, edit, detele etc ...

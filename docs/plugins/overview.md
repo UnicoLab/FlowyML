@@ -63,12 +63,14 @@ save_model(model, "classifier")  # Goes wherever config says
 - `airflow` - Apache Airflow
 
 ### Model Registries
-- `vertex_model_registry` - Vertex AI Model Registry
-- `sagemaker_model_registry` - SageMaker Model Registry
+- `vertex_model_registry` - Vertex AI Model Registry ✅
+- `sagemaker_model_registry` - SageMaker Model Registry ✅
 
-### Coming Soon
-- Vertex Model Registry & Endpoints
-- SageMaker Model Registry & Endpoints
+### Model Deployers
+- `vertex_endpoint` - Vertex AI Endpoints ✅
+- `sagemaker_endpoint` - SageMaker Endpoints ✅
+
+### Related Features
 - Training Jobs & Batch Prediction
 - Feature Stores
 

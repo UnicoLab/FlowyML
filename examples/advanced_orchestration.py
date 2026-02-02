@@ -86,7 +86,7 @@ def run_pipeline():
     try:
         # We use a helper to apply the policy to the run method
         # Or simply rely on the orchestrator's internal handling if configured
-        result = pipeline.run()
+        result = pipeline.run(retry_policy=retry_policy)
 
         print("\n📊 Execution Summary:")
         print(result.summary())

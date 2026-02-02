@@ -172,26 +172,23 @@ class StepGroupAnalyzer:
         Returns:
             True if steps can execute consecutively
         """
-        # Get all dependencies of step2
-        step2_deps = dag.get_all_dependencies(step2.name)
+        # Get ALL transitively producing and consuming nodes between step1 and step2
+        # Steps are consecutive if there are no intermediate steps NOT in this group
+        # that must execute between step1 and step2.
+        all_deps_of_s2 = dag.get_all_dependencies(step2.name)
 
-        # If step2 doesn't depend on anything in the group, they can be consecutive
-        # (parallel steps in same group are OK if no dependencies)
-        group_deps = step2_deps & group_step_names
-        if not group_deps:
-            # No dependencies from this group, consecutive is OK
-            return True
+        # If step1 is not even a dependency of step2, they are independent.
+        # They can be grouped as long as there is no path from step1 to step2
+        # through an external step.
 
-        # If step2 depends on step1, check for intermediate group steps
-        if step1.name in step2_deps:
-            # Get all group steps that step2 depends on (excluding step1)
-            intermediate = group_deps - {step1.name}
+        # All nodes on any path from step1 to step2:
+        all_successors_of_s1 = dag.get_all_dependents(step1.name)
+        intermediate_nodes = all_successors_of_s1 & all_deps_of_s2
 
-            # If there are NO intermediate group steps, they're consecutive
-            return len(intermediate) == 0
+        # If any node on a path from s1 to s2 is NOT in the group, they are not consecutive
+        external_intermediates = intermediate_nodes - group_step_names
 
-        # step2 doesn't depend on step1, not consecutive
-        return False
+        return len(external_intermediates) == 0
 
     def _get_execution_order(self, steps: list[Step], dag: DAG) -> list[str]:
         """Get topological execution order for steps in a group.
@@ -264,29 +261,46 @@ def get_execution_units(dag: DAG, steps: list[Step]) -> list[Step | StepGroup]:
         for step in group.steps:
             step_to_group[step.name] = group
 
-    # Get topological order of all nodes
-    all_nodes = dag.topological_sort()
+    # To correctly determine execution order of units (which may have changed due to grouping),
+    # we build a new DAG where each node is an execution unit (Step or StepGroup).
+    from flowyml.core.graph import Node as DAGNode
 
-    # Build execution units, avoiding duplicates for grouped steps
-    execution_units: list[Step | StepGroup] = []
-    processed_groups: set[str] = set()
+    units_dag = DAG()
+    unit_map: dict[str, Step | StepGroup] = {}
 
-    for node in all_nodes:
-        # Find the step object
-        step = next((s for s in steps if s.name == node.name), None)
-        if not step:
+    # Add units as nodes
+    processed_steps = set()
+    for step in steps:
+        if step.name in processed_steps:
             continue
 
-        # Check if this step belongs to a group
+        unit: Step | StepGroup
         if step.name in step_to_group:
-            group = step_to_group[step.name]
+            unit = step_to_group[step.name]
+            unit_name = f"group:{unit.group_name}"
+            # Extract names for inputs/outputs
+            u_inputs_set = set()
+            u_outputs_set = set()
+            for s in unit.steps:
+                u_inputs_set.update(s.inputs)
+                u_outputs_set.update(s.outputs)
+                processed_steps.add(s.name)
 
-            # Only add the group once (when we encounter its first step)
-            if group.group_name not in processed_groups:
-                execution_units.append(group)
-                processed_groups.add(group.group_name)
+            # External inputs are those not produced within the group
+            u_inputs = list(u_inputs_set - u_outputs_set)
+            u_outputs = list(u_outputs_set)
         else:
-            # Ungrouped step, add as-is
-            execution_units.append(step)
+            unit = step
+            unit_name = step.name
+            u_inputs = step.inputs
+            u_outputs = step.outputs
+            processed_steps.add(step.name)
 
-    return execution_units
+        unit_map[unit_name] = unit
+        units_dag.add_node(DAGNode(name=unit_name, step=unit, inputs=u_inputs, outputs=u_outputs))
+
+    # Build edges and sort
+    units_dag.build_edges()
+    sorted_unit_nodes = units_dag.topological_sort()
+
+    return [unit_map[node.name] for node in sorted_unit_nodes]

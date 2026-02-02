@@ -107,6 +107,10 @@ The `@step` decorator accepts several arguments to configure behavior:
 | `retry` | `int` | Number of retry attempts on failure | `0` |
 | `timeout` | `int` | Maximum execution time in seconds | `None` |
 | `resources` | `dict` | Resource requirements (e.g., `{"gpu": 1}`) | `None` |
+| `execution_group`| `str` | Name of the group to run steps together | `None` |
+
+> [!TIP]
+> **🚀 Performance: Step Grouping**: Use `execution_group` to run multiple steps in the same container. This eliminates the container startup overhead for consecutive small steps. See [Step Grouping](../advanced/step-grouping.md) for details.
 
 ### Example with Full Configuration
 
@@ -210,24 +214,40 @@ def train(data, learning_rate: float, epochs: int):
 pipeline = Pipeline("training", context=ctx)
 ```
 
-### Type Hints
+### Type-Based Artifact Routing (1.8.0) 🧠
 
-Type hints help flowyml match parameters correctly:
+One of FlowyML's most powerful features is **Type-Based Routing**. By using type hints in your function signature, FlowyML can automatically route your outputs to the correct infrastructure (e.g., sending a `Model` to Vertex AI Model Registry).
+
+### How it Works
+
+Simply add a return type hint to your `@step` function:
 
 ```python
+from flowyml import step, Model, Dataset
+
 @step
-def process(
-    data: list,           # From previous step output
-    threshold: float,     # From context
-    normalize: bool = True  # From context (with default)
-):
-    # flowyml injects context parameters based on names and types
-    ...
+def train_model(data: pd.DataFrame) -> Model:
+    # ... training logic ...
+    return Model(trained_obj, name="my_classifier")
+
+@step
+def load_data() -> Dataset:
+    # ... loading logic ...
+    return Dataset(df, name="raw_data")
 ```
 
-See [Context & Parameters](context.md) for detailed information.
+### Why Use Type Hints?
 
-## Caching Strategies 💾
+1.  **Auto-Routing**: `Model` objects go to model registries, `Dataset` objects go to feature stores or data buckets.
+2.  **Infrastructure Abstraction**: You don't need to know the GCS/S3 path inside your training function.
+3.  **Validation**: FlowyML ensures that downstream steps receive the correct object types.
+
+> [!TIP]
+> **Pro Tip**: Use the `Model`, `Dataset`, and `Metrics` classes provided by FlowyML to get the full benefit of auto-extraction and routing.
+
+---
+
+## Anatomy of a Step
 
 flowyml supports intelligent caching to avoid re-running expensive steps:
 

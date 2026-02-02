@@ -188,8 +188,8 @@ def main():
 
     print("\n📋 Pipeline Configuration:")
     print(f"   Name: {pipeline.name}")
-    print(f"   Steps: {len(pipeline._steps)}")
-    print(f"   Context parameters: {len(ctx._params)}")
+    print(f"   Steps: {len(pipeline.steps)}")
+    print(f"   Context parameters: {len(ctx.to_dict())}")
 
     # Run the pipeline
     print("\n🚀 Starting pipeline execution...")
@@ -204,9 +204,9 @@ def main():
 
         # Display results
         print("\n📊 Results Summary:")
-        if hasattr(result, "artifacts"):
-            for artifact_name, artifact_value in result.artifacts.items():
-                print(f"   {artifact_name}: {type(artifact_value).__name__}")
+        if hasattr(result, "outputs"):
+            for name, value in result.outputs.items():
+                print(f"   {name}: {type(value).__name__}")
 
         # Show UI link if available
         if is_ui_running():

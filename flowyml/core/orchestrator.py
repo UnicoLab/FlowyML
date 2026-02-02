@@ -282,8 +282,8 @@ class LocalOrchestrator(Orchestrator):
                     pipeline._save_pipeline_definition()
                     return result
 
-                # Get context parameters for this step
-                context_params = pipeline.context.inject_params(step.func)
+                # Get all context parameters for this step (to allow conditions to access any of them)
+                context_params = pipeline.context.to_dict()
 
                 # Update display - step starting
                 if hasattr(pipeline, "_display") and pipeline._display:
@@ -301,6 +301,7 @@ class LocalOrchestrator(Orchestrator):
                     artifact_store=pipeline.stack.artifact_store if pipeline.stack else None,
                     run_id=run_id,
                     project_name=pipeline.name,
+                    all_outputs=step_outputs,
                 )
 
                 # Run step end hooks
@@ -797,6 +798,9 @@ class LocalOrchestrator(Orchestrator):
         else:
             if step_def.outputs:
                 outputs_to_process[step_def.outputs[0]] = step_result.output
+            else:
+                # Fallback: use step name as output key
+                outputs_to_process[step_result.step_name] = step_result.output
 
         # Save and update state
         for name, value in outputs_to_process.items():

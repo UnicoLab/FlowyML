@@ -63,10 +63,11 @@ def load_data(data_source: str) -> Dataset:
     time.sleep(1.5)  # Simulate I/O
 
     # Create a Dataset asset
-    return Dataset(
+    return Dataset.create(
         name="churn_raw",
-        uri=data_source,
-        metadata={"rows": 10000, "columns": 20},
+        location=data_source,
+        properties={"rows": 10000, "columns": 20},
+        data=None,
     )
 
 
@@ -83,13 +84,14 @@ def preprocess(raw_data: Dataset, test_size: float) -> FeatureSet:
             level=AlertLevel.WARNING,
         )
 
-    return FeatureSet(
+    return FeatureSet.create(
+        data=None,
         name="churn_features",
-        uri="s3://demo-bucket/features/v1",
-        metadata={
-            "features": ["age", "tenure", "balance", "products"],
+        properties={
+            "location": "s3://demo-bucket/features/v1",
             "test_size": test_size,
         },
+        feature_names=["age", "tenure", "balance", "products"],
     )
 
 
@@ -108,10 +110,11 @@ def train_model(
     accuracy = 0.82 + (random.random() * 0.1)  # Random accuracy between 0.82 and 0.92
     loss = 0.5 - (accuracy * 0.4)
 
-    model = Model(
+    model = Model.create(
+        data=None,
         name="churn_classifier",
-        uri="s3://demo-bucket/models/v1",
-        metadata={
+        location="s3://demo-bucket/models/v1",
+        properties={
             "algorithm": "RandomForest",
             "hyperparameters": {
                 "learning_rate": learning_rate,
@@ -121,13 +124,11 @@ def train_model(
         },
     )
 
-    metrics = Metrics(
+    metrics = Metrics.create(
         name="training_metrics",
-        values={
-            "accuracy": accuracy,
-            "loss": loss,
-            "f1_score": accuracy - 0.02,
-        },
+        accuracy=accuracy,
+        loss=loss,
+        f1_score=accuracy - 0.02,
     )
 
     return model, metrics
@@ -148,12 +149,10 @@ def evaluate_model(model: Model, training_metrics: Metrics, min_accuracy: float)
             level=AlertLevel.WARNING,
         )
 
-    return Metrics(
+    return Metrics.create(
         name="eval_metrics",
-        values={
-            "accuracy": accuracy,
-            "passed_threshold": accuracy >= min_accuracy,
-        },
+        accuracy=accuracy,
+        passed_threshold=accuracy >= min_accuracy,
     )
 
 

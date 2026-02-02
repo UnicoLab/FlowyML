@@ -21,11 +21,12 @@ flowyml provides built-in observability for Large Language Models (LLMs), giving
 
 ## 🕵️ LLM Call Tracing
 
-You can trace any function as an LLM call or a chain of calls using the `@trace_llm` decorator. flowyml automatically captures inputs, outputs, and metadata.
+You can trace any function as an LLM call or a chain of calls using the `@trace_llm` decorator. flowyml automatically captures:
 
-## 🕵️ LLM Call Tracing
-
-You can trace any function as an LLM call or a chain of calls using the `@trace_llm` decorator.
+*   ✅ **Prompts & Completions**: Full text of the inputs and outputs.
+*   ✅ **Token Usage**: Breakdown of prompt, completion, and total tokens.
+*   ✅ **Cost Estimation**: Automatic cost calculation based on the model tier.
+*   ✅ **Latency**: Precise timing of each call.
 
 ### Basic Usage
 
@@ -33,7 +34,7 @@ You can trace any function as an LLM call or a chain of calls using the `@trace_
 from flowyml import trace_llm
 import openai
 
-@trace_llm(name="text_generation")
+@trace_llm(name="text_generation", model="gpt-4")
 def generate_text(prompt: str):
     response = openai.chat.completions.create(
         model="gpt-4",
@@ -41,26 +42,25 @@ def generate_text(prompt: str):
     )
     return response.choices[0].message.content
 
-# This call will be automatically traced and logged
+# This call will be automatically traced and logged to the UI
 result = generate_text("Write a haiku about ML pipelines")
 ```
 
-### Real-World Pattern: RAG Pipeline
+### Advanced: Nesting Traces (Chains)
 
-Trace a complete Retrieval Augmented Generation (RAG) workflow to see where time is spent.
+For complex workflows like RAG (Retrieval-Augmented Generation), you can nest traces to see exactly where time and money are spent.
 
 ```python
 from flowyml import trace_llm
 
 @trace_llm(name="rag_chain", event_type="chain")
 def rag_pipeline(query: str):
-    # 1. Retrieve context (Tool)
+    # Retrieve context (Tool)
     context = retrieve_context(query)
 
-    # 2. Generate answer (LLM)
+    # Generate answer (LLM)
     answer = generate_answer(query, context)
     return answer
-
 @trace_llm(name="retrieval", event_type="tool")
 def retrieve_context(query: str):
     # Simulate vector DB lookup
@@ -69,7 +69,7 @@ def retrieve_context(query: str):
 @trace_llm(name="generation", event_type="llm", model="gpt-4")
 def generate_answer(query: str, context: str):
     # This call's tokens and cost will be tracked
-    return openai.ChatCompletion.create(
+    return openai.chat.completions.create(
         model="gpt-4",
         messages=[
             {"role": "system", "content": f"Context: {context}"},

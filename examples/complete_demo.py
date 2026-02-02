@@ -125,7 +125,7 @@ project = Project(
 )
 
 # Create pipeline within project
-project_pipeline = project.create_pipeline("training_v1")
+project_pipeline = project.create_pipeline("training_v1", context=ctx)
 project_pipeline.add_step(load_data)
 project_pipeline.add_step(train_model)
 project_pipeline.add_step(evaluate_model)
@@ -136,8 +136,8 @@ result = project_pipeline.run()
 # Get project stats
 stats = project.get_stats()
 print("\n📊 Project Stats:")
-print(f"   Total runs: {stats['total_runs']}")
-print(f"   Total artifacts: {stats['total_artifacts']}")
+print(f"   Total runs: {stats['runs']}")
+print(f"   Total artifacts: {stats['artifacts']}")
 
 # ============================================================================
 # PART 4: Notifications

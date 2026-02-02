@@ -52,6 +52,16 @@ class AlertManager:
             except Exception as e:
                 logger.error(f"Failed to handle alert: {e}")
 
+    def alert(
+        self,
+        message: str,
+        title: str = "Pipeline Alert",
+        level: AlertLevel = AlertLevel.INFO,
+        metadata: dict = None,
+    ) -> None:
+        """Convenience method for sending alerts."""
+        self.send_alert(title=title, message=message, level=level, metadata=metadata)
+
 
 # Global instance
 alert_manager = AlertManager()
