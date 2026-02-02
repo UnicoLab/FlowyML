@@ -39,6 +39,7 @@ from flowyml.ui.backend.routers import (
     deployments,
     model_explorer,
     auth,  # New Auth Router
+    templates,  # Pipeline Templates
 )
 
 # Initialize OpenTelemetry
@@ -48,11 +49,21 @@ resource = Resource(
     },
 )
 
-# Tracing
+# Tracing - Use OTLP exporter in production, console in development
 trace_provider = TracerProvider(resource=resource)
-# For now, just console export or no-op if no collector.
-# In production, we'd add OTLPSpanExporter
-trace_provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
+_otlp_endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+if _otlp_endpoint:
+    # Production: Use OTLP exporter (supports Jaeger, Honeycomb, Google Cloud Trace, etc.)
+    try:
+        from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+
+        trace_provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter(endpoint=_otlp_endpoint)))
+    except ImportError:
+        # Fallback to console if OTLP exporter not installed
+        trace_provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
+else:
+    # Development: Console exporter for debugging
+    trace_provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
 trace.set_tracer_provider(trace_provider)
 
 # Metrics (Prometheus)
@@ -75,10 +86,30 @@ FastAPIInstrumentor.instrument_app(app)
 metrics_app = make_asgi_app()
 app.mount("/metrics", metrics_app)
 
-# Configure CORS
+# Configure CORS - Production settings with localhost for development
+_is_production = os.getenv("FLOWYML_ENV") == "production"
+_cors_origins = (
+    [
+        # Production: Only allow specific origins
+        "https://flowyml.unicolab.ai",
+        "https://app.flowyml.io",
+    ]
+    if _is_production
+    else [
+        # Development: Allow localhost and common dev ports
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://localhost:8080",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:8080",
+        "*",  # Fallback for dev flexibility
+    ]
+)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # For development
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -182,6 +213,7 @@ app.include_router(websocket.router, tags=["websocket"])
 app.include_router(deployments.router, prefix="/api", tags=["deployments"])
 app.include_router(model_explorer.router, prefix="/api", tags=["model-explorer"])
 app.include_router(auth.router, prefix="/api", tags=["auth"])
+app.include_router(templates.router, tags=["templates"])
 
 
 # Static file serving for frontend

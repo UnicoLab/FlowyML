@@ -169,15 +169,21 @@ export function Runs() {
                                 />
                             ) : (
                                 <div className="h-full flex flex-col items-center justify-center text-center p-8 bg-slate-50/50 dark:bg-slate-900/50">
-                                    <div className="w-20 h-20 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mb-6 animate-pulse">
+                                    <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/30 dark:to-blue-800/30 rounded-full flex items-center justify-center mb-6">
                                         <PlayCircle size={40} className="text-blue-500" />
                                     </div>
                                     <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
                                         Select a Run
                                     </h2>
-                                    <p className="text-slate-500 max-w-md">
+                                    <p className="text-slate-500 max-w-md mb-6">
                                         Choose a run from the sidebar to view execution details, logs, and artifacts.
                                     </p>
+                                    <div className="bg-slate-900 dark:bg-slate-950 rounded-lg p-4 max-w-md mx-auto text-left shadow-lg">
+                                        <p className="text-xs text-slate-400 mb-2">Run a pipeline from the CLI:</p>
+                                        <pre className="text-sm font-mono text-slate-300 overflow-x-auto">
+                                            <code>{`flowyml run my_pipeline`}</code>
+                                        </pre>
+                                    </div>
                                 </div>
                             )}
                         </div>

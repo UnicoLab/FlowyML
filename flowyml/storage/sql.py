@@ -2,8 +2,8 @@
 
 import json
 import logging
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 # Python 3.11+ has UTC, but Python 3.10 doesn't
 try:
@@ -12,22 +12,22 @@ except ImportError:
     UTC = UTC
 
 from sqlalchemy import (
-    create_engine,
-    MetaData,
-    Table,
     Column,
-    String,
-    Integer,
     Float,
-    Text,
     ForeignKey,
-    select,
-    insert,
-    update,
+    Integer,
+    MetaData,
+    String,
+    Table,
+    Text,
+    create_engine,
     delete,
     func,
-    text,
+    insert,
     inspect,
+    select,
+    text,
+    update,
 )
 from sqlalchemy.pool import StaticPool
 
@@ -211,6 +211,42 @@ class SQLMetadataStore(MetadataStore):
             Column("name", String, primary_key=True),
             Column("description", Text),
             Column("tags", Text),  # JSON
+            Column("created_at", String, server_default=func.current_timestamp()),
+            Column("updated_at", String),
+        )
+
+        # Model registry table for versioned model management
+        self.model_versions = Table(
+            "model_versions",
+            self.metadata,
+            Column("id", Integer, primary_key=True, autoincrement=True),
+            Column("name", String, nullable=False),
+            Column("version", String, nullable=False),
+            Column("stage", String, nullable=False),  # development, staging, production, archived
+            Column("framework", String, nullable=False),
+            Column("model_path", String, nullable=False),
+            Column("metrics", Text),  # JSON
+            Column("tags", Text),  # JSON
+            Column("schema", Text),  # JSON - model input/output schema
+            Column("description", Text),
+            Column("author", String),
+            Column("parent_version", String),
+            Column("created_at", String, server_default=func.current_timestamp()),
+            Column("updated_at", String),
+        )
+
+        # Pipeline templates for reusable pipeline configurations
+        self.pipeline_templates = Table(
+            "pipeline_templates",
+            self.metadata,
+            Column("template_id", String, primary_key=True),
+            Column("name", String, nullable=False),
+            Column("description", Text),
+            Column("definition", Text, nullable=False),  # JSON pipeline config
+            Column("tags", Text),  # JSON
+            Column("author", String),
+            Column("category", String),  # e.g., "training", "inference", "data-processing"
+            Column("is_public", Integer, default=0),  # 0=private, 1=public
             Column("created_at", String, server_default=func.current_timestamp()),
             Column("updated_at", String),
         )
@@ -1041,3 +1077,253 @@ class SQLMetadataStore(MetadataStore):
         with self.engine.connect() as conn:
             conn.execute(delete(self.projects).where(self.projects.c.name == name))
             conn.commit()
+
+    # ========== Model Registry Methods ==========
+
+    def save_model_version(
+        self,
+        name: str,
+        version: str,
+        stage: str,
+        framework: str,
+        model_path: str,
+        metrics: dict | None = None,
+        tags: dict | None = None,
+        schema: dict | None = None,
+        description: str = "",
+        author: str | None = None,
+        parent_version: str | None = None,
+    ) -> int:
+        """Save a model version to the registry.
+
+        Returns:
+            The ID of the saved model version.
+        """
+        now = datetime.now(UTC).isoformat()
+        with self.engine.connect() as conn:
+            # Check if version already exists
+            stmt = select(self.model_versions).where(
+                (self.model_versions.c.name == name) & (self.model_versions.c.version == version),
+            )
+            existing = conn.execute(stmt).fetchone()
+
+            values = {
+                "name": name,
+                "version": version,
+                "stage": stage,
+                "framework": framework,
+                "model_path": model_path,
+                "metrics": json.dumps(metrics or {}),
+                "tags": json.dumps(tags or {}),
+                "schema": json.dumps(schema or {}),
+                "description": description,
+                "author": author,
+                "parent_version": parent_version,
+                "updated_at": now,
+            }
+
+            if existing:
+                conn.execute(
+                    update(self.model_versions)
+                    .where(
+                        (self.model_versions.c.name == name) & (self.model_versions.c.version == version),
+                    )
+                    .values(**values),
+                )
+                conn.commit()
+                return existing.id
+            else:
+                result = conn.execute(insert(self.model_versions).values(**values))
+                conn.commit()
+                return result.lastrowid
+
+    def get_model_version(self, name: str, version: str) -> dict | None:
+        """Get a specific model version."""
+        with self.engine.connect() as conn:
+            stmt = select(self.model_versions).where(
+                (self.model_versions.c.name == name) & (self.model_versions.c.version == version),
+            )
+            row = conn.execute(stmt).fetchone()
+            if row:
+                return self._row_to_model_version(row)
+            return None
+
+    def _row_to_model_version(self, row) -> dict:
+        """Convert a row to a model version dict."""
+        return {
+            "id": row.id,
+            "name": row.name,
+            "version": row.version,
+            "stage": row.stage,
+            "framework": row.framework,
+            "model_path": row.model_path,
+            "metrics": json.loads(row.metrics) if row.metrics else {},
+            "tags": json.loads(row.tags) if row.tags else {},
+            "schema": json.loads(row.schema) if row.schema else {},
+            "description": row.description,
+            "author": row.author,
+            "parent_version": row.parent_version,
+            "created_at": row.created_at,
+            "updated_at": row.updated_at,
+        }
+
+    def list_model_versions(self, name: str | None = None, stage: str | None = None) -> list[dict]:
+        """List model versions with optional filters."""
+        with self.engine.connect() as conn:
+            stmt = select(self.model_versions)
+
+            if name:
+                stmt = stmt.where(self.model_versions.c.name == name)
+            if stage:
+                stmt = stmt.where(self.model_versions.c.stage == stage)
+
+            stmt = stmt.order_by(self.model_versions.c.created_at.desc())
+            rows = conn.execute(stmt).fetchall()
+            return [self._row_to_model_version(row) for row in rows]
+
+    def list_registered_models(self) -> list[str]:
+        """List all unique model names in the registry."""
+        with self.engine.connect() as conn:
+            stmt = select(self.model_versions.c.name).distinct()
+            rows = conn.execute(stmt).fetchall()
+            return [row[0] for row in rows]
+
+    def promote_model(self, name: str, version: str, to_stage: str) -> bool:
+        """Promote a model version to a different stage."""
+        now = datetime.now(UTC).isoformat()
+        with self.engine.connect() as conn:
+            stmt = (
+                update(self.model_versions)
+                .where(
+                    (self.model_versions.c.name == name) & (self.model_versions.c.version == version),
+                )
+                .values(stage=to_stage, updated_at=now)
+            )
+            result = conn.execute(stmt)
+            conn.commit()
+            return result.rowcount > 0
+
+    def delete_model_version(self, name: str, version: str) -> bool:
+        """Delete a model version from the registry."""
+        with self.engine.connect() as conn:
+            stmt = delete(self.model_versions).where(
+                (self.model_versions.c.name == name) & (self.model_versions.c.version == version),
+            )
+            result = conn.execute(stmt)
+            conn.commit()
+            return result.rowcount > 0
+
+    def get_latest_model_version(self, name: str, stage: str | None = None) -> dict | None:
+        """Get the latest version of a model, optionally filtered by stage."""
+        with self.engine.connect() as conn:
+            stmt = select(self.model_versions).where(self.model_versions.c.name == name)
+
+            if stage:
+                stmt = stmt.where(self.model_versions.c.stage == stage)
+
+            stmt = stmt.order_by(self.model_versions.c.created_at.desc()).limit(1)
+            row = conn.execute(stmt).fetchone()
+            if row:
+                return self._row_to_model_version(row)
+            return None
+
+    # ========== Pipeline Template Methods ==========
+
+    def save_pipeline_template(
+        self,
+        template_id: str,
+        name: str,
+        definition: dict,
+        description: str = "",
+        tags: list[str] | None = None,
+        author: str | None = None,
+        category: str | None = None,
+        is_public: bool = False,
+    ) -> None:
+        """Save a pipeline template."""
+        now = datetime.now(UTC).isoformat()
+        with self.engine.connect() as conn:
+            stmt = select(self.pipeline_templates).where(
+                self.pipeline_templates.c.template_id == template_id,
+            )
+            existing = conn.execute(stmt).fetchone()
+
+            values = {
+                "template_id": template_id,
+                "name": name,
+                "description": description,
+                "definition": json.dumps(definition),
+                "tags": json.dumps(tags or []),
+                "author": author,
+                "category": category,
+                "is_public": 1 if is_public else 0,
+                "updated_at": now,
+            }
+
+            if existing:
+                conn.execute(
+                    update(self.pipeline_templates)
+                    .where(self.pipeline_templates.c.template_id == template_id)
+                    .values(**values),
+                )
+            else:
+                conn.execute(insert(self.pipeline_templates).values(**values))
+
+            conn.commit()
+
+    def get_pipeline_template(self, template_id: str) -> dict | None:
+        """Get a pipeline template by ID."""
+        with self.engine.connect() as conn:
+            stmt = select(self.pipeline_templates).where(
+                self.pipeline_templates.c.template_id == template_id,
+            )
+            row = conn.execute(stmt).fetchone()
+            if row:
+                return self._row_to_template(row)
+            return None
+
+    def _row_to_template(self, row) -> dict:
+        """Convert a row to a template dict."""
+        return {
+            "template_id": row.template_id,
+            "name": row.name,
+            "description": row.description,
+            "definition": json.loads(row.definition) if row.definition else {},
+            "tags": json.loads(row.tags) if row.tags else [],
+            "author": row.author,
+            "category": row.category,
+            "is_public": bool(row.is_public),
+            "created_at": row.created_at,
+            "updated_at": row.updated_at,
+        }
+
+    def list_pipeline_templates(
+        self,
+        category: str | None = None,
+        include_public: bool = True,
+        author: str | None = None,
+    ) -> list[dict]:
+        """List pipeline templates with optional filters."""
+        with self.engine.connect() as conn:
+            stmt = select(self.pipeline_templates)
+
+            if category:
+                stmt = stmt.where(self.pipeline_templates.c.category == category)
+            if author:
+                stmt = stmt.where(self.pipeline_templates.c.author == author)
+            if not include_public:
+                stmt = stmt.where(self.pipeline_templates.c.is_public == 0)
+
+            stmt = stmt.order_by(self.pipeline_templates.c.created_at.desc())
+            rows = conn.execute(stmt).fetchall()
+            return [self._row_to_template(row) for row in rows]
+
+    def delete_pipeline_template(self, template_id: str) -> bool:
+        """Delete a pipeline template."""
+        with self.engine.connect() as conn:
+            stmt = delete(self.pipeline_templates).where(
+                self.pipeline_templates.c.template_id == template_id,
+            )
+            result = conn.execute(stmt)
+            conn.commit()
+            return result.rowcount > 0

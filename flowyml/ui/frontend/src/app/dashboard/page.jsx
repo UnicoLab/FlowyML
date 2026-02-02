@@ -103,26 +103,26 @@ export function Dashboard() {
             className="space-y-8"
         >
             {/* Welcome Header */}
-            <motion.div variants={item} className="relative overflow-hidden bg-gradient-to-br from-primary-500 via-primary-600 to-purple-600 rounded-2xl p-8 text-white shadow-xl">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32" />
-                <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full -ml-24 -mb-24" />
+            <motion.div variants={item} className="relative overflow-hidden bg-gradient-to-br from-primary-600 via-primary-700 to-purple-700 rounded-2xl p-8 text-white shadow-xl">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-32 -mt-32" />
+                <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full -ml-24 -mb-24" />
 
                 <div className="relative z-10">
                     <div className="flex items-center gap-3 mb-3">
-                        <Zap size={32} className="text-yellow-300" />
-                        <h1 className="text-4xl font-bold">Welcome to flowyml</h1>
+                        <Zap size={32} className="text-yellow-300 drop-shadow-lg" />
+                        <h1 className="text-4xl font-bold drop-shadow-md">Welcome to flowyml</h1>
                     </div>
-                    <p className="text-primary-100 text-lg max-w-2xl">
+                    <p className="text-white/90 text-lg max-w-2xl drop-shadow-sm">
                         Your lightweight, artifact-centric ML orchestration platform. Build, run, and track your ML pipelines with ease.
                     </p>
                     <div className="mt-6 flex gap-3">
                         <Link to="/pipelines">
-                            <button className="px-6 py-2.5 bg-white text-primary-600 rounded-lg font-semibold hover:bg-primary-50 transition-colors shadow-lg">
+                            <button className="px-6 py-2.5 bg-white text-primary-700 rounded-lg font-semibold hover:bg-primary-50 transition-colors shadow-lg">
                                 View Pipelines
                             </button>
                         </Link>
                         <Link to="/runs">
-                            <button className="px-6 py-2.5 bg-primary-700/50 backdrop-blur-sm text-white rounded-lg font-semibold hover:bg-primary-700/70 transition-colors border border-white/20">
+                            <button className="px-6 py-2.5 bg-white/10 backdrop-blur-sm text-white rounded-lg font-semibold hover:bg-white/20 transition-colors border border-white/30 shadow-lg">
                                 Recent Runs
                             </button>
                         </Link>

@@ -1,11 +1,11 @@
 """Notification system for pipeline events."""
 
+import contextlib
 import os
-from typing import Any
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
-import contextlib
+from typing import Any
 
 
 @dataclass
@@ -43,10 +43,11 @@ class ConsoleNotifier(NotificationChannel):
 
 
 class SlackNotifier(NotificationChannel):
-    """Send notifications to Slack."""
+    """Send notifications to Slack with rich Block Kit formatting."""
 
-    def __init__(self, webhook_url: str | None = None):
+    def __init__(self, webhook_url: str | None = None, ui_url: str | None = None):
         self.webhook_url = webhook_url or os.getenv("SLACK_WEBHOOK_URL")
+        self.ui_url = ui_url or os.getenv("FLOWYML_UI_URL", "http://localhost:5173")
 
     def send(self, notification: Notification) -> bool:
         if not self.webhook_url:
@@ -55,26 +56,104 @@ class SlackNotifier(NotificationChannel):
         try:
             import requests
 
-            color = {
-                "info": "#36a64f",
-                "warning": "#ff9900",
-                "error": "#ff0000",
-                "success": "#00ff00",
-            }.get(notification.level, "#cccccc")
+            from flowyml.monitoring.slack_blocks import build_simple_message
 
-            payload = {
-                "attachments": [
-                    {
-                        "color": color,
-                        "title": notification.title,
-                        "text": notification.message,
-                        "footer": "flowyml",
-                        "ts": int(notification.timestamp.timestamp()),
-                    },
-                ],
-            }
+            # Use rich Block Kit message
+            payload = build_simple_message(
+                title=notification.title,
+                message=notification.message,
+                level=notification.level,
+                metadata=notification.metadata if notification.metadata else None,
+            )
 
-            response = requests.post(self.webhook_url, json=payload)
+            response = requests.post(self.webhook_url, json=payload, timeout=10)
+            return response.status_code == 200
+        except Exception:
+            return False
+
+    def send_pipeline_success(
+        self,
+        pipeline_name: str,
+        run_id: str,
+        duration: float,
+        metrics: dict[str, float] | None = None,
+    ) -> bool:
+        """Send a rich pipeline success notification."""
+        if not self.webhook_url:
+            return False
+
+        try:
+            import requests
+
+            from flowyml.monitoring.slack_blocks import build_pipeline_success_message
+
+            payload = build_pipeline_success_message(
+                pipeline_name=pipeline_name,
+                run_id=run_id,
+                duration=duration,
+                metrics=metrics,
+                ui_url=self.ui_url,
+            )
+
+            response = requests.post(self.webhook_url, json=payload, timeout=10)
+            return response.status_code == 200
+        except Exception:
+            return False
+
+    def send_pipeline_failure(
+        self,
+        pipeline_name: str,
+        run_id: str,
+        error: str,
+        step_name: str | None = None,
+    ) -> bool:
+        """Send a rich pipeline failure notification."""
+        if not self.webhook_url:
+            return False
+
+        try:
+            import requests
+
+            from flowyml.monitoring.slack_blocks import build_pipeline_failure_message
+
+            payload = build_pipeline_failure_message(
+                pipeline_name=pipeline_name,
+                run_id=run_id,
+                error=error,
+                step_name=step_name,
+                ui_url=self.ui_url,
+            )
+
+            response = requests.post(self.webhook_url, json=payload, timeout=10)
+            return response.status_code == 200
+        except Exception:
+            return False
+
+    def send_drift_warning(
+        self,
+        feature: str,
+        psi: float,
+        threshold: float = 0.2,
+        model_name: str | None = None,
+    ) -> bool:
+        """Send a rich drift warning notification."""
+        if not self.webhook_url:
+            return False
+
+        try:
+            import requests
+
+            from flowyml.monitoring.slack_blocks import build_drift_warning_message
+
+            payload = build_drift_warning_message(
+                feature=feature,
+                psi=psi,
+                threshold=threshold,
+                model_name=model_name,
+                ui_url=self.ui_url,
+            )
+
+            response = requests.post(self.webhook_url, json=payload, timeout=10)
             return response.status_code == 200
         except Exception:
             return False
@@ -105,8 +184,8 @@ class EmailNotifier(NotificationChannel):
 
         try:
             import smtplib
-            from email.mime.text import MIMEText
             from email.mime.multipart import MIMEMultipart
+            from email.mime.text import MIMEText
 
             msg = MIMEMultipart()
             msg["From"] = self.from_addr

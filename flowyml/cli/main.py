@@ -376,6 +376,111 @@ def models() -> None:
     pass
 
 
+@cli.group()
+def db() -> None:
+    """Database management commands."""
+    pass
+
+
+@db.command("migrate")
+@click.option("--revision", default="head", help="Target revision (default: head)")
+@click.option("--sql", is_flag=True, help="Generate SQL instead of running migration")
+def migrate(revision: str, sql: bool) -> None:
+    """Run database migrations.
+
+    This applies Alembic migrations to your database schema.
+
+    Examples:
+        flowyml db migrate              # Upgrade to latest
+        flowyml db migrate --revision 001_initial
+        flowyml db migrate --sql        # Print SQL without executing
+    """
+    import os
+
+    db_url = os.getenv("FLOWYML_DATABASE_URL", "sqlite:///flowyml.db")
+    click.echo("🔄 Running database migrations...")
+    click.echo(f"   Database: {db_url[:50]}...")
+
+    try:
+        from alembic.config import Config
+        from alembic import command
+
+        # Get alembic.ini path (project root)
+        alembic_cfg = Config("alembic.ini")
+        alembic_cfg.set_main_option("sqlalchemy.url", db_url)
+
+        if sql:
+            command.upgrade(alembic_cfg, revision, sql=True)
+        else:
+            command.upgrade(alembic_cfg, revision)
+            click.echo(f"✅ Migrations applied successfully to revision: {revision}")
+    except Exception as e:
+        click.echo(f"❌ Migration failed: {e}", err=True)
+        raise click.Abort()
+
+
+@db.command("downgrade")
+@click.argument("revision", default="-1")
+def downgrade(revision: str) -> None:
+    """Downgrade database schema.
+
+    Examples:
+        flowyml db downgrade -1         # Downgrade one revision
+        flowyml db downgrade base       # Downgrade to empty database
+    """
+    import os
+
+    db_url = os.getenv("FLOWYML_DATABASE_URL", "sqlite:///flowyml.db")
+    click.echo("🔄 Downgrading database...")
+
+    try:
+        from alembic.config import Config
+        from alembic import command
+
+        alembic_cfg = Config("alembic.ini")
+        alembic_cfg.set_main_option("sqlalchemy.url", db_url)
+
+        command.downgrade(alembic_cfg, revision)
+        click.echo(f"✅ Downgraded to revision: {revision}")
+    except Exception as e:
+        click.echo(f"❌ Downgrade failed: {e}", err=True)
+        raise click.Abort()
+
+
+@db.command("current")
+def current() -> None:
+    """Show current database revision."""
+    import os
+
+    db_url = os.getenv("FLOWYML_DATABASE_URL", "sqlite:///flowyml.db")
+
+    try:
+        from alembic.config import Config
+        from alembic import command
+
+        alembic_cfg = Config("alembic.ini")
+        alembic_cfg.set_main_option("sqlalchemy.url", db_url)
+
+        click.echo("Current database revision:")
+        command.current(alembic_cfg, verbose=True)
+    except Exception as e:
+        click.echo(f"❌ Failed to get current revision: {e}", err=True)
+
+
+@db.command("history")
+def history() -> None:
+    """Show migration history."""
+    try:
+        from alembic.config import Config
+        from alembic import command
+
+        alembic_cfg = Config("alembic.ini")
+        click.echo("Migration history:")
+        command.history(alembic_cfg, verbose=True)
+    except Exception as e:
+        click.echo(f"❌ Failed to get history: {e}", err=True)
+
+
 # Register model commands
 models.add_command(list_models)
 models.add_command(promote_model)

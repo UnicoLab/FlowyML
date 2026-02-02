@@ -1,12 +1,16 @@
-"""Model registry for version management and deployment."""
+"""Model registry for version management and deployment.
 
-import json
-from dataclasses import dataclass, field, asdict
+This module provides SQL-backed model registry capabilities for managing
+model versions, stages, and metadata in a production-safe manner.
+"""
+
+import os
+import shutil
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
-import shutil
 
 if TYPE_CHECKING:
     from flowyml.assets.base import Asset
@@ -48,12 +52,20 @@ class ModelVersion:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "ModelVersion":
         """Create from dictionary."""
-        data["stage"] = ModelStage(data["stage"])
+        data = data.copy()
+        # Handle stage conversion
+        if isinstance(data.get("stage"), str):
+            data["stage"] = ModelStage(data["stage"])
+        # Remove SQL-specific fields
+        data.pop("id", None)
         return cls(**data)
 
 
 class ModelRegistry:
     """Registry for managing model versions and deployments.
+
+    This registry uses SQL storage for production-safe concurrent access.
+    Model files are still stored on the filesystem, but metadata is in the database.
 
     Example:
         ```python
@@ -82,30 +94,32 @@ class ModelRegistry:
         ```
     """
 
-    def __init__(self, registry_path: str = ".flowyml/model_registry"):
+    def __init__(
+        self,
+        registry_path: str = ".flowyml/model_registry",
+        db_url: str | None = None,
+    ):
         """Initialize model registry.
 
         Args:
-            registry_path: Path to registry storage
+            registry_path: Path to model file storage
+            db_url: Database URL for metadata storage (uses env var if not provided)
         """
         self.registry_path = Path(registry_path)
         self.registry_path.mkdir(parents=True, exist_ok=True)
-        self.metadata_file = self.registry_path / "registry.json"
-        self._metadata: dict[str, list[dict]] = {}
-        self._load_metadata()
 
-    def _load_metadata(self) -> None:
-        """Load registry metadata from disk."""
-        if self.metadata_file.exists():
-            with open(self.metadata_file) as f:
-                self._metadata = json.load(f)
-        else:
-            self._metadata = {}
+        # Initialize SQL storage for metadata
+        self._db_url = db_url or os.getenv("FLOWYML_DATABASE_URL")
+        self._store = None
 
-    def _save_metadata(self) -> None:
-        """Save registry metadata to disk."""
-        with open(self.metadata_file, "w") as f:
-            json.dump(self._metadata, f, indent=2)
+    @property
+    def _metadata_store(self):
+        """Lazy-load the metadata store."""
+        if self._store is None:
+            from flowyml.storage.sql import SQLMetadataStore
+
+            self._store = SQLMetadataStore(db_url=self._db_url)
+        return self._store
 
     def register(
         self,
@@ -143,10 +157,9 @@ class ModelRegistry:
             ValueError: If version already exists
         """
         # Check if version already exists
-        if name in self._metadata:
-            existing_versions = [v["version"] for v in self._metadata[name]]
-            if version in existing_versions:
-                raise ValueError(f"Version {version} already exists for model {name}")
+        existing = self._metadata_store.get_model_version(name, version)
+        if existing:
+            raise ValueError(f"Version {version} already exists for model {name}")
 
         # Introspect model schema if not provided
         from flowyml.utils.model_introspection import introspect_model
@@ -167,7 +180,23 @@ class ModelRegistry:
 
         # Create version metadata
         now = datetime.now().isoformat()
-        model_version = ModelVersion(
+
+        # Save to SQL database
+        self._metadata_store.save_model_version(
+            name=name,
+            version=version,
+            stage=stage.value,
+            framework=framework,
+            model_path=str(model_path),
+            metrics=metrics,
+            tags=tags,
+            schema=final_schema,
+            description=description,
+            author=author,
+            parent_version=parent_version,
+        )
+
+        return ModelVersion(
             name=name,
             version=version,
             stage=stage,
@@ -182,15 +211,6 @@ class ModelRegistry:
             author=author,
             parent_version=parent_version,
         )
-
-        # Add to metadata
-        if name not in self._metadata:
-            self._metadata[name] = []
-
-        self._metadata[name].append(model_version.to_dict())
-        self._save_metadata()
-
-        return model_version
 
     def _save_model(self, model: Any, path: Path, framework: str) -> None:
         """Save model using appropriate method.
@@ -242,7 +262,7 @@ class ModelRegistry:
             import pickle
 
             with open(path, "rb") as f:
-                return pickle.load(f)
+                return pickle.load(f)  # noqa: S301
 
     def get_version(self, name: str, version: str) -> ModelVersion | None:
         """Get specific model version.
@@ -254,13 +274,9 @@ class ModelRegistry:
         Returns:
             ModelVersion or None if not found
         """
-        if name not in self._metadata:
-            return None
-
-        for v in self._metadata[name]:
-            if v["version"] == version:
-                return ModelVersion.from_dict(v)
-
+        data = self._metadata_store.get_model_version(name, version)
+        if data:
+            return ModelVersion.from_dict(data)
         return None
 
     def list_versions(self, name: str) -> list[ModelVersion]:
@@ -272,10 +288,8 @@ class ModelRegistry:
         Returns:
             List of ModelVersion instances
         """
-        if name not in self._metadata:
-            return []
-
-        return [ModelVersion.from_dict(v) for v in self._metadata[name]]
+        versions = self._metadata_store.list_model_versions(name=name)
+        return [ModelVersion.from_dict(v) for v in versions]
 
     def list_models(self) -> list[str]:
         """List all registered models.
@@ -283,7 +297,7 @@ class ModelRegistry:
         Returns:
             List of model names
         """
-        return list(self._metadata.keys())
+        return self._metadata_store.list_registered_models()
 
     def get_latest_version(self, name: str, stage: ModelStage | None = None) -> ModelVersion | None:
         """Get latest version of a model.
@@ -295,17 +309,11 @@ class ModelRegistry:
         Returns:
             Latest ModelVersion or None
         """
-        versions = self.list_versions(name)
-
-        if stage:
-            versions = [v for v in versions if v.stage == stage]
-
-        if not versions:
-            return None
-
-        # Sort by created_at
-        versions.sort(key=lambda v: v.created_at, reverse=True)
-        return versions[0]
+        stage_str = stage.value if stage else None
+        data = self._metadata_store.get_latest_model_version(name, stage=stage_str)
+        if data:
+            return ModelVersion.from_dict(data)
+        return None
 
     def load(
         self,
@@ -357,14 +365,10 @@ class ModelRegistry:
         if not model_version:
             raise ValueError(f"Model {name} version {version} not found")
 
-        # Update stage in metadata
-        for v in self._metadata[name]:
-            if v["version"] == version:
-                v["stage"] = to_stage.value
-                v["updated_at"] = datetime.now().isoformat()
-                break
-
-        self._save_metadata()
+        # Update stage in database
+        success = self._metadata_store.promote_model(name, version, to_stage.value)
+        if not success:
+            raise ValueError(f"Failed to promote model {name} version {version}")
 
         return self.get_version(name, version)
 
@@ -408,15 +412,13 @@ class ModelRegistry:
         if model_version.stage == ModelStage.PRODUCTION:
             raise ValueError("Cannot delete production model. Demote first.")
 
-        # Remove from metadata
-        self._metadata[name] = [v for v in self._metadata[name] if v["version"] != version]
+        # Delete from database
+        self._metadata_store.delete_model_version(name, version)
 
         # Delete model files
         model_dir = Path(model_version.model_path).parent
         if model_dir.exists():
             shutil.rmtree(model_dir)
-
-        self._save_metadata()
 
     def compare_versions(
         self,
@@ -463,26 +465,23 @@ class ModelRegistry:
         Returns:
             List of matching ModelVersion instances
         """
+        stage_str = stage.value if stage else None
+        all_versions = self._metadata_store.list_model_versions(stage=stage_str)
+
         results = []
+        for version_dict in all_versions:
+            version = ModelVersion.from_dict(version_dict)
 
-        for name in self._metadata:
-            for version_dict in self._metadata[name]:
-                version = ModelVersion.from_dict(version_dict)
+            # Check tags
+            if tags and not all(version.tags.get(k) == v for k, v in tags.items()):
+                continue
 
-                # Check stage
-                if stage and version.stage != stage:
+            # Check metrics
+            if min_metrics:
+                if not all(version.metrics.get(k, float("-inf")) >= v for k, v in min_metrics.items()):
                     continue
 
-                # Check tags
-                if tags and not all(version.tags.get(k) == v for k, v in tags.items()):
-                    continue
-
-                # Check metrics
-                if min_metrics:
-                    if not all(version.metrics.get(k, float("-inf")) >= v for k, v in min_metrics.items()):
-                        continue
-
-                results.append(version)
+            results.append(version)
 
         return results
 
@@ -492,17 +491,17 @@ class ModelRegistry:
         Returns:
             Dictionary with statistics
         """
-        total_models = len(self._metadata)
-        total_versions = sum(len(versions) for versions in self._metadata.values())
-
+        all_versions = self._metadata_store.list_model_versions()
+        models = set()
         stage_counts = {stage.value: 0 for stage in ModelStage}
-        for versions in self._metadata.values():
-            for v in versions:
-                stage_counts[v["stage"]] += 1
+
+        for v in all_versions:
+            models.add(v["name"])
+            stage_counts[v["stage"]] += 1
 
         return {
-            "total_models": total_models,
-            "total_versions": total_versions,
+            "total_models": len(models),
+            "total_versions": len(all_versions),
             "by_stage": stage_counts,
         }
 

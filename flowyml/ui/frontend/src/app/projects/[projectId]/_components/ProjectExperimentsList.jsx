@@ -130,13 +130,26 @@ export function ProjectExperimentsList({ projectId }) {
                 </div>
             )}
             emptyState={
-                <div className="text-center py-12">
-                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 mb-4">
-                        <FlaskConical className="w-6 h-6 text-slate-400" />
+                <div className="text-center py-12 px-6">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900/30 dark:to-purple-800/30 mb-6">
+                        <FlaskConical className="w-8 h-8 text-purple-500" />
                     </div>
-                    <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-1">No experiments found</h3>
-                    <p className="text-slate-500">
-                        Create an experiment to track your model development.
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">No experiments yet</h3>
+                    <p className="text-slate-500 max-w-md mx-auto mb-6">
+                        Experiments help you organize and compare multiple pipeline runs. Create one using the SDK:
+                    </p>
+                    <div className="bg-slate-900 dark:bg-slate-950 rounded-lg p-4 max-w-md mx-auto text-left mb-6 shadow-lg">
+                        <pre className="text-sm font-mono text-slate-300 overflow-x-auto">
+                            <code>{`from flowyml import experiment
+
+with experiment("my-experiment"):
+    pipeline.run(context={
+        "learning_rate": 0.01
+    })`}</code>
+                        </pre>
+                    </div>
+                    <p className="text-xs text-slate-400">
+                        All runs within an experiment block are automatically grouped and tracked together.
                     </p>
                 </div>
             }
