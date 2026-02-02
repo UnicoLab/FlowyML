@@ -1,7 +1,7 @@
 """Model Explorer API for interactive model testing."""
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Optional, Any
+from typing import Any
 from datetime import datetime
 from uuid import uuid4
 
@@ -16,12 +16,12 @@ class InputFieldSchema(BaseModel):
 
     name: str
     type: str  # noqa: A003  # number, integer, string, boolean, array, object
-    description: Optional[str] = None
-    default: Optional[Any] = None
-    min_value: Optional[float] = None
-    max_value: Optional[float] = None
-    step: Optional[float] = None
-    enum: Optional[list[Any]] = None  # For categorical inputs
+    description: str | None = None
+    default: Any | None = None
+    min_value: float | None = None
+    max_value: float | None = None
+    step: float | None = None
+    enum: list[Any] | None = None  # For categorical inputs
     required: bool = True
 
 
@@ -33,15 +33,15 @@ class ModelSchema(BaseModel):
     model_type: str
     inputs: list[InputFieldSchema]
     outputs: list[InputFieldSchema]
-    example_input: Optional[dict] = None
-    example_output: Optional[dict] = None
+    example_input: dict | None = None
+    example_output: dict | None = None
 
 
 class PredictionRequest(BaseModel):
     """Request for a single prediction."""
 
-    deployment_id: Optional[str] = None
-    model_artifact_id: Optional[str] = None
+    deployment_id: str | None = None
+    model_artifact_id: str | None = None
     inputs: dict[str, Any]
 
 
@@ -58,8 +58,8 @@ class PredictionResult(BaseModel):
 class SweepRequest(BaseModel):
     """Request for parameter sweep."""
 
-    deployment_id: Optional[str] = None
-    model_artifact_id: Optional[str] = None
+    deployment_id: str | None = None
+    model_artifact_id: str | None = None
     base_inputs: dict[str, Any]
     sweep_param: str
     sweep_values: list[Any]

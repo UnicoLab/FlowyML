@@ -22,7 +22,8 @@ resource "google_project_service" "apis" {
     "servicenetworking.googleapis.com",
     "secretmanager.googleapis.com",
     "artifactregistry.googleapis.com",
-    "cloudbuild.googleapis.com"
+    "cloudbuild.googleapis.com",
+    "vpcaccess.googleapis.com"
   ])
   service            = each.key
   disable_on_destroy = false
@@ -44,6 +45,7 @@ resource "google_compute_subnetwork" "subnet" {
 # VPC Access Connector for Cloud Run to access Cloud SQL
 resource "google_vpc_access_connector" "connector" {
   name          = "${var.app_name}-conn"
+  depends_on    = [google_project_service.apis]
   region        = var.region
   ip_cidr_range = "10.8.0.0/28"
   network       = google_compute_network.vpc.id
@@ -140,7 +142,8 @@ resource "google_project_iam_member" "sa_secret_accessor" {
 # --- Secrets ---
 
 resource "google_secret_manager_secret" "db_password" {
-  secret_id = "${var.app_name}-db-password"
+  secret_id  = "${var.app_name}-db-password"
+  depends_on = [google_project_service.apis]
   replication {
     auto {}
   }
@@ -152,7 +155,8 @@ resource "google_secret_manager_secret_version" "db_password" {
 }
 
 resource "google_secret_manager_secret" "auth_secret" {
-  secret_id = "${var.app_name}-auth-secret"
+  secret_id  = "${var.app_name}-auth-secret"
+  depends_on = [google_project_service.apis]
   replication {
     auto {}
   }
@@ -164,7 +168,8 @@ resource "google_secret_manager_secret_version" "auth_secret" {
 }
 
 resource "google_secret_manager_secret" "api_token" {
-  secret_id = "${var.app_name}-api-token"
+  secret_id  = "${var.app_name}-api-token"
+  depends_on = [google_project_service.apis]
   replication {
     auto {}
   }
@@ -174,6 +179,20 @@ resource "google_secret_manager_secret_version" "api_token" {
   secret      = google_secret_manager_secret.api_token.id
   secret_data = var.api_token != "" ? var.api_token : "dummy_value_if_empty"
 }
+
+resource "google_secret_manager_secret" "admin_password" {
+  secret_id  = "${var.app_name}-admin-password"
+  depends_on = [google_project_service.apis]
+  replication {
+    auto {}
+  }
+}
+
+resource "google_secret_manager_secret_version" "admin_password" {
+  secret      = google_secret_manager_secret.admin_password.id
+  secret_data = var.admin_password
+}
+
 
 # Cloud Run Service (Unified)
 resource "google_cloud_run_v2_service" "app" {
@@ -222,6 +241,21 @@ resource "google_cloud_run_v2_service" "app" {
         value_source {
           secret_key_ref {
             secret  = google_secret_manager_secret.api_token.secret_id
+            version = "latest"
+          }
+        }
+      }
+
+      env {
+        name  = "FLOWYML_ADMIN_USER"
+        value = var.admin_user
+      }
+
+      env {
+        name = "FLOWYML_ADMIN_PASSWORD"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.admin_password.secret_id
             version = "latest"
           }
         }

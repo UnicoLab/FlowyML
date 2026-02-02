@@ -25,6 +25,7 @@ class FlowymlConfig:
     execution_mode: str = "local"  # local or remote
     remote_server_url: str = ""
     remote_ui_url: str = ""
+    api_token: str | None = None
     remote_services: list[dict[str, str]] = field(default_factory=list)
     enable_caching: bool = True
     enable_checkpointing: bool = True  # Enable checkpointing by default
@@ -99,6 +100,7 @@ class FlowymlConfig:
             "execution_mode": self.execution_mode,
             "remote_server_url": self.remote_server_url,
             "remote_ui_url": self.remote_ui_url,
+            "api_token": self.api_token,
             "remote_services": self.remote_services,
             "enable_caching": self.enable_caching,
             "enable_checkpointing": self.enable_checkpointing,
@@ -299,6 +301,7 @@ def get_env_config() -> dict[str, Any]:
         "FLOWYML_EXECUTION_MODE": "execution_mode",
         "FLOWYML_REMOTE_SERVER_URL": "remote_server_url",
         "FLOWYML_REMOTE_UI_URL": "remote_ui_url",
+        "FLOWYML_API_TOKEN": "api_token",
         "FLOWYML_SERVER_URL": "remote_server_url",  # Alias
         "FLOWYML_ENABLE_CACHING": "enable_caching",
         "FLOWYML_LOG_LEVEL": "log_level",

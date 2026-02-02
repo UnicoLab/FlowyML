@@ -50,3 +50,15 @@ variable "api_token" {
   sensitive   = true
   default     = ""
 }
+
+variable "admin_user" {
+  description = "Admin username for UI login"
+  type        = string
+  default     = "admin"
+}
+
+variable "admin_password" {
+  description = "Admin password for UI login"
+  type        = string
+  sensitive   = true
+}

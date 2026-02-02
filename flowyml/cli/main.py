@@ -433,6 +433,18 @@ def set_url(server: str, ui: str) -> None:
         click.echo(f"✓ Remote UI URL set to '{ui}'")
     cfg.save()
 
+    cfg.save()
+
+
+@config.command("set-token")
+@click.argument("token")
+def set_token(token: str) -> None:
+    """Set the API token for remote authentication."""
+    cfg = get_config()
+    cfg.api_token = token
+    cfg.save()
+    click.echo(f"✓ API token set (length: {len(token)})")
+
 
 @cli.command()
 @click.argument("run_id")

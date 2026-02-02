@@ -104,6 +104,28 @@ services:
     restart: unless-stopped
 
   # ---------------------------------------------------------------------------
+  # cAdvisor - Container Metrics
+  # ---------------------------------------------------------------------------
+  cadvisor:
+    # Use zcube/cadvisor for better compatibility with Docker Desktop on Mac (ARM64/AMD64)
+    image: zcube/cadvisor:latest
+    container_name: flowyml-cadvisor
+    privileged: true
+    devices:
+      - /dev/kmsg
+    ports:
+      - "8085:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    networks:
+      - flowyml-network
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
   # Grafana - Dashboards & Visualization
   # ---------------------------------------------------------------------------
   grafana:

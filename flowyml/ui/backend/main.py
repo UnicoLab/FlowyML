@@ -38,6 +38,7 @@ from flowyml.ui.backend.routers import (
     websocket,
     deployments,
     model_explorer,
+    auth,  # New Auth Router
 )
 
 # Initialize OpenTelemetry
@@ -99,23 +100,28 @@ class AuthMiddleware(BaseHTTPMiddleware):
         path = request.url.path
         if (
             path in ["/api/health", "/metrics", "/docs", "/redoc", "/openapi.json"]
-            or path.startswith("/assets")
+            or path.startswith(("/assets", "/api/auth/login", "/api/auth/logout"))  # Allow login endpoints
             or path == "/"
             or request.method == "OPTIONS"
         ):
             return await call_next(request)
 
-        # 3. Check Auth Header
+        # 3. Check Auth Header OR Cookie
         auth_header = request.headers.get("Authorization")
         if not auth_header:
-            token_param = request.query_params.get("token")
-            if token_param == api_token:
-                return await call_next(request)
+            # Check for cookie
+            cookie_token = request.cookies.get("access_token")
+            if cookie_token:
+                auth_header = cookie_token  # Reuse validation logic below
+            else:
+                token_param = request.query_params.get("token")
+                if token_param == api_token:
+                    return await call_next(request)
 
-            return JSONResponse(
-                status_code=401,
-                content={"error": "Unauthorized", "message": "Missing authentication token"},
-            )
+                return JSONResponse(
+                    status_code=401,
+                    content={"error": "Unauthorized", "message": "Missing authentication token"},
+                )
 
         # 4. Validate Token
         try:
@@ -175,6 +181,7 @@ app.include_router(stats.router, prefix="/api/stats", tags=["stats"])
 app.include_router(websocket.router, tags=["websocket"])
 app.include_router(deployments.router, prefix="/api", tags=["deployments"])
 app.include_router(model_explorer.router, prefix="/api", tags=["model-explorer"])
+app.include_router(auth.router, prefix="/api", tags=["auth"])
 
 
 # Static file serving for frontend
@@ -246,3 +253,10 @@ async def validation_exception_handler(request, exc):
         status_code=422,
         content={"error": "Validation Error", "detail": exc.errors()},
     )
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    port = int(os.environ.get("PORT", "8080"))
+    uvicorn.run("flowyml.ui.backend.main:app", host="0.0.0.0", port=port, reload=False)  # noqa: S104

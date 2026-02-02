@@ -96,8 +96,8 @@
       },
       "targets": [
         {
-          "expr": "rate(flowyml_deploy_duration_seconds_count[1h])",
-          "legendFormat": "{{function_name}}",
+          "expr": "rate(http_server_duration_milliseconds_count{http_method=\"POST\", http_target=\"/api/runs/\"}[1h])",
+          "legendFormat": "Run Start Rate",
           "refId": "A"
         }
       ],

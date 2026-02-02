@@ -41,7 +41,7 @@ class VertexAIOrchestrator(RemoteOrchestrator):
         self,
         name: str = "vertex_ai",
         project_id: str | None = None,
-        region: str = "us-central1",
+        region: str = "europe-west1",
         service_account: str | None = None,
         network: str | None = None,
         encryption_key: str | None = None,
@@ -519,7 +519,7 @@ class GCPStack(Stack):
         self,
         name: str = "gcp",
         project_id: str | None = None,
-        region: str = "us-central1",
+        region: str = "europe-west1",
         bucket_name: str | None = None,
         registry_uri: str | None = None,
         service_account: str | None = None,
@@ -603,7 +603,7 @@ class GCPStack(Stack):
 class VertexEndpointManager:
     """Deploy trained models as Vertex AI endpoints."""
 
-    def __init__(self, project_id: str | None, region: str = "us-central1"):
+    def __init__(self, project_id: str | None, region: str = "europe-west1"):
         self.project_id = project_id
         self.region = region
 
@@ -635,7 +635,7 @@ class VertexEndpointManager:
 class CloudRunDeployer:
     """Deploy container images to Cloud Run."""
 
-    def __init__(self, project_id: str | None, region: str = "us-central1"):
+    def __init__(self, project_id: str | None, region: str = "europe-west1"):
         self.project_id = project_id
         self.region = region
 

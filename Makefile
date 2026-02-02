@@ -115,6 +115,12 @@ run: ## Run a pipeline (usage: make run PIPELINE=my_pipeline)
 cache-stats: ## Show cache statistics
 	$(flowyml) cache stats
 
+verify-deployment: ## Verify the remote deployment
+	@echo "🔍 Verifying deployment..."
+	@terraform -chdir=infra/gcp output -raw app_url > .deploy_url
+	@export FLOWYML_REMOTE_URL=$$(cat .deploy_url) && python scripts/test_deployment.py
+	@rm .deploy_url
+
 cache-clear: ## Clear cache
 	$(flowyml) cache clear
 
@@ -354,6 +360,9 @@ check-gcp-project:
 GCP_SERVICE = $(APP_NAME)
 GCP_IMAGE = $(ARTIFACT_REGISTRY_REPO)/flowyml:$(IMAGE_TAG)
 TERRAFORM_DIR = infra/gcp
+ADMIN_USER ?= admin
+ADMIN_PASSWORD ?= flowyml
+API_TOKEN ?= change-me-secure-token
 
 # Robust Authentication Check
 # Ensures both gcloud (for docker) and application-default (for terraform) are active
@@ -391,7 +400,7 @@ gcp-infra-up: gcp-auth-check
 		-var="region=$(GCP_REGION)" \
 		-var="app_name=$(APP_NAME)" \
 		-var="container_image=$(GCP_IMAGE)" \
-		$(if $(wildcard infra/gcp/terraform.tfvars.secret),-var-file="terraform.tfvars.secret",-var="db_password=$(DB_PASSWORD)")
+		$(if $(wildcard infra/gcp/terraform.tfvars.secret),-var-file="terraform.tfvars.secret",-var="db_password=$(DB_PASSWORD)" -var="admin_user=$(ADMIN_USER)" -var="admin_password=$(ADMIN_PASSWORD)" -var="api_token=$(API_TOKEN)")
 
 # Plan infrastructure changes
 gcp-plan: gcp-auth-check
@@ -401,7 +410,7 @@ gcp-plan: gcp-auth-check
 		-var="region=$(GCP_REGION)" \
 		-var="app_name=$(APP_NAME)" \
 		-var="container_image=$(GCP_IMAGE)" \
-		$(if $(wildcard infra/gcp/terraform.tfvars.secret),-var-file="terraform.tfvars.secret",-var="db_password=$(DB_PASSWORD)")
+		$(if $(wildcard infra/gcp/terraform.tfvars.secret),-var-file="terraform.tfvars.secret",-var="db_password=$(DB_PASSWORD)" -var="admin_user=$(ADMIN_USER)" -var="admin_password=$(ADMIN_PASSWORD)" -var="api_token=$(API_TOKEN)")
 
 # Destroy infrastructure
 gcp-infra-down: gcp-auth-check
@@ -413,7 +422,7 @@ gcp-infra-down: gcp-auth-check
 		-var="region=$(GCP_REGION)" \
 		-var="app_name=$(APP_NAME)" \
 		-var="container_image=$(GCP_IMAGE)" \
-		$(if $(wildcard infra/gcp/terraform.tfvars.secret),-var-file="terraform.tfvars.secret",-var="db_password=$(DB_PASSWORD)"); \
+		$(if $(wildcard infra/gcp/terraform.tfvars.secret),-var-file="terraform.tfvars.secret",-var="db_password=$(DB_PASSWORD)" -var="admin_user=$(ADMIN_USER)" -var="admin_password=$(ADMIN_PASSWORD)" -var="api_token=$(API_TOKEN)"); \
 	else \
 		echo "Cancelled."; \
 	fi

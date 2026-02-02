@@ -1,7 +1,6 @@
 """Deployment management API for model serving."""
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from pydantic import BaseModel, Field
-from typing import Optional
 from datetime import datetime
 from uuid import uuid4
 import secrets
@@ -30,7 +29,7 @@ class DeploymentConfig(BaseModel):
     timeout_seconds: int = Field(default=30, description="Request timeout")
     max_batch_size: int = Field(default=1, description="Max batch size for predictions")
     enable_cors: bool = Field(default=True, description="Enable CORS")
-    ttl_seconds: Optional[int] = Field(None, description="Auto-destroy after N seconds (None = never)")
+    ttl_seconds: int | None = Field(None, description="Auto-destroy after N seconds (None = never)")
     install_dependencies: list[str] = Field(
         default_factory=list,
         description="ML dependencies to install on server (e.g., ['keras', 'sklearn'])",
@@ -42,8 +41,8 @@ class DeploymentCreate(BaseModel):
 
     name: str = Field(..., description="Human-readable name for the deployment")
     model_artifact_id: str = Field(..., description="ID of the model artifact to deploy")
-    model_version: Optional[str] = Field(None, description="Specific version to deploy")
-    port: Optional[int] = Field(None, description="Port to serve on (auto-assigned if not provided)")
+    model_version: str | None = Field(None, description="Specific version to deploy")
+    port: int | None = Field(None, description="Port to serve on (auto-assigned if not provided)")
     config: DeploymentConfig = Field(default_factory=DeploymentConfig)
 
 
@@ -53,17 +52,17 @@ class DeploymentResponse(BaseModel):
     id: str  # noqa: A003
     name: str
     model_artifact_id: str
-    model_version: Optional[str]
+    model_version: str | None
     status: str  # pending, starting, running, stopping, stopped, error
     port: int
     api_token: str
     endpoint_url: str
     config: DeploymentConfig
     created_at: str
-    started_at: Optional[str]
-    stopped_at: Optional[str]
-    expires_at: Optional[str] = None
-    error_message: Optional[str] = None
+    started_at: str | None
+    stopped_at: str | None
+    expires_at: str | None = None
+    error_message: str | None = None
 
 
 class PredictRequest(BaseModel):

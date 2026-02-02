@@ -63,20 +63,64 @@ class DockerImageBuilder:
         return generated_path
 
     def _generate_dockerfile_content(self, config: DockerConfig) -> str:
-        """Generate Dockerfile content based on requirements."""
+        """Generate Dockerfile content based on requirements.
+
+        Prioritizes:
+        1. uv.lock -> uv sync
+        2. poetry.lock -> poetry install
+        3. requirements.txt -> uv pip install
+        4. list -> uv pip install
+        """
         lines = [f"FROM {config.base_image}", "WORKDIR /app"]
 
-        # Copy requirements first for cache
-        if config.requirements or (Path(config.build_context) / "requirements.txt").exists():
-            lines.append("COPY requirements.txt .")
-            lines.append("RUN pip install -r requirements.txt")
-        elif (Path(config.build_context) / "pyproject.toml").exists():
+        # Install system dependencies if any
+        # lines.append("RUN apt-get update && apt-get install -y ...")
+
+        context_path = Path(config.build_context)
+
+        # 0. Always install uv as it's our preferred installer for pip/reqs too
+        # We install it via the official installer script for speed and isolation
+        lines.append("RUN pip install uv")
+        lines.append("ENV VIRTUAL_ENV=/app/.venv")
+        lines.append('ENV PATH="$VIRTUAL_ENV/bin:$PATH"')
+
+        # 1. Check for uv.lock
+        if (context_path / "uv.lock").exists():
+            print("📦 Detected uv based project")
+            lines.append("COPY pyproject.toml uv.lock ./")
+            # Create venv and sync
+            lines.append("RUN uv venv && uv sync --frozen --no-install-project")
+
+        # 2. Check for poetry.lock
+        elif (context_path / "poetry.lock").exists() or (context_path / "pyproject.toml").exists():
+            print("📦 Detected Poetry based project")
             lines.append("RUN pip install poetry")
-            lines.append("COPY pyproject.toml poetry.lock* .")
-            lines.append("RUN poetry config virtualenvs.create false && poetry install --no-interaction --no-ansi")
+            lines.append("COPY pyproject.toml poetry.lock* ./")
+            lines.append("RUN poetry config virtualenvs.in-project true")
+            lines.append("RUN poetry install --no-interaction --no-ansi --no-root")
+            # Add local venv to path if poetry created one
+            lines.append('ENV PATH="/app/.venv/bin:$PATH"')
+
+        # 3. Check for requirements.txt (Use uv for speed)
+        elif (context_path / "requirements.txt").exists():
+            print("📦 Detected requirements.txt")
+            lines.append("COPY requirements.txt .")
+            lines.append("RUN uv venv && uv pip install -r requirements.txt")
+
+        # 4. Check for dynamic requirements list (Use uv for speed)
+        elif config.requirements:
+            print("📦 Detected dynamic requirements list")
+            reqs_str = " ".join([f'"{r}"' for r in config.requirements])
+            lines.append(f"RUN uv venv && uv pip install {reqs_str}")
 
         # Copy source code
         lines.append("COPY . .")
+
+        # Install project itself if needed (for uv/poetry)
+        if (context_path / "uv.lock").exists():
+            lines.append("RUN uv sync --frozen")
+        elif (context_path / "poetry.lock").exists():
+            lines.append("RUN poetry install --no-interaction --no-ansi")
 
         # Env vars
         for k, v in config.env_vars.items():

@@ -35,7 +35,7 @@ COPY pyproject.toml poetry.lock ./
 # Install dependencies
 RUN poetry config virtualenvs.create false \
     && poetry install --no-interaction --no-ansi --no-root \
-    && pip install uvicorn[standard]  # Ensure uvicorn is installed
+    && pip install uvicorn[standard] python-multipart  # Ensure uvicorn and python-multipart are installed
 
 # Copy Backend Code
 COPY flowyml ./flowyml
@@ -63,4 +63,4 @@ ENV SERVER_PORT=8080
 EXPOSE 8080
 
 # Run the application
-CMD ["python", "-m", "flowyml.ui.backend.main"]
+CMD ["uvicorn", "flowyml.ui.backend.main:app", "--host", "0.0.0.0", "--port", "8080"]

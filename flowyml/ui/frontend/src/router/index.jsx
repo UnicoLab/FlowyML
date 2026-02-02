@@ -20,32 +20,55 @@ import { RunComparisonPage } from '../app/compare/page';
 import { ExperimentComparisonPage } from '../app/experiments/compare/page';
 import { DeploymentLab } from '../app/deployments/page';
 import { ModelExplorer } from '../app/model-explorer/page';
+import { Login } from '../app/auth/Login';
+import { RequireAuth, AuthProvider } from '../contexts/AuthContext';
+import { Outlet } from 'react-router-dom';
+
+// Layout Wrapper to provide Auth Context
+const AppLayout = () => (
+    <AuthProvider>
+        <Outlet />
+    </AuthProvider>
+);
 
 export const router = createBrowserRouter([
     {
-        path: '/',
-        element: <MainLayout />,
+        element: <AppLayout />, // Wrap everything in AuthProvider
         children: [
-            { index: true, element: <Dashboard /> },
-            { path: 'pipelines', element: <Pipelines /> },
-            { path: 'runs', element: <Runs /> },
-            { path: 'compare', element: <RunComparisonPage /> },
-            { path: 'runs/:runId', element: <RunDetails /> },
-            { path: 'assets', element: <Assets /> },
-            { path: 'experiments', element: <Experiments /> },
-            { path: 'experiments/compare', element: <ExperimentComparisonPage /> },
-            { path: 'experiments/:experimentId', element: <ExperimentDetails /> },
-            { path: 'traces', element: <Traces /> },
-            { path: 'projects', element: <Projects /> },
-            { path: 'projects/:projectId', element: <ProjectDetails /> },
-            { path: 'schedules', element: <Schedules /> },
-            { path: 'observability', element: <Observability /> },
-            { path: 'leaderboard', element: <Leaderboard /> },
-            { path: 'plugins', element: <Plugins /> },
-            { path: 'settings', element: <Settings /> },
-            { path: 'tokens', element: <TokenManagement /> },
-            { path: 'deployments', element: <DeploymentLab /> },
-            { path: 'model-explorer', element: <ModelExplorer /> },
+            {
+                path: '/login',
+                element: <Login />,
+            },
+            {
+                path: '/',
+                element: (
+                    <RequireAuth>
+                        <MainLayout />
+                    </RequireAuth>
+                ),
+                children: [
+                    { index: true, element: <Dashboard /> },
+                    { path: 'pipelines', element: <Pipelines /> },
+                    { path: 'runs', element: <Runs /> },
+                    { path: 'compare', element: <RunComparisonPage /> },
+                    { path: 'runs/:runId', element: <RunDetails /> },
+                    { path: 'assets', element: <Assets /> },
+                    { path: 'experiments', element: <Experiments /> },
+                    { path: 'experiments/compare', element: <ExperimentComparisonPage /> },
+                    { path: 'experiments/:experimentId', element: <ExperimentDetails /> },
+                    { path: 'traces', element: <Traces /> },
+                    { path: 'projects', element: <Projects /> },
+                    { path: 'projects/:projectId', element: <ProjectDetails /> },
+                    { path: 'schedules', element: <Schedules /> },
+                    { path: 'observability', element: <Observability /> },
+                    { path: 'leaderboard', element: <Leaderboard /> },
+                    { path: 'plugins', element: <Plugins /> },
+                    { path: 'settings', element: <Settings /> },
+                    { path: 'tokens', element: <TokenManagement /> },
+                    { path: 'deployments', element: <DeploymentLab /> },
+                    { path: 'model-explorer', element: <ModelExplorer /> },
+                ],
+            },
         ],
     },
 ]);

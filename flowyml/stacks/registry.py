@@ -226,7 +226,8 @@ def get_active_stack() -> Stack | None:
         from flowyml.stacks.base import Stack
         import os
 
-        api_token = os.getenv("FLOWYML_API_TOKEN")
+        # Prefer token from config, fallback to env var
+        api_token = config.api_token or os.getenv("FLOWYML_API_TOKEN")
 
         return Stack(
             name="remote_logging",

@@ -96,8 +96,8 @@
       },
       "targets": [
         {
-          "expr": "rate(http_requests_total[5m])",
-          "legendFormat": "{{handler}}",
+          "expr": "rate(http_server_duration_milliseconds_count[5m])",
+          "legendFormat": "{{http_method}} {{http_target}}",
           "refId": "A"
         }
       ],
@@ -145,13 +145,90 @@
       "pluginVersion": "7.5.0",
       "targets": [
         {
-          "expr": "sum(rate(http_requests_total{status=~\"5..\"}[5m]))",
+          "expr": "sum(rate(http_server_duration_milliseconds_count{http_status_code=~\"5..\"}[5m]))",
           "legendFormat": "",
           "refId": "A"
         }
       ],
       "title": "API Error Rate (5xx)",
       "type": "gauge"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent"
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 8
+      },
+      "id": 6,
+      "targets": [
+        {
+          "expr": "sum(label_replace(rate(container_cpu_usage_seconds_total{id=~\"/docker/.*\"}[1m]), \"container\", \"$1\", \"id\", \"/docker/(.{12}).*\")) by (container)",
+          "legendFormat": "{{container}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Container CPU Usage",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 8
+      },
+      "id": 8,
+      "targets": [
+        {
+          "expr": "sum(label_replace(container_memory_usage_bytes{id=~\"/docker/.*\"}, \"container\", \"$1\", \"id\", \"/docker/(.{12}).*\")) by (container)",
+          "legendFormat": "{{container}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Container Memory Usage",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bps"
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 8
+      },
+      "id": 10,
+      "targets": [
+        {
+          "expr": "sum(label_replace(rate(container_network_receive_bytes_total{id=~\"/docker/.*\"}[1m]), \"container\", \"$1\", \"id\", \"/docker/(.{12}).*\")) by (container)",
+          "legendFormat": "RX {{container}}",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(label_replace(rate(container_network_transmit_bytes_total{id=~\"/docker/.*\"}[1m]), \"container\", \"$1\", \"id\", \"/docker/(.{12}).*\")) by (container)",
+          "legendFormat": "TX {{container}}",
+          "refId": "B"
+        }
+      ],
+      "title": "Container Network I/O",
+      "type": "timeseries"
     }
   ],
   "schemaVersion": 27,

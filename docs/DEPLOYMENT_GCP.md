@@ -113,6 +113,21 @@ make gcp-infra-down
 
 ---
 
+## 🔐 Authentication
+
+We've implemented a robust authentication system:
+
+- **Browser Access**: Use the Username/Password login page.
+  - **Default Credentials**: `admin` / `flowyml`
+  - **Environment Variables**: Overwrite via `FLOWYML_ADMIN_USER` and `FLOWYML_ADMIN_PASSWORD` (set these in secrets!).
+
+- **API/CLI Access**:
+  - Requires `Authorization: Bearer <your-api-token>` header.
+  - Set `FLOWYML_API_TOKEN` in your secrets file.
+
+- **Local Development**:
+  - No authentication required! The system automatically detects dev mode and bypasses login constraints.
+
 ## 💡 Pro Tips
 
 - **Database Pricing**: By default, we use `db-f1-micro` (shared CPU) to keep costs low (< $10/month).
