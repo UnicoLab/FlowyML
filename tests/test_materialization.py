@@ -13,18 +13,16 @@ from flowyml.stacks.local import LocalStack
 from flowyml.storage.artifacts import LocalArtifactStore
 
 
-class TestArtifactMaterialization(unittest.TestCase):
+from tests.base import BaseTestCase
+
+
+class TestArtifactMaterialization(BaseTestCase):
     """Test suite for automatic artifact materialization."""
 
     def setUp(self):
         """Set up test fixtures."""
-        self.temp_dir = tempfile.mkdtemp()
-        self.artifact_store = LocalArtifactStore(base_path=self.temp_dir)
-
-    def tearDown(self):
-        """Clean up test fixtures."""
-        if Path(self.temp_dir).exists():
-            shutil.rmtree(self.temp_dir)
+        super().setUp()
+        self.artifact_store = LocalArtifactStore(base_path=str(self.test_path / "artifacts"))
 
     def test_materialize_pandas_dataframe(self):
         """Test materialization of pandas DataFrame."""
@@ -123,18 +121,16 @@ class TestArtifactMaterialization(unittest.TestCase):
         self.assertIn("output", path_parts)
 
 
-class TestPipelineMaterialization(unittest.TestCase):
+class TestPipelineMaterialization(BaseTestCase):
     """Test suite for pipeline-level materialization."""
 
     def setUp(self):
         """Set up test fixtures."""
-        self.temp_dir = tempfile.mkdtemp()
-        self.stack = LocalStack(artifact_path=self.temp_dir)
-
-    def tearDown(self):
-        """Clean up test fixtures."""
-        if Path(self.temp_dir).exists():
-            shutil.rmtree(self.temp_dir)
+        super().setUp()
+        self.stack = LocalStack(
+            artifact_path=str(self.test_path / "artifacts"),
+            metadata_path=str(self.test_path / "metadata.db"),
+        )
 
     @unittest.skip("Need to investigate pipeline-level materialization test")
     def test_pipeline_materializes_outputs(self):
@@ -208,18 +204,13 @@ class TestPipelineMaterialization(unittest.TestCase):
                     self.assertTrue(Path(step_result.artifact_uri).exists())
 
 
-class TestMaterializerRegistry(unittest.TestCase):
+class TestMaterializerRegistry(BaseTestCase):
     """Test suite for materializer registry and selection."""
 
     def setUp(self):
         """Set up test fixtures."""
-        self.temp_dir = tempfile.mkdtemp()
-        self.artifact_store = LocalArtifactStore(base_path=self.temp_dir)
-
-    def tearDown(self):
-        """Clean up test fixtures."""
-        if Path(self.temp_dir).exists():
-            shutil.rmtree(self.temp_dir)
+        super().setUp()
+        self.artifact_store = LocalArtifactStore(base_path=str(self.test_path / "artifacts"))
 
     def test_pandas_materializer_selected(self):
         """Test that PandasMaterializer is selected for DataFrames."""

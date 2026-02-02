@@ -47,7 +47,11 @@ class TestStackIntegration(BaseTestCase):
 
     def test_pipeline_with_stack_registry(self):
         """Test pipeline uses stack from registry."""
-        stack = LocalStack(name="registered", artifact_path=f"{self.test_dir}/artifacts")
+        stack = LocalStack(
+            name="registered",
+            artifact_path=f"{self.test_dir}/artifacts",
+            metadata_path=f"{self.test_dir}/metadata.db",
+        )
 
         registry = get_registry()
         registry.register_stack(stack, set_active=True)
@@ -66,7 +70,11 @@ class TestStackIntegration(BaseTestCase):
 
     def test_pipeline_validates_stack(self):
         """Test pipeline validates stack before execution."""
-        stack = LocalStack(name="validation_test")
+        stack = LocalStack(
+            name="validation_test",
+            artifact_path=f"{self.test_dir}/artifacts",
+            metadata_path=f"{self.test_dir}/metadata.db",
+        )
 
         @step
         def dummy():
@@ -83,10 +91,12 @@ class TestStackIntegration(BaseTestCase):
         stack1 = LocalStack(
             name="stack1",
             artifact_path=f"{self.test_dir}/stack1",
+            metadata_path=f"{self.test_dir}/stack1.db",
         )
         stack2 = LocalStack(
             name="stack2",
             artifact_path=f"{self.test_dir}/stack2",
+            metadata_path=f"{self.test_dir}/stack2.db",
         )
 
         @step
@@ -201,7 +211,11 @@ class TestStackRegistry(BaseTestCase):
     def test_register_stack(self):
         """Test registering a stack."""
         registry = get_registry()
-        stack = LocalStack(name="test")
+        stack = LocalStack(
+            name="test",
+            artifact_path=f"{self.test_dir}/test_artifacts",
+            metadata_path=f"{self.test_dir}/test_metadata.db",
+        )
 
         registry.register_stack(stack)
 
@@ -210,7 +224,11 @@ class TestStackRegistry(BaseTestCase):
     def test_get_stack(self):
         """Test retrieving a registered stack."""
         registry = get_registry()
-        stack = LocalStack(name="retrieve_test")
+        stack = LocalStack(
+            name="retrieve_test",
+            artifact_path=f"{self.test_dir}/ret_artifacts",
+            metadata_path=f"{self.test_dir}/ret_metadata.db",
+        )
 
         registry.register_stack(stack)
         retrieved = registry.get_stack("retrieve_test")
@@ -221,8 +239,16 @@ class TestStackRegistry(BaseTestCase):
         """Test setting active stack."""
         registry = get_registry()
 
-        stack1 = LocalStack(name="stack1")
-        stack2 = LocalStack(name="stack2")
+        stack1 = LocalStack(
+            name="stack1",
+            artifact_path=f"{self.test_dir}/s1_artifacts",
+            metadata_path=f"{self.test_dir}/s1_metadata.db",
+        )
+        stack2 = LocalStack(
+            name="stack2",
+            artifact_path=f"{self.test_dir}/s2_artifacts",
+            metadata_path=f"{self.test_dir}/s2_metadata.db",
+        )
 
         registry.register_stack(stack1)
         registry.register_stack(stack2)
@@ -235,7 +261,11 @@ class TestStackRegistry(BaseTestCase):
     def test_unregister_stack(self):
         """Test removing a stack from registry."""
         registry = get_registry()
-        stack = LocalStack(name="removable")
+        stack = LocalStack(
+            name="removable",
+            artifact_path=f"{self.test_dir}/rem_artifacts",
+            metadata_path=f"{self.test_dir}/rem_metadata.db",
+        )
 
         registry.register_stack(stack)
         self.assertIn("removable", registry.list_stacks())
@@ -246,11 +276,13 @@ class TestStackRegistry(BaseTestCase):
     def test_describe_stack(self):
         """Test getting stack description."""
         registry = get_registry()
-        stack = LocalStack(name="describable")
+        stack = LocalStack(
+            name="describable",
+            artifact_path=f"{self.test_dir}/desc_artifacts",
+            metadata_path=f"{self.test_dir}/desc_metadata.db",
+        )
 
         registry.register_stack(stack, set_active=True)
-        # Ensure stack uses isolated path to avoid collisions
-        stack.artifact_path = f"{self.test_dir}/desc_artifacts"
         description = registry.describe_stack("describable")
 
         self.assertIn("name", description)
@@ -305,7 +337,11 @@ class TestPipelineStackIntegration(BaseTestCase):
 
     def test_pipeline_respects_resource_config(self):
         """Test that pipeline respects resource configuration."""
-        stack = LocalStack(name="resource_test")
+        stack = LocalStack(
+            name="resource_test",
+            artifact_path=f"{self.test_dir}/res_artifacts",
+            metadata_path=f"{self.test_dir}/res_metadata.db",
+        )
         resources = ResourceConfig(cpu="8", memory="32Gi")
 
         @step

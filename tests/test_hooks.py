@@ -12,7 +12,10 @@ from flowyml.core.hooks import (
 )
 
 
-class TestHooks:
+from tests.base import BaseTestCase
+
+
+class TestHooks(BaseTestCase):
     """Test lifecycle hooks functionality."""
 
     def test_hook_registry_creation(self):
