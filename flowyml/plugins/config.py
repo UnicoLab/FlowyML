@@ -473,6 +473,8 @@ def generate_config_template(
 
     # Generate YAML
     lines = ["# FlowyML Configuration", "# Run 'flowyml plugin list' to see available plugins", ""]
-    lines.append(yaml.dump({"plugins": config["plugins"]}, default_flow_style=False, sort_keys=False))
+    lines.append(
+        yaml.dump({"plugins": config["plugins"]}, default_flow_style=False, sort_keys=False),
+    )
 
     return "\n".join(lines)

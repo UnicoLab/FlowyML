@@ -175,8 +175,18 @@ class EvalDataset(Asset):
             rng.shuffle(data)
             n = int(len(data) * ratio)
             return (
-                EvalDataset(name=f"{self.name}_split_a", data=data[:n], parent=self, tags=self.tags),
-                EvalDataset(name=f"{self.name}_split_b", data=data[n:], parent=self, tags=self.tags),
+                EvalDataset(
+                    name=f"{self.name}_split_a",
+                    data=data[:n],
+                    parent=self,
+                    tags=self.tags,
+                ),
+                EvalDataset(
+                    name=f"{self.name}_split_b",
+                    data=data[n:],
+                    parent=self,
+                    tags=self.tags,
+                ),
             )
         elif isinstance(self.data, dict):
             # Get the length from the first list-like value
@@ -217,7 +227,12 @@ class EvalDataset(Asset):
 
         if isinstance(self.data, list):
             sampled = rng.sample(self.data, min(n, len(self.data)))
-            return EvalDataset(name=f"{self.name}_sample", data=sampled, parent=self, tags=self.tags)
+            return EvalDataset(
+                name=f"{self.name}_sample",
+                data=sampled,
+                parent=self,
+                tags=self.tags,
+            )
         elif isinstance(self.data, dict):
             length = self.num_examples
             indices = rng.sample(range(length), min(n, length))
@@ -228,7 +243,12 @@ class EvalDataset(Asset):
                     sampled[k] = [v[i] for i in range(length) if i in idx_set]
                 else:
                     sampled[k] = v
-            return EvalDataset(name=f"{self.name}_sample", data=sampled, parent=self, tags=self.tags)
+            return EvalDataset(
+                name=f"{self.name}_sample",
+                data=sampled,
+                parent=self,
+                tags=self.tags,
+            )
         raise ValueError("Cannot sample from dataset with unknown format")
 
     @classmethod

@@ -74,7 +74,14 @@ class DeepEvalAnswerRelevancy(Scorer):
         self.model = model
         self.threshold = threshold
 
-    def score(self, *, inputs: Any = None, outputs: Any = None, context: Any = None, **kw: Any) -> ScorerFeedback:
+    def score(
+        self,
+        *,
+        inputs: Any = None,
+        outputs: Any = None,
+        context: Any = None,
+        **kw: Any,
+    ) -> ScorerFeedback:
         metrics = _get_deepeval()
         metric = metrics.AnswerRelevancyMetric(model=self.model, threshold=self.threshold or 0.5)
         tc = _build_test_case(inputs=inputs, outputs=outputs, context=context)
@@ -90,7 +97,12 @@ class DeepEvalAnswerRelevancy(Scorer):
             name=self.name,
             value=value,
             passed=passed,
-            rationale=format_rationale(self.name, value, details=getattr(metric, "reason", None), source="DeepEval"),
+            rationale=format_rationale(
+                self.name,
+                value,
+                details=getattr(metric, "reason", None),
+                source="DeepEval",
+            ),
         )
 
 
@@ -106,7 +118,14 @@ class DeepEvalHallucination(Scorer):
         self.model = model
         self.threshold = threshold
 
-    def score(self, *, inputs: Any = None, outputs: Any = None, context: Any = None, **kw: Any) -> ScorerFeedback:
+    def score(
+        self,
+        *,
+        inputs: Any = None,
+        outputs: Any = None,
+        context: Any = None,
+        **kw: Any,
+    ) -> ScorerFeedback:
         metrics = _get_deepeval()
         metric = metrics.HallucinationMetric(model=self.model, threshold=self.threshold or 0.5)
         tc = _build_test_case(inputs=inputs, outputs=outputs, context=context)
@@ -122,7 +141,12 @@ class DeepEvalHallucination(Scorer):
             name=self.name,
             value=value,
             passed=passed,
-            rationale=format_rationale(self.name, value, details=getattr(metric, "reason", None), source="DeepEval"),
+            rationale=format_rationale(
+                self.name,
+                value,
+                details=getattr(metric, "reason", None),
+                source="DeepEval",
+            ),
         )
 
 
@@ -138,7 +162,14 @@ class DeepEvalBias(Scorer):
         self.model = model
         self.threshold = threshold
 
-    def score(self, *, inputs: Any = None, outputs: Any = None, context: Any = None, **kw: Any) -> ScorerFeedback:
+    def score(
+        self,
+        *,
+        inputs: Any = None,
+        outputs: Any = None,
+        context: Any = None,
+        **kw: Any,
+    ) -> ScorerFeedback:
         metrics = _get_deepeval()
         metric = metrics.BiasMetric(model=self.model, threshold=self.threshold or 0.5)
         tc = _build_test_case(inputs=inputs, outputs=outputs, context=context)
@@ -154,7 +185,12 @@ class DeepEvalBias(Scorer):
             name=self.name,
             value=value,
             passed=passed,
-            rationale=format_rationale(self.name, value, details=getattr(metric, "reason", None), source="DeepEval"),
+            rationale=format_rationale(
+                self.name,
+                value,
+                details=getattr(metric, "reason", None),
+                source="DeepEval",
+            ),
         )
 
 
@@ -170,7 +206,14 @@ class DeepEvalToxicity(Scorer):
         self.model = model
         self.threshold = threshold
 
-    def score(self, *, inputs: Any = None, outputs: Any = None, context: Any = None, **kw: Any) -> ScorerFeedback:
+    def score(
+        self,
+        *,
+        inputs: Any = None,
+        outputs: Any = None,
+        context: Any = None,
+        **kw: Any,
+    ) -> ScorerFeedback:
         metrics = _get_deepeval()
         metric = metrics.ToxicityMetric(model=self.model, threshold=self.threshold or 0.5)
         tc = _build_test_case(inputs=inputs, outputs=outputs, context=context)
@@ -186,7 +229,12 @@ class DeepEvalToxicity(Scorer):
             name=self.name,
             value=value,
             passed=passed,
-            rationale=format_rationale(self.name, value, details=getattr(metric, "reason", None), source="DeepEval"),
+            rationale=format_rationale(
+                self.name,
+                value,
+                details=getattr(metric, "reason", None),
+                source="DeepEval",
+            ),
         )
 
 

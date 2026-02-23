@@ -63,7 +63,9 @@ class Experiment:
         self.experiment_dir.mkdir(parents=True, exist_ok=True)
 
         # Metadata store for UI
-        self.metadata_store = metadata_store or SQLMetadataStore(db_path=str(get_config().metadata_db))
+        self.metadata_store = metadata_store or SQLMetadataStore(
+            db_path=str(get_config().metadata_db),
+        )
 
         # Save experiment to DB
         self.metadata_store.save_experiment(

@@ -614,7 +614,10 @@ class Dataset(Asset):
             train_features = {k: v[:train_size] for k, v in features.items()}
             test_features = {k: v[train_size:] for k, v in features.items()}
 
-            train_data = {"features": train_features, "target": target[:train_size] if target else []}
+            train_data = {
+                "features": train_features,
+                "target": target[:train_size] if target else [],
+            }
             test_data = {"features": test_features, "target": target[train_size:] if target else []}
         else:
             # Fallback - no actual splitting

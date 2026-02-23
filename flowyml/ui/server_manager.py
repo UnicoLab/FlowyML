@@ -31,7 +31,12 @@ class UIServerManager:
                     cls._instance = cls()
         return cls._instance
 
-    def ensure_running(self, host: str | None = None, port: int | None = None, auto_start: bool = True) -> bool:
+    def ensure_running(
+        self,
+        host: str | None = None,
+        port: int | None = None,
+        auto_start: bool = True,
+    ) -> bool:
         """Ensure UI server is running, start it if not and auto_start is True.
 
         Args:

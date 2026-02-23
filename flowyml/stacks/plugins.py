@@ -257,11 +257,18 @@ class ComponentRegistry:
             if issubclass(obj, StackComponent) and obj != StackComponent:
                 self.register(obj)
 
-    def load_via_bridge(self, bridge_name: str, component_path: str, name: str | None = None) -> None:
+    def load_via_bridge(
+        self,
+        bridge_name: str,
+        component_path: str,
+        name: str | None = None,
+    ) -> None:
         """Load a component via a registered bridge."""
         bridge = self._bridges.get(bridge_name)
         if not bridge:
-            raise ValueError(f"Bridge '{bridge_name}' not found. Available: {list(self._bridges.keys())}")
+            raise ValueError(
+                f"Bridge '{bridge_name}' not found. Available: {list(self._bridges.keys())}",
+            )
 
         module_path, class_name = component_path.rsplit(".", 1)
 

@@ -83,7 +83,9 @@ if KERAS_AVAILABLE:
                 try:
                     if obj.optimizer:
                         metadata["optimizer"] = obj.optimizer.__class__.__name__
-                        metadata["learning_rate"] = float(keras.backend.get_value(obj.optimizer.learning_rate))
+                        metadata["learning_rate"] = float(
+                            keras.backend.get_value(obj.optimizer.learning_rate),
+                        )
                 except Exception:
                     pass
 
@@ -175,10 +177,14 @@ else:
         """Placeholder materializer when Keras is not installed."""
 
         def save(self, obj: Any, path: Path) -> None:
-            raise ImportError("Keras/TensorFlow is not installed. Install with: pip install tensorflow")
+            raise ImportError(
+                "Keras/TensorFlow is not installed. Install with: pip install tensorflow",
+            )
 
         def load(self, path: Path) -> Any:
-            raise ImportError("Keras/TensorFlow is not installed. Install with: pip install tensorflow")
+            raise ImportError(
+                "Keras/TensorFlow is not installed. Install with: pip install tensorflow",
+            )
 
         @classmethod
         def supported_types(cls) -> list[type]:

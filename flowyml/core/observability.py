@@ -88,7 +88,13 @@ class MetricsCollector(Protocol):
         """Record step start."""
         ...
 
-    def record_step_end(self, step: "Step", result: "ExecutionResult", pipeline_name: str, run_id: str) -> None:
+    def record_step_end(
+        self,
+        step: "Step",
+        result: "ExecutionResult",
+        pipeline_name: str,
+        run_id: str,
+    ) -> None:
         """Record step completion."""
         ...
 
@@ -120,7 +126,13 @@ class ConsoleMetricsCollector:
         )
         print(f"📊 Step Started: {event.to_dict()}")
 
-    def record_step_end(self, step: "Step", result: "ExecutionResult", pipeline_name: str, run_id: str) -> None:
+    def record_step_end(
+        self,
+        step: "Step",
+        result: "ExecutionResult",
+        pipeline_name: str,
+        run_id: str,
+    ) -> None:
         event = StepMetricEvent(
             step_name=step.name,
             pipeline_name=pipeline_name,
@@ -175,12 +187,20 @@ class PrometheusMetricsCollector:
         self.pipeline_completions.labels(pipeline_name=pipeline.name, status=status).inc()
 
         if result.duration_seconds:
-            self.pipeline_duration.labels(pipeline_name=pipeline.name).observe(result.duration_seconds)
+            self.pipeline_duration.labels(pipeline_name=pipeline.name).observe(
+                result.duration_seconds,
+            )
 
     def record_step_start(self, step: "Step", pipeline_name: str, run_id: str) -> None:
         pass  # No-op for Prometheus (only track completion)
 
-    def record_step_end(self, step: "Step", result: "ExecutionResult", pipeline_name: str, run_id: str) -> None:
+    def record_step_end(
+        self,
+        step: "Step",
+        result: "ExecutionResult",
+        pipeline_name: str,
+        run_id: str,
+    ) -> None:
         duration = getattr(result, "duration_seconds", None)
         if duration:
             self.step_duration.labels(

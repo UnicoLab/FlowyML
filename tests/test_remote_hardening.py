@@ -49,7 +49,10 @@ def test_remote_artifact_store_load(mock_requests):
     mock_requests.Session.return_value.get.return_value = mock_response
 
     # Mock pickle load
-    with patch("builtins.open", MagicMock()), patch("pickle.load", return_value={"data": "loaded"}), patch(
+    with patch("builtins.open", MagicMock()), patch(
+        "pickle.load",
+        return_value={"data": "loaded"},
+    ), patch(
         "pathlib.Path.mkdir",
     ):
         result = store.load("project/run/id/file")

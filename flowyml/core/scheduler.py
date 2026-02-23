@@ -558,7 +558,9 @@ class PipelineScheduler:
     ) -> Schedule:
         """Schedule with cron expression."""
         if not croniter:
-            raise ImportError("croniter is required for cron scheduling. Install with: pip install croniter")
+            raise ImportError(
+                "croniter is required for cron scheduling. Install with: pip install croniter",
+            )
 
         self._register_func(name, pipeline_func)
 
@@ -741,16 +743,23 @@ class PipelineScheduler:
                             }
 
                         ui_store.save_run(pipeline_result.run_id, metadata)
-                        logger.info(f"✅ Saved scheduled run {pipeline_result.run_id} to UI metadata store")
+                        logger.info(
+                            f"✅ Saved scheduled run {pipeline_result.run_id} to UI metadata store",
+                        )
                     else:
                         # Update existing run to mark as scheduled
                         if not existing_run.get("scheduled"):
                             existing_run["scheduled"] = True
                             existing_run["schedule_name"] = schedule.pipeline_name
                             ui_store.save_run(pipeline_result.run_id, existing_run)
-                            logger.debug(f"Updated run {pipeline_result.run_id} to mark as scheduled")
+                            logger.debug(
+                                f"Updated run {pipeline_result.run_id} to mark as scheduled",
+                            )
                 except Exception as e:
-                    logger.warning(f"Failed to save scheduled run to UI metadata store: {e}", exc_info=True)
+                    logger.warning(
+                        f"Failed to save scheduled run to UI metadata store: {e}",
+                        exc_info=True,
+                    )
 
             if self.config.distributed:
                 self._lock.release(schedule.pipeline_name)

@@ -195,7 +195,11 @@ class VertexAIOrchestrator(RemoteOrchestrator):
             # Note: This is a simplified filter; exact filter depends on Vertex AI logging format
             filter_str = f'resource.type="ml_job" AND conversion_id="{job_name}"'
 
-            entries = client.list_entries(filter_=filter_str, order_by=logging.DESCENDING, max_results=100)
+            entries = client.list_entries(
+                filter_=filter_str,
+                order_by=logging.DESCENDING,
+                max_results=100,
+            )
             logs = []
             for entry in entries:
                 if entry.payload:

@@ -185,7 +185,11 @@ class RagasContextRecall(Scorer):
         **kw: Any,
     ) -> ScorerFeedback:
         metrics = _get_ragas_metrics()
-        metric_cls = getattr(metrics, "LLMContextRecall", None) or getattr(metrics, "ContextRecall", None)
+        metric_cls = getattr(metrics, "LLMContextRecall", None) or getattr(
+            metrics,
+            "ContextRecall",
+            None,
+        )
         if metric_cls is None:
             return ScorerFeedback(
                 name=self.name,
@@ -230,7 +234,11 @@ class RagasAnswerRelevancy(Scorer):
         **kw: Any,
     ) -> ScorerFeedback:
         metrics = _get_ragas_metrics()
-        metric_cls = getattr(metrics, "ResponseRelevancy", None) or getattr(metrics, "AnswerRelevancy", None)
+        metric_cls = getattr(metrics, "ResponseRelevancy", None) or getattr(
+            metrics,
+            "AnswerRelevancy",
+            None,
+        )
         if metric_cls is None:
             return ScorerFeedback(
                 name=self.name,

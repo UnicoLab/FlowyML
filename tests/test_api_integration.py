@@ -93,7 +93,12 @@ def test_versioned_pipeline_with_context():
 
     with tempfile.TemporaryDirectory() as tmpdir:
         ctx = context(learning_rate=0.001, epochs=10)
-        vp = VersionedPipeline("test_versioned_ctx", context=ctx, version="v1.0.0", versions_dir=tmpdir)
+        vp = VersionedPipeline(
+            "test_versioned_ctx",
+            context=ctx,
+            version="v1.0.0",
+            versions_dir=tmpdir,
+        )
 
         @step(outputs=["result"])
         def process(learning_rate: float, epochs: int):

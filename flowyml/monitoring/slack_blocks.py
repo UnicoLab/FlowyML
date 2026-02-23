@@ -166,7 +166,11 @@ def build_pipeline_failure_message(
         blocks.append(
             build_section_block(
                 "Investigate the failure in the FlowyML dashboard:",
-                accessory=build_button_accessory("View Run", f"{ui_url}/runs/{run_id}", style="danger"),
+                accessory=build_button_accessory(
+                    "View Run",
+                    f"{ui_url}/runs/{run_id}",
+                    style="danger",
+                ),
             ),
         )
 
@@ -226,7 +230,9 @@ def build_drift_warning_message(
         )
 
     blocks.append(
-        build_context_block([f"FlowyML Monitoring | {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"]),
+        build_context_block(
+            [f"FlowyML Monitoring | {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"],
+        ),
     )
 
     return {

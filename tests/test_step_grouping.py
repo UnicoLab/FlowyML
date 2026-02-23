@@ -187,7 +187,12 @@ class TestStepGrouping:
         def step_a():
             return "x"
 
-        @step(inputs=["x"], outputs=["y"], execution_group="auto", resources={"cpu": "8", "memory": "12Gi"})
+        @step(
+            inputs=["x"],
+            outputs=["y"],
+            execution_group="auto",
+            resources={"cpu": "8", "memory": "12Gi"},
+        )
         def step_b(x: str):
             return f"{x}_y"
 
@@ -425,7 +430,12 @@ class TestExecutionUnits:
             assert learning_rate == 0.001
             assert epochs == 10
             assert batch_size == 32
-            return {"model": "trained", "lr": learning_rate, "epochs": epochs, "batch_size": batch_size}
+            return {
+                "model": "trained",
+                "lr": learning_rate,
+                "epochs": epochs,
+                "batch_size": batch_size,
+            }
 
         @step(inputs=["model"], outputs=["result"], execution_group="training")
         def evaluate(model: dict, epochs: int):

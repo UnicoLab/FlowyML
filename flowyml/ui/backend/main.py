@@ -59,7 +59,9 @@ if _otlp_endpoint:
     try:
         from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 
-        trace_provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter(endpoint=_otlp_endpoint)))
+        trace_provider.add_span_processor(
+            BatchSpanProcessor(OTLPSpanExporter(endpoint=_otlp_endpoint)),
+        )
     except ImportError:
         # Fallback to console if OTLP exporter not installed
         trace_provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
@@ -133,7 +135,9 @@ class AuthMiddleware(BaseHTTPMiddleware):
         path = request.url.path
         if (
             path in ["/api/health", "/metrics", "/docs", "/redoc", "/openapi.json"]
-            or path.startswith(("/assets", "/api/auth/login", "/api/auth/logout"))  # Allow login endpoints
+            or path.startswith(
+                ("/assets", "/api/auth/login", "/api/auth/logout"),
+            )  # Allow login endpoints
             or path == "/"
             or request.method == "OPTIONS"
         ):
@@ -226,7 +230,11 @@ frontend_dist = os.path.join(os.path.dirname(os.path.dirname(__file__)), "fronte
 
 if os.path.exists(frontend_dist):
     # Mount static assets
-    app.mount("/assets", StaticFiles(directory=os.path.join(frontend_dist, "assets")), name="assets")
+    app.mount(
+        "/assets",
+        StaticFiles(directory=os.path.join(frontend_dist, "assets")),
+        name="assets",
+    )
 
     # Serve index.html for root and other non-API routes
     # Use a specific route for root
@@ -250,6 +258,7 @@ if os.path.exists(frontend_dist):
             return FileResponse(os.path.join(frontend_dist, "index.html"))
         # Otherwise, use the default handler
         return await http_exception_handler(request, exc)
+
 else:
 
     @app.get("/")
@@ -295,4 +304,9 @@ if __name__ == "__main__":
     import uvicorn
 
     port = int(os.environ.get("PORT", "8080"))
-    uvicorn.run("flowyml.ui.backend.main:app", host="0.0.0.0", port=port, reload=False)  # noqa: S104
+    uvicorn.run(
+        "flowyml.ui.backend.main:app",
+        host="0.0.0.0",  # noqa: S104
+        port=port,
+        reload=False,
+    )

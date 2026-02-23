@@ -101,7 +101,9 @@ def load_data(data_path: str):
     )
 
     # You can still access auto-extracted stats:
-    print(f"   Auto-extracted: {train_dataset.num_samples} samples, {train_dataset.num_features} features")
+    print(
+        f"   Auto-extracted: {train_dataset.num_samples} samples, {train_dataset.num_features} features",
+    )
     print(f"   Feature columns: {train_dataset.feature_columns}")
 
     return train_dataset, val_dataset

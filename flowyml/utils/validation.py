@@ -42,7 +42,9 @@ class ResourceRequirements(BaseModel):
                     float(size_val)
                     return v
                 except ValueError:
-                    raise ValueError(f"Invalid size format: {v}. Expected format: <number><unit> (e.g., '4GB')")
+                    raise ValueError(
+                        f"Invalid size format: {v}. Expected format: <number><unit> (e.g., '4GB')",
+                    )
 
         raise ValueError(f"Invalid size unit. Must be one of: {', '.join(valid_units)}")
 
@@ -127,7 +129,9 @@ class ContextConfig(BaseModel):
 
         valid_devices = ["cpu", "cuda", "mps", "tpu"]
         if v.lower() not in valid_devices and not v.startswith("cuda:"):
-            raise ValueError(f"Invalid device. Must be one of: {', '.join(valid_devices)} or 'cuda:N'")
+            raise ValueError(
+                f"Invalid device. Must be one of: {', '.join(valid_devices)} or 'cuda:N'",
+            )
 
         return v.lower()
 

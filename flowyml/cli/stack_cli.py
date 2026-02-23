@@ -195,7 +195,11 @@ def set_active_stack(stack_name: str, config: str | None) -> None:
 @stack.command("switch")
 @click.argument("stack_name")
 @click.option("--config", "-c", help="Path to flowyml.yaml")
-@click.option("--validate/--no-validate", default=True, help="Validate stack configuration after switching")
+@click.option(
+    "--validate/--no-validate",
+    default=True,
+    help="Validate stack configuration after switching",
+)
 def switch_stack(stack_name: str, config: str | None, validate: bool) -> None:
     """Switch to a different stack."""
     switch_stack_impl(stack_name, config, validate)
@@ -224,7 +228,9 @@ def switch_stack_impl(stack_name: str, config: str | None, validate: bool = Fals
 
             # Check for remote requirements
             if stack.orchestrator and stack.orchestrator.get("type") != "local":
-                console.print("[yellow]Remote stack detected. Checking Docker configuration...[/yellow]")
+                console.print(
+                    "[yellow]Remote stack detected. Checking Docker configuration...[/yellow]",
+                )
                 if not stack.container_registry:
                     console.print(
                         "[bold red]❌ Warning: Remote stack usually requires a Container Registry for automatic builds.[/bold red]",

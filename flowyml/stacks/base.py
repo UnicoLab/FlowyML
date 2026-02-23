@@ -73,7 +73,12 @@ class Stack:
         # In a real implementation, this would set the global active stack
         pass
 
-    def prepare_docker_image(self, docker_config: Any, pipeline_name: str, project_name: str | None = None) -> str:
+    def prepare_docker_image(
+        self,
+        docker_config: Any,
+        pipeline_name: str,
+        project_name: str | None = None,
+    ) -> str:
         """Prepare the Docker image for execution.
 
         Args:

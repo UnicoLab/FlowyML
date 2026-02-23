@@ -89,7 +89,10 @@ def _introspect_sklearn(model: Any, info: dict[str, Any]) -> None:
 
         if hasattr(model, "classes_"):
             info["classes"] = list(model.classes_)
-            info["output_shape"] = [None, 1]  # Binary/Multi-class usually outputs 1 prediction or probas
+            info["output_shape"] = [
+                None,
+                1,
+            ]  # Binary/Multi-class usually outputs 1 prediction or probas
 
         if hasattr(model, "n_classes_"):
             info["n_classes"] = model.n_classes_

@@ -61,7 +61,13 @@ def with_retry(orchestrator_method):
             ...
     """
 
-    def wrapper(self, pipeline: "Pipeline", *args, retry_policy: OrchestratorRetryPolicy | None = None, **kwargs):
+    def wrapper(
+        self,
+        pipeline: "Pipeline",
+        *args,
+        retry_policy: OrchestratorRetryPolicy | None = None,
+        **kwargs,
+    ):
         if retry_policy is None:
             # No retry policy, execute normally
             return orchestrator_method(self, pipeline, *args, **kwargs)

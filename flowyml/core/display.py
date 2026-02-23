@@ -115,7 +115,10 @@ class PipelineDisplay:
             url_content.append(self.run_url, style="bold cyan underline link " + self.run_url)
             url_content.append("\n", style="")
             url_content.append("   ", style="")
-            url_content.append("↑ Click to follow pipeline execution in real-time", style="dim italic")
+            url_content.append(
+                "↑ Click to follow pipeline execution in real-time",
+                style="dim italic",
+            )
 
             ui_panel = Panel(
                 url_content,
@@ -405,7 +408,13 @@ class PipelineDisplay:
         else:
             self._show_summary_simple(result, total_duration, ui_url, run_url)
 
-    def _show_summary_rich(self, result: Any, total_duration: float, ui_url: str = None, run_url: str = None) -> None:
+    def _show_summary_rich(
+        self,
+        result: Any,
+        total_duration: float,
+        ui_url: str = None,
+        run_url: str = None,
+    ) -> None:
         """Show summary using rich."""
         # Stop progress display if running
         if self.progress:
@@ -467,7 +476,12 @@ class PipelineDisplay:
             self.console.print()
 
         # Step results table
-        step_table = Table(title="📋 Step Results", box=box.ROUNDED, show_header=True, header_style="bold cyan")
+        step_table = Table(
+            title="📋 Step Results",
+            box=box.ROUNDED,
+            show_header=True,
+            header_style="bold cyan",
+        )
         step_table.add_column("Step", style="cyan")
         step_table.add_column("Status", justify="center")
         step_table.add_column("Duration", justify="right")
@@ -535,7 +549,13 @@ class PipelineDisplay:
             lines.append(f"[cyan]{key}:[/cyan] {value_str}")
         return "\n".join(lines) if lines else "[dim]No outputs[/dim]"
 
-    def _show_summary_simple(self, result: Any, total_duration: float, ui_url: str = None, run_url: str = None) -> None:
+    def _show_summary_simple(
+        self,
+        result: Any,
+        total_duration: float,
+        ui_url: str = None,
+        run_url: str = None,
+    ) -> None:
         """Show summary using simple text."""
         print()
         print("=" * 70)

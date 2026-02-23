@@ -31,7 +31,9 @@ class AdaptationRule:
 
     # Adaptation logic
     target_type: ComponentType = ComponentType.ORCHESTRATOR
-    method_mapping: dict[str, str] = field(default_factory=dict)  # flowyml_method -> external_method
+    method_mapping: dict[str, str] = field(
+        default_factory=dict,
+    )  # flowyml_method -> external_method
     attribute_mapping: dict[str, str] = field(default_factory=dict)  # flowyml_attr -> external_attr
 
 

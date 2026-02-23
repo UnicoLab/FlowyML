@@ -130,7 +130,14 @@ class PhoenixHallucination(Scorer):
         self.model = model
         self.threshold = threshold
 
-    def score(self, *, inputs: Any = None, outputs: Any = None, context: Any = None, **kw: Any) -> ScorerFeedback:
+    def score(
+        self,
+        *,
+        inputs: Any = None,
+        outputs: Any = None,
+        context: Any = None,
+        **kw: Any,
+    ) -> ScorerFeedback:
         value, detail = _run_phoenix_eval(
             "HALLUCINATION_PROMPT_TEMPLATE",
             inputs=inputs,
@@ -159,7 +166,14 @@ class PhoenixToxicity(Scorer):
         self.model = model
         self.threshold = threshold
 
-    def score(self, *, inputs: Any = None, outputs: Any = None, context: Any = None, **kw: Any) -> ScorerFeedback:
+    def score(
+        self,
+        *,
+        inputs: Any = None,
+        outputs: Any = None,
+        context: Any = None,
+        **kw: Any,
+    ) -> ScorerFeedback:
         value, detail = _run_phoenix_eval(
             "TOXICITY_PROMPT_TEMPLATE",
             inputs=inputs,
@@ -224,7 +238,14 @@ class PhoenixSummarization(Scorer):
         self.model = model
         self.threshold = threshold
 
-    def score(self, *, inputs: Any = None, outputs: Any = None, context: Any = None, **kw: Any) -> ScorerFeedback:
+    def score(
+        self,
+        *,
+        inputs: Any = None,
+        outputs: Any = None,
+        context: Any = None,
+        **kw: Any,
+    ) -> ScorerFeedback:
         value, detail = _run_phoenix_eval(
             "SUMMARIZATION_PROMPT_TEMPLATE",
             inputs=inputs,

@@ -64,7 +64,10 @@ class TestHeartbeatIntegration(unittest.TestCase):
             heartbeat.stop()
             heartbeat.join()
 
-            self.assertTrue(execution_stopped.is_set(), "StopExecution exception was not raised in target thread")
+            self.assertTrue(
+                execution_stopped.is_set(),
+                "StopExecution exception was not raised in target thread",
+            )
 
     def test_executor_handles_stop_execution(self):
         """Test that LocalExecutor handles StopExecution exception correctly."""

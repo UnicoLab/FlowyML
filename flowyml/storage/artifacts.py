@@ -51,7 +51,14 @@ class ArtifactStore(ABC):
         """List all artifacts with optional prefix filter."""
         pass
 
-    def materialize(self, obj: Any, name: str, run_id: str, step_name: str, project_name: str = "default") -> str:
+    def materialize(
+        self,
+        obj: Any,
+        name: str,
+        run_id: str,
+        step_name: str,
+        project_name: str = "default",
+    ) -> str:
         """Materialize artifact to structured storage.
 
         Args:
@@ -210,7 +217,14 @@ class LocalArtifactStore(ArtifactStore):
             return full_path.stat().st_size
         return 0
 
-    def materialize(self, obj: Any, name: str, run_id: str, step_name: str, project_name: str = "default") -> str:
+    def materialize(
+        self,
+        obj: Any,
+        name: str,
+        run_id: str,
+        step_name: str,
+        project_name: str = "default",
+    ) -> str:
         """Materialize artifact to structured storage."""
         from datetime import datetime
         from flowyml.storage.materializers.base import get_materializer

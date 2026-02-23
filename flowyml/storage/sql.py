@@ -165,7 +165,12 @@ class SQLMetadataStore(MetadataStore):
         self.experiment_runs = Table(
             "experiment_runs",
             self.metadata,
-            Column("experiment_id", String, ForeignKey("experiments.experiment_id"), primary_key=True),
+            Column(
+                "experiment_id",
+                String,
+                ForeignKey("experiments.experiment_id"),
+                primary_key=True,
+            ),
             Column("run_id", String, ForeignKey("runs.run_id"), primary_key=True),
             Column("metrics", Text),
             Column("parameters", Text),
@@ -380,7 +385,9 @@ class SQLMetadataStore(MetadataStore):
     def list_runs(self, limit: int | None = None) -> list[dict]:
         """List all runs."""
         with self.engine.connect() as conn:
-            stmt = select(self.runs.c.run_id, self.runs.c.metadata).order_by(self.runs.c.created_at.desc())
+            stmt = select(self.runs.c.run_id, self.runs.c.metadata).order_by(
+                self.runs.c.created_at.desc(),
+            )
             if limit:
                 stmt = stmt.limit(limit)
 
@@ -431,7 +438,9 @@ class SQLMetadataStore(MetadataStore):
     def load_artifact(self, artifact_id: str) -> dict | None:
         """Load artifact metadata."""
         with self.engine.connect() as conn:
-            stmt = select(self.artifacts.c.metadata).where(self.artifacts.c.artifact_id == artifact_id)
+            stmt = select(self.artifacts.c.metadata).where(
+                self.artifacts.c.artifact_id == artifact_id,
+            )
             row = conn.execute(stmt).fetchone()
             if row:
                 return json.loads(row[0])
@@ -591,7 +600,13 @@ class SQLMetadataStore(MetadataStore):
                 )
             return results
 
-    def save_experiment(self, experiment_id: str, name: str, description: str = "", tags: dict = None) -> None:
+    def save_experiment(
+        self,
+        experiment_id: str,
+        name: str,
+        description: str = "",
+        tags: dict = None,
+    ) -> None:
         """Save experiment metadata."""
         with self.engine.connect() as conn:
             stmt = select(self.experiments).where(self.experiments.c.experiment_id == experiment_id)
@@ -1023,7 +1038,9 @@ class SQLMetadataStore(MetadataStore):
             failed_runs = status_map.get("failed", 0)
 
             # 7. Avg duration (only completed runs)
-            dur_stmt = select(func.avg(self.runs.c.duration)).where(self.runs.c.status == "completed")
+            dur_stmt = select(func.avg(self.runs.c.duration)).where(
+                self.runs.c.status == "completed",
+            )
             if project:
                 dur_stmt = dur_stmt.where(self.runs.c.project == project)
 

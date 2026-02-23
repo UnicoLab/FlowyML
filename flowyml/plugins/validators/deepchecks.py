@@ -80,7 +80,9 @@ class DeepchecksValidator(DataValidatorPlugin):
                 suite_obj = getattr(self._dc_suites, suite_name)()
             else:
                 # Try to create a full suite if name not found in presets
-                logger.warning(f"Suite '{suite_name}' not found in default suites, falling back to full suite.")
+                logger.warning(
+                    f"Suite '{suite_name}' not found in default suites, falling back to full suite.",
+                )
                 suite_obj = self._dc_suites.full_suite()
         else:
             # Assume it's a Suite object passed directly

@@ -161,7 +161,10 @@ async def create_schedule(schedule: ScheduleRequest):
             )
         elif schedule.schedule_type == "cron":
             if not schedule.cron_expression:
-                raise HTTPException(status_code=400, detail="Cron expression required for cron schedule")
+                raise HTTPException(
+                    status_code=400,
+                    detail="Cron expression required for cron schedule",
+                )
             get_scheduler().schedule_cron(
                 name=schedule.name,
                 pipeline_func=pipeline_func,

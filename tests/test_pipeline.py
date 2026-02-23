@@ -198,7 +198,11 @@ class TestPipeline(BaseTestCase):
             update_config(projects_dir=str(projects_dir))
 
             try:
-                p = Pipeline("versioned_project_test", version="v1.0.0", project_name="test_project")
+                p = Pipeline(
+                    "versioned_project_test",
+                    version="v1.0.0",
+                    project_name="test_project",
+                )
 
                 self.assertIsInstance(p, VersionedPipeline)
                 self.assertEqual(p.version, "v1.0.0")

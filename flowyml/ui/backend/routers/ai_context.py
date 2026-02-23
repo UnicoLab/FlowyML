@@ -35,7 +35,12 @@ class AIContextResponse(BaseModel):
     suggestions: list[str] = []
 
 
-def _summarize_run(run: dict, include_logs: bool = True, include_code: bool = True, max_log_lines: int = 100) -> dict:
+def _summarize_run(
+    run: dict,
+    include_logs: bool = True,
+    include_code: bool = True,
+    max_log_lines: int = 100,
+) -> dict:
     """Generate a comprehensive summary of a run for AI context."""
     steps_info = []
     failed_steps = []
@@ -140,7 +145,9 @@ def _generate_suggestions(summary: dict) -> list[str]:
     suggestions = []
 
     if summary.get("failed_steps", 0) > 0:
-        suggestions.append(f"Analyze the {summary['failed_steps']} failed step(s) and suggest fixes")
+        suggestions.append(
+            f"Analyze the {summary['failed_steps']} failed step(s) and suggest fixes",
+        )
 
     if summary.get("cached_steps", 0) == 0 and summary.get("total_steps", 0) > 3:
         suggestions.append("Consider enabling caching for frequently-run steps")
@@ -150,7 +157,9 @@ def _generate_suggestions(summary: dict) -> list[str]:
         try:
             duration = float(duration_str.replace("s", ""))
             if duration > 300:
-                suggestions.append("The run took over 5 minutes - consider optimization opportunities")
+                suggestions.append(
+                    "The run took over 5 minutes - consider optimization opportunities",
+                )
         except (ValueError, AttributeError):
             pass
 

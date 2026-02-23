@@ -94,7 +94,9 @@ def train_model(
         }
 
         metrics_history.append(metrics)
-        print(f"   Epoch {epoch}/{epochs}: loss={metrics['train_loss']:.4f}, acc={metrics['train_accuracy']:.4f}")
+        print(
+            f"   Epoch {epoch}/{epochs}: loss={metrics['train_loss']:.4f}, acc={metrics['train_accuracy']:.4f}",
+        )
 
     # Final model
     model = {

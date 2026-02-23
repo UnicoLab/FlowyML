@@ -109,7 +109,11 @@ class LocalOrchestrator(Orchestrator):
 
         # Check if we're resuming from checkpoint
         resume_from_checkpoint = getattr(pipeline, "_resume_from_checkpoint", False)
-        completed_steps_from_checkpoint = getattr(pipeline, "_completed_steps_from_checkpoint", set())
+        completed_steps_from_checkpoint = getattr(
+            pipeline,
+            "_completed_steps_from_checkpoint",
+            set(),
+        )
         checkpoint = getattr(pipeline, "_checkpoint", None)
 
         # Execute steps/groups in order
@@ -180,7 +184,13 @@ class LocalOrchestrator(Orchestrator):
                                 )
 
                     # Check for control flows that need to be evaluated after this step
-                    self._evaluate_control_flows(pipeline, step_result, step_outputs, result, run_id)
+                    self._evaluate_control_flows(
+                        pipeline,
+                        step_result,
+                        step_outputs,
+                        result,
+                        run_id,
+                    )
 
             else:
                 # Execute single ungrouped step
@@ -202,7 +212,10 @@ class LocalOrchestrator(Orchestrator):
 
                             # Process checkpoint outputs
                             if isinstance(step_outputs_from_checkpoint, dict):
-                                for output_name, output_value in step_outputs_from_checkpoint.items():
+                                for (
+                                    output_name,
+                                    output_value,
+                                ) in step_outputs_from_checkpoint.items():
                                     step_outputs[output_name] = output_value
                                     result.outputs[output_name] = output_value
 
@@ -268,7 +281,10 @@ class LocalOrchestrator(Orchestrator):
 
                 # Validate context parameters
                 exclude_params = list(step.inputs) + list(step_inputs.keys())
-                missing_params = pipeline.context.validate_for_step(step.func, exclude=exclude_params)
+                missing_params = pipeline.context.validate_for_step(
+                    step.func,
+                    exclude=exclude_params,
+                )
                 if missing_params:
                     error_msg = f"Missing required parameters: {missing_params}"
                     step_result = ExecutionResult(
@@ -347,7 +363,10 @@ class LocalOrchestrator(Orchestrator):
                             # Don't fail pipeline if checkpoint save fails
                             import warnings
 
-                            warnings.warn(f"Failed to save checkpoint for step {step.name}: {e}", stacklevel=2)
+                            warnings.warn(
+                                f"Failed to save checkpoint for step {step.name}: {e}",
+                                stacklevel=2,
+                            )
 
                 # Check for control flows that need to be evaluated after this step
                 self._evaluate_control_flows(pipeline, step_result, step_outputs, result, run_id)
@@ -430,7 +449,10 @@ class LocalOrchestrator(Orchestrator):
                     # Build steps dictionary with outputs
                     for step_name, step_res in self.result.step_results.items():
                         if step_res.success and step_res.output is not None:
-                            step_def = next((s for s in self.pipeline.steps if s.name == step_name), None)
+                            step_def = next(
+                                (s for s in self.pipeline.steps if s.name == step_name),
+                                None,
+                            )
                             if step_def:
                                 # Create step outputs dictionary
                                 step_outputs = {}
@@ -440,11 +462,17 @@ class LocalOrchestrator(Orchestrator):
                                     step_outputs = step_res.output
                                 elif step_def.outputs:
                                     # Try to map tuple/list outputs
-                                    if isinstance(step_res.output, (list, tuple)) and len(step_res.output) == len(
+                                    if isinstance(step_res.output, (list, tuple)) and len(
+                                        step_res.output,
+                                    ) == len(
                                         step_def.outputs,
                                     ):
-                                        for name, val in zip(step_def.outputs, step_res.output, strict=False):
-                                            step_outputs[name] = val
+                                        for out_name, val in zip(
+                                            step_def.outputs,
+                                            step_res.output,
+                                            strict=False,
+                                        ):
+                                            step_outputs[out_name] = val
                                     else:
                                         step_outputs[step_def.outputs[0]] = step_res.output
 
@@ -507,10 +535,16 @@ class LocalOrchestrator(Orchestrator):
                                                     # Now try to get from asset (handles all Asset properties)
                                                     try:
                                                         if hasattr(self._asset, name):  # noqa: B023
-                                                            attr = getattr(self._asset, name)  # noqa: B023
+                                                            attr = getattr(
+                                                                self._asset,
+                                                                name,
+                                                            )  # noqa: B023
                                                             # If it's a property/method, return it
                                                             # If it's callable but we want the value, call it
-                                                            if callable(attr) and not isinstance(attr, type):
+                                                            if callable(attr) and not isinstance(
+                                                                attr,
+                                                                type,
+                                                            ):
                                                                 # It's a method, not a property - return as-is
                                                                 return attr
                                                             return attr
@@ -558,7 +592,9 @@ class LocalOrchestrator(Orchestrator):
                                                         if key in self._asset.statistics:
                                                             return self._asset.statistics[key]
 
-                                                    raise KeyError(f"'{key}' not found in {type(self._asset).__name__}")
+                                                    raise KeyError(
+                                                        f"'{key}' not found in {type(self._asset).__name__}",
+                                                    )
 
                                                 def __contains__(self, key):
                                                     """Support 'in' operator."""
@@ -635,7 +671,10 @@ class LocalOrchestrator(Orchestrator):
                     else:
                         # It's a function, try to find existing Step in pipeline.steps
                         # or check if any step has this function
-                        step_obj = next((s for s in pipeline.steps if s.func == selected_step), None)
+                        step_obj = next(
+                            (s for s in pipeline.steps if s.func == selected_step),
+                            None,
+                        )
 
                         # If step not found in pipeline.steps, it's a conditional step - create Step object on the fly
                         if step_obj is None:
@@ -770,7 +809,10 @@ class LocalOrchestrator(Orchestrator):
                 except Exception as e:
                     import warnings
 
-                    warnings.warn(f"Failed to save checkpoint for conditional step {step.name}: {e}", stacklevel=2)
+                    warnings.warn(
+                        f"Failed to save checkpoint for conditional step {step.name}: {e}",
+                        stacklevel=2,
+                    )
 
         # Check for control flows that need to be evaluated after conditional step
         self._evaluate_control_flows(pipeline, step_result, step_outputs, result, run_id)
@@ -788,9 +830,11 @@ class LocalOrchestrator(Orchestrator):
         # Normalize outputs
         if len(step_def.outputs) == 1:
             outputs_to_process[step_def.outputs[0]] = step_result.output
-        elif isinstance(step_result.output, (list, tuple)) and len(step_result.output) == len(step_def.outputs):
-            for name, val in zip(step_def.outputs, step_result.output, strict=False):
-                outputs_to_process[name] = val
+        elif isinstance(step_result.output, (list, tuple)) and len(step_result.output) == len(
+            step_def.outputs,
+        ):
+            for out_name, val in zip(step_def.outputs, step_result.output, strict=False):
+                outputs_to_process[out_name] = val
         elif isinstance(step_result.output, dict):
             for name in step_def.outputs:
                 if name in step_result.output:

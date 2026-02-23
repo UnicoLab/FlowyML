@@ -59,7 +59,13 @@ class GPUConfig:
             New GPUConfig with merged specifications
         """
         # Prefer A100 > V100 > T4 > other, or just take first if unknown
-        gpu_hierarchy = ["nvidia-a100", "nvidia-tesla-a100", "nvidia-tesla-v100", "nvidia-v100", "nvidia-t4"]
+        gpu_hierarchy = [
+            "nvidia-a100",
+            "nvidia-tesla-a100",
+            "nvidia-tesla-v100",
+            "nvidia-v100",
+            "nvidia-t4",
+        ]
 
         best_type = self.gpu_type
         for gpu_type in gpu_hierarchy:

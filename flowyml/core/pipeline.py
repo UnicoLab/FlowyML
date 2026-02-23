@@ -977,7 +977,9 @@ class Pipeline:
                             self.metadata_store.save_metric(result.run_id, k, float(v))
 
                 # Case 2: Tuple/List output matching output names
-                elif isinstance(step_result.output, (list, tuple)) and len(output_names) == len(step_result.output):
+                elif isinstance(step_result.output, (list, tuple)) and len(output_names) == len(
+                    step_result.output,
+                ):
                     for name, val in zip(output_names, step_result.output, strict=False):
                         outputs_to_save[name] = val
 

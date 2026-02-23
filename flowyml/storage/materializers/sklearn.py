@@ -100,10 +100,14 @@ else:
         """Placeholder materializer when scikit-learn is not installed."""
 
         def save(self, obj: Any, path: Path) -> None:
-            raise ImportError("Scikit-learn is not installed. Install with: pip install scikit-learn")
+            raise ImportError(
+                "Scikit-learn is not installed. Install with: pip install scikit-learn",
+            )
 
         def load(self, path: Path) -> Any:
-            raise ImportError("Scikit-learn is not installed. Install with: pip install scikit-learn")
+            raise ImportError(
+                "Scikit-learn is not installed. Install with: pip install scikit-learn",
+            )
 
         @classmethod
         def supported_types(cls) -> list[type]:

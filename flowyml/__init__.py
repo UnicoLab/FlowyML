@@ -15,7 +15,12 @@ from flowyml.core.pipeline import Pipeline
 from flowyml.core.executor import Executor, LocalExecutor
 from flowyml.core.cache import CacheStrategy
 from flowyml.core.conditional import Condition, ConditionalBranch, Switch, when, unless, If
-from flowyml.core.parallel import ParallelExecutor, DataParallelExecutor, BatchExecutor, parallel_map
+from flowyml.core.parallel import (
+    ParallelExecutor,
+    DataParallelExecutor,
+    BatchExecutor,
+    parallel_map,
+)
 from flowyml.core.error_handling import (
     CircuitBreaker,
     ExponentialBackoff,

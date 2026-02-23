@@ -2,9 +2,19 @@
 
 from flowyml.stacks.base import Stack, StackConfig
 from flowyml.stacks.local import LocalStack
-from flowyml.stacks.gcp import GCPStack, VertexAIOrchestrator, GCSArtifactStore, GCRContainerRegistry
+from flowyml.stacks.gcp import (
+    GCPStack,
+    VertexAIOrchestrator,
+    GCSArtifactStore,
+    GCRContainerRegistry,
+)
 from flowyml.stacks.aws import AWSStack, AWSBatchOrchestrator, S3ArtifactStore, ECRContainerRegistry
-from flowyml.stacks.azure import AzureMLStack, AzureMLOrchestrator, AzureBlobArtifactStore, ACRContainerRegistry
+from flowyml.stacks.azure import (
+    AzureMLStack,
+    AzureMLOrchestrator,
+    AzureBlobArtifactStore,
+    ACRContainerRegistry,
+)
 from flowyml.stacks.components import (
     ResourceConfig,
     DockerConfig,

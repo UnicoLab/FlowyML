@@ -29,7 +29,13 @@ def eval_cli():
 @click.option("--experiment", "-e", default=None, help="Experiment name for tracking")
 @click.option("--threshold", "-t", type=float, default=None, help="Pass/fail threshold")
 @click.option("--output", "-o", default=None, help="Output file for results (JSON)")
-@click.option("--format", "fmt", type=click.Choice(["table", "json", "summary"]), default="table", help="Output format")
+@click.option(
+    "--format",
+    "fmt",
+    type=click.Choice(["table", "json", "summary"]),
+    default="table",
+    help="Output format",
+)
 def run_eval(data, scorers, experiment, threshold, output, fmt):
     """Run evaluations on a dataset with specified scorers.
 
@@ -103,7 +109,9 @@ def run_eval(data, scorers, experiment, threshold, output, fmt):
             status = "✅" if passed is True else ("❌" if passed is False else "—")
             click.echo(f"  {name:<25} {value:>10.4f} {status:>8}")
         click.echo(f"{'─' * 60}")
-        click.echo(f"  Overall: {'✅ PASSED' if result.passed else '❌ FAILED'}  |  Pass Rate: {result.pass_rate:.1%}")
+        click.echo(
+            f"  Overall: {'✅ PASSED' if result.passed else '❌ FAILED'}  |  Pass Rate: {result.pass_rate:.1%}",
+        )
         click.echo(f"{'─' * 60}")
 
     # Save output
@@ -218,7 +226,9 @@ def compare_evals(eval_ids, threshold):
             metrics_b = runs[1].get("metrics", {})
             all_metrics = set(metrics_a.keys()) | set(metrics_b.keys())
 
-            click.echo(f"  {'Metric':<20} {eval_ids[0][:8]:>10} {eval_ids[1][:8]:>10} {'Delta':>10} {'Status':>8}")
+            click.echo(
+                f"  {'Metric':<20} {eval_ids[0][:8]:>10} {eval_ids[1][:8]:>10} {'Delta':>10} {'Status':>8}",
+            )
             click.echo(f"  {'─' * 60}")
 
             for metric in sorted(all_metrics):
@@ -227,7 +237,9 @@ def compare_evals(eval_ids, threshold):
                 if isinstance(val_a, (int, float)) and isinstance(val_b, (int, float)):
                     delta = val_a - val_b
                     status = "⬆️" if delta > threshold else ("⬇️" if delta < -threshold else "➡️")
-                    click.echo(f"  {metric:<20} {val_a:>10.4f} {val_b:>10.4f} {delta:>+10.4f} {status}")
+                    click.echo(
+                        f"  {metric:<20} {val_a:>10.4f} {val_b:>10.4f} {delta:>+10.4f} {status}",
+                    )
                 else:
                     click.echo(f"  {metric:<20} {str(val_a):>10} {str(val_b):>10}")
 
@@ -238,7 +250,12 @@ def compare_evals(eval_ids, threshold):
 
 
 @eval_cli.command("scorers")
-@click.option("--type", "scorer_type", default=None, help="Filter by type (classification, regression, genai)")
+@click.option(
+    "--type",
+    "scorer_type",
+    default=None,
+    help="Filter by type (classification, regression, genai)",
+)
 def list_available_scorers(scorer_type):
     """List all available scorers.
 
@@ -268,8 +285,18 @@ def list_available_scorers(scorer_type):
 @eval_cli.command("assert")
 @click.option("--data", "-d", required=True, help="Path to evaluation data")
 @click.option("--scorers", "-s", multiple=True, required=True, help="Scorer names")
-@click.option("--min-score", type=(str, float), multiple=True, help="Min score assertion: --min-score accuracy 0.9")
-@click.option("--max-score", type=(str, float), multiple=True, help="Max score assertion: --max-score toxicity 0.3")
+@click.option(
+    "--min-score",
+    type=(str, float),
+    multiple=True,
+    help="Min score assertion: --min-score accuracy 0.9",
+)
+@click.option(
+    "--max-score",
+    type=(str, float),
+    multiple=True,
+    help="Max score assertion: --max-score toxicity 0.3",
+)
 @click.option("--pass-rate", type=float, default=None, help="Min pass rate (0.0-1.0)")
 @click.option("--fail-on-error", is_flag=True, help="Exit with code 1 on assertion failure")
 def assert_eval(data, scorers, min_score, max_score, pass_rate, fail_on_error):

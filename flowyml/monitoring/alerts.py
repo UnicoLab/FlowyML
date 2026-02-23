@@ -43,7 +43,13 @@ class AlertManager:
     def add_handler(self, handler: AlertHandler) -> None:
         self.handlers.append(handler)
 
-    def send_alert(self, title: str, message: str, level: AlertLevel = AlertLevel.INFO, metadata: dict = None) -> None:
+    def send_alert(
+        self,
+        title: str,
+        message: str,
+        level: AlertLevel = AlertLevel.INFO,
+        metadata: dict = None,
+    ) -> None:
         alert = Alert(title=title, message=message, level=level, metadata=metadata)
         self.history.append(alert)
         for handler in self.handlers:

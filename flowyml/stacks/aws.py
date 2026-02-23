@@ -125,7 +125,10 @@ class ECRContainerRegistry(ContainerRegistry):
         token = base64.b64decode(data["authorizationToken"]).decode()
         username, password = token.split(":")
         endpoint = data["proxyEndpoint"]
-        subprocess.run(["docker", "login", "--username", username, "--password", password, endpoint], check=True)
+        subprocess.run(
+            ["docker", "login", "--username", username, "--password", password, endpoint],
+            check=True,
+        )
 
     def push_image(self, image_name: str, tag: str = "latest") -> str:
         full_uri = self.get_image_uri(image_name, tag)
@@ -406,7 +409,9 @@ class SageMakerOrchestrator(RemoteOrchestrator):
         client = self._client()
         training_image = docker_config.image if docker_config and docker_config.image else kwargs.get("training_image")
         if not training_image:
-            raise ValueError("A Docker image must be provided via DockerConfig for SageMaker training.")
+            raise ValueError(
+                "A Docker image must be provided via DockerConfig for SageMaker training.",
+            )
 
         instance_type = (
             kwargs.get("instance_type") or (resources.machine_type if resources else None) or self.default_instance_type
@@ -647,10 +652,18 @@ class AWSStack(Stack):
         if orchestrator_type == "sagemaker":
             orchestrator = SageMakerOrchestrator(region=region, role_arn=role_arn)
         else:
-            orchestrator = AWSBatchOrchestrator(region=region, job_queue=job_queue, job_definition=job_definition)
+            orchestrator = AWSBatchOrchestrator(
+                region=region,
+                job_queue=job_queue,
+                job_definition=job_definition,
+            )
 
         artifact_store = S3ArtifactStore(bucket_name=bucket_name, region=region)
-        container_registry = ECRContainerRegistry(account_id=account_id, region=region, registry_alias=registry_alias)
+        container_registry = ECRContainerRegistry(
+            account_id=account_id,
+            region=region,
+            registry_alias=registry_alias,
+        )
 
         if metadata_store is None:
             metadata_store = SQLiteMetadataStore()

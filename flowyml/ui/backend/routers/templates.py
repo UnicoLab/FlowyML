@@ -64,7 +64,10 @@ class InstantiateRequest(BaseModel):
     """Request model for instantiating a template."""
 
     name: str = Field(..., description="Name for the new pipeline")
-    overrides: dict = Field(default_factory=dict, description="Override values for template variables")
+    overrides: dict = Field(
+        default_factory=dict,
+        description="Override values for template variables",
+    )
 
 
 class InstantiateResponse(BaseModel):
@@ -265,7 +268,10 @@ async def delete_template(template_id: str) -> None:
 
 
 @router.post("/{template_id}/instantiate", response_model=InstantiateResponse)
-async def instantiate_template(template_id: str, request: InstantiateRequest) -> InstantiateResponse:
+async def instantiate_template(
+    template_id: str,
+    request: InstantiateRequest,
+) -> InstantiateResponse:
     """Create a new pipeline from a template.
 
     This endpoint takes a template and instantiates it with the provided

@@ -85,7 +85,11 @@ class TestFeatureIntegration(unittest.TestCase):
         """Test pipeline with both checkpointing and caching."""
         ctx = context(learning_rate=0.001)
         ctx = context(learning_rate=0.001)
-        pipeline = Pipeline("test_checkpoint_cache", context=ctx, cache_dir=os.path.join(self.test_dir, "cache"))
+        pipeline = Pipeline(
+            "test_checkpoint_cache",
+            context=ctx,
+            cache_dir=os.path.join(self.test_dir, "cache"),
+        )
 
         checkpoint = PipelineCheckpoint(run_id="test_run", checkpoint_dir=self.test_dir)
         cache = ContentBasedCache(cache_dir=os.path.join(self.test_dir, "cache"))

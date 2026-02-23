@@ -47,7 +47,12 @@ def _dedupe_assets(assets):
 
 
 @router.get("/")
-async def list_assets(limit: int = 50, asset_type: str = None, run_id: str = None, project: str = None):
+async def list_assets(
+    limit: int = 50,
+    asset_type: str = None,
+    run_id: str = None,
+    project: str = None,
+):
     """List all assets, optionally filtered by project."""
     try:
         combined = []
@@ -142,7 +147,10 @@ async def upload_asset_content(artifact_id: str, file: UploadFile = File(...)):
         existing = store.load_artifact(artifact_id)
 
         if not existing:
-            raise HTTPException(status_code=404, detail="Artifact metadata not found. Create metadata first.")
+            raise HTTPException(
+                status_code=404,
+                detail="Artifact metadata not found. Create metadata first.",
+            )
 
         # Determine storage path
         # We use the LocalArtifactStore logic here since the backend is running locally relative to itself

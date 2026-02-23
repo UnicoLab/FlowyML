@@ -24,7 +24,12 @@ def get_console() -> Console | None:
     return Console() if RICH_AVAILABLE else None
 
 
-def print_rich_table(title: str, headers: list[str], rows: list[list[str]], console: Console | None = None) -> None:
+def print_rich_table(
+    title: str,
+    headers: list[str],
+    rows: list[list[str]],
+    console: Console | None = None,
+) -> None:
     """Print a rich table with fallback to simple output."""
     if not console:
         console = get_console()
@@ -53,7 +58,12 @@ def print_rich_table(title: str, headers: list[str], rows: list[list[str]], cons
         print()
 
 
-def print_rich_panel(content: str, title: str = "", style: str = "cyan", console: Console | None = None) -> None:
+def print_rich_panel(
+    content: str,
+    title: str = "",
+    style: str = "cyan",
+    console: Console | None = None,
+) -> None:
     """Print a rich panel with fallback to simple output."""
     if not console:
         console = get_console()

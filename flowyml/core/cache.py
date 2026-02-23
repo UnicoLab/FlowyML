@@ -111,7 +111,14 @@ class CacheStore:
             self.misses += 1
             return None
 
-    def set_value(self, key: str, value: Any, step_name: str, code_hash: str, input_hash: str | None = None) -> None:
+    def set_value(
+        self,
+        key: str,
+        value: Any,
+        step_name: str,
+        code_hash: str,
+        input_hash: str | None = None,
+    ) -> None:
         """Store value in cache.
 
         Args:

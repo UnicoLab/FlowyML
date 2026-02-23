@@ -237,7 +237,9 @@ async def get_available_models() -> list[dict]:
                     "run_id": a.get("run_id"),
                     "project": a.get("project"),
                     "has_file": bool(a.get("path")),
-                    "file_exists": os.path.exists(os.path.join("/app/artifacts", a.get("path") or ""))
+                    "file_exists": os.path.exists(
+                        os.path.join("/app/artifacts", a.get("path") or ""),
+                    )
                     if a.get("path")
                     else False,
                     "path": a.get("path"),

@@ -273,7 +273,9 @@ def promote_model(model_name: str, version: str, to_stage: str) -> None:
             console.print(content)
             console.print(table)
         else:
-            click.echo(f"✅ {stage_icon} Model '{model_name}' version '{version}' promoted to {to_stage}")
+            click.echo(
+                f"✅ {stage_icon} Model '{model_name}' version '{version}' promoted to {to_stage}",
+            )
             click.echo(f"   Previous stage: {model_version.stage.value}")
             click.echo(f"   New stage: {updated_version.stage.value}")
 

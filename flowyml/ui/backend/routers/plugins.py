@@ -196,7 +196,10 @@ async def install_plugin(request: InstallRequest):
     try:
         success = registry.install_plugin(request.plugin_id)
         if success:
-            return {"success": True, "message": f"Plugin {request.plugin_id} installed successfully"}
+            return {
+                "success": True,
+                "message": f"Plugin {request.plugin_id} installed successfully",
+            }
         else:
             raise HTTPException(status_code=500, detail="Installation failed")
     except Exception as e:

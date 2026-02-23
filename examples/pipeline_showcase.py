@@ -46,7 +46,10 @@ def process_features(raw_data: Dataset):
     print("🧹 Cleaning and transforming features...")
     time.sleep(1.5)
     return Dataset.create(
-        data={"features": np.random.randn(1000, 10).tolist(), "labels": np.random.randint(0, 2, 1000).tolist()},
+        data={
+            "features": np.random.randn(1000, 10).tolist(),
+            "labels": np.random.randint(0, 2, 1000).tolist(),
+        },
         name="processed_features",
     )
 

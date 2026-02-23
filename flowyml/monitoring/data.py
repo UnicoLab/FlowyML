@@ -66,7 +66,9 @@ def calculate_psi(expected: np.ndarray, actual: np.ndarray, buckets: int = 10) -
         value = (e_perc - a_perc) * np.log(e_perc / a_perc)
         return value
 
-    psi_value = np.sum([sub_psi(expected_percents[i], actual_percents[i]) for i in range(0, len(expected_percents))])
+    psi_value = np.sum(
+        [sub_psi(expected_percents[i], actual_percents[i]) for i in range(0, len(expected_percents))],
+    )
 
     return psi_value
 

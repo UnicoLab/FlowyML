@@ -242,7 +242,11 @@ def get_run_url(run_id: str, host: str = "localhost", port: int | None = None) -
     return None
 
 
-def get_pipeline_url(pipeline_name: str, host: str = "localhost", port: int | None = None) -> str | None:
+def get_pipeline_url(
+    pipeline_name: str,
+    host: str = "localhost",
+    port: int | None = None,
+) -> str | None:
     """Get the URL to view a specific pipeline.
 
     Args:

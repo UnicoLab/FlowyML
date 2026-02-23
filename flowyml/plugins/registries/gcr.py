@@ -101,7 +101,13 @@ class GCRRegistry(ContainerRegistryPlugin):
             if self._use_ar:
                 # Artifact Registry authentication
                 result = subprocess.run(
-                    ["gcloud", "auth", "configure-docker", f"{self._location}-docker.pkg.dev", "--quiet"],
+                    [
+                        "gcloud",
+                        "auth",
+                        "configure-docker",
+                        f"{self._location}-docker.pkg.dev",
+                        "--quiet",
+                    ],
                     capture_output=True,
                     text=True,
                 )

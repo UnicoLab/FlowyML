@@ -217,7 +217,9 @@ def init_project(name: str, template: str, directory: Path) -> None:
         directory: Directory to create project in
     """
     if template not in TEMPLATES:
-        raise ValueError(f"Unknown template: {template}. Choose from: {', '.join(TEMPLATES.keys())}")
+        raise ValueError(
+            f"Unknown template: {template}. Choose from: {', '.join(TEMPLATES.keys())}",
+        )
 
     # Create project directory
     directory.mkdir(parents=True, exist_ok=True)

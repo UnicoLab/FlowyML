@@ -160,7 +160,13 @@ class RemoteMetadataStore(MetadataStore):
             return [m for m in metrics if m["name"] == name]
         return metrics
 
-    def save_experiment(self, experiment_id: str, name: str, description: str = "", tags: dict = None) -> None:
+    def save_experiment(
+        self,
+        experiment_id: str,
+        name: str,
+        description: str = "",
+        tags: dict = None,
+    ) -> None:
         """Save experiment metadata."""
         url = self._url("experiments/")
         payload = {
@@ -289,7 +295,12 @@ class RemoteMetadataStore(MetadataStore):
 class RemoteArtifactStore(ArtifactStore):
     """Remote artifact storage using FlowyML API."""
 
-    def __init__(self, api_url: str, local_cache_dir: str = ".flowyml/cache/artifacts", api_token: str | None = None):
+    def __init__(
+        self,
+        api_url: str,
+        local_cache_dir: str = ".flowyml/cache/artifacts",
+        api_token: str | None = None,
+    ):
         """Initialize remote artifact store.
 
         Args:
@@ -369,7 +380,14 @@ class RemoteArtifactStore(ArtifactStore):
             if tmp_path.exists():
                 tmp_path.unlink()
 
-    def materialize(self, obj: Any, name: str, run_id: str, step_name: str, project_name: str = "default") -> str:
+    def materialize(
+        self,
+        obj: Any,
+        name: str,
+        run_id: str,
+        step_name: str,
+        project_name: str = "default",
+    ) -> str:
         """Materialize artifact to remote storage.
 
         Uses registered materializers if available, otherwise falls back to cloudpickle.

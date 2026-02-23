@@ -118,7 +118,13 @@ class Precision(Scorer):
         sklearn_fn = _try_sklearn_metric("precision_score")
         if sklearn_fn:
             value = float(
-                sklearn_fn(tgts, preds, average=self.average, pos_label=self.pos_label, zero_division=0),
+                sklearn_fn(
+                    tgts,
+                    preds,
+                    average=self.average,
+                    pos_label=self.pos_label,
+                    zero_division=0,
+                ),
             )
         else:
             # Pure-Python binary precision
@@ -177,7 +183,13 @@ class Recall(Scorer):
         sklearn_fn = _try_sklearn_metric("recall_score")
         if sklearn_fn:
             value = float(
-                sklearn_fn(tgts, preds, average=self.average, pos_label=self.pos_label, zero_division=0),
+                sklearn_fn(
+                    tgts,
+                    preds,
+                    average=self.average,
+                    pos_label=self.pos_label,
+                    zero_division=0,
+                ),
             )
         else:
             tp = sum(p == self.pos_label and t == self.pos_label for p, t in zip(preds, tgts, strict=False))
@@ -235,7 +247,13 @@ class F1Score(Scorer):
         sklearn_fn = _try_sklearn_metric("f1_score")
         if sklearn_fn:
             value = float(
-                sklearn_fn(tgts, preds, average=self.average, pos_label=self.pos_label, zero_division=0),
+                sklearn_fn(
+                    tgts,
+                    preds,
+                    average=self.average,
+                    pos_label=self.pos_label,
+                    zero_division=0,
+                ),
             )
         else:
             # Pure-Python binary F1

@@ -16,7 +16,9 @@ class HookRegistry:
 
     # Pipeline-level hooks
     on_pipeline_start: list[Callable[["Pipeline"], None]] = field(default_factory=list)
-    on_pipeline_end: list[Callable[["Pipeline", "PipelineResult"], None]] = field(default_factory=list)
+    on_pipeline_end: list[Callable[["Pipeline", "PipelineResult"], None]] = field(
+        default_factory=list,
+    )
 
     # Step-level hooks
     on_step_start: list[Callable[["Step", dict[str, Any]], None]] = field(default_factory=list)
@@ -26,7 +28,10 @@ class HookRegistry:
         """Register a hook to run at pipeline start."""
         self.on_pipeline_start.append(hook)
 
-    def register_pipeline_end_hook(self, hook: Callable[["Pipeline", "PipelineResult"], None]) -> None:
+    def register_pipeline_end_hook(
+        self,
+        hook: Callable[["Pipeline", "PipelineResult"], None],
+    ) -> None:
         """Register a hook to run at pipeline end."""
         self.on_pipeline_end.append(hook)
 
@@ -94,13 +99,17 @@ def on_pipeline_end(
     return func
 
 
-def on_step_start(func: Callable[["Step", dict[str, Any]], None]) -> Callable[["Step", dict[str, Any]], None]:
+def on_step_start(
+    func: Callable[["Step", dict[str, Any]], None],
+) -> Callable[["Step", dict[str, Any]], None]:
     """Decorator to register a step start hook."""
     _global_hooks.register_step_start_hook(func)
     return func
 
 
-def on_step_end(func: Callable[["Step", "ExecutionResult"], None]) -> Callable[["Step", "ExecutionResult"], None]:
+def on_step_end(
+    func: Callable[["Step", "ExecutionResult"], None],
+) -> Callable[["Step", "ExecutionResult"], None]:
     """Decorator to register a step end hook."""
     _global_hooks.register_step_end_hook(func)
     return func

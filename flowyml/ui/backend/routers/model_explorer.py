@@ -446,7 +446,9 @@ def _generate_example_input(inputs: list[InputFieldSchema]) -> dict:
         elif field.type == "number":
             example[field.name] = (field.min_value or 0) + ((field.max_value or 100) - (field.min_value or 0)) / 2
         elif field.type == "integer":
-            example[field.name] = int((field.min_value or 0) + ((field.max_value or 100) - (field.min_value or 0)) / 2)
+            example[field.name] = int(
+                (field.min_value or 0) + ((field.max_value or 100) - (field.min_value or 0)) / 2,
+            )
         elif field.type == "string":
             example[field.name] = ""
         elif field.type == "boolean":

@@ -638,7 +638,9 @@ class LocalExecutor(Executor):
             if result.output is not None:
                 if len(step.outputs) == 1:
                     step_outputs[step.outputs[0]] = result.output
-                elif isinstance(result.output, (list, tuple)) and len(result.output) == len(step.outputs):
+                elif isinstance(result.output, (list, tuple)) and len(result.output) == len(
+                    step.outputs,
+                ):
                     for name, val in zip(step.outputs, result.output, strict=False):
                         step_outputs[name] = val
                 elif isinstance(result.output, dict):

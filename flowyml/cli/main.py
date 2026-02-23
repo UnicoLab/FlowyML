@@ -724,7 +724,9 @@ def go(host: str, port: int, open_browser: bool) -> None:
                 )
 
                 console.print()
-                console.print("[dim]Tip: The dashboard runs in the background. Your pipelines will[/dim]")
+                console.print(
+                    "[dim]Tip: The dashboard runs in the background. Your pipelines will[/dim]",
+                )
                 console.print("[dim]automatically show a clickable URL when they run.[/dim]")
             else:
                 click.echo("✅ flowyml is ready!")
@@ -825,7 +827,9 @@ def stop_server(host: str, port: int) -> None:
                 pid_file.unlink(missing_ok=True)
 
                 if rich_available:
-                    console.print(f"[green]✅ flowyml server (PID {pid}) stopped successfully.[/green]")
+                    console.print(
+                        f"[green]✅ flowyml server (PID {pid}) stopped successfully.[/green]",
+                    )
                 else:
                     click.echo(f"✅ flowyml server (PID {pid}) stopped successfully.")
                 return

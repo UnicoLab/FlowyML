@@ -43,7 +43,9 @@ class AzureBlobArtifactStore(ArtifactStore):
 
     def validate(self) -> bool:
         if not self.account_url or not self.container_name:
-            raise ValueError("account_url and container_name are required for AzureBlobArtifactStore")
+            raise ValueError(
+                "account_url and container_name are required for AzureBlobArtifactStore",
+            )
         try:
             client = self._client()
             container_client = client.get_container_client(self.container_name)
@@ -165,7 +167,9 @@ class AzureMLOrchestrator(RemoteOrchestrator):
         from azure.ai.ml import MLClient
         from azure.identity import DefaultAzureCredential
 
-        credential = self.credential or DefaultAzureCredential(exclude_shared_token_cache_credential=True)
+        credential = self.credential or DefaultAzureCredential(
+            exclude_shared_token_cache_credential=True,
+        )
         return MLClient(
             credential,
             subscription_id=self.subscription_id,
@@ -259,8 +263,14 @@ class AzureMLStack(Stack):
             workspace_name=workspace_name,
             compute=compute,
         )
-        artifact_store = AzureBlobArtifactStore(account_url=account_url, container_name=container_name)
-        container_registry = ACRContainerRegistry(registry_name=registry_name, login_server=login_server)
+        artifact_store = AzureBlobArtifactStore(
+            account_url=account_url,
+            container_name=container_name,
+        )
+        container_registry = ACRContainerRegistry(
+            registry_name=registry_name,
+            login_server=login_server,
+        )
 
         if metadata_store is None:
             metadata_store = SQLiteMetadataStore()

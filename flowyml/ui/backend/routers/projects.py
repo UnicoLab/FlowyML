@@ -60,7 +60,10 @@ class ProjectCreate(BaseModel):
 
 
 @router.post("/")
-async def create_project(project: ProjectCreate, manager: ProjectManager = Depends(get_projects_manager)):
+async def create_project(
+    project: ProjectCreate,
+    manager: ProjectManager = Depends(get_projects_manager),
+):
     """Create a new project."""
     created_project = manager.create_project(project.name, project.description)
     return {
@@ -188,7 +191,10 @@ async def get_project_metrics(
 
 
 @router.delete("/{project_name}")
-async def delete_project(project_name: str, manager: ProjectManager = Depends(get_projects_manager)):
+async def delete_project(
+    project_name: str,
+    manager: ProjectManager = Depends(get_projects_manager),
+):
     """Delete a project."""
     manager.delete_project(project_name, confirm=True)
     return {"deleted": True}

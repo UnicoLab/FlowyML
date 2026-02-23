@@ -94,7 +94,11 @@ def test_prepare_image_with_registry_no_image(remote_stack, mocker):
     config = DockerConfig(image=None)
     # This should trigger the 'build' logic (mocked)
     # With project_name
-    result = remote_stack.prepare_docker_image(config, pipeline_name="mypipe", project_name="myproj")
+    result = remote_stack.prepare_docker_image(
+        config,
+        pipeline_name="mypipe",
+        project_name="myproj",
+    )
 
     # Expect: registry_uri/project-pipeline:latest
     # safe_name of myproj-mypipe is myproj-mypipe

@@ -55,7 +55,9 @@ class MLflowModelRegistry(ModelRegistryPlugin):
                 mlflow.set_registry_uri(self.registry_uri)
 
             self._client = MlflowClient(registry_uri=self.registry_uri)
-            logger.info(f"MLflow Model Registry initialized (URI: {self.registry_uri or 'default'})")
+            logger.info(
+                f"MLflow Model Registry initialized (URI: {self.registry_uri or 'default'})",
+            )
 
         except ImportError:
             raise ImportError(

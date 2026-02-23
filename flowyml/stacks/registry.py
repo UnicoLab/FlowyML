@@ -232,8 +232,14 @@ def get_active_stack() -> Stack | None:
         return Stack(
             name="remote_logging",
             executor=LocalExecutor(),
-            metadata_store=RemoteMetadataStore(api_url=config.remote_server_url, api_token=api_token),
-            artifact_store=RemoteArtifactStore(api_url=config.remote_server_url, api_token=api_token),
+            metadata_store=RemoteMetadataStore(
+                api_url=config.remote_server_url,
+                api_token=api_token,
+            ),
+            artifact_store=RemoteArtifactStore(
+                api_url=config.remote_server_url,
+                api_token=api_token,
+            ),
         )
 
     return get_registry().get_active_stack()
