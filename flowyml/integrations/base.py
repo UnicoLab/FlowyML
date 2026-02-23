@@ -106,9 +106,9 @@ class TraceSpan:
 
     event_id: str
     trace_id: str
-    parent_id: str | None
     event_type: str  # llm, chat_model, tool, chain, agent, retriever, graph_node, embedding, custom
     name: str
+    parent_id: str | None = None
     inputs: dict[str, Any] = field(default_factory=dict)
     outputs: dict[str, Any] | None = None
     start_time: float = field(default_factory=time.time)
@@ -1203,6 +1203,11 @@ class GenAISession:
 
         self.artifacts.extend(turn.artifacts)
 
+        # Auto-eval if evaluator is attached (must happen before aggregation)
+        if self._evaluator is not None:
+            with contextlib.suppress(Exception):
+                self._evaluator.evaluate_turn(turn)
+
         # Record eval scores at session level
         for ev in turn.eval_results:
             scorer = ev.get("scorer", "unknown")
@@ -1214,13 +1219,6 @@ class GenAISession:
         for cb in self._event_callbacks:
             with contextlib.suppress(Exception):
                 cb("turn_end", turn.to_dict())
-
-        # Auto-eval if evaluator is attached
-        if self._evaluator is not None:
-            try:
-                self._evaluator.evaluate_turn(turn)
-            except Exception as e:
-                logger.debug(f"Auto-eval failed: {e}")
 
     def add_eval(
         self,

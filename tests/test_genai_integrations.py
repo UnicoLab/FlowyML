@@ -694,7 +694,7 @@ class TestTurn:
             turn_index=1,
         )
         span1 = TraceSpan(
-            span_id="sp1",
+            event_id="sp1",
             trace_id="s1",
             event_type="llm",
             name="call1",
@@ -706,7 +706,7 @@ class TestTurn:
         span1.model = "gpt-4o-mini"
 
         span2 = TraceSpan(
-            span_id="sp2",
+            event_id="sp2",
             trace_id="s1",
             event_type="tool",
             name="search",
