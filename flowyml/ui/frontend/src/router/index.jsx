@@ -20,6 +20,9 @@ import { RunComparisonPage } from '../app/compare/page';
 import { ExperimentComparisonPage } from '../app/experiments/compare/page';
 import { DeploymentLab } from '../app/deployments/page';
 import { ModelExplorer } from '../app/model-explorer/page';
+import { Evaluations } from '../app/evaluations/page';
+import { EvaluationDetail } from '../app/evaluations/[evalId]/page';
+import { EvaluationCompare } from '../app/evaluations/compare/page';
 import { Login } from '../app/auth/Login';
 import { RequireAuth, AuthProvider } from '../contexts/AuthContext';
 import { Outlet } from 'react-router-dom';
@@ -54,6 +57,9 @@ export const router = createBrowserRouter([
                     { path: 'runs/:runId', element: <RunDetails /> },
                     { path: 'assets', element: <Assets /> },
                     { path: 'experiments', element: <Experiments /> },
+                    { path: 'evaluations', element: <Evaluations /> },
+                    { path: 'evaluations/compare', element: <EvaluationCompare /> },
+                    { path: 'evaluations/:evalId', element: <EvaluationDetail /> },
                     { path: 'experiments/compare', element: <ExperimentComparisonPage /> },
                     { path: 'experiments/:experimentId', element: <ExperimentDetails /> },
                     { path: 'traces', element: <Traces /> },

@@ -23,7 +23,8 @@ resource "google_project_service" "apis" {
     "secretmanager.googleapis.com",
     "artifactregistry.googleapis.com",
     "cloudbuild.googleapis.com",
-    "vpcaccess.googleapis.com"
+    "monitoring.googleapis.com",
+    "billingbudgets.googleapis.com"
   ])
   service            = each.key
   disable_on_destroy = false
@@ -42,14 +43,8 @@ resource "google_compute_subnetwork" "subnet" {
   network       = google_compute_network.vpc.id
 }
 
-# VPC Access Connector for Cloud Run to access Cloud SQL
-resource "google_vpc_access_connector" "connector" {
-  name          = "${var.app_name}-conn"
-  depends_on    = [google_project_service.apis]
-  region        = var.region
-  ip_cidr_range = "10.8.0.0/28"
-  network       = google_compute_network.vpc.id
-}
+# NOTE: VPC Access Connector removed — using Direct VPC Egress instead.
+# This eliminates the ~€6.41/mo Compute Engine MIG cost.
 
 # Private Service Access for Cloud SQL
 resource "google_compute_global_address" "private_ip" {
@@ -203,9 +198,13 @@ resource "google_cloud_run_v2_service" "app" {
   template {
     service_account = google_service_account.cloud_run_sa.email
 
+    # Direct VPC Egress — no Compute Engine connector needed (saves ~€6.41/mo)
     vpc_access {
-      connector = google_vpc_access_connector.connector.id
-      egress    = "PRIVATE_RANGES_ONLY"
+      network_interfaces {
+        network    = google_compute_network.vpc.name
+        subnetwork = google_compute_subnetwork.subnet.name
+      }
+      egress = "PRIVATE_RANGES_ONLY"
     }
 
     containers {
@@ -269,14 +268,30 @@ resource "google_cloud_run_v2_service" "app" {
       resources {
         limits = {
           cpu    = "1000m"
-          memory = "1Gi"
+          memory = "1Gi" # Python ML framework needs ≥1Gi to import dependencies
         }
+        cpu_idle          = true # Throttle CPU when no requests — huge cost savings
+        startup_cpu_boost = true # Temporary CPU boost during cold start
       }
 
       ports {
         container_port = 8080
       }
+
+      # Generous startup for Python ML cold starts
+      startup_probe {
+        http_get {
+          path = "/api/health"
+        }
+        initial_delay_seconds = 5
+        period_seconds        = 10
+        timeout_seconds       = 5
+        failure_threshold     = 12 # Up to 2 minutes to start
+      }
     }
+
+    # Longer timeout for ML app cold starts (default 300s)
+    timeout = "600s"
   }
 }
 

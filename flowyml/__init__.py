@@ -69,6 +69,46 @@ from flowyml.monitoring.notifications import (
 )
 from flowyml.integrations.keras import FlowymlKerasCallback
 
+# GenAI Observability Integrations (all optional dependencies)
+# -- Base layer (always available, no external deps) --
+from flowyml.integrations.base import (
+    BaseTracer,
+    TraceSession,
+    TraceSpan,
+    log_embedding_call,
+    log_llm_call,
+    log_tool_call,
+)
+from flowyml.integrations.base import observe as observe_genai
+from flowyml.integrations.base import trace as trace_genai
+from flowyml.integrations.generic import span
+
+import contextlib
+
+# -- LangGraph / LangChain (optional) --
+with contextlib.suppress(ImportError):
+    from flowyml.integrations.langgraph import (
+        FlowyMLCallbackHandler,
+        instrument as instrument_graph,
+        observe,
+        trace_graph,
+    )
+
+with contextlib.suppress(ImportError):
+    from flowyml.integrations.langchain import (
+        instrument_chain,
+        observe_chain,
+        trace_chain,
+    )
+
+# -- OpenAI (optional) --
+with contextlib.suppress(ImportError):
+    from flowyml.integrations.openai_integration import (
+        TracedOpenAI,
+        patch_openai,
+        trace_openai,
+    )
+
 # Advanced Features
 from flowyml.core.scheduler import PipelineScheduler
 from flowyml.core.approval import approval, ApprovalStep
@@ -100,6 +140,26 @@ from flowyml.utils.performance import (
     batch_iterator,
 )
 from flowyml.registry.pipeline_registry import pipeline_registry, register_pipeline
+
+# Evaluation Framework
+from flowyml.evals import (
+    evaluate,
+    evaluate_traces,
+    EvalResult,
+    EvalDataset,
+    EvalSuite,
+    EvalRun,
+    EvalAssert,
+    EvalStep,
+    EvalSchedule,
+    JudgeArena,
+    TraceBridge,
+    Scorer,
+    ScorerFeedback,
+    make_judge,
+    make_scorer,
+    get_scorer,
+)
 
 __all__ = [
     # Core
@@ -163,6 +223,28 @@ __all__ = [
     "detect_drift",
     "compute_stats",
     "FlowymlKerasCallback",
+    # GenAI Observability (base — always available)
+    "BaseTracer",
+    "TraceSession",
+    "TraceSpan",
+    "trace_genai",
+    "observe_genai",
+    "log_llm_call",
+    "log_tool_call",
+    "log_embedding_call",
+    "span",
+    # GenAI Observability (LangGraph/LangChain — optional)
+    "FlowyMLCallbackHandler",
+    "trace_graph",
+    "observe",
+    "instrument_graph",
+    "trace_chain",
+    "observe_chain",
+    "instrument_chain",
+    # GenAI Observability (OpenAI — optional)
+    "TracedOpenAI",
+    "patch_openai",
+    "trace_openai",
     # Advanced Features
     "PipelineScheduler",
     "approval",
@@ -208,4 +290,21 @@ __all__ = [
     # Registry
     "pipeline_registry",
     "register_pipeline",
+    # Evaluations
+    "evaluate",
+    "evaluate_traces",
+    "EvalResult",
+    "EvalDataset",
+    "EvalSuite",
+    "EvalRun",
+    "EvalAssert",
+    "EvalStep",
+    "EvalSchedule",
+    "JudgeArena",
+    "TraceBridge",
+    "Scorer",
+    "ScorerFeedback",
+    "make_judge",
+    "make_scorer",
+    "get_scorer",
 ]

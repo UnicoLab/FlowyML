@@ -30,6 +30,50 @@ result = generate_summary("Long text here...")
 
 ---
 
+### 1️⃣.5 🔗 **GenAI Observability** ⚡ NEW
+
+Full-stack GenAI observability for **any AI framework** — LangGraph, LangChain, OpenAI SDK, CrewAI, AutoGen, or custom code. Track every LLM call, tool invocation, chain execution, RAG pipeline, tokens, costs, artifacts, and errors with a single import.
+
+**4 Supported Frameworks:**
+
+```python
+# LangGraph — @observe() decorator, zero-config
+from flowyml import observe
+@observe(name="my_agent", project="chatbot")
+def handle_query(query, flowyml_session=None):
+    return graph.invoke(input, config=flowyml_session.config)
+
+# LangChain — trace_chain() for chains/runnables
+from flowyml.integrations.langchain import trace_chain
+with trace_chain("qa_chain") as session:
+    result = chain.invoke(input, config=session.config)
+
+# OpenAI SDK — drop-in replacement, no LangChain needed
+from flowyml import TracedOpenAI
+client = TracedOpenAI(project="my_app")
+response = client.chat.completions.create(model="gpt-4o-mini", messages=[...])
+
+# Any Framework — universal adapter
+from flowyml import log_llm_call
+log_llm_call(model="gpt-4o", prompt="Hello", response="Hi!", prompt_tokens=5, completion_tokens=2)
+```
+
+**What Gets Tracked Automatically:**
+- 🤖 Every LLM call (model, prompts, responses — saved as first-class artifacts)
+- 🔧 Every tool invocation (input, output, duration)
+- 🔗 Chain/graph node execution with parent-child hierarchy
+- 📚 RAG pipeline: retriever queries + retrieved documents as artifacts
+- 📊 Token usage (prompt + completion + total per call and session)
+- 💰 Cost estimation (OpenAI, Anthropic, Google, Mistral, Cohere models)
+- ⏱  Latency per step and total session duration
+- 📦 Artifacts: prompts, responses, documents, configs — all first-class citizens
+- 🎨 Canvas-ready DAG: full trace tree for FlowyML canvas visualization
+- ❌ Error tracking with full context
+- 🏷  Model identification, tagging, and multi-model sessions
+- 🔍 View everything in FlowyML UI at `/api/traces`
+
+---
+
 ### 2️⃣ **Keras Integration**
 
 Automatic experiment tracking for Keras models:
@@ -295,6 +339,44 @@ approval_step = approval(
 
 pipeline.add_step(approval_step)
 ```
+
+---
+
+### 🔟 **Evaluations Framework** ⚡NEW
+
+Evaluate ML models and LLM outputs with 17 built-in scorers:
+
+```python
+from flowyml.evals import evaluate, EvalDataset, Accuracy, F1Score, EvalSuite
+
+# Quick evaluation
+data = EvalDataset.create_classical(
+    "model_v2", predictions=[1, 0, 1, 1], targets=[1, 0, 0, 1]
+)
+result = evaluate(data=data, scorers=[Accuracy(threshold=0.9), F1Score()])
+
+# Reusable suite
+suite = EvalSuite("quality_gates", scorers=[Accuracy(), F1Score()])
+result = suite.run(data=data, experiment="model_v2")
+
+# GenAI (LLM-as-a-judge)
+from flowyml.evals import Relevance, make_judge
+
+judge = make_judge("quality", "Evaluate response accuracy", model="openai:/gpt-4o-mini")
+result = evaluate(data=genai_data, scorers=[Relevance(), judge])
+```
+
+**Features:**
+- 17 built-in scorers (classification, regression, GenAI)
+- Custom scorers via `make_judge()` and `make_scorer()`
+- Automatic regression detection
+- CI/CD quality gates (`EvalAssert`)
+- Pipeline-native evaluations (`EvalStep`)
+- Judge Arena (A/B test evaluators)
+- Continuous evaluation via schedules
+- Trace-to-evaluation bridge
+- Full CLI: `flowyml eval run/compare/assert/scorers`
+- See full guide: [`docs/evaluations.md`](evaluations.md)
 
 ---
 

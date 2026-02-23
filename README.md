@@ -82,6 +82,16 @@ Group consecutive steps to run in the same container. Perfect for reducing overh
 ### 4. 📊 Built-in Observability
 Beautiful dark-mode dashboard to monitor pipelines, visualize DAGs, and inspect artifacts in real-time.
 
+### 5. 🎯 Evaluations Framework
+Production-grade evaluation system with 29+ scorers — classification, regression, GenAI (LLM-as-a-judge), and adapters for **DeepEval**, **RAGAS**, and **Phoenix**:
+```python
+from flowyml.evals import evaluate, EvalDataset, get_scorer
+
+data = EvalDataset.create_genai("my_test", examples=[...])
+result = evaluate(data=data, scorers=[get_scorer("relevance"), get_scorer("ragas.faithfulness")])
+result.notify_if_regression(threshold=0.05)
+```
+
 ---
 
 ## 📦 Installation

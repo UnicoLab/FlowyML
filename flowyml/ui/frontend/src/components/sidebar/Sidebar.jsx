@@ -17,7 +17,8 @@ import {
     Menu,
     Activity,
     Rocket,
-    Microscope
+    Microscope,
+    ClipboardCheck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -43,6 +44,7 @@ const NAV_GROUPS = [
         items: [
             { icon: Trophy, label: 'Leaderboard', path: '/leaderboard' },
             { icon: FlaskConical, label: 'Experiments', path: '/experiments' },
+            { icon: ClipboardCheck, label: 'Evaluations', path: '/evaluations' },
             { icon: Microscope, label: 'Model Explorer', path: '/model-explorer' },
         ],
     },

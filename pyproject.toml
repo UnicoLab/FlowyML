@@ -58,6 +58,9 @@ boto3 = {version = ">=1.28", optional = true}
 sagemaker = {version = ">=2.100", optional = true}
 mlflow = {version = ">=2.0", optional = true}
 wandb = {version = ">=0.15", optional = true}
+langchain-core = {version = ">=0.2.0", optional = true}
+langgraph = {version = ">=0.2.0", optional = true}
+openai = {version = ">=1.0.0", optional = true}
 opentelemetry-api = "^1.39.1"
 opentelemetry-sdk = "^1.39.1"
 opentelemetry-instrumentation-fastapi = "^0.60b1"
@@ -109,6 +112,11 @@ azure = ["azure-ai-ml", "azure-identity", "azure-storage-blob"]
 ui = ["fastapi", "uvicorn", "websockets", "python-multipart"]
 # Rich display for beautiful CLI output
 rich = ["rich"]
+# GenAI integration extras
+langchain = ["langchain-core"]
+langgraph = ["langgraph", "langchain-core"]
+openai = ["openai"]
+genai = ["langgraph", "langchain-core", "openai"]
 all = [
     "torch",
     "tensorflow",
@@ -124,6 +132,10 @@ all = [
     "uvicorn",
     "websockets",
     "python-multipart",
+    # GenAI
+    "langgraph",
+    "langchain-core",
+    "openai",
 ]
 
 [tool.poetry.scripts]

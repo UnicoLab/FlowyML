@@ -44,6 +44,9 @@ class PluginType(Enum):
     # Deployment
     MODEL_DEPLOYER = "model_deployer"
 
+    # Evaluations
+    EVALUATOR = "evaluator"
+
     # Other
     CUSTOM = "custom"
 

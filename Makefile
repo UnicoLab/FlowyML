@@ -377,6 +377,14 @@ gcp-auth-check: check-gcp-project
 	fi
 	@echo "✅ GCP authentication OK (project: $(GCP_PROJECT))"
 
+# Full GCP login (opens browser — use when auth is expired)
+gcp-login: check-gcp-project
+	@echo "🔑 Authenticating with GCP (opens browser)..."
+	gcloud auth login
+	gcloud auth application-default login
+	gcloud config set project $(GCP_PROJECT)
+	@echo "✅ Authenticated. You can now run deployment commands."
+
 # Build Unified Docker Image
 gcp-build: check-gcp-project
 	@echo "🏗️  Building Docker image for GCP..."
@@ -428,7 +436,7 @@ gcp-infra-down: gcp-auth-check
 	fi
 
 # Deployment Status
-gcp-status:
+gcp-status: gcp-auth-check
 	@echo ""
 	@echo "╔══════════════════════════════════════════════════════════════════════╗"
 	@echo "║                   🚀 FLOWYML GCP STATUS                               ║"
@@ -446,7 +454,7 @@ gcp-status:
 	@echo ""
 
 # Logs
-gcp-logs:
+gcp-logs: gcp-auth-check
 	@echo "📜 Streaming Cloud Run logs (Ctrl+C to exit)..."
 	gcloud run services logs read $(GCP_SERVICE) --region $(GCP_REGION) --limit 100
 
@@ -478,3 +486,45 @@ docker-push-aws: ## Build and push images to ECR
 	docker push $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/flowyml-frontend:$(IMAGE_TAG)
 
 deploy-aws: docker-push-aws infra-init-aws infra-apply-aws ## Full deployment to AWS
+
+# =============================================================================
+# Cost & Traffic Audit
+# =============================================================================
+
+flowyml-traffic-audit: gcp-auth-check ## 🔍 Audit who's calling the service
+	@echo "🔍 FlowyML Traffic Audit (last 7 days)..."
+	@echo ""
+	@echo "═══ Top Callers by IP ═══"
+	@gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="$(GCP_SERVICE)"' \
+		--project=$(GCP_PROJECT) --limit=500 \
+		--format='value(httpRequest.remoteIp)' 2>/dev/null | sort | uniq -c | sort -rn | head -20
+	@echo ""
+	@echo "═══ Top Paths ═══"
+	@gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="$(GCP_SERVICE)"' \
+		--project=$(GCP_PROJECT) --limit=500 \
+		--format='value(httpRequest.requestUrl)' 2>/dev/null | sort | uniq -c | sort -rn | head -20
+	@echo ""
+	@echo "═══ Top User Agents ═══"
+	@gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="$(GCP_SERVICE)"' \
+		--project=$(GCP_PROJECT) --limit=500 \
+		--format='value(httpRequest.userAgent)' 2>/dev/null | sort | uniq -c | sort -rn | head -10
+	@echo ""
+	@echo "═══ Recent Requests (last 20) ═══"
+	@gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="$(GCP_SERVICE)"' \
+		--project=$(GCP_PROJECT) --limit=20 \
+		--format='table(timestamp,httpRequest.requestMethod,httpRequest.requestUrl,httpRequest.status,httpRequest.remoteIp)' 2>/dev/null
+
+flowyml-cost-report: gcp-auth-check ## 💰 Show Cloud Run cost-relevant info
+	@echo "💰 FlowyML Cost Report..."
+	@echo ""
+	@echo "═══ Cloud Run Instance Status ═══"
+	@gcloud run services describe $(GCP_SERVICE) --region $(GCP_REGION) \
+		--format='table(spec.template.spec.containerConcurrency,spec.template.metadata.annotations)' 2>/dev/null
+	@echo ""
+	@echo "═══ Active Revisions ═══"
+	@gcloud run revisions list --service $(GCP_SERVICE) --region $(GCP_REGION) \
+		--format='table(name,active,scaling.minInstanceCount,scaling.maxInstanceCount)' --limit=5 2>/dev/null
+
+cost-audit: gcp-auth-check ## 📊 Full GCP cost audit (copy to AI context)
+	@chmod +x scripts/cost-audit.sh
+	@GCP_PROJECT=$(GCP_PROJECT) GCP_REGION=$(GCP_REGION) GCP_SERVICE=$(GCP_SERVICE) scripts/cost-audit.sh

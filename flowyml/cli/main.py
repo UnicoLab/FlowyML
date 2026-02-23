@@ -11,6 +11,7 @@ from flowyml.cli.models import (
     show_model,
     delete_model,
 )
+from flowyml.cli.evals import eval_cli
 
 
 @click.group()
@@ -486,6 +487,10 @@ models.add_command(list_models)
 models.add_command(promote_model)
 models.add_command(show_model)
 models.add_command(delete_model)
+
+# Register evaluation commands
+
+cli.add_command(eval_cli)
 
 
 @cli.group()
