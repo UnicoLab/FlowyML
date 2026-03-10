@@ -29,6 +29,9 @@
 | **Asset Management** | 📦 **First-Class Assets** - Models & Datasets with lineage. | 📁 Generic file paths only. |
 | **Multi-Stack** | 🌍 **Abstract Infra** - Switch local/prod with one env var. | 🔒 Vendor lock-in or complex setup. |
 | **GenAI Ready** | 🤖 **LLM Tracing** - Built-in token & cost tracking. | 🧩 Requires external tools. |
+| **Build-Time Validation** | ✅ **Type Safety** - Catches mismatches at build time. | 💥 Runtime errors only. |
+| **Map Tasks** | 🗺️ **Parallel Maps** - `@map_task` with retries & concurrency. | 🔁 Manual parallelism boilerplate. |
+| **Dynamic Workflows** | 🔀 **Runtime DAGs** - Generate pipelines based on data. | 📐 Static definitions only. |
 
 ---
 
@@ -90,6 +93,33 @@ from flowyml.evals import evaluate, EvalDataset, get_scorer
 data = EvalDataset.create_genai("my_test", examples=[...])
 result = evaluate(data=data, scorers=[get_scorer("relevance"), get_scorer("ragas.faithfulness")])
 result.notify_if_regression(threshold=0.05)
+```
+
+### 6. 🗺️ Map Tasks & Dynamic Workflows
+Distribute work over collections with `@map_task` and generate pipelines at runtime with `@dynamic`:
+```python
+from flowyml import map_task, dynamic
+
+@map_task(concurrency=8, retries=2, min_success_ratio=0.95)
+def process_document(doc: dict) -> dict:
+    return transform(doc)
+
+@dynamic(outputs=["best_model"])
+def hyperparameter_search(config: dict):
+    sub = Pipeline("hp_search")
+    for lr in config["learning_rates"]:
+        sub.add_step(train_with_lr(lr))
+    return sub
+```
+
+### 7. 📦 Artifact Catalog with Lineage
+Centralized artifact discovery, tagging, and lineage tracking — works local and remote:
+```python
+from flowyml import ArtifactCatalog
+
+catalog = ArtifactCatalog()  # Auto-selects local SQLite or remote API
+catalog.register(name="classifier", artifact_type="Model", parent_ids=[dataset_id])
+lineage = catalog.get_lineage(model_id)  # Full parent→child graph
 ```
 
 ---

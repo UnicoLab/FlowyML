@@ -197,3 +197,63 @@ The flowyml UI provides a dedicated **Experiments** view where you can:
 - Compare side-by-side details of selected runs
 
 Access it at `http://localhost:8080/experiments` when the UI is running.
+
+---
+
+## 🔁 Selective Re-Execution ⚡NEW
+
+Resume pipelines from a specific point, re-using cached results from previous steps.
+
+### Automatic Resume
+
+When checkpointing is enabled (default), FlowyML automatically detects completed steps and skips them on retry:
+
+```python
+pipeline = Pipeline("training")  # Checkpointing enabled by default
+pipeline.add_step(load_data)      # ✅ Already completed → skipped
+pipeline.add_step(preprocess)     # ✅ Already completed → skipped
+pipeline.add_step(train_model)    # ❌ Failed last time → re-executed
+pipeline.add_step(evaluate)       # ⏳ Never ran → executed
+
+# Re-run: automatically resumes from train_model
+result = pipeline.run(run_id="previous-run-id")
+```
+
+### The `pipeline.rerun()` API
+
+Explicitly resume a pipeline from a previous checkpoint:
+
+```python
+# Resume from last checkpoint (skip all completed steps)
+result = pipeline.rerun(run_id="abc-123")
+
+# Resume from a specific step (re-run train_model and everything after)
+result = pipeline.rerun(run_id="abc-123", from_step="train_model")
+```
+
+If no checkpoint exists for the given `run_id`, a clear `ValueError` is raised.
+
+### How It Works
+
+1. Each completed step's output is saved to the checkpoint store
+2. On resume, the orchestrator checks the checkpoint before each step
+3. Completed steps are skipped and their cached outputs are injected into context
+4. Execution continues from the first non-completed step
+
+### Pipeline Snapshots for Reproducibility
+
+Each run automatically captures an immutable snapshot of the pipeline definition:
+
+```python
+from flowyml import freeze_pipeline
+
+snapshot = freeze_pipeline(pipeline)
+print(snapshot.snapshot_hash)    # SHA-256 of entire definition
+print(snapshot.step_hashes)     # Per-step code hashes
+assert snapshot.verify()        # Verify integrity hasn't changed
+```
+
+The snapshot hash is also stored in `PipelineResult.snapshot_hash` for each run.
+
+> [!TIP]
+> Use `PipelineSnapshot.verify()` to confirm a pipeline hasn't been modified since a previous run — essential for auditing and compliance.

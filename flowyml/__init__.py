@@ -120,7 +120,11 @@ from flowyml.core.approval import approval, ApprovalStep
 from flowyml.core.checkpoint import PipelineCheckpoint, checkpoint_enabled_pipeline
 from flowyml.core.templates import create_from_template, list_templates, TEMPLATES
 from flowyml.tracking.leaderboard import ModelLeaderboard, compare_runs
-from flowyml.core.versioning import VersionedPipeline, PipelineVersion
+from flowyml.core.versioning import VersionedPipeline, PipelineVersion, PipelineSnapshot, freeze_pipeline
+from flowyml.core.map_task import map_task, MapTaskStep, MapTaskResult
+from flowyml.core.dynamic import dynamic, DynamicStep
+from flowyml.core.subpipeline import SubPipelineStep, sub_pipeline
+from flowyml.storage.catalog import ArtifactCatalog, CatalogBackend, LocalCatalogBackend
 from flowyml.core.project import Project, ProjectManager
 from flowyml.core.advanced_cache import (
     ContentBasedCache,
@@ -270,8 +274,22 @@ __all__ = [
     # Versioning & Projects
     "VersionedPipeline",
     "PipelineVersion",
+    "PipelineSnapshot",
+    "freeze_pipeline",
     "Project",
     "ProjectManager",
+    # Map Tasks & Dynamic Workflows
+    "map_task",
+    "MapTaskStep",
+    "MapTaskResult",
+    "dynamic",
+    "DynamicStep",
+    "SubPipelineStep",
+    "sub_pipeline",
+    # Artifact Catalog
+    "ArtifactCatalog",
+    "CatalogBackend",
+    "LocalCatalogBackend",
     # Advanced Caching
     "ContentBasedCache",
     "SharedCache",

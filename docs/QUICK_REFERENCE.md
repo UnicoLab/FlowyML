@@ -652,12 +652,81 @@ docker run -it <image-id> /bin/bash
 
 ---
 
+## 🆕 New Features Quick Reference
+
+### Map Tasks
+```python
+from flowyml import map_task
+
+@map_task(concurrency=8, retries=2, min_success_ratio=0.95)
+def process(item: dict) -> dict:
+    return transform(item)
+
+result = process(items)  # MapTaskResult with .successes, .failures, .success_ratio
+```
+
+### Dynamic Workflows
+```python
+from flowyml import dynamic, Pipeline
+
+@dynamic(outputs=["best_model"])
+def hp_search(config: dict):
+    sub = Pipeline("search")
+    for lr in config["lrs"]:
+        sub.add_step(train_with_lr(lr))
+    return sub
+```
+
+### Sub-Pipeline Composition
+```python
+parent = Pipeline("training")
+parent.add_sub_pipeline(preprocess_pipeline, inputs=["raw"], outputs=["clean"])
+parent.add_step(train_model)
+```
+
+### Artifact Catalog
+```python
+from flowyml import ArtifactCatalog
+
+catalog = ArtifactCatalog()  # Auto-selects local or remote
+aid = catalog.register(name="model", artifact_type="Model", tags={"stage": "prod"})
+catalog.search("model")
+catalog.get_lineage(aid)
+```
+
+### Pipeline Snapshots
+```python
+from flowyml import freeze_pipeline
+
+snapshot = freeze_pipeline(pipeline)
+snapshot.verify()  # True if unchanged
+```
+
+### Build-Time Type Validation
+```python
+pipeline.build()  # Automatically validates type annotations between connected steps
+```
+
+### Selective Re-Execution
+```python
+# Resume from checkpoint
+result = pipeline.rerun(run_id="abc-123")
+# Resume from a specific step
+result = pipeline.rerun(run_id="abc-123", from_step="train_model")
+```
+
+---
+
 ## 📚 Learn More
 
 - **Full CLI reference**: [CLI Documentation](user-guide/cli.md)
 - **Stack configuration guide**: [Architecture: Stacks](architecture/stacks.md)
 - **Production deployment**: [Deployment Guide](deployment.md)
 - **Complete examples**: [Examples](examples.md)
+- **Map Tasks**: [Advanced Guide](advanced/map-tasks.md)
+- **Dynamic Workflows**: [Advanced Guide](advanced/dynamic-workflows.md)
+- **Sub-Pipelines**: [Advanced Guide](advanced/subpipelines.md)
+- **Artifact Catalog**: [Advanced Guide](advanced/artifact-catalog.md)
 
 ---
 

@@ -457,4 +457,132 @@ scheduler.start()
 
 ---
 
+## 🆕 Pipeline Engineering Features
+
+### 1️⃣1️⃣ **Build-Time Type Validation** ⚡NEW
+
+Catch type mismatches between connected steps at `Pipeline.build()` time:
+
+```python
+@step(outputs=["model"])
+def train() -> Model:
+    return Model(clf)
+
+@step(inputs=["model"])
+def evaluate(model: Dataset):  # ❌ Type mismatch! Expects Dataset, gets Model
+    pass
+
+pipeline.add_step(train).add_step(evaluate)
+pipeline.build()  # Raises: Pipeline type validation failed
+```
+
+---
+
+### 1️⃣2️⃣ **Map Tasks** ⚡NEW
+
+Distribute work over collections with configurable concurrency and per-item retries:
+
+```python
+from flowyml import map_task
+
+@map_task(concurrency=8, retries=2, min_success_ratio=0.95)
+def process_document(doc: dict) -> dict:
+    return transform(doc)
+
+result = process_document(documents)
+print(f"Processed {result.successes}/{result.total}")
+```
+
+See full guide: [`docs/advanced/map-tasks.md`](advanced/map-tasks.md)
+
+---
+
+### 1️⃣3️⃣ **Dynamic Workflows** ⚡NEW
+
+Generate sub-pipelines at runtime based on intermediate results:
+
+```python
+from flowyml import dynamic, Pipeline, step
+
+@dynamic(outputs=["best_model"])
+def hyperparameter_search(config: dict):
+    sub = Pipeline("hp_search")
+    for lr in config["learning_rates"]:
+        @step(outputs=[f"model_lr_{lr}"])
+        def train(learning_rate=lr):
+            return train_model(learning_rate)
+        sub.add_step(train)
+    return sub
+```
+
+See full guide: [`docs/advanced/dynamic-workflows.md`](advanced/dynamic-workflows.md)
+
+---
+
+### 1️⃣4️⃣ **Sub-Pipeline Composition** ⚡NEW
+
+Nest entire pipelines as steps in other pipelines:
+
+```python
+preprocess = Pipeline("preprocessing")
+preprocess.add_step(clean_data).add_step(normalize)
+
+parent = Pipeline("training")
+parent.add_sub_pipeline(preprocess, inputs=["raw"], outputs=["clean"])
+parent.add_step(train_model)
+```
+
+See full guide: [`docs/advanced/subpipelines.md`](advanced/subpipelines.md)
+
+---
+
+### 1️⃣5️⃣ **Artifact Catalog with Lineage** ⚡NEW
+
+Centralized artifact discovery, tagging, and lineage tracking:
+
+```python
+from flowyml import ArtifactCatalog
+
+catalog = ArtifactCatalog()  # Auto-selects local or remote backend
+
+# Register with lineage
+model_id = catalog.register(
+    name="classifier", artifact_type="Model",
+    parent_ids=[dataset_id],
+    tags={"stage": "production"},
+)
+
+# Discover and search
+models = catalog.search("classifier")
+lineage = catalog.get_lineage(model_id)
+```
+
+See full guide: [`docs/advanced/artifact-catalog.md`](advanced/artifact-catalog.md)
+
+---
+
+### 1️⃣6️⃣ **Immutable Pipeline Snapshots** ⚡NEW
+
+Capture exact pipeline definitions at execution time for reproducibility:
+
+```python
+from flowyml import freeze_pipeline
+
+snapshot = freeze_pipeline(pipeline)
+print(snapshot.snapshot_hash)    # SHA-256 seal
+print(snapshot.step_hashes)     # Per-step code hashes
+assert snapshot.verify()        # Verify integrity
+```
+
+---
+
+### 1️⃣7️⃣ **Enhanced DAG Validation** ⚡NEW
+
+`Pipeline.build()` now detects:
+- **Dead outputs**: assets produced but never consumed
+- **Unreachable nodes**: steps that can't be reached from root nodes
+- **Type mismatches**: incompatible types between connected steps
+
+---
+
 **Happy MLOps! 🌊**

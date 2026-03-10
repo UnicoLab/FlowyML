@@ -84,6 +84,10 @@ nav:
   - ⚡ Advanced Features:
     - 🏪 Caching: advanced/caching.md
     - 💾 Checkpointing: advanced/checkpointing.md
+    - 🗺️ Map Tasks: advanced/map-tasks.md
+    - ⚡ Dynamic Workflows: advanced/dynamic-workflows.md
+    - 🧩 Sub-Pipelines: advanced/subpipelines.md
+    - 🗃️ Artifact Catalog: advanced/artifact-catalog.md
     - 🕵️ LLM Tracing: advanced/llm-tracing.md
     - ✋ Human-in-the-Loop: advanced/human-in-the-loop.md
     - 🔀 Step Grouping: advanced/step-grouping.md

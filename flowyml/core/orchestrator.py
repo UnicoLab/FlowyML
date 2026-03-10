@@ -243,6 +243,51 @@ class LocalOrchestrator(Orchestrator):
                 # Prepare step inputs
                 step_inputs = {}
 
+                # --- Dynamic step detection ---
+                # If the step is a DynamicStep, execute it and expand its sub-pipeline
+                try:
+                    from flowyml.core.dynamic import DynamicStep
+
+                    if isinstance(step, DynamicStep):
+                        # DynamicStep.execute returns a DynamicWorkflowResult
+                        dynamic_result = step._execute_dynamic(step_outputs)
+                        if dynamic_result.expanded and dynamic_result.sub_pipeline:
+                            # Execute the dynamically generated sub-pipeline
+                            sub_result = dynamic_result.sub_pipeline.run()
+                            # Merge sub-pipeline outputs into main pipeline
+                            if sub_result.outputs:
+                                step_outputs.update(sub_result.outputs)
+                                result.outputs.update(sub_result.outputs)
+                            step_result = ExecutionResult(
+                                step_name=step.name,
+                                success=sub_result.success,
+                                output=sub_result.outputs,
+                                duration_seconds=sub_result.duration_seconds,
+                            )
+                        else:
+                            step_result = ExecutionResult(
+                                step_name=step.name,
+                                success=True,
+                                output=dynamic_result.results,
+                                duration_seconds=0.0,
+                            )
+                        result.add_step_result(step_result)
+                        if hasattr(pipeline, "_display") and pipeline._display:
+                            pipeline._display.update_step_status(
+                                step_name=step.name,
+                                status="success" if step_result.success else "failed",
+                                duration=step_result.duration_seconds,
+                            )
+                        if not step_result.success:
+                            result.finalize(success=False)
+                            pipeline._save_run(result)
+                            return result
+                        if step_result.output is not None:
+                            self._process_step_output(pipeline, step_result, step_outputs, result)
+                        continue
+                except ImportError:
+                    pass  # dynamic module not available
+
                 # Get function signature to map inputs to parameters
                 sig = inspect.signature(step.func)
                 params = list(sig.parameters.values())

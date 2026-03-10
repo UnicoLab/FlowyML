@@ -21,6 +21,130 @@ class PipelineVersion:
     metadata: dict[str, Any]
 
 
+@dataclass
+class PipelineSnapshot:
+    """Immutable snapshot of a pipeline definition at execution time.
+
+    Created automatically when a pipeline runs, this captures the full
+    definition (steps, code hashes, DAG, parameters) in a sealed format
+    that cannot be modified after creation.
+
+    Attributes:
+        pipeline_name: Name of the pipeline
+        snapshot_hash: SHA-256 hash of the entire snapshot (seal)
+        created_at: ISO timestamp of when the snapshot was created
+        version: Optional version string
+        steps: Ordered list of step definitions
+        dag_edges: DAG edges (list of {source, target} dicts)
+        context_params: Context parameters at snapshot time
+        step_hashes: Per-step code hashes for reproducibility
+    """
+
+    pipeline_name: str = ""
+    snapshot_hash: str = ""
+    created_at: str = ""
+    version: str | None = None
+    steps: list[dict[str, Any]] = None
+    dag_edges: list[dict[str, str]] = None
+    context_params: dict[str, Any] = None
+    step_hashes: dict[str, str] = None
+
+    def __post_init__(self):
+        if self.steps is None:
+            self.steps = []
+        if self.dag_edges is None:
+            self.dag_edges = []
+        if self.context_params is None:
+            self.context_params = {}
+        if self.step_hashes is None:
+            self.step_hashes = {}
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize snapshot to dictionary."""
+        return asdict(self)
+
+    def verify(self) -> bool:
+        """Verify the snapshot hash is still valid (not tampered)."""
+        data = {
+            "pipeline_name": self.pipeline_name,
+            "steps": self.steps,
+            "dag_edges": self.dag_edges,
+            "context_params": self.context_params,
+            "step_hashes": self.step_hashes,
+        }
+        expected = hashlib.sha256(
+            json.dumps(data, sort_keys=True, default=str).encode(),
+        ).hexdigest()
+        return self.snapshot_hash == expected
+
+
+def freeze_pipeline(pipeline: Any) -> PipelineSnapshot:
+    """Create an immutable snapshot of a pipeline's current state.
+
+    Called automatically at Pipeline.run() time to capture the exact
+    pipeline definition for reproducibility.
+
+    Args:
+        pipeline: Pipeline instance to snapshot
+
+    Returns:
+        Sealed PipelineSnapshot
+    """
+
+    # Ensure pipeline is built
+    if not pipeline._built:
+        pipeline.build()
+
+    # Capture step definitions
+    steps = []
+    step_hashes = {}
+    for step in pipeline.steps:
+        step_def = {
+            "name": step.name,
+            "inputs": step.inputs,
+            "outputs": step.outputs,
+            "tags": getattr(step, "tags", []),
+            "execution_group": getattr(step, "execution_group", None),
+        }
+        steps.append(step_def)
+
+        # Hash the step source code
+        source = getattr(step, "source_code", "") or ""
+        step_hash = hashlib.sha256(source.encode()).hexdigest()
+        step_hashes[step.name] = step_hash
+
+    # Capture DAG edges
+    dag_edges = [{"source": dep, "target": node_name} for node_name, deps in pipeline.dag.edges.items() for dep in deps]
+
+    # Capture context
+    context_params = {}
+    if hasattr(pipeline, "context") and pipeline.context:
+        context_params = dict(pipeline.context.params) if hasattr(pipeline.context, "params") else {}
+
+    # Compute seal hash
+    data = {
+        "pipeline_name": pipeline.name,
+        "steps": steps,
+        "dag_edges": dag_edges,
+        "context_params": context_params,
+        "step_hashes": step_hashes,
+    }
+    snapshot_hash = hashlib.sha256(
+        json.dumps(data, sort_keys=True, default=str).encode(),
+    ).hexdigest()
+
+    return PipelineSnapshot(
+        pipeline_name=pipeline.name,
+        snapshot_hash=snapshot_hash,
+        created_at=datetime.now().isoformat(),
+        version=getattr(pipeline, "version", None),
+        steps=steps,
+        dag_edges=dag_edges,
+        context_params=context_params,
+        step_hashes=step_hashes,
+    )
+
+
 class VersionedPipeline:
     """Pipeline with version control.
 

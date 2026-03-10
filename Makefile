@@ -152,6 +152,12 @@ test-coverage: ## Run tests with coverage report (parallel execution)
 test-fast: ## Run tests without coverage (faster, parallel execution)
 	$(PYTEST) tests/ -v --tb=short -n auto
 
+test-prod: ## Run production readiness tests
+	$(PYTEST) tests/test_production_readiness.py -v --tb=short
+
+test-all: ## Run ALL tests with coverage + HTML report (CI-grade)
+	$(PYTEST) tests/ -v --cov=flowyml --cov-report=html --cov-report=term-missing -n auto
+
 test-serial: ## Run tests serially (no parallel execution) - useful for debugging
 	$(PYTEST) tests/ -v
 

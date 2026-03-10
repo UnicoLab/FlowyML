@@ -97,6 +97,24 @@ class PipelineCheckpoint:
         data = self.load()
         return data.get("completed_steps", [])
 
+    def save(self, data: dict[str, Any]) -> None:
+        """Save arbitrary checkpoint data.
+
+        This is a convenience method for saving full checkpoint state.
+        For saving individual step results, use save_step_state().
+
+        Args:
+            data: Dictionary of checkpoint data to save
+        """
+        # Merge with existing data
+        existing = self.load() if self.checkpoint_file.exists() else {}
+        existing.update(data)
+        existing.setdefault("run_id", self.run_id)
+        existing.setdefault("last_update", datetime.now().isoformat())
+
+        with open(self.checkpoint_file, "w") as f:
+            json.dump(existing, f, indent=2)
+
     def clear(self) -> None:
         """Clear checkpoint data."""
         if self.checkpoint_file.exists():
@@ -116,8 +134,13 @@ def checkpoint_enabled_pipeline(pipeline, run_id: str):
     """Wrap a pipeline to enable checkpointing.
 
     This is a decorator-style wrapper that adds checkpoint functionality.
+    When resuming, completed steps are skipped and their cached outputs
+    are injected automatically by the orchestrator.
     """
     checkpoint = PipelineCheckpoint(run_id)
+
+    # Attach checkpoint to pipeline so orchestrator can access it
+    pipeline._checkpoint = checkpoint
 
     # Store original run method
     original_run = pipeline.run
@@ -125,19 +148,42 @@ def checkpoint_enabled_pipeline(pipeline, run_id: str):
     def run_with_checkpoints(*args, **kwargs):
         """Modified run method with checkpointing."""
         if checkpoint.exists():
-            response = input("Resume from checkpoint? [y/N]: ")
+            completed = checkpoint.get_completed_steps()
 
-            if response.lower() == "y":
-                # Load completed steps
-                checkpoint.get_completed_steps()
+            # Check if pipeline itself completed previously
+            if "pipeline_complete" in completed:
+                import warnings
 
-                # In a real implementation, we would modify the execution
-                # to skip completed steps. For now, just notify.
+                warnings.warn(
+                    f"Pipeline run '{run_id}' already completed. "
+                    "Re-running from scratch. Use a new run_id for fresh runs.",
+                    stacklevel=2,
+                )
+                checkpoint.clear()
+                pipeline._resume_from_checkpoint = False
+                pipeline._completed_steps_from_checkpoint = set()
+            else:
+                # Resume: mark completed steps so orchestrator skips them
+                pipeline._resume_from_checkpoint = True
+                pipeline._completed_steps_from_checkpoint = set(completed)
 
-        # Run the pipeline
+                resume_pt = checkpoint.resume_point()
+                import logging
+
+                logger = logging.getLogger("flowyml.checkpoint")
+                logger.info(
+                    f"Resuming pipeline from checkpoint. "
+                    f"Completed steps: {completed}. "
+                    f"Last completed: {resume_pt}",
+                )
+        else:
+            pipeline._resume_from_checkpoint = False
+            pipeline._completed_steps_from_checkpoint = set()
+
+        # Run the pipeline (orchestrator handles skip logic)
         result = original_run(*args, **kwargs)
 
-        # Save final checkpoint
+        # Save final checkpoint on success
         if result.success:
             checkpoint.save_step_state(
                 "pipeline_complete",

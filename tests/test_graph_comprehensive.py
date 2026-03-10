@@ -131,7 +131,7 @@ class TestGraphComprehensive(BaseTestCase):
         dag.add_node(node2)
         dag.build_edges()
 
-        errors = dag.validate()
+        errors, warnings = dag.validate()
         self.assertEqual(len(errors), 0)
 
     def test_dag_visualization(self):

@@ -130,13 +130,16 @@ class DAG:
         visited.discard(node_name)
         return visited
 
-    def validate(self) -> list[str]:
-        """Validate the graph for common issues.
+    def validate(self) -> tuple[list[str], list[str]]:
+        """Validate the graph for errors and warnings.
 
         Returns:
-            List of validation errors (empty if valid)
+            Tuple of (errors, warnings) — both are lists of strings.
+            For backward compatibility, iterating over the result still works
+            since errors are the primary concern.
         """
         errors = []
+        warnings = []
 
         # Check for undefined inputs
         for node_name, node in self.nodes.items():
@@ -162,7 +165,45 @@ class DAG:
             if count > 1:
                 errors.append(f"Multiple nodes produce asset '{output}'")
 
-        return errors
+        # Dead node detection: outputs not consumed by any downstream step
+        all_consumed_assets = set()
+        for node in self.nodes.values():
+            all_consumed_assets.update(node.inputs)
+
+        for node_name, node in self.nodes.items():
+            for output_asset in node.outputs:
+                if output_asset not in all_consumed_assets:
+                    # Check if this is a terminal/leaf node — if so, it's likely
+                    # a pipeline endpoint and is OK
+                    dependents = self.get_dependents(node_name)
+                    if dependents:
+                        # Has dependents but this specific output is unused
+                        warnings.append(
+                            f"Dead output: asset '{output_asset}' from node "
+                            f"'{node_name}' is never consumed by any downstream step",
+                        )
+
+        # Unreachable node detection: nodes not reachable from root nodes
+        root_nodes = {name for name, node in self.nodes.items() if not self.edges.get(name)}
+
+        reachable = set()
+        visit_queue = deque(root_nodes)
+        while visit_queue:
+            current = visit_queue.popleft()
+            if current in reachable:
+                continue
+            reachable.add(current)
+            for dep in self.reverse_edges.get(current, set()):
+                if dep not in reachable:
+                    visit_queue.append(dep)
+
+        unreachable = set(self.nodes.keys()) - reachable
+        for node_name in unreachable:
+            warnings.append(
+                f"Unreachable node: '{node_name}' cannot be reached from any " f"root node and will never execute",
+            )
+
+        return errors, warnings
 
     def visualize(self) -> str:
         """Generate a simple text visualization of the DAG."""

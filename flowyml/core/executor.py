@@ -467,6 +467,24 @@ class LocalExecutor(Executor):
                 except Exception:
                     pass  # Routing failed, continue with normal flow
 
+                # Auto-register in artifact catalog for lineage tracking
+                try:
+                    from flowyml.storage.catalog.manager import ArtifactCatalog
+
+                    catalog = ArtifactCatalog()
+                    catalog.register(
+                        name=f"{step.name}_output",
+                        artifact_type=type(result).__name__,
+                        data=result,
+                        source_step=step.name,
+                        source_pipeline=project_name,
+                        source_run_id=run_id or "local",
+                    )
+                except ImportError:
+                    pass  # Catalog not available
+                except Exception:
+                    pass  # Catalog registration failed, don't block execution
+
                 # Cache result
                 if cache_store and step.cache:
                     cache_key = step.get_cache_key(inputs)

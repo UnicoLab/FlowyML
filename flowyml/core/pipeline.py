@@ -28,6 +28,7 @@ class PipelineResult:
         self.resource_config: Any | None = None
         self.docker_config: Any | None = None
         self.remote_job_id: str | None = None
+        self.snapshot_hash: str | None = None
 
     def add_step_result(self, result: ExecutionResult) -> None:
         """Add result from a step execution."""
@@ -70,6 +71,7 @@ class PipelineResult:
             "start_time": self.start_time.isoformat(),
             "end_time": self.end_time.isoformat() if self.end_time else None,
             "duration_seconds": self.duration_seconds,
+            "snapshot_hash": self.snapshot_hash,
             "metadata": {
                 "resources": self.resource_config.to_dict()
                 if hasattr(self.resource_config, "to_dict")
@@ -342,8 +344,56 @@ class Pipeline:
         self._built = False
         return self
 
+    def add_sub_pipeline(
+        self,
+        pipeline: Any,
+        name: str | None = None,
+        inputs: list[str] | None = None,
+        outputs: list[str] | None = None,
+        input_mapping: dict[str, str] | None = None,
+        output_mapping: dict[str, str] | None = None,
+        **kwargs,
+    ) -> "Pipeline":
+        """Add a sub-pipeline as a step in this pipeline.
+
+        The sub-pipeline's steps will execute as a single unit within
+        this pipeline's execution flow.
+
+        Args:
+            pipeline: Pipeline to nest as a step
+            name: Optional step name (defaults to sub_pipeline.name)
+            inputs: Input asset names from this pipeline
+            outputs: Output asset names exposed to this pipeline
+            input_mapping: Maps this pipeline's output names to child input names
+            output_mapping: Maps child output names to this pipeline's input names
+            **kwargs: Additional SubPipelineStep configuration
+
+        Returns:
+            Self for chaining
+
+        Example:
+            >>> preprocess = Pipeline("preprocessing")
+            >>> preprocess.add_step(clean).add_step(normalize)
+            >>>
+            >>> parent = Pipeline("training")
+            >>> parent.add_sub_pipeline(preprocess, inputs=["raw"], outputs=["clean"])
+            >>> parent.add_step(train_model)
+        """
+        from flowyml.core.subpipeline import SubPipelineStep
+
+        sub_step = SubPipelineStep(
+            sub_pipeline=pipeline,
+            name=name,
+            inputs=inputs,
+            outputs=outputs,
+            input_mapping=input_mapping,
+            output_mapping=output_mapping,
+            **kwargs,
+        )
+        return self.add_step(sub_step)
+
     def build(self) -> None:
-        """Build the execution DAG."""
+        """Build the execution DAG with type validation."""
         if self._built:
             return
 
@@ -363,10 +413,47 @@ class Pipeline:
         # Build edges
         self.dag.build_edges()
 
-        # Validate
-        errors = self.dag.validate()
+        # Validate DAG structure (now returns errors + warnings)
+        validation_result = self.dag.validate()
+
+        # Handle both old (list) and new (tuple) return formats
+        if isinstance(validation_result, tuple):
+            errors, warnings = validation_result
+        else:
+            errors = validation_result
+            warnings = []
+
+        # Log warnings (don't fail the build)
+        if warnings:
+            import logging
+
+            logger = logging.getLogger(__name__)
+            for w in warnings:
+                logger.warning(f"Pipeline '{self.name}': {w}")
+
         if errors:
             raise ValueError("Pipeline validation failed:\n" + "\n".join(errors))
+
+        # Type validation across connections
+        try:
+            from flowyml.core.type_validator import validate_pipeline
+
+            type_errors, type_warnings = validate_pipeline(self.dag, self.steps)
+
+            if type_warnings:
+                import logging
+
+                logger = logging.getLogger(__name__)
+                for tw in type_warnings:
+                    logger.warning(f"Pipeline '{self.name}': {tw}")
+
+            if type_errors:
+                error_messages = [str(e) for e in type_errors]
+                raise ValueError(
+                    "Pipeline type validation failed:\n" + "\n".join(error_messages),
+                )
+        except ImportError:
+            pass  # type_validator not available, skip
 
         # Analyze step groups
         from flowyml.core.step_grouping import StepGroupAnalyzer
@@ -559,11 +646,91 @@ class Pipeline:
             self._save_pipeline_definition()
             return wrapper
 
+        # Auto-freeze pipeline snapshot for reproducibility
+        try:
+            from flowyml.core.versioning import freeze_pipeline
+
+            snapshot = freeze_pipeline(self)
+            if hasattr(result, "snapshot_hash"):
+                result.snapshot_hash = snapshot.snapshot_hash
+        except Exception:
+            pass  # Don't fail run if snapshot fails
+
         # Ensure result has configs attached (in case orchestrator didn't do it)
         if hasattr(result, "attach_configs") and not hasattr(result, "resource_config"):
             result.attach_configs(resource_config, docker_cfg)
 
         return result
+
+    def rerun(
+        self,
+        run_id: str,
+        from_step: str | None = None,
+        **kwargs,
+    ) -> "PipelineResult":
+        """Re-run a pipeline from a checkpoint, resuming from where it left off.
+
+        Args:
+            run_id: The run ID of the previous execution to resume from.
+            from_step: Optional step name to start re-execution from.
+                       If provided, all steps before this one are skipped.
+                       If not provided, resumes from the first non-completed step.
+            **kwargs: Additional arguments passed to Pipeline.run().
+
+        Returns:
+            PipelineResult with outputs from the resumed run.
+
+        Examples:
+            >>> # Resume from last checkpoint
+            >>> result = pipeline.rerun(run_id="previous-run-id")
+            >>> # Resume from a specific step
+            >>> result = pipeline.rerun(run_id="previous-run-id", from_step="train_model")
+        """
+        from flowyml.core.checkpoint import PipelineCheckpoint
+        from flowyml.utils.config import get_config
+
+        config = get_config()
+        checkpoint = PipelineCheckpoint(
+            run_id=run_id,
+            checkpoint_dir=str(config.checkpoint_dir),
+        )
+
+        if not checkpoint.exists():
+            raise ValueError(
+                f"No checkpoint found for run_id='{run_id}'. "
+                "Cannot resume — run the pipeline fresh with pipeline.run() instead.",
+            )
+
+        # Determine which steps to skip
+        completed = checkpoint.get_completed_steps()
+
+        if from_step:
+            # Skip only steps that come before from_step
+            steps_to_skip = set()
+            for step_name in completed:
+                if step_name == from_step:
+                    break
+                steps_to_skip.add(step_name)
+        else:
+            # Skip all completed steps (resume from first non-completed)
+            steps_to_skip = set(completed) - {"pipeline_complete"}
+
+        # Set checkpoint state on pipeline for orchestrator to use
+        self._checkpoint = checkpoint
+        self._resume_from_checkpoint = True
+        self._completed_steps_from_checkpoint = steps_to_skip
+
+        import logging
+
+        logger = logging.getLogger("flowyml.checkpoint")
+        logger.info(
+            f"Re-running pipeline '{self.name}' from run '{run_id}'. "
+            f"Skipping {len(steps_to_skip)} completed step(s)."
+            + (f" Starting from step '{from_step}'." if from_step else ""),
+        )
+
+        # Run with the checkpoint state already configured
+        return self.run(run_id=run_id, **kwargs)
 
     def to_definition(self) -> dict:
         """Serialize pipeline to definition for storage and reconstruction."""
