@@ -314,28 +314,51 @@ class VersionedPipeline:
 
     def display_comparison(self, other_version: str) -> None:
         """Display comparison in readable format."""
+        import logging
+
+        logger = logging.getLogger(__name__)
+
         diff = self.compare_with(other_version)
 
+        logger.info(
+            "Version comparison: %s vs %s",
+            self.current_version,
+            other_version,
+        )
+
         if diff["added_steps"]:
-            pass
+            logger.info("  Added steps: %s", ", ".join(diff["added_steps"]))
 
         if diff["removed_steps"]:
-            pass
+            logger.info("  Removed steps: %s", ", ".join(diff["removed_steps"]))
 
         if diff["modified_steps"]:
-            pass
+            logger.info("  Modified steps: %s", ", ".join(diff["modified_steps"]))
 
         if diff["step_order_changed"]:
-            pass
+            logger.info("  Step order has changed")
 
         changes = diff["context_changes"]
         if any([changes["added"], changes["removed"], changes["modified"]]):
             if changes["added"]:
-                pass
+                logger.info("  Added context params: %s", changes["added"])
             if changes["removed"]:
-                pass
+                logger.info("  Removed context params: %s", changes["removed"])
             if changes["modified"]:
-                pass
+                logger.info("  Modified context params: %s", changes["modified"])
+
+        if not any(
+            [
+                diff["added_steps"],
+                diff["removed_steps"],
+                diff["modified_steps"],
+                diff["step_order_changed"],
+                changes["added"],
+                changes["removed"],
+                changes["modified"],
+            ],
+        ):
+            logger.info("  No differences found")
 
     def rollback(self, version: str) -> NoReturn:
         """Rollback to a previous version (not implemented - would need to reconstruct pipeline)."""

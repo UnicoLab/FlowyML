@@ -585,4 +585,141 @@ assert snapshot.verify()        # Verify integrity
 
 ---
 
+### 1️⃣8️⃣ **Prompt Asset** ⚡NEW
+
+First-class prompt management for LLM/GenAI workflows — versioned, templated, and lineage-tracked:
+
+```python
+from flowyml import Prompt
+
+# Text prompt with variable substitution
+prompt = Prompt(
+    name="summarize",
+    template="Summarize the following text:\n\n{text}",
+    model="gpt-4",
+    temperature=0.7,
+    max_tokens=500,
+)
+rendered = prompt.render(text="Long document here...")
+
+# Chat-style prompt (OpenAI format)
+chat_prompt = Prompt.create(
+    template=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "Explain {topic} in simple terms."},
+    ],
+    name="explain",
+    model="gpt-4",
+)
+messages = chat_prompt.render(topic="neural networks")
+
+# Lineage: track prompt evolution
+v2 = Prompt(name="summarize_v2", template="...", parent=prompt)
+# v2.parents → [prompt]
+```
+
+**Features:**
+- Text and chat-style (multi-message) templates
+- `{variable}` substitution with `.render()`
+- Model config tracking (model, temperature, max_tokens)
+- Automatic variable extraction from templates
+- Full lineage tracking (parent → child prompt chains)
+- `.create()` factory with auto-generated names
+
+---
+
+### 1️⃣9️⃣ **Checkpoint Asset** ⚡NEW
+
+Training checkpoint management with epoch/step tracking and framework-agnostic persistence:
+
+```python
+from flowyml import Checkpoint
+
+# Save training state
+checkpoint = Checkpoint.create(
+    data=model.state_dict(),
+    name="resnet50_epoch_10",
+    epoch=10,
+    step=5000,
+    metrics={"loss": 0.23, "accuracy": 0.91},
+    is_best=True,
+)
+
+# Inspect checkpoint
+print(checkpoint.epoch)              # 10
+print(checkpoint.checkpoint_metrics)  # {"loss": 0.23, "accuracy": 0.91}
+print(checkpoint.is_best)            # True
+
+# Save to disk (auto-detects PyTorch or falls back to pickle)
+path = checkpoint.save("checkpoints/epoch_10.pt")
+
+# Lineage: link to parent model
+model_asset = Model(name="resnet50", data=model)
+ckpt = Checkpoint.create(data=state, parent=model_asset)
+```
+
+**Features:**
+- Epoch and global step tracking
+- Metrics capture at checkpoint time
+- `is_best` flag for best-model tracking
+- Automatic state key extraction (for PyTorch state_dicts)
+- Framework-agnostic save (PyTorch → pickle fallback)
+- Lineage tracking (checkpoint → model relationship)
+
+---
+
+### 2️⃣0️⃣ **Stack Hydration from YAML** ⚡NEW
+
+Define stacks in `flowyml.yaml` and hydrate them into live, fully-wired Stack objects:
+
+```yaml
+# flowyml.yaml
+stacks:
+  local:
+    orchestrator: { type: local }
+    artifact_store: { type: local, path: "./artifacts" }
+
+  gcp-prod:
+    orchestrator: { type: vertex_ai, project: my-gcp-project }
+    artifact_store: { type: gcs, bucket: ml-artifacts }
+    model_registry: { type: vertex_model_registry }
+    experiment_tracker: { type: mlflow }
+    artifact_routing:
+      Model:   { store: gcs, register: true, deploy: true }
+      Dataset: { store: gcs, path: "{run_id}/data/{step_name}" }
+      Metrics: { log_to_tracker: true }
+
+active_stack: local
+```
+
+```python
+from flowyml.plugins.config import PluginConfig
+from flowyml.plugins.stack_config import StackManager
+
+config = PluginConfig("flowyml.yaml")
+manager = StackManager(config)
+
+# Hydrate into a live stack (resolves components via ComponentRegistry)
+live_stack = manager.get_stack("gcp-prod").to_stack()
+
+# Use it directly
+pipeline = Pipeline("train", stack=live_stack)
+pipeline.run()
+
+# Context-manager switching
+with manager.use_stack("gcp-prod"):
+    pipeline.run()  # Uses GCP stack
+# Reverts to previous active stack
+```
+
+**Features:**
+- `StackConfig.to_stack()` hydrates YAML → live Stack objects
+- Automatic component resolution via `ComponentRegistry`
+- Fallback to `LocalOrchestrator` / `LocalArtifactStore` for unknown types
+- Artifact routing rules attached to hydrated stack
+- `use_stack()` context manager for temporary stack switching
+- `FLOWYML_STACK` environment variable override
+
+---
+
 **Happy MLOps! 🌊**

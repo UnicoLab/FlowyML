@@ -305,14 +305,19 @@ def run(
     """
     from flowyml.utils.stack_config import (
         load_config,
-        create_stack_from_config,
         create_resource_config_from_dict,
         create_docker_config_from_dict,
     )
+    from flowyml.plugins.stack_config import get_stack_manager
+    from flowyml.plugins.config import get_config as get_plugin_config
     import importlib.util
 
     # Load configuration
     loader = load_config(config)
+
+    # Initialize plugin config (triggers YAML parsing for StackManager)
+    if config:
+        get_plugin_config(config)
 
     # Determine stack to use
     stack_name = stack or loader.get_default_stack() or "local"
@@ -323,14 +328,21 @@ def run(
     if resources:
         click.echo(f"💻 Resources: {resources}")
 
-    # Get stack configuration
-    stack_config = loader.get_stack_config(stack_name)
-    if not stack_config:
-        click.echo(f"Stack '{stack_name}' not found in configuration", err=True)
-        sys.exit(1)
+    # --- Hydrate stack using StackManager (new path) ---
+    manager = get_stack_manager()
+    stack_config = manager.get_stack(stack_name)
 
-    # Create stack instance
-    stack_instance = create_stack_from_config(stack_config, stack_name)
+    if stack_config:
+        stack_instance = stack_config.to_stack()
+    else:
+        # Fallback to legacy utils/stack_config path
+        from flowyml.utils.stack_config import create_stack_from_config
+
+        legacy_config = loader.get_stack_config(stack_name)
+        if not legacy_config:
+            click.echo(f"Stack '{stack_name}' not found in configuration", err=True)
+            sys.exit(1)
+        stack_instance = create_stack_from_config(legacy_config, stack_name)
 
     # Get resource configuration
     resource_config = None

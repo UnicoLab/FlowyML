@@ -33,6 +33,10 @@ flowyml provides specialized classes for different ML artifact types:
 - **Model**: Represents trained ML models.
 - **Metrics**: Represents evaluation results (accuracy, loss).
 - **FeatureSet**: Represents engineered features.
+- **Report**: Represents generated reports and documentation.
+- **Artifact**: Generic artifact for configs, checkpoints, files, etc.
+- **Prompt**: Represents LLM prompt templates with versioning and rendering.
+- **Checkpoint**: Represents training checkpoints with resumability metadata.
 
 ## Type-Based Routing & Infrastructure 🌍
 
@@ -43,6 +47,11 @@ Assets are the primary mechanism for **Type-Based Routing**. When a step returns
 | `Dataset` | Artifact Store (GCS/S3) | Feature Store (optional) |
 | `Model` | Artifact Store (GCS/S3) | Model Registry (Vertex/SageMaker) |
 | `Metrics` | Metadata Store (SQL) | External Trackers (MLflow/W&B) |
+| `FeatureSet` | Artifact Store | Feature Store (optional) |
+| `Prompt` | Artifact Store | Prompt Registry (version-tracked) |
+| `Checkpoint` | Artifact Store | Checkpoint Directory |
+| `Report` | Artifact Store | — |
+| `Artifact` | Artifact Store | — |
 
 > [!TIP]
 > **The Benefit**: You can switch from local JSON storage to a production-grade Vertex AI Model Registry without changing a single line of your model training code.
@@ -155,6 +164,97 @@ metrics = Metrics.create(
     accuracy=0.95,
     f1_score=0.92,
     loss=0.15
+)
+```
+
+### Prompts 🤖
+
+First-class prompt asset for LLM and GenAI workflows. Supports text templates with `{variable}` substitution and chat-style message lists.
+
+```python
+from flowyml import Prompt
+
+# Text prompt with variables
+prompt = Prompt(
+    name="summarize",
+    template="Summarize the following text:\n\n{text}",
+    model="gpt-4",
+    temperature=0.7,
+    max_tokens=500,
+)
+
+# Render with variables
+rendered = prompt.render(text="Long document here...")
+
+# Chat-style prompt (OpenAI format)
+chat_prompt = Prompt.create(
+    template=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "Explain {topic} in simple terms."},
+    ],
+    name="explain",
+    model="gpt-4",
+)
+messages = chat_prompt.render(topic="neural networks")
+
+# Access prompt metadata
+print(prompt.variables)       # ["text"]
+print(prompt.prompt_format)   # "text" or "chat"
+print(prompt.model_config)    # {"model": "gpt-4", "temperature": 0.7, ...}
+```
+
+### Checkpoints 💾
+
+Training checkpoint asset with epoch/step tracking and framework-agnostic persistence.
+
+```python
+from flowyml import Checkpoint
+
+# Create checkpoint from training state
+checkpoint = Checkpoint.create(
+    data=model.state_dict(),
+    name="resnet50_epoch_10",
+    epoch=10,
+    step=5000,
+    metrics={"loss": 0.23, "accuracy": 0.91},
+    is_best=True,
+)
+
+# Inspect
+print(checkpoint.epoch)              # 10
+print(checkpoint.checkpoint_metrics)  # {"loss": 0.23, "accuracy": 0.91}
+print(checkpoint.is_best)            # True
+
+# Save to disk (PyTorch or pickle fallback)
+path = checkpoint.save("checkpoints/epoch_10.pt")
+```
+
+### Reports 📄
+
+Report assets for generated documentation, analysis summaries, or pipeline outputs.
+
+```python
+from flowyml import Report
+
+report = Report(
+    name="training_summary",
+    data={"sections": [...]},
+    report_type="training",
+    tags={"team": "ml"},
+)
+```
+
+### Generic Artifacts 📦
+
+For anything that doesn't fit other categories — configs, files, intermediate outputs.
+
+```python
+from flowyml import Artifact
+
+config = Artifact(
+    name="training_config",
+    artifact_type="config",
+    data={"lr": 0.001, "epochs": 10},
 )
 ```
 

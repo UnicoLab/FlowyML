@@ -277,6 +277,17 @@ class Pipeline:
 
         if stack:
             self._apply_stack(stack, locked=True)
+        else:
+            # Auto-resolve active stack from flowyml.yaml / FLOWYML_STACK env var
+            try:
+                from flowyml.plugins.stack_config import get_active_stack as _get_yaml_stack
+
+                yaml_stack = _get_yaml_stack()
+                if yaml_stack is not None:
+                    live_stack = yaml_stack.to_stack()
+                    self._apply_stack(live_stack, locked=False)
+            except Exception:
+                pass  # No config file or parse error — continue with defaults
 
         # Handle Project Attachment
         # Support both project_name (preferred) and project (for backward compatibility)

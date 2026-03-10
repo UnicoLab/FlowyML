@@ -295,6 +295,96 @@ registry.set_active_stack("gcp-prod")   # Production
 active = registry.get_active_stack()
 ```
 
+## Stack Hydration from YAML ⚡NEW
+
+The `StackConfig.to_stack()` method lets you hydrate a YAML-defined stack configuration into a live, fully-wired `Stack` object. This bridges the gap between declarative YAML configuration and runtime stack assembly.
+
+### How It Works
+
+1. Define stacks in `flowyml.yaml` with component configs
+2. `StackManager` parses the YAML into `StackConfig` objects
+3. `StackConfig.to_stack()` resolves each component via `ComponentRegistry`
+4. Returns a fully-wired `Stack` ready for pipeline execution
+
+### YAML Configuration
+
+```yaml
+# flowyml.yaml
+stacks:
+  local:
+    orchestrator: { type: local }
+    artifact_store: { type: local, path: "./artifacts" }
+
+  gcp-prod:
+    orchestrator: { type: vertex_ai, project: my-gcp-project }
+    artifact_store: { type: gcs, bucket: ml-artifacts }
+    model_registry: { type: vertex_model_registry }
+    model_deployer: { type: vertex_endpoints }
+    experiment_tracker: { type: mlflow }
+    artifact_routing:
+      Model:   { store: gcs, register: true, deploy: true }
+      Dataset: { store: gcs, path: "{run_id}/data/{step_name}" }
+      Metrics: { log_to_tracker: true }
+
+  aws-staging:
+    orchestrator: { type: sagemaker, region: us-east-1 }
+    artifact_store: { type: s3, bucket: staging-ml }
+    model_registry: { type: sagemaker_model_registry }
+
+active_stack: local
+```
+
+### Hydrating a Stack
+
+```python
+from flowyml.plugins.config import PluginConfig
+from flowyml.plugins.stack_config import StackManager
+
+# Load from YAML
+config = PluginConfig("flowyml.yaml")
+manager = StackManager(config)
+
+# Hydrate local stack
+local_stack = manager.get_stack("local").to_stack()
+assert local_stack.orchestrator  # LocalOrchestrator
+assert local_stack.artifact_store  # LocalArtifactStore
+
+# Hydrate GCP stack
+gcp_stack = manager.get_stack("gcp-prod").to_stack()
+assert gcp_stack.orchestrator  # VertexAIOrchestrator
+```
+
+### Artifact Routing
+
+The hydrated stack carries artifact routing rules:
+
+```python
+live = manager.get_stack("gcp-prod").to_stack()
+
+# Routing config is attached to the live stack
+print(live._artifact_routing.rules)  # {"Model": ArtifactRoutingRule(...), ...}
+print(live._model_registry_config)   # {"type": "vertex_model_registry"}
+```
+
+### Stack Switching
+
+Use the context manager for temporary stack switching:
+
+```python
+from flowyml.plugins.config import PluginConfig
+from flowyml.plugins.stack_config import StackManager
+
+config = PluginConfig("flowyml.yaml")
+manager = StackManager(config)
+
+with manager.use_stack("gcp-prod"):
+    pipeline.run()  # Uses GCP stack
+# Reverts to previous active stack
+
+# Or set via environment variable
+# FLOWYML_STACK=gcp-prod flowyml run pipeline.py
+```
+
 ## Using Stacks with Pipelines
 
 ### Method 1: Direct Assignment

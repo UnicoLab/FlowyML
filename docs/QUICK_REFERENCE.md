@@ -715,6 +715,41 @@ result = pipeline.rerun(run_id="abc-123")
 result = pipeline.rerun(run_id="abc-123", from_step="train_model")
 ```
 
+### Prompt Asset
+```python
+from flowyml import Prompt
+
+prompt = Prompt(name="summarize", template="Summarize: {text}", model="gpt-4", temperature=0.7)
+rendered = prompt.render(text="Long document...")
+
+# Chat-style
+chat = Prompt.create(template=[{"role": "user", "content": "Explain {topic}"}], name="chat")
+messages = chat.render(topic="ML pipelines")
+```
+
+### Checkpoint Asset
+```python
+from flowyml import Checkpoint
+
+ckpt = Checkpoint.create(data=state_dict, name="epoch_10", epoch=10, metrics={"loss": 0.23})
+ckpt.save("checkpoints/epoch_10.pt")
+print(ckpt.epoch, ckpt.checkpoint_metrics, ckpt.is_best)
+```
+
+### Stack Hydration
+```python
+from flowyml.plugins.config import PluginConfig
+from flowyml.plugins.stack_config import StackManager
+
+config = PluginConfig("flowyml.yaml")
+manager = StackManager(config)
+live_stack = manager.get_stack("gcp-prod").to_stack()  # YAML → live Stack
+pipeline = Pipeline("train", stack=live_stack)
+
+with manager.use_stack("gcp-prod"):  # Temporary switch
+    pipeline.run()
+```
+
 ---
 
 ## 📚 Learn More

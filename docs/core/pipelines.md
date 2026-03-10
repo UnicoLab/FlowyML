@@ -184,6 +184,7 @@ pipeline = Pipeline(
 | `version` | `str` | Version string (creates VersionedPipeline) | `None` |
 | `enable_checkpointing` | `bool` | Enable automatic checkpointing | `True` |
 | `enable_experiment_tracking` | `bool` | Enable automatic experiment tracking | `True` (config default) |
+| `auto_discover` | `bool` | Auto-discover `@step`-decorated functions from the global registry at build time | `False` |
 
 ## Execution Graph (DAG) 🕸️
 
@@ -341,6 +342,103 @@ See the [Stack Architecture](../architecture/stacks.md) guide for more details o
 
 ## Advanced Features
 
+### Pipeline Versioning (VersionedPipeline)
+
+Create a versioned pipeline simply by passing `version=` to the Pipeline constructor:
+
+```python
+from flowyml import Pipeline
+
+# Automatically creates a VersionedPipeline under the hood
+pipeline = Pipeline("training", version="v1.0.0")
+pipeline.add_step(train_model).add_step(evaluate)
+
+# Compare versions
+pipeline.compare_with("v0.9.0")
+
+# Save immutable snapshots
+from flowyml import freeze_pipeline
+snapshot = freeze_pipeline(pipeline)
+print(snapshot.snapshot_hash)  # SHA-256 seal
+assert snapshot.verify()       # Verify integrity
+```
+
+### Pipeline from Steps (Factory)
+
+Create a pipeline without repetitive `add_step()` calls:
+
+```python
+pipeline = Pipeline.from_steps(
+    load_data,
+    preprocess,
+    train_model,
+    evaluate,
+    name="training",
+    enable_cache=False,
+)
+```
+
+### Sub-Pipeline Composition
+
+Nest entire pipelines as steps, with input/output mapping:
+
+```python
+# Create reusable sub-pipeline
+preprocess = Pipeline("preprocessing")
+preprocess.add_step(clean_data).add_step(normalize)
+
+# Use as a step in parent pipeline
+parent = Pipeline("training")
+parent.add_sub_pipeline(
+    preprocess,
+    inputs=["raw_data"],
+    outputs=["clean_data"],
+    input_mapping={"raw_data": "input"},  # Maps parent→child names
+    output_mapping={"output": "clean_data"},  # Maps child→parent names
+)
+parent.add_step(train_model)
+```
+
+See the full guide: [Sub-Pipelines](../advanced/subpipelines.md)
+
+### Selective Re-Execution (Rerun)
+
+Resume a failed pipeline from its checkpoint:
+
+```python
+# Resume from last checkpoint
+result = pipeline.rerun(run_id="previous-run-id")
+
+# Resume from a specific step (skip steps before it)
+result = pipeline.rerun(run_id="previous-run-id", from_step="train_model")
+```
+
+> [!TIP]
+> `rerun()` requires checkpointing to be enabled. Set `enable_checkpointing=True` in the Pipeline constructor (it's `True` by default via config).
+
+See the full guide: [Checkpointing](../advanced/checkpointing.md)
+
+### Build-Time Type Validation
+
+`pipeline.build()` automatically validates type compatibility between connected steps:
+
+```python
+@step(outputs=["model"])
+def train() -> Model:
+    return Model(clf)
+
+@step(inputs=["model"])
+def evaluate(model: Dataset):  # ❌ Type mismatch! Gets Model, expects Dataset
+    pass
+
+pipeline.add_step(train).add_step(evaluate)
+pipeline.build()  # Raises: Pipeline type validation failed
+```
+
+The validator checks:
+- `Optional`, `Union`, `list[T]`, `dict[K,V]` compatibility
+- Returns both errors (hard mismatches) and warnings (possible issues)
+
 ### Conditional Execution
 
 ```python
@@ -368,6 +466,43 @@ def process_batch(items):
     return parallel_map(expensive_function, items, num_workers=4)
 ```
 
+### Map Tasks
+
+Distribute work over collections with concurrency controls and per-item retries:
+
+```python
+from flowyml import map_task
+
+@map_task(concurrency=8, retries=2, min_success_ratio=0.95)
+def process_document(doc: dict) -> dict:
+    return transform(doc)
+
+result = process_document(documents)
+print(f"Processed {result.successes}/{result.total}")
+```
+
+See the full guide: [Map Tasks](../advanced/map-tasks.md)
+
+### Dynamic Workflows
+
+Generate sub-pipelines at runtime based on intermediate results:
+
+```python
+from flowyml import dynamic, Pipeline, step
+
+@dynamic(outputs=["best_model"])
+def hyperparameter_search(config: dict):
+    sub = Pipeline("hp_search")
+    for lr in config["learning_rates"]:
+        @step(outputs=[f"model_lr_{lr}"])
+        def train(learning_rate=lr):
+            return train_model(learning_rate)
+        sub.add_step(train)
+    return sub
+```
+
+See the full guide: [Dynamic Workflows](../advanced/dynamic-workflows.md)
+
 ### Error Handling
 
 ```python
@@ -380,6 +515,8 @@ def flaky_step():
     # Retries up to 3 times with exponential backoff
     return fetch_external_data()
 ```
+
+See the [Stack Architecture](../architecture/stacks.md) guide for more details on stacks.
 
 ## Pipeline Patterns & Anti-Patterns
 
@@ -573,8 +710,13 @@ print(f"Model accuracy: {result.outputs['accuracy']:.2%}")
 - **[Conditional Execution](../advanced/conditional.md)**: Build adaptive workflows
 - **[Parallel Execution](../advanced/parallel.md)**: Speed up independent operations
 - **[Error Handling](../advanced/error-handling.md)**: Build resilient production pipelines
+- **[Map Tasks](../advanced/map-tasks.md)**: Distribute work with concurrency and retries
+- **[Dynamic Workflows](../advanced/dynamic-workflows.md)**: Runtime-generated sub-pipelines
+- **[Sub-Pipelines](../advanced/subpipelines.md)**: Compose pipelines hierarchically
+- **[Checkpointing](../advanced/checkpointing.md)**: Resume failed runs from where they left off
+- **[Artifact Catalog](../advanced/artifact-catalog.md)**: Centralized artifact discovery and lineage
 
 **Deploy to production**:
-- **[Stack Architecture](../architecture/stacks.md)**: Understand local vs. cloud execution
+- **[Stack Architecture](../architecture/stacks.md)**: Understand local vs. cloud execution and YAML-driven stack hydration
 - **[Projects](../user-guide/projects.md)**: Organize multi-tenant deployments
 - **[Scheduling](../user-guide/scheduling.md)**: Automate recurring pipelines

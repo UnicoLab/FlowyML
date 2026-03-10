@@ -32,6 +32,8 @@
 | **Build-Time Validation** | ✅ **Type Safety** - Catches mismatches at build time. | 💥 Runtime errors only. |
 | **Map Tasks** | 🗺️ **Parallel Maps** - `@map_task` with retries & concurrency. | 🔁 Manual parallelism boilerplate. |
 | **Dynamic Workflows** | 🔀 **Runtime DAGs** - Generate pipelines based on data. | 📐 Static definitions only. |
+| **GenAI Assets** | 🎯 **Prompt & Checkpoint** - First-class prompt versioning and training resumability. | 📝 Unmanaged text files. |
+| **Stack Hydration** | 🏗️ **YAML → Live Stack** - `StackConfig.to_stack()` wires infra automatically. | ⚙️ Manual component assembly. |
 
 ---
 

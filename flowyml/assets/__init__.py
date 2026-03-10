@@ -7,6 +7,8 @@ from flowyml.assets.metrics import Metrics
 from flowyml.assets.artifact import Artifact
 from flowyml.assets.featureset import FeatureSet
 from flowyml.assets.report import Report
+from flowyml.assets.prompt import Prompt
+from flowyml.assets.checkpoint import Checkpoint
 from flowyml.assets.registry import AssetRegistry
 
 __all__ = [
@@ -18,5 +20,7 @@ __all__ = [
     "Artifact",
     "FeatureSet",
     "Report",
+    "Prompt",
+    "Checkpoint",
     "AssetRegistry",
 ]

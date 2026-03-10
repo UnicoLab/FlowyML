@@ -262,6 +262,163 @@ class StackConfig:
             return self.artifact_routing.get_rule(artifact_type)
         return None
 
+    def to_stack(self) -> Any:
+        """Hydrate this StackConfig into a live Stack with real components.
+
+        Resolves each component dict (orchestrator, artifact_store, etc.) into
+        a real object using the ComponentRegistry, then assembles them into a
+        ``Stack`` instance.
+
+        Returns:
+            A fully-wired ``Stack`` ready for pipeline execution.
+
+        Example::
+
+            manager = get_stack_manager()
+            stack_config = manager.get_stack("gcp-prod")
+            live_stack = stack_config.to_stack()
+            pipeline = Pipeline("train", stack=live_stack)
+        """
+        from flowyml.stacks.base import Stack
+
+        # --- Orchestrator ---
+        orchestrator = self._instantiate_component(
+            self.orchestrator,
+            fallback_type="local",
+        )
+        # Fallback: if the registry didn't know the type, use LocalOrchestrator
+        if orchestrator is None:
+            from flowyml.core.orchestrator import LocalOrchestrator
+
+            orchestrator = LocalOrchestrator()
+
+        # --- Artifact store ---
+        artifact_store = self._instantiate_component(
+            self.artifact_store,
+            fallback_type="local",
+        )
+        if artifact_store is None:
+            from flowyml.storage.artifacts import LocalArtifactStore
+
+            path = (self.artifact_store or {}).get("path", ".flowyml/artifacts")
+            artifact_store = LocalArtifactStore(path)
+
+        # --- Metadata store (always local for now) ---
+        from flowyml.storage.metadata import SQLiteMetadataStore
+
+        metadata_store = SQLiteMetadataStore()
+
+        # --- Container registry (optional) ---
+        container_registry = self._instantiate_component(self.container_registry)
+
+        # --- Model deployer (optional) ---
+        model_deployer = self._instantiate_component(self.model_deployer)
+
+        # --- Build the live stack ---
+        live_stack = Stack(
+            name=self.name,
+            executor=None,  # orchestrator handles execution
+            artifact_store=artifact_store,
+            metadata_store=metadata_store,
+            container_registry=container_registry,
+            orchestrator=orchestrator,
+            model_deployer=model_deployer,
+        )
+
+        # Attach routing config so the routing module can read it
+        live_stack._artifact_routing = self.artifact_routing
+        live_stack._artifact_stores = self.artifact_stores
+        live_stack._model_registry_config = self.model_registry
+        live_stack._experiment_tracker_config = self.experiment_tracker
+
+        return live_stack
+
+    @staticmethod
+    def _instantiate_component(
+        config: dict[str, Any] | None,
+        fallback_type: str | None = None,
+    ) -> Any | None:
+        """Instantiate a stack component from its config dict.
+
+        Looks up ``config["type"]`` in the global ``ComponentRegistry``.
+        If the class is found, it is instantiated by forwarding all remaining
+        keys as keyword arguments.
+
+        Args:
+            config: Component configuration dict (must have a ``type`` key).
+            fallback_type: Default type name when config is None or has no type.
+
+        Returns:
+            Component instance, or ``None`` if unresolvable.
+        """
+        if config is None:
+            if fallback_type is None:
+                return None
+            config = {"type": fallback_type}
+
+        comp_type = config.get("type", fallback_type)
+        if comp_type is None:
+            return None
+
+        # Import the provider modules so @register_component decorators fire
+        _ensure_providers_loaded(comp_type)
+
+        from flowyml.stacks.plugins import get_component_registry
+
+        registry = get_component_registry()
+        component_cls = registry.get_component(comp_type)
+        if component_cls is None:
+            logger.warning(
+                f"Component type '{comp_type}' not found in registry. " f"Available: {registry.list_all()}",
+            )
+            return None
+
+        # Forward all config keys except 'type' as kwargs
+        kwargs = {k: v for k, v in config.items() if k != "type"}
+
+        # Map common YAML keys to constructor params
+        mapped = {}
+        for k, v in kwargs.items():
+            mapped[_YAML_KEY_ALIASES.get(k, k)] = v
+
+        try:
+            return component_cls(**mapped)
+        except TypeError as exc:
+            # Gracefully handle unexpected kwargs
+            logger.warning(f"Failed to instantiate {comp_type}: {exc}")
+            try:
+                return component_cls()
+            except Exception:
+                return None
+
+
+# Aliases that map YAML shorthand keys to Python constructor parameter names.
+_YAML_KEY_ALIASES: dict[str, str] = {
+    "bucket": "bucket_name",
+    "project": "project_id",
+    "region": "region",
+}
+
+# Component types provided by each cloud provider module.
+_GCP_COMPONENT_TYPES = {"vertex_ai", "gcs", "gcr", "vertex_model_registry", "vertex_endpoint"}
+_AWS_COMPONENT_TYPES = {"sagemaker", "s3", "ecr", "aws_batch", "sagemaker_model_registry"}
+_AZURE_COMPONENT_TYPES = {"azure_ml", "azure_blob", "acr"}
+
+
+def _ensure_providers_loaded(comp_type: str) -> None:
+    """Import provider modules lazily so their @register_component fires."""
+    import contextlib
+
+    if comp_type in _GCP_COMPONENT_TYPES:
+        with contextlib.suppress(ImportError):
+            import flowyml.stacks.gcp  # noqa: F401
+    elif comp_type in _AWS_COMPONENT_TYPES:
+        with contextlib.suppress(ImportError):
+            import flowyml.stacks.aws  # noqa: F401
+    elif comp_type in _AZURE_COMPONENT_TYPES:
+        with contextlib.suppress(ImportError):
+            import flowyml.stacks.azure  # noqa: F401
+
 
 # =============================================================================
 # MULTI-STACK MANAGER

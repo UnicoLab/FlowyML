@@ -19,6 +19,8 @@ class ComponentType(Enum):
     METADATA_STORE = "metadata_store"
     EXECUTOR = "executor"
     MODEL_DEPLOYER = "model_deployer"
+    MODEL_REGISTRY = "model_registry"
+    EXPERIMENT_TRACKER = "experiment_tracker"
 
 
 @dataclass

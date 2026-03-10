@@ -2,6 +2,7 @@
 
 from collections import defaultdict, deque
 from dataclasses import dataclass
+from typing import Any
 
 
 @dataclass
@@ -9,7 +10,7 @@ class Node:
     """A node in the pipeline DAG."""
 
     name: str
-    step: any  # Step object
+    step: Any  # Step object
     inputs: list[str]
     outputs: list[str]
 
