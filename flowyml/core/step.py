@@ -16,6 +16,101 @@ except ImportError:
     GPUConfig = None  # Type: ignore
 
 
+class StepRegistry:
+    """Global registry for auto-discovered pipeline steps.
+
+    Every ``@step``-decorated function is automatically registered here,
+    enabling pipelines to auto-discover their steps from artifact
+    dependencies instead of requiring manual ``add_step()`` calls.
+
+    The registry supports **pipeline-scoped filtering** via the
+    ``pipeline`` tag on ``@step(pipeline="training")``, so steps from
+    different modules don't leak into unrelated pipelines.
+
+    Example:
+        >>> from flowyml.core.step import get_registered_steps, clear_step_registry
+        >>> steps = get_registered_steps()  # all steps
+        >>> steps = get_registered_steps("training")  # only steps tagged for "training"
+        >>> clear_step_registry()  # reset (useful in tests)
+    """
+
+    def __init__(self) -> None:
+        self._steps: dict[str, "Step"] = {}
+
+    def register(self, step: "Step") -> None:
+        """Register a step in the global registry.
+
+        Args:
+            step: Step instance to register.
+
+        Raises:
+            ValueError: If a step with the same name is already registered.
+        """
+        if step.name in self._steps:
+            existing = self._steps[step.name]
+            # Allow re-registration of the exact same object (e.g. module reload)
+            if existing is not step:
+                raise ValueError(
+                    f"Step '{step.name}' is already registered. "
+                    "Use a unique name or set register=False on one of them.",
+                )
+        self._steps[step.name] = step
+
+    def get_all(self, pipeline: str | None = None) -> list["Step"]:
+        """Return all registered steps, optionally filtered by pipeline tag.
+
+        Args:
+            pipeline: If provided, only return steps whose ``pipeline``
+                      tag matches this value. Steps without a pipeline
+                      tag are included in all queries.
+
+        Returns:
+            List of matching Step instances.
+        """
+        if pipeline is None:
+            return list(self._steps.values())
+
+        return [s for s in self._steps.values() if s.tags.get("pipeline") in (pipeline, None)]
+
+    def get_by_name(self, name: str) -> "Step | None":
+        """Look up a registered step by name."""
+        return self._steps.get(name)
+
+    def clear(self) -> None:
+        """Remove all registered steps. Essential for test isolation."""
+        self._steps.clear()
+
+    def __len__(self) -> int:
+        return len(self._steps)
+
+    def __contains__(self, name: str) -> bool:
+        return name in self._steps
+
+    def __repr__(self) -> str:
+        return f"StepRegistry({len(self._steps)} steps)"
+
+
+# Module-level singleton
+_global_registry = StepRegistry()
+
+
+def get_registered_steps(pipeline: str | None = None) -> list["Step"]:
+    """Get all globally registered steps, optionally filtered by pipeline.
+
+    Args:
+        pipeline: Optional pipeline name to filter by.
+
+    Returns:
+        List of registered Step instances.
+    """
+    return _global_registry.get_all(pipeline)
+
+
+def clear_step_registry() -> None:
+    """Clear the global step registry. Use in test tearDown."""
+    _global_registry.clear()
+
+
 @dataclass
 class StepConfig:
     """Configuration for a pipeline step."""
@@ -173,10 +268,16 @@ def step(
     name: str | None = None,
     condition: Callable | None = None,
     execution_group: str | None = None,
+    pipeline: str | None = None,
+    register: bool = True,
 ):
     """Decorator to define a pipeline step with automatic context injection.
 
     Can be used as @step or @step(inputs=...)
+
+    Every decorated function is automatically registered in a global
+    ``StepRegistry``, enabling ``Pipeline(auto_discover=True)`` to build
+    the DAG without any manual ``add_step()`` calls.
 
     Args:
         _func: Function being decorated (when used as @step)
@@ -190,6 +291,12 @@ def step(
         name: Optional custom name for the step
         condition: Optional callable that returns True if step should run
         execution_group: Optional group name for executing multiple steps together
+        pipeline: Optional pipeline name for scoped auto-discovery.
+            When set, the step is only auto-discovered by pipelines
+            that match this name (or by ``get_registered_steps(pipeline="...")``).
+        register: If False, the step is NOT added to the global registry.
+            Defaults to True. Set to False for helper/utility steps that
+            should only be used via explicit ``add_step()``.
 
     Example:
         >>> @step
@@ -197,6 +304,10 @@ def step(
         ...     ...
         >>> @step(inputs=["data/train"], outputs=["model/trained"])
         ... def train_model(train_data):
+        ...     ...
+        >>> # Scoped to a specific pipeline
+        >>> @step(pipeline="training", outputs=["model"])
+        ... def train(data):
         ...     ...
         >>> # With resource requirements
         >>> from flowyml.core.resources import ResourceRequirements, GPUConfig
@@ -206,7 +317,12 @@ def step(
     """
 
     def decorator(func: Callable) -> Step:
-        return Step(
+        # Merge pipeline tag into tags dict
+        merged_tags = dict(tags) if tags else {}
+        if pipeline is not None:
+            merged_tags["pipeline"] = pipeline
+
+        step_instance = Step(
             func=func,
             name=name,
             inputs=inputs,
@@ -215,10 +331,16 @@ def step(
             retry=retry,
             timeout=timeout,
             resources=resources,
-            tags=tags,
+            tags=merged_tags if merged_tags else None,
             condition=condition,
             execution_group=execution_group,
         )
+
+        # Auto-register in global registry
+        if register:
+            _global_registry.register(step_instance)
+
+        return step_instance
 
     if _func is None:
         return decorator

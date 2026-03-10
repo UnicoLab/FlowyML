@@ -135,6 +135,19 @@ class Pipeline:
         >>> @step(outputs=["model/trained"])
         ... def train(learning_rate: float, epochs: int):
         ...     return train_model(learning_rate, epochs)
+
+        # Option 1: Auto-discover all @step-decorated functions
+        >>> pipeline = Pipeline("my_pipeline", context=ctx, auto_discover=True)
+        >>> result = pipeline.run()
+
+        # Option 2: Concise explicit selection
+        >>> pipeline = Pipeline.from_steps(train, name="my_pipeline", context=ctx)
+
+        # Option 3: Batch add
+        >>> pipeline = Pipeline("my_pipeline", context=ctx)
+        >>> pipeline.add_steps([train])
+
+        # Option 4: Manual add_step (existing, still works)
         >>> pipeline = Pipeline("my_pipeline", context=ctx)
         >>> pipeline.add_step(train)
         >>> result = pipeline.run()
@@ -184,6 +197,7 @@ class Pipeline:
         project: str | None = None,  # Project name to attach to (deprecated, use project_name)
         project_name: str | None = None,  # Project name to attach to (creates if doesn't exist)
         version: str | None = None,  # If provided, VersionedPipeline is created via __new__
+        auto_discover: bool = False,  # Auto-discover @step-decorated functions
         **kwargs,
     ):
         """Initialize pipeline.
@@ -202,8 +216,10 @@ class Pipeline:
                 If the project doesn't exist, it will be created automatically.
             version: Optional version string. If provided, a VersionedPipeline
                 instance will be created instead of a regular Pipeline.
+            auto_discover: If True, automatically discover all ``@step``-decorated
+                functions from the global registry at build time. Steps with a
+                matching ``pipeline`` tag are preferred. Defaults to False.
             **kwargs: Additional keyword arguments passed to the pipeline.
-                instance is automatically created instead of a regular Pipeline.
         """
         from flowyml.utils.config import get_config
 
@@ -290,6 +306,7 @@ class Pipeline:
 
         # State
         self._built = False
+        self._auto_discover = auto_discover
         self.step_groups: list[Any] = []  # Will hold StepGroup objects
         self.control_flows: list[Any] = []  # Store conditional control flows (If, Switch, etc.)
 
@@ -317,6 +334,56 @@ class Pipeline:
         self.steps.append(step)
         self._built = False
         return self
+
+    def add_steps(self, steps: list[Step]) -> "Pipeline":
+        """Add multiple steps to the pipeline at once.
+
+        Args:
+            steps: List of Step instances to add
+
+        Returns:
+            Self for chaining
+
+        Example:
+            >>> pipeline.add_steps([load_data, train_model, evaluate])
+        """
+        for s in steps:
+            self.steps.append(s)
+        self._built = False
+        return self
+
+    @classmethod
+    def from_steps(
+        cls,
+        *steps: Step,
+        name: str,
+        **kwargs,
+    ) -> "Pipeline":
+        """Create a pipeline from an explicit list of steps.
+
+        Convenience constructor that avoids repetitive ``add_step()`` calls
+        while still giving you full control over which steps are included.
+
+        Args:
+            *steps: Step instances to include
+            name: Pipeline name (keyword-only)
+            **kwargs: Additional arguments passed to Pipeline()
+
+        Returns:
+            Configured Pipeline instance
+
+        Example:
+            >>> pipeline = Pipeline.from_steps(
+            ...     load_data,
+            ...     train_model,
+            ...     evaluate,
+            ...     name="training",
+            ...     enable_cache=False,
+            ... )
+        """
+        pipeline = cls(name=name, **kwargs)
+        pipeline.add_steps(list(steps))
+        return pipeline
 
     def add_control_flow(self, control_flow: Any) -> "Pipeline":
         """Add conditional control flow to the pipeline.
@@ -396,6 +463,15 @@ class Pipeline:
         """Build the execution DAG with type validation."""
         if self._built:
             return
+
+        # Auto-discover steps from global registry if enabled
+        if self._auto_discover and not self.steps:
+            from flowyml.core.step import get_registered_steps
+
+            discovered = get_registered_steps(pipeline=self.name)
+            if not discovered:
+                discovered = get_registered_steps()
+            self.steps = list(discovered)
 
         # Clear previous DAG
         self.dag = DAG()

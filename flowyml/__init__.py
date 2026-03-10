@@ -10,7 +10,7 @@ __author__ = "flowyml Team"
 
 # Core imports
 from flowyml.core.context import Context, context
-from flowyml.core.step import step, Step
+from flowyml.core.step import step, Step, StepRegistry, get_registered_steps, clear_step_registry
 from flowyml.core.pipeline import Pipeline
 from flowyml.core.executor import Executor, LocalExecutor
 from flowyml.core.cache import CacheStrategy
@@ -176,6 +176,9 @@ __all__ = [
     "context",
     "step",
     "Step",
+    "StepRegistry",
+    "get_registered_steps",
+    "clear_step_registry",
     "Pipeline",
     "Executor",
     "LocalExecutor",
