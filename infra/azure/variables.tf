@@ -1,0 +1,59 @@
+variable "location" {
+  description = "Azure region"
+  type        = string
+  default     = "westeurope"
+}
+
+variable "app_name" {
+  description = "Application name (prefix for resources)"
+  type        = string
+  default     = "flowyml"
+}
+
+variable "container_image" {
+  description = "Container image for the unified flowyml app (ACR format)"
+  type        = string
+}
+
+variable "db_user" {
+  description = "Database administrator username"
+  type        = string
+  default     = "flowyml"
+}
+
+variable "db_password" {
+  description = "Database administrator password"
+  type        = string
+  sensitive   = true
+}
+
+variable "db_name" {
+  description = "Database name"
+  type        = string
+  default     = "flowyml"
+}
+
+variable "auth_secret" {
+  description = "Authentication secret for JWT signing"
+  type        = string
+  sensitive   = true
+}
+
+variable "api_token" {
+  description = "Static API token for client authentication"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "admin_user" {
+  description = "Admin username for UI login"
+  type        = string
+  default     = "admin"
+}
+
+variable "admin_password" {
+  description = "Admin password for UI login"
+  type        = string
+  sensitive   = true
+}

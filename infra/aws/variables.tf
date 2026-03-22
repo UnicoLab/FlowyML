@@ -10,13 +10,8 @@ variable "app_name" {
   default     = "flowyml"
 }
 
-variable "backend_image" {
-  description = "ECR image URI for backend"
-  type        = string
-}
-
-variable "frontend_image" {
-  description = "ECR image URI for frontend"
+variable "container_image" {
+  description = "ECR image URI for the unified flowyml app"
   type        = string
 }
 
@@ -49,4 +44,16 @@ variable "api_token" {
   type        = string
   sensitive   = true
   default     = ""
+}
+
+variable "admin_user" {
+  description = "Admin username for UI login"
+  type        = string
+  default     = "admin"
+}
+
+variable "admin_password" {
+  description = "Admin password for UI login"
+  type        = string
+  sensitive   = true
 }

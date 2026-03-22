@@ -2,12 +2,10 @@
 
 flowyml provides interactive debugging tools that let you pause pipelines, inspect state, and fix issues without restarting from scratch.
 
-> [!NOTE]
-> **What you'll learn**: How to debug pipelines like standard Python code
->
-> **Key insight**: Distributed pipelines are notoriously hard to debug. flowyml brings the "IDE experience" to pipelines.
+!!! info "What you'll learn"
+    How to debug pipelines like standard Python code. flowyml brings the "IDE experience" to distributed pipelines.
 
-## Why Interactive Debugging Matters
+## Why Interactive Debugging Matters 🤔
 
 **The old way (Airflow/Kubeflow)**:
 1. Push code
@@ -22,7 +20,7 @@ flowyml provides interactive debugging tools that let you pause pipelines, inspe
 3. Execution pauses at the error
 4. Inspect variables, fix code, resume
 
-## Debugging Strategies
+## Debugging Strategies 🎯
 
 | Strategy | Tool | Use When |
 |----------|------|----------|

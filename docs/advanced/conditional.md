@@ -2,10 +2,8 @@
 
 flowyml supports dynamic pipeline execution paths based on runtime conditions. Build smart workflows that adapt to data quality, model performance, or external factors.
 
-> [!NOTE]
-> **What you'll learn**: How to build adaptive pipelines that change behavior based on data
->
-> **Key insight**: Real-world pipelines aren't linear. They need to make decisions (e.g., "Is this model good enough to deploy?").
+!!! info "What you'll learn"
+    How to build adaptive pipelines that change behavior based on data. Real-world pipelines aren't linear — they need to make decisions.
 
 ## Why Conditional Logic Matters
 
@@ -96,8 +94,8 @@ condition=lambda ctx: ctx.steps['train'].outputs['model'].metadata['accuracy'] >
 condition=lambda ctx: ctx.steps['load'].outputs['dataset'].statistics['row_count'] > 0
 ```
 
-> [!NOTE]
-> **Asset Metadata**: The `metadata` attribute in the context is a merged dictionary containing both the Asset's `properties` and `tags`.
+!!! note "Asset Metadata"
+    The `metadata` attribute in the context is a merged dictionary containing both the Asset's `properties` and `tags`.
 
 ### Accessing Context Parameters
 
@@ -161,5 +159,5 @@ pipeline.add_control_flow(
 | `skip_if` | **Optional steps**: Skip a step based on a flag | Skip upload in `dry_run` |
 | `Asset Access` | **Data-driven decisions**: Branch based on metrics | Deploy if F1 > 0.9 |
 
-> [!TIP]
-> **Best Practice**: Keep conditions simple. If your logic is complex, move it into a dedicated `@step` that outputs a boolean flag, then check that flag in the `If` condition.
+!!! tip "Best Practice"
+    Keep conditions simple. If your logic is complex, move it into a dedicated `@step` that outputs a boolean flag, then check that flag in the `If` condition.

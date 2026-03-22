@@ -2,12 +2,10 @@
 
 flowyml ensures you never lose progress. Save pipeline state automatically and track every experiment detail.
 
-> [!NOTE]
-> **What you'll learn**: How to resume failed pipelines and track model performance over time
->
-> **Key insight**: Long-running pipelines *will* fail eventually. Checkpointing turns a catastrophe into a minor annoyance.
+!!! info "What you'll learn"
+    How to resume failed pipelines and track model performance over time. Long-running pipelines *will* fail eventually — checkpointing turns a catastrophe into a minor annoyance.
 
-## Why Checkpointing Matters
+## Why Checkpointing Matters 💡
 
 **Without checkpointing**:
 - **Lost time**: A crash at hour 9 of a 10-hour job means restarting from hour 0
@@ -47,11 +45,11 @@ except Exception:
 result = pipeline.run()  # Automatically resumes from checkpoint
 ```
 
-> [!TIP]
-> **Pro Tip**: Checkpointing is enabled by default. If you want to disable it for a specific pipeline, use `Pipeline("name", enable_checkpointing=False)`.
+!!! tip
+    Checkpointing is enabled by default. If you want to disable it for a specific pipeline, use `Pipeline("name", enable_checkpointing=False)`.
 
-> [!TIP]
-> **Pro Tip**: Always enable checkpointing for pipelines that take longer than 10 minutes. The storage cost is negligible compared to the compute time saved.
+!!! tip
+    Always enable checkpointing for pipelines that take longer than 10 minutes. The storage cost is negligible compared to the compute time saved.
 
 ### Manual Checkpointing
 
@@ -144,7 +142,7 @@ exp.log_run(
 )
 ```
 
-### Comparing Experiments
+### Comparing Experiments 📊
 
 You can compare runs using the CLI or the Python API.
 
@@ -174,7 +172,7 @@ comparison = exp.compare_runs()
 best_run = exp.get_best_run(metric="accuracy", maximize=True)
 ```
 
-### Disabling Automatic Tracking
+### Disabling Automatic Tracking ⏸️
 
 If you want to disable automatic experiment tracking:
 
@@ -188,7 +186,7 @@ update_config(auto_log_metrics=False)
 pipeline = Pipeline("my_pipeline", enable_experiment_tracking=False)
 ```
 
-### Visualizing Experiments
+### Visualizing Experiments 📊
 
 The flowyml UI provides a dedicated **Experiments** view where you can:
 - View a table of all runs
@@ -255,5 +253,5 @@ assert snapshot.verify()        # Verify integrity hasn't changed
 
 The snapshot hash is also stored in `PipelineResult.snapshot_hash` for each run.
 
-> [!TIP]
-> Use `PipelineSnapshot.verify()` to confirm a pipeline hasn't been modified since a previous run — essential for auditing and compliance.
+!!! tip
+    Use `PipelineSnapshot.verify()` to confirm a pipeline hasn't been modified since a previous run — essential for auditing and compliance.

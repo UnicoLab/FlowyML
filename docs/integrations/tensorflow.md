@@ -1,17 +1,22 @@
-# TensorFlow Integration 🤖
+# 🤖 TensorFlow Integration
 
-Production-grade TensorFlow pipelines.
+!!! info "What you'll learn"
+    How to manage TensorFlow models, graphs, and SavedModels with FlowyML's enterprise-scale pipeline infrastructure.
 
-> [!NOTE]
-> **What you'll learn**: How to manage TF graphs and SavedModels
->
-> **Key insight**: Enterprise-scale TF management.
+Production-grade TensorFlow pipelines with automatic artifact tracking, model versioning, and SavedModel support.
 
-## Why TensorFlow + flowyml?
+---
 
-- **SavedModel Support**: First-class support for TF SavedModel format.
-- **TFX Compatibility**: Integrate with TFX components.
-- **Serving**: Easy export to TensorFlow Serving.
+## Why TensorFlow + FlowyML?
+
+| Feature | Benefit |
+|---|---|
+| **SavedModel Support** | First-class TF SavedModel format handling |
+| **TFX Compatibility** | Integrate with TFX components |
+| **Serving** | Easy export to TensorFlow Serving |
+| **GPU Management** | Automatic GPU allocation via FlowyML resources |
+
+---
 
 ## 🤖 Training Step
 
@@ -19,16 +24,90 @@ Production-grade TensorFlow pipelines.
 import tensorflow as tf
 from flowyml import step
 
-@step
+@step(outputs=["model"])
 def train_tf_model(dataset):
-    model = tf.keras.Sequential([...])
+    model = tf.keras.Sequential([
+        tf.keras.layers.Dense(128, activation="relu"),
+        tf.keras.layers.Dropout(0.2),
+        tf.keras.layers.Dense(10, activation="softmax"),
+    ])
 
-    # flowyml tracks this execution
-    model.fit(dataset, epochs=5)
+    model.compile(
+        optimizer="adam",
+        loss="sparse_categorical_crossentropy",
+        metrics=["accuracy"],
+    )
+
+    # FlowyML tracks this execution
+    history = model.fit(dataset["x_train"], dataset["y_train"], epochs=10, validation_split=0.2)
 
     return model
 ```
 
-## 💾 Artifacts
+---
 
-flowyml saves TF models as `SavedModel` directories, preserving the graph and weights.
+## 💾 SavedModel Artifacts
+
+FlowyML saves TF models as `SavedModel` directories, preserving the graph, weights, and signatures:
+
+```python
+@step(outputs=["model_path"])
+def export_model(model):
+    path = "/tmp/my_model"
+    model.save(path)  # SavedModel format
+    return path
+
+@step
+def load_and_predict(model_path, test_data):
+    model = tf.keras.models.load_model(model_path)
+    predictions = model.predict(test_data)
+    return predictions
+```
+
+---
+
+## 📊 Logging Training History
+
+Capture and log Keras training metrics:
+
+```python
+@step(outputs=["model", "metrics"])
+def train_with_metrics(data):
+    model = build_model()
+    history = model.fit(data["x"], data["y"], epochs=20, validation_split=0.2)
+
+    metrics = {
+        "final_accuracy": history.history["accuracy"][-1],
+        "final_val_accuracy": history.history["val_accuracy"][-1],
+        "final_loss": history.history["loss"][-1],
+    }
+
+    return model, metrics
+```
+
+---
+
+## 🚀 TensorFlow Serving Export
+
+Export models in a format ready for TF Serving:
+
+```python
+@step
+def export_for_serving(model, version: int = 1):
+    export_path = f"/models/my_model/{version}"
+    tf.saved_model.save(model, export_path)
+    print(f"Model exported to {export_path}")
+```
+
+---
+
+## Best Practices
+
+!!! tip "Use mixed precision"
+    Enable `tf.keras.mixed_precision.set_global_policy('mixed_float16')` for faster GPU training.
+
+!!! tip "SavedModel over HDF5"
+    Always use `model.save("path/")` (SavedModel) instead of `model.save("model.h5")` — SavedModel is the standard and preserves custom layers.
+
+!!! warning "Memory management"
+    Use `tf.config.experimental.set_memory_growth(gpu, True)` to avoid TF allocating all GPU memory upfront.

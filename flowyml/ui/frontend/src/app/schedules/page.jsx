@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { fetchApi } from '../../utils/api';
 import { Calendar, Play, Pause, Trash2, Plus, Clock, CheckCircle, XCircle, Activity, Globe, History, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { DataView } from '../../components/ui/DataView';
@@ -43,9 +44,9 @@ export function Schedules() {
         try {
             const projectParam = selectedProject ? `?project=${selectedProject}` : '';
             const [schedulesRes, pipelinesRes, healthRes] = await Promise.all([
-                fetch(`/api/schedules/${projectParam}`),
-                fetch(`/api/schedules/registered-pipelines${projectParam}`),
-                fetch('/api/schedules/health')
+                fetchApi(`/api/schedules/${projectParam}`),
+                fetchApi(`/api/schedules/registered-pipelines${projectParam}`),
+                fetchApi('/api/schedules/health')
             ]);
 
             const schedulesData = await schedulesRes.json();
@@ -69,7 +70,7 @@ export function Schedules() {
     const fetchHistory = async (scheduleName) => {
         setHistoryLoading(true);
         try {
-            const res = await fetch(`/api/schedules/${scheduleName}/history`);
+            const res = await fetchApi(`/api/schedules/${scheduleName}/history`);
             const data = await res.json();
             setHistory(data);
         } catch (error) {
@@ -88,7 +89,7 @@ export function Schedules() {
     const createSchedule = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch('/api/schedules', {
+            const response = await fetchApi('/api/schedules', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -122,7 +123,7 @@ export function Schedules() {
     const toggleSchedule = async (name, enabled) => {
         try {
             const action = enabled ? 'disable' : 'enable';
-            await fetch(`/api/schedules/${name}/${action}`, { method: 'POST' });
+            await fetchApi(`/api/schedules/${name}/${action}`, { method: 'POST' });
             fetchData();
         } catch (error) {
             console.error('Failed to toggle schedule:', error);
@@ -132,7 +133,7 @@ export function Schedules() {
     const deleteSchedule = async (name) => {
         if (!confirm(`Delete schedule "${name}"?`)) return;
         try {
-            await fetch(`/api/schedules/${name}`, { method: 'DELETE' });
+            await fetchApi(`/api/schedules/${name}`, { method: 'DELETE' });
             fetchData();
         } catch (error) {
             console.error('Failed to delete schedule:', error);

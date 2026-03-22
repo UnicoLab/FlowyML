@@ -2,10 +2,8 @@
 
 Scale your pipelines from local prototypes to production workloads on Google Cloud.
 
-> [!NOTE]
-> **What you'll learn**: How to run flowyml pipelines on Vertex AI and store data in GCS
->
-> **Key insight**: Develop locally on your laptop, then flip a switch to run on a 100-GPU cluster in the cloud.
+!!! info "What you'll learn"
+    How to run flowyml pipelines on Vertex AI and store data in GCS. Develop locally, then flip a switch to run on a 100-GPU cluster.
 
 ## Why Use GCP with flowyml?
 
@@ -97,8 +95,8 @@ pipeline.run(
 )
 ```
 
-> [!TIP]
-> **Stack-Based is Better**: Using a stack ensures all components (orchestrator, artifact store, metadata store, container registry) work together seamlessly. The stack automatically handles configuration and ensures consistency across your infrastructure.
+!!! tip "Stack-Based is Better"
+    Using a stack ensures all components (orchestrator, artifact store, metadata store, container registry) work together seamlessly.
 
-> [!TIP]
-> **Cost Control**: Vertex AI charges by the second. flowyml ensures resources are only provisioned while your steps are running.
+!!! tip "Cost Control"
+    Vertex AI charges by the second. flowyml ensures resources are only provisioned while your steps are running.

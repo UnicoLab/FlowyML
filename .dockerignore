@@ -116,3 +116,11 @@ inspiration-only/
 examples/
 .system_generated/
 docs/
+
+# Infrastructure (Terraform state not needed in image)
+infra/
+*.tfstate*
+*.tfvars.secret
+
+# Tests (not needed in production image)
+tests/

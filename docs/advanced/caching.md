@@ -2,12 +2,10 @@
 
 flowyml's intelligent caching system eliminates redundant work, saving you time and compute costs.
 
-> [!NOTE]
-> **What you'll learn**: How to skip expensive steps that have already run
->
-> **Key insight**: The fastest code is the code you don't run. flowyml automatically detects when inputs and code haven't changed.
+!!! info "What you'll learn"
+    How to skip expensive steps that have already run. The fastest code is the code you don't run — flowyml automatically detects when inputs and code haven't changed.
 
-## Why Caching Matters
+## Why Caching Matters 💡
 
 **Without caching**:
 - **Wasted time**: Re-running data loading (10 mins) just to fix a typo in plotting
@@ -19,7 +17,7 @@ flowyml's intelligent caching system eliminates redundant work, saving you time 
 - **Cost savings**: Reduce cloud compute bills by 40-60%
 - **Resume capability**: Crash in step 5? Fix it and resume instantly; steps 1-4 are cached
 
-## How Caching Works
+## How Caching Works 🔧
 
 flowyml calculates a **Cache Key** for every step before it runs. If a matching key exists, the step is skipped.
 
@@ -106,8 +104,8 @@ def train_model(dataset, epochs):
     return model.fit(dataset, epochs=epochs)
 ```
 
-> [!WARNING]
-> Use `input_hash` carefully! If you change the logic (e.g., fix a bug) but inputs stay the same, flowyml won't know to re-run it. You'll get the old, buggy result.
+!!! warning
+    Use `input_hash` carefully! If you change the logic (e.g., fix a bug) but inputs stay the same, flowyml won't know to re-run it. You'll get the old, buggy result.
 
 ### 3. `cache=False` (Side Effects)
 
@@ -447,6 +445,6 @@ def custom_cached_step(data):
 
 ## Next Steps 📚
 
-- **[Steps](steps.md)**: Configure step caching strategies
-- **[Pipelines](pipelines.md)**: Enable caching at pipeline level
-- **[Configuration](configuration.md)**: Set cache directory in config
+- **[Steps](../core/steps.md)**: Configure step caching strategies
+- **[Pipelines](../core/pipelines.md)**: Enable caching at pipeline level
+- **[Configuration](../user-guide/configuration.md)**: Set cache directory in config

@@ -229,7 +229,7 @@ def reset_config() -> None:
     _global_config.create_directories()
 
 
-def update_config(**kwargs) -> None:
+def update_config(**kwargs: Any) -> None:
     """Update global configuration with new values.
 
     Args:

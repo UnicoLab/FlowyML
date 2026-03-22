@@ -2,7 +2,7 @@
 
 FlowyML is designed to be fully extensible. While the native plugin system supports many popular tools out of the box, you can easily create your own plugins to integrate with any tool or service.
 
-## Plugin Architecture
+## Plugin Architecture 🏗️
 
 All plugins in FlowyML inherit from `BasePlugin` and potentially a more specific subclass depending on their role (e.g., `ExperimentTracker`, `ArtifactStorePlugin`).
 
@@ -16,7 +16,7 @@ All plugins in FlowyML inherit from `BasePlugin` and potentially a more specific
 | `OrchestratorPlugin` | For running pipelines | `flowyml.plugins.base` |
 | `ContainerRegistryPlugin` | For docker images | `flowyml.plugins.base` |
 
-## Step-by-Step Guide
+## Step-by-Step Guide 📝
 
 Let's build a custom **Experiment Tracker** for a hypothetical tool called "MyLogger".
 
@@ -125,7 +125,7 @@ start_run("experiment-1")
 log_metrics({"accuracy": 0.98})
 ```
 
-## Best Practices
+## Best Practices 💡
 
 ### 1. Lazy Imports
 
@@ -174,7 +174,7 @@ METADATA = PluginMetadata(
 )
 ```
 
-## Testing Your Plugin
+## Testing Your Plugin 🧪
 
 FlowyML makes testing easy.
 
@@ -199,7 +199,7 @@ def test_tracker_logging(mocker):
     # Verify mock was called ...
 ```
 
-## Next Steps
+## Next Steps 📚
 
 - Check out the **[Practical Examples](practical-examples.md)** to see more code.
 - Read the **[Base Plugin API](../api/plugins.md)** for detailed method signatures.

@@ -1,16 +1,176 @@
-# Type-Based Artifact Routing
+# 🔀 Type-Based Artifact Routing
 
-FlowyML provides ZenML-like type-based artifact routing without requiring ZenML as a dependency. Define artifact types in your code, and FlowyML automatically routes them to the configured infrastructure.
+FlowyML provides automatic type-based artifact routing. Define artifact types in your code, and FlowyML automatically routes them to the configured infrastructure — **no manual upload code required**.
 
-## Overview
+<div class="hero-section" markdown>
 
-Type-based routing enables:
-- **Automatic artifact storage** - Models and datasets routed to configured stores
-- **Model registration** - Models auto-registered to Vertex AI or SageMaker registries
-- **Conditional deployment** - Models deployed only when metrics meet thresholds
-- **Metrics logging** - Metrics auto-logged to experiment trackers
+## 🎯 Your Code Defines *What*. Your YAML Defines *Where*.
 
-## Core Artifact Types
+FlowyML inspects the **return type** of each step. Based on the type (`Model`, `Dataset`, `Metrics`) and your `flowyml.yaml` configuration, it automatically saves, registers, logs, and optionally deploys artifacts — with zero extra code.
+
+</div>
+
+---
+
+## 🔍 How It All Connects
+
+### The Complete Flow: YAML → Code → Infrastructure
+
+```mermaid
+graph TB
+    subgraph "1. YOUR CODE defines WHAT"
+        S1["@step → returns Model"]
+        S2["@step → returns Dataset"]
+        S3["@step → returns Metrics"]
+        S4["@step → returns list/dict"]
+    end
+
+    subgraph "2. flowyml.yaml defines WHERE"
+        YAML["flowyml.yaml<br/>artifact_routing rules"]
+    end
+
+    subgraph "3. INFRASTRUCTURE receives artifacts"
+        GCS["☁️ Artifact Store<br/>(GCS / S3 / Azure)"]
+        MLF["🔬 Experiment Tracker<br/>(MLflow / W&B)"]
+        REG["🏷️ Model Registry<br/>(Vertex / SageMaker)"]
+        EP["🚀 Model Endpoint<br/>(auto-deploy)"]
+    end
+
+    S1 --> YAML
+    S2 --> YAML
+    S3 --> YAML
+    S4 --> YAML
+    YAML -->|"Model → store + register"| GCS
+    YAML -->|"Model → register"| REG
+    YAML -->|"Metrics → log"| MLF
+    YAML -->|"Dataset → store"| GCS
+    YAML -->|"list/dict → serialize"| GCS
+    REG -->|"deploy_condition: auto"| EP
+```
+
+### 📌 The Golden Rules
+
+!!! important "When Does FlowyML Upload Artifacts?"
+    | Scenario | What Happens |
+    |----------|-------------|
+    | **No `flowyml.yaml` / local stack** | ✅ Artifacts saved locally to `.flowyml/artifacts/` — **no cloud upload** |
+    | **Stack with `artifact_store: gcs/s3`** | ✅ **All** step outputs are automatically uploaded to the configured bucket |
+    | **Step returns a `Model` type** | ✅ Saved to artifact store **AND** registered in model registry (if one is configured) |
+    | **Step returns a `Metrics` type** | ✅ Logged to experiment tracker (MLflow/W&B) **AND** saved to artifact store |
+    | **Step returns plain `list`, `dict`, `DataFrame`** | ✅ Serialized via materializers and saved to artifact store |
+    | **No `model_registry` configured** | ✅ Models are saved to artifact store only — **no registration happens** |
+    | **No `experiment_tracker` configured** | ✅ Metrics are saved to artifact store only — **no logging happens** |
+    | **`artifact_routing` with `deploy: true`** | ✅ Model is saved, registered, **and deployed** to an endpoint |
+
+### 🧩 Step-by-Step: How FlowyML Knows What To Do
+
+**Example YAML:**
+
+```yaml linenums="1"
+# flowyml.yaml
+plugins:
+  experiment_tracker:            # ← (A) Metrics & Parameters go here
+    type: mlflow
+    tracking_uri: http://localhost:5000
+    experiment_name: my_experiments
+
+  artifact_store:                # ← (B) ALL artifacts stored here
+    type: gcs
+    bucket: my-ml-artifacts
+    prefix: experiments/
+    project: my-gcp-project
+
+  model_registry:                # ← (C) Model type auto-registered here
+    type: vertex_model_registry
+
+  orchestrator:                  # ← (D) WHERE steps RUN (not storage)
+    type: vertex_ai
+    project: my-gcp-project
+    location: us-central1
+    staging_bucket: gs://my-staging-bucket
+
+  artifact_routing:              # ← (E) OPTIONAL fine-grained rules
+    Model:
+      store: gcs                 # Save to artifact_store
+      register: true             # Register in model_registry (C)
+      deploy: false              # Don't auto-deploy
+    Dataset:
+      store: gcs
+      path: "{run_id}/data/{step_name}"
+    Metrics:
+      log_to_tracker: true       # Log to experiment_tracker (A)
+```
+
+**Now, here's how your code maps to this config:**
+
+```python linenums="1"
+from flowyml import step, Pipeline, context
+from flowyml.core import Model, Dataset, Metrics
+
+# ─── STEP 1: Returns a Dataset ─────────────────────────────
+@step(outputs=["training_data"])
+def load_data() -> Dataset:
+    """FlowyML sees return type: Dataset
+
+    What happens:
+    1. Serialized via the Dataset materializer
+    2. Uploaded to GCS: gs://my-ml-artifacts/experiments/{run_id}/data/load_data/
+       (path from artifact_routing → Dataset → path template)
+    3. Lineage recorded in metadata store
+    """
+    import pandas as pd
+    df = pd.read_csv("data.csv")
+    return Dataset(data=df, name="training_features", format="parquet")
+
+# ─── STEP 2: Returns a Model ───────────────────────────────
+@step(inputs=["training_data"], outputs=["model"])
+def train(training_data: Dataset) -> Model:
+    """FlowyML sees return type: Model
+
+    What happens:
+    1. Model serialized (sklearn → pickle, torch → .pt, etc.)
+    2. Uploaded to GCS: gs://my-ml-artifacts/experiments/{run_id}/model/
+    3. Registered in Vertex AI Model Registry as "fraud_detector" v1.0
+       (because model_registry is configured AND artifact_routing.Model.register: true)
+    4. NOT deployed (deploy: false)
+    """
+    from sklearn.ensemble import RandomForestClassifier
+    clf = RandomForestClassifier().fit(training_data.data, labels)
+    return Model(data=clf, name="fraud_detector", version="1.0.0")
+
+# ─── STEP 3: Returns Metrics ───────────────────────────────
+@step(inputs=["model", "training_data"], outputs=["metrics"])
+def evaluate(model: Model, training_data: Dataset) -> Metrics:
+    """FlowyML sees return type: Metrics
+
+    What happens:
+    1. Metrics logged to MLflow (experiment_tracker) automatically:
+       → mlflow.log_metrics({"accuracy": 0.95, "f1": 0.92})
+       (because artifact_routing.Metrics.log_to_tracker: true)
+    2. Also saved to GCS as JSON for lineage
+    3. No manual mlflow.log_metrics() call needed!
+    """
+    preds = model.data.predict(training_data.data)
+    return Metrics({"accuracy": 0.95, "f1": 0.92})
+
+# ─── ASSEMBLE & RUN ────────────────────────────────────────
+pipeline = Pipeline("production", context=context(lr=0.01))
+pipeline.add_step(load_data)
+pipeline.add_step(train)
+pipeline.add_step(evaluate)
+pipeline.run()  # FlowyML handles ALL routing automatically!
+```
+
+!!! tip "💡 Key insight: You write ZERO infrastructure code"
+    Notice there's no `mlflow.log_metrics()`, no `gcs.upload()`, no `registry.register()` anywhere in your code. FlowyML does all of this based on:
+
+    1. The **return type** of your step (`Model`, `Dataset`, `Metrics`, or plain Python types)
+    2. The **plugins** section in `flowyml.yaml` (which stores are configured)
+    3. The **artifact_routing** rules (optional fine-grained control)
+
+---
+
+## 🧩 Core Artifact Types
 
 ```python
 from flowyml.core import Model, Dataset, Metrics, Parameters
@@ -46,7 +206,7 @@ def preprocess(raw_data: pd.DataFrame) -> Dataset:
     )
 ```
 
-## Configuration
+## Configuration ⚙️
 
 Configure routing in `flowyml.yaml`:
 
@@ -90,7 +250,7 @@ stacks:
 active_stack: local
 ```
 
-## Stack Switching
+## Stack Switching 🔄
 
 ### Via Environment Variable
 
@@ -131,7 +291,7 @@ flowyml stack set gcp-prod
 flowyml run pipeline.py --stack gcp-prod
 ```
 
-## Artifact Types Reference
+## Artifact Types Reference 📚
 
 ### Model
 
@@ -199,7 +359,7 @@ params = Parameters({
 })
 ```
 
-## Routing Rules
+## Routing Rules 📋
 
 Each artifact type can have routing rules:
 
@@ -270,7 +430,7 @@ Available placeholders:
 - `{step_name}` - Step that produced the artifact
 - `{artifact_name}` - Artifact type name (lowercase)
 
-## Available Plugins
+## Available Plugins 📦
 
 ### Model Registries
 

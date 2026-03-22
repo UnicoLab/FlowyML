@@ -2,10 +2,8 @@
 
 Deep learning for humans, orchestrated by flowyml.
 
-> [!NOTE]
-> **What you'll learn**: How to track Keras training runs automatically with zero boilerplate
->
-> **Key insight**: Add one callback, get full experiment tracking, training history visualization, and auto-extracted model metadata for free.
+!!! info "What you'll learn"
+    How to track Keras training runs automatically with zero boilerplate. Add one callback, get full experiment tracking and auto-extracted model metadata for free.
 
 ## Why Keras + flowyml?
 

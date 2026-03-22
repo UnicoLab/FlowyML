@@ -88,7 +88,7 @@ export function Runs() {
         <div className="h-screen flex flex-col overflow-hidden bg-slate-50 dark:bg-slate-900">
             {/* Header */}
             <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-4 shrink-0">
-                <div className="flex items-center justify-between max-w-[1800px] mx-auto">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 max-w-[1800px] mx-auto">
                     <div>
                         <h1 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
                             <PlayCircle className="text-blue-500" />
@@ -136,9 +136,9 @@ export function Runs() {
             {/* Main Content */}
             <div className="flex-1 overflow-hidden">
                 <div className="h-full max-w-[1800px] mx-auto px-6 py-6">
-                    <div className="h-full flex gap-6">
+                    <div className="h-full flex flex-col md:flex-row gap-4 md:gap-6">
                         {/* Left Sidebar - Navigation */}
-                        <div className="w-[320px] shrink-0 flex flex-col bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
+                        <div className="w-full md:w-[320px] shrink-0 flex flex-col bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm max-h-[300px] md:max-h-none">
                             <div className="p-3 border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 flex justify-between items-center">
                                 <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Explorer</h3>
                                 {pipelineFilter && (

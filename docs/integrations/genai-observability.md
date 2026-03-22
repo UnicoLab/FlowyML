@@ -3,9 +3,8 @@
 FlowyML provides **zero-config GenAI observability** — just import, decorate, and get
 full tracing, token tracking, cost estimation, and UI visualization automatically.
 
-> [!TIP]
-> **New to GenAI observability?** Start with the [30-Second Quick Start](#30-second-quick-start)
-> below. You'll have full tracing in 3 lines of code.
+!!! tip "New to GenAI observability?"
+    Start with the [30-Second Quick Start](#30-second-quick-start) below. You'll have full tracing in 3 lines of code.
 
 ---
 
@@ -87,6 +86,30 @@ def handle_ticket(ticket_id: str, flowyml_session=None):
 # Just call normally — tracing happens automatically
 handle_ticket("TICKET-1234")
 ```
+
+#### Async Support
+
+`@observe()` works seamlessly with `async def` functions — critical for LangGraph's `ainvoke()`:
+
+```python
+from flowyml import observe
+
+@observe(name="async_agent", project="chatbot")
+async def handle_query_async(query: str, flowyml_session=None):
+    result = await graph.ainvoke(
+        {"messages": [HumanMessage(content=query)]},
+        config=flowyml_session.config,
+    )
+    return result
+
+# Works with asyncio
+import asyncio
+result = asyncio.run(handle_query_async("What is AI?"))
+```
+
+!!! tip "Async Works Everywhere"
+    Both `@observe()` and `@observe_chain()` auto-detect sync vs async functions.
+    No separate decorator needed — just `async def` your function and it works.
 
 ### Method B: `trace_graph()` Context Manager
 
@@ -353,16 +376,53 @@ Every integration captures the same comprehensive telemetry:
 
 All traces are automatically saved and visible in the FlowyML dashboard:
 
-```python
+```bash
 # Start UI
 flowyml ui
-
-# Traces are at:
-# http://localhost:8765/api/traces
-# http://localhost:8765/api/runs
+# Navigate to http://localhost:8765 → GenAI Traces
 ```
 
-Retrieve traces programmatically:
+### Dashboard Features
+
+The **GenAI Traces** page provides a premium observability experience:
+
+| Feature | Description |
+|---------|-------------|
+| **Master-Detail Layout** | Trace list on the left, full detail panel on the right |
+| **KPI Dashboard** | Total traces, avg latency, total tokens, estimated cost |
+| **Waterfall Bars** | Visual latency comparison across traces and spans |
+| **Collapsible Span Tree** | Expand/collapse nested spans with color-coded event types |
+| **Token Progress Bars** | Prompt (indigo) vs completion (violet) split visualization |
+| **Expandable I/O Sections** | View inputs, outputs, errors, and metadata per span |
+| **11 Event Type Icons** | LLM, Tool, Chain, Agent, Embedding, Retriever, Graph Node, Session, etc. |
+| **Smart Filters** | Filter by event type, search by name/model/trace ID |
+| **Relative Timestamps** | "2m ago", "1h ago" for quick temporal context |
+
+### REST API Reference
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/traces` | `GET` | List traces (filters: `event_type`, `project`, `model`, `status`) |
+| `/api/traces` | `POST` | Create a trace event |
+| `/api/traces/{trace_id}` | `GET` | Get full trace tree with all spans |
+| `/api/traces/{trace_id}` | `DELETE` | Delete a trace |
+| `/api/traces/stats` | `GET` | Aggregated GenAI statistics (tokens, cost, model distribution) |
+| `/api/traces/sessions` | `GET` | List session-level traces only |
+
+#### Example: Get Aggregated Stats
+
+```bash
+curl http://localhost:8765/api/traces/stats
+# {
+#   "total_traces": 247,
+#   "total_tokens": 1234567,
+#   "total_cost": 4.23,
+#   "models": {"gpt-4o-mini": 180, "gpt-4o": 67},
+#   "event_types": {"llm": 300, "tool": 120, "chain": 50}
+# }
+```
+
+### Programmatic Access
 
 ```python
 from flowyml.storage.sql import SQLMetadataStore
@@ -388,6 +448,326 @@ All integration functions accept these common parameters:
 
 ---
 
+## Architecture Overview
+
+```mermaid
+flowchart TB
+    subgraph Integrations["Integration Layer"]
+        LG["🔗 LangGraph<br>observe / trace_graph / instrument"]
+        LC["🔗 LangChain<br>observe_chain / trace_chain"]
+        OAI["🤖 OpenAI<br>TracedOpenAI / patch_openai"]
+        GEN["🌐 Generic<br>observe / trace / span"]
+    end
+
+    subgraph Core["Core Engine (base.py)"]
+        BT["BaseTracer<br>Span lifecycle"]
+        TS["TraceSession<br>Aggregated metrics"]
+        SP["TraceSpan<br>tokens / cost / artifacts"]
+    end
+
+    subgraph Session["Session Layer"]
+        ST["SessionTracer<br>Multi-turn management"]
+        GS["GenAISession<br>Turn aggregation"]
+        TN["Turn<br>User↔Assistant exchange"]
+        EB["SessionEvaluator<br>Auto-eval per turn"]
+    end
+
+    subgraph Storage["Persistence"]
+        SQL["SQLMetadataStore"]
+        API["REST API /api/traces"]
+        UI["FlowyML Dashboard"]
+    end
+
+    LG --> BT
+    LC --> BT
+    OAI --> BT
+    GEN --> BT
+    BT --> TS
+    BT --> SP
+    BT --> SQL
+    ST --> BT
+    ST --> GS
+    GS --> TN
+    GS --> EB
+    SQL --> API --> UI
+```
+
+---
+
+## 5. Session-Level Tracing (Multi-Turn)
+
+For chatbots, multi-turn agents, and interactive AI apps, FlowyML provides **session-level tracing** that aggregates turns, tracks conversation threads, and attaches evaluations per turn.
+
+### `session_trace()` — Context Manager
+
+```python
+from flowyml.integrations.base import session_trace
+
+with session_trace("support_bot", project="customer_support") as tracer:
+    # Turn 1: User asks a question
+    with tracer.turn("user") as t:
+        t.content = "How do I reset my password?"
+        span = tracer.start_span("llm", "gpt4_reply")
+        response = call_llm("How do I reset my password?")
+        span.set_tokens(prompt_tokens=50, completion_tokens=100, model="gpt-4o-mini")
+        tracer.end_span(span, outputs={"response": response})
+        t.content = response
+
+    # Turn 2: Follow-up
+    with tracer.turn("user") as t:
+        t.content = "What if I forgot my email too?"
+        span = tracer.start_span("llm", "gpt4_followup")
+        response2 = call_llm("What if I forgot my email too?")
+        span.set_tokens(prompt_tokens=80, completion_tokens=120, model="gpt-4o-mini")
+        tracer.end_span(span, outputs={"response": response2})
+        t.content = response2
+
+# ═══════════════════════════════════════════════════
+#   🧠 FlowyML GenAI Session — support_bot
+# ═══════════════════════════════════════════════════
+#   💬 Turns      : 2
+#   📊 Tokens     : 350 (in: 130 / out: 220)
+#   💰 Est. Cost  : $0.0002
+#   ⚡ Avg Latency: 0.45s/turn
+# ═══════════════════════════════════════════════════
+```
+
+### `TracedOpenAISession` — Drop-in Multi-Turn OpenAI
+
+```python
+from flowyml.integrations.openai_integration import TracedOpenAISession
+
+client = TracedOpenAISession(
+    project="support",
+    name="ticket_bot",
+    thread_id="thread_abc123",    # Links to a conversation thread
+    user_id="user_456",           # Tracks per-user metrics
+)
+
+# Each call is automatically tracked as a turn
+resp1 = client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=[{"role": "user", "content": "Hello, I need help!"}],
+)
+
+resp2 = client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=[
+        {"role": "user", "content": "Hello, I need help!"},
+        {"role": "assistant", "content": resp1.choices[0].message.content},
+        {"role": "user", "content": "Can you check my order status?"},
+    ],
+)
+
+client.finalize()  # Prints session summary with all turns
+```
+
+---
+
+## 6. Automatic Evaluations on Sessions
+
+Attach evaluators that **automatically score every turn** — quality monitoring in real-time.
+
+```python
+from flowyml.integrations.base import session_trace
+from flowyml.integrations.eval_bridge import SessionEvaluator
+from flowyml.evals import Relevance, Toxicity
+
+# Create evaluator with scorers
+evaluator = SessionEvaluator([
+    Relevance(model="gpt-4o-mini", threshold=0.7),
+    Toxicity(model="gpt-4o-mini", threshold=0.1),
+], async_mode=True)   # Runs evals in background threads
+
+with session_trace(
+    "qa_bot",
+    project="support",
+    evaluator=evaluator,  # ← Attach here
+) as tracer:
+    with tracer.turn("user") as t:
+        t.content = user_response
+        # Evals run AUTOMATICALLY after each turn finishes
+
+# Session summary includes eval scores:
+# ═══════════════════════════════════════════════════
+#   📈 Eval Scores:
+#      relevance: mean=0.92 (min=0.85, max=0.98, n=5)
+#      toxicity:  mean=0.02 (min=0.00, max=0.05, n=5)
+# ═══════════════════════════════════════════════════
+```
+
+!!! tip "Experiment Tracking Integration"
+    Session eval scores are automatically exported as experiment metrics:
+    ```python
+    metrics = tracer.genai_session.to_experiment_metrics()
+    # {'total_turns': 5.0, 'total_tokens': 2340.0,
+    #  'eval_relevance_mean': 0.92, 'eval_toxicity_mean': 0.02}
+    ```
+
+---
+
+## 7. Saving Artifacts
+
+Attach prompts, retrieved documents, intermediate results, or any structured data to spans:
+
+```python
+with trace("rag_pipeline", project="knowledge_base") as tracer:
+    # Save the system prompt as an artifact
+    tracer.save_artifact(
+        "system_prompt",
+        "prompt",
+        "You are a helpful assistant that answers questions about FlowyML.",
+    )
+
+    span = tracer.start_span("retriever", "vector_search")
+    docs = search_vector_db(query)
+    tracer.end_span(span, outputs={"count": len(docs)})
+
+    # Save retrieved documents as artifacts
+    for i, doc in enumerate(docs):
+        tracer.save_artifact(
+            f"retrieved_doc_{i}",
+            "document",
+            doc.page_content,
+            span=span,
+            metadata={"source": doc.metadata.get("source")},
+        )
+
+    # Spans also support inline artifacts
+    llm_span = tracer.start_span("llm", "generate_answer")
+    llm_span.add_artifact("final_prompt", "prompt", full_prompt)
+    # ...
+```
+
+!!! info "Artifact Types"
+    Supported types: `prompt`, `response`, `document`, `embedding`, `image`, `config`, `intermediate`, `code`.
+
+---
+
+## 8. Real-World Examples
+
+### Example A: Full LangGraph ReAct Agent
+
+```python
+from langchain_openai import ChatOpenAI
+from langgraph.prebuilt import create_react_agent
+from langchain_core.tools import tool
+from flowyml import observe
+
+@tool
+def search_docs(query: str) -> str:
+    """Search internal documentation."""
+    return f"Found 3 results for: {query}"
+
+@tool
+def create_ticket(title: str, description: str) -> str:
+    """Create a support ticket."""
+    return f"Ticket created: {title}"
+
+# Build agent
+llm = ChatOpenAI(model="gpt-4o-mini")
+agent = create_react_agent(llm, [search_docs, create_ticket])
+
+# ✨ One decorator = full observability
+@observe(name="support_agent", project="helpdesk")
+def handle_support(query: str, flowyml_session=None):
+    return agent.invoke(
+        {"messages": [("human", query)]},
+        config=flowyml_session.config,
+    )
+
+# Every LLM call, tool invocation, and graph node is traced
+result = handle_support("My login isn't working, I've tried resetting my password")
+```
+
+### Example B: Custom Agent with Anthropic
+
+```python
+from flowyml.integrations.generic import observe, log_llm_call
+import anthropic
+
+@observe(name="analysis_agent", project="research", framework="anthropic")
+def analyze_data(query: str, flowyml_session=None):
+    client = anthropic.Anthropic()
+
+    # Each API call is logged with full token/cost tracking
+    response = client.messages.create(
+        model="claude-3-5-sonnet-20241022",
+        max_tokens=1024,
+        messages=[{"role": "user", "content": query}],
+    )
+
+    # Log the call manually (Anthropic SDK doesn't have callbacks)
+    log_llm_call(
+        model="claude-3-5-sonnet",
+        prompt=query,
+        response=response.content[0].text,
+        prompt_tokens=response.usage.input_tokens,
+        completion_tokens=response.usage.output_tokens,
+        tracer=flowyml_session,
+    )
+    return response.content[0].text
+
+result = analyze_data("Analyze quarterly revenue trends")
+```
+
+### Example C: CrewAI with FlowyML Observability
+
+```python
+from flowyml.integrations.generic import observe, log_llm_call, log_tool_call
+
+@observe(name="research_crew", project="content", framework="crewai")
+def run_research(topic: str, flowyml_session=None):
+    from crewai import Crew, Agent, Task
+
+    researcher = Agent(role="Researcher", goal=f"Research {topic}")
+    writer = Agent(role="Writer", goal="Write article")
+
+    research_task = Task(description=f"Research {topic}", agent=researcher)
+    write_task = Task(description="Write article", agent=writer)
+
+    crew = Crew(agents=[researcher, writer], tasks=[research_task, write_task])
+    result = crew.kickoff()
+
+    # Log aggregated metrics after crew completes
+    log_llm_call(
+        model="gpt-4o",
+        prompt=topic,
+        response=str(result),
+        prompt_tokens=2000,
+        completion_tokens=1500,
+        tracer=flowyml_session,
+    )
+    return result
+
+run_research("AI trends in 2025")
+```
+
+---
+
+## 9. Real-Time Event Streaming
+
+Subscribe to live events during a session for real-time dashboards:
+
+```python
+from flowyml.integrations.base import session_trace
+
+def on_event(event_type: str, data: dict):
+    if event_type == "turn_end":
+        print(f"Turn completed: {data['role']} ({data['total_tokens']} tokens)")
+    elif event_type == "eval_complete":
+        print(f"Eval: {data['scorer']} = {data['score']:.2f}")
+
+with session_trace("live_bot", project="demo") as tracer:
+    tracer.genai_session.on_event(on_event)  # Subscribe
+
+    with tracer.turn("user") as t:
+        # ... events fire automatically
+        pass
+```
+
+---
+
 ## Advanced: Custom Cost Models
 
 Extend the built-in cost table with your own models:
@@ -395,9 +775,41 @@ Extend the built-in cost table with your own models:
 ```python
 from flowyml.integrations.base import MODEL_COSTS
 
-# Add custom model
+# Add custom model pricing
 MODEL_COSTS["my-custom-model"] = {
     "prompt": 0.001,      # $ per 1K prompt tokens
     "completion": 0.003,  # $ per 1K completion tokens
 }
+
+# Add self-hosted models (free)
+MODEL_COSTS["llama-3-70b"] = {"prompt": 0.0, "completion": 0.0}
+```
+
+---
+
+## Quick Reference: All Integration Entry Points
+
+```python
+# ─── Framework-Agnostic (always available) ─────────
+from flowyml import observe_genai, trace_genai      # Decorator & context manager
+from flowyml import log_llm_call, log_tool_call      # Fire-and-forget logging
+from flowyml import span                             # Span context manager
+from flowyml.integrations.base import session_trace   # Multi-turn sessions
+
+# ─── LangGraph ─────────────────────────────────────
+from flowyml import observe, trace_graph              # Decorator & CM
+from flowyml import instrument_graph                  # Permanent wrapping
+from flowyml import FlowyMLCallbackHandler            # Direct callback
+
+# ─── LangChain ─────────────────────────────────────
+from flowyml.integrations.langchain import observe_chain, trace_chain
+from flowyml.integrations.langchain import instrument_chain
+
+# ─── OpenAI SDK ────────────────────────────────────
+from flowyml import TracedOpenAI, patch_openai        # Client wrappers
+from flowyml.integrations.openai_integration import TracedOpenAISession
+from flowyml.integrations.openai_integration import trace_openai_session
+
+# ─── Evaluations ───────────────────────────────────
+from flowyml.integrations.eval_bridge import SessionEvaluator
 ```

@@ -363,12 +363,12 @@ response = requests.get(
 
 ### Security Best Practices
 
-> [!IMPORTANT]
-> - **Change default secrets**: Always set custom `FLOWYML_AUTH_SECRET` in production
-> - **Use HTTPS**: Enable SSL/TLS for all production deployments
-> - **Token rotation**: Rotate API tokens regularly (every 90 days recommended)
-> - **Least privilege**: Grant minimum required permissions to tokens
-> - **Network security**: Use firewalls and VPCs to restrict access
+!!! important "Security Best Practices"
+    - **Change default secrets**: Always set custom `FLOWYML_AUTH_SECRET` in production
+    - **Use HTTPS**: Enable SSL/TLS for all production deployments
+    - **Token rotation**: Rotate API tokens regularly (every 90 days recommended)
+    - **Least privilege**: Grant minimum required permissions to tokens
+    - **Network security**: Use firewalls and VPCs to restrict access
 
 ---
 
@@ -611,35 +611,32 @@ docker-compose restart
 
 ## 📚 Additional Resources
 
-- **[API Documentation](./API.md)**: Complete API reference
-- **[Architecture Guide](./architecture.md)**: System architecture and design
-- **[Configuration Reference](./configuration.md)**: All configuration options
-- **[Security Guide](./security.md)**: Security best practices
+- **[API Documentation](api/core.md)**: Complete API reference
+- **[Architecture Guide](architecture.md)**: System architecture and design
+- **[Configuration Reference](user-guide/configuration.md)**: All configuration options
+- **[Security Guide](deployment/secrets.md)**: Security best practices
 
 ---
 
 ## 💡 Tips & Best Practices
 
-> [!TIP]
-> **Performance Optimization**
-> - Use PostgreSQL for production deployments
-> - Enable connection pooling (default with SQLAlchemy)
-> - Configure appropriate cache settings
-> - Use CDN for frontend assets
+!!! tip "Performance Optimization"
+    - Use PostgreSQL for production deployments
+    - Enable connection pooling (default with SQLAlchemy)
+    - Configure appropriate cache settings
+    - Use CDN for frontend assets
 
-> [!TIP]
-> **High Availability**
-> - Deploy backend across multiple availability zones
-> - Use database read replicas for read-heavy workloads
-> - Implement load balancing with health checks
-> - Configure auto-scaling based on metrics
+!!! tip "High Availability"
+    - Deploy backend across multiple availability zones
+    - Use database read replicas for read-heavy workloads
+    - Implement load balancing with health checks
+    - Configure auto-scaling based on metrics
 
-> [!TIP]
-> **Cost Optimization**
-> - Start with smaller instance sizes and scale up
-> - Use spot instances for development/staging
-> - Implement artifact lifecycle policies
-> - Monitor and optimize database query performance
+!!! tip "Cost Optimization"
+    - Start with smaller instance sizes and scale up
+    - Use spot instances for development/staging
+    - Implement artifact lifecycle policies
+    - Monitor and optimize database query performance
 
 ---
 

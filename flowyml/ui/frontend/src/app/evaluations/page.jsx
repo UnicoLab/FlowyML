@@ -91,14 +91,14 @@ function NewEvalModal({ open, onClose, onSubmit, scorers }) {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+                className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6 bg-black/50 backdrop-blur-sm"
                 onClick={() => onClose()}
             >
                 <motion.div
                     initial={{ scale: 0.95, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.95, opacity: 0 }}
-                    className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xl w-[700px] max-h-[85vh] overflow-y-auto"
+                    className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto"
                     onClick={e => e.stopPropagation()}
                 >
                     <div className="p-6 border-b border-slate-200 dark:border-slate-700">
@@ -128,7 +128,7 @@ function NewEvalModal({ open, onClose, onSubmit, scorers }) {
                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
                                 Scorers ({formData.selectedScorers.length} selected)
                             </label>
-                            <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[200px] overflow-y-auto p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700">
                                 {scorers.map(s => (
                                     <button
                                         key={s.name}
@@ -147,7 +147,7 @@ function NewEvalModal({ open, onClose, onSubmit, scorers }) {
                         </div>
 
                         {/* Experiment & Threshold */}
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
                                     Experiment Name
@@ -306,7 +306,7 @@ export function Evaluations() {
         <div className="h-full flex flex-col overflow-hidden">
             {/* Header */}
             <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-4 shrink-0">
-                <div className="flex items-center justify-between max-w-[1800px] mx-auto">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 max-w-[1800px] mx-auto">
                     <div>
                         <h1 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
                             <ClipboardCheck className="text-teal-500" />
@@ -408,7 +408,8 @@ export function Evaluations() {
                             animate={{ opacity: 1, y: 0 }}
                             className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm"
                         >
-                            <table className="w-full">
+                          <div className="overflow-x-auto">
+                            <table className="w-full min-w-[700px]">
                                 <thead>
                                     <tr className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700">
                                         {selectionMode === 'multi' && (
@@ -502,6 +503,7 @@ export function Evaluations() {
                                     ))}
                                 </tbody>
                             </table>
+                          </div>
                         </motion.div>
                     )}
                 </div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { fetchApi } from '../../utils/api';
 import { useSearchParams } from 'react-router-dom';
 import {
     Rocket,
@@ -94,7 +95,7 @@ export function DeploymentLab() {
 
     const fetchDeployments = async () => {
         try {
-            const response = await fetch('/api/deployments/');
+            const response = await fetchApi('/api/deployments/');
             const data = await response.json();
             setDeployments(Array.isArray(data) ? data : []);
         } catch (error) {
@@ -106,7 +107,7 @@ export function DeploymentLab() {
 
     const fetchAvailableModels = async () => {
         try {
-            const response = await fetch('/api/deployments/available-models');
+            const response = await fetchApi('/api/deployments/available-models');
             const data = await response.json();
             setAvailableModels(Array.isArray(data) ? data : []);
         } catch (error) {
@@ -116,7 +117,7 @@ export function DeploymentLab() {
 
     const fetchDependencyStatus = async () => {
         try {
-            const response = await fetch('/api/deployments/dependencies/status');
+            const response = await fetchApi('/api/deployments/dependencies/status');
             const data = await response.json();
             setInstalledDeps(data.installed || {});
         } catch (error) {
@@ -127,7 +128,7 @@ export function DeploymentLab() {
     const installDependency = async (framework) => {
         setInstallingDeps(prev => new Set([...prev, framework]));
         try {
-            const response = await fetch('/api/deployments/dependencies/install', {
+            const response = await fetchApi('/api/deployments/dependencies/install', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ frameworks: [framework] })
@@ -156,7 +157,7 @@ export function DeploymentLab() {
     const createDeployment = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch('/api/deployments/', {
+            const response = await fetchApi('/api/deployments/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(newDeployment)
@@ -179,7 +180,7 @@ export function DeploymentLab() {
 
     const toggleDeployment = async (id, action) => {
         try {
-            await fetch(`/api/deployments/${id}/${action}`, { method: 'POST' });
+            await fetchApi(`/api/deployments/${id}/${action}`, { method: 'POST' });
             fetchDeployments();
         } catch (error) {
             console.error(`Failed to ${action} deployment:`, error);
@@ -188,7 +189,7 @@ export function DeploymentLab() {
 
     const deleteDeployment = async (id) => {
         try {
-            await fetch(`/api/deployments/${id}`, { method: 'DELETE' });
+            await fetchApi(`/api/deployments/${id}`, { method: 'DELETE' });
             setDeleteConfirmId(null);
             fetchDeployments();
         } catch (error) {
@@ -241,7 +242,7 @@ export function DeploymentLab() {
         setSelectedDeployment(deployment);
         setLogsLoading(true);
         try {
-            const response = await fetch(`/api/deployments/${deployment.id}/logs`);
+            const response = await fetchApi(`/api/deployments/${deployment.id}/logs`);
             if (response.ok) {
                 const data = await response.json();
                 setDeploymentLogs(data.logs || []);
@@ -280,7 +281,7 @@ export function DeploymentLab() {
     return (
         <div className="p-6 max-w-7xl mx-auto space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
                         <div className="p-3 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl text-white">

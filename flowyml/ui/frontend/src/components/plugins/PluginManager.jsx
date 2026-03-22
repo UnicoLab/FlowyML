@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Package, Download, Import } from 'lucide-react';
+import { Package, Download, Import, Layers } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
 import { PluginBrowser } from './PluginBrowser';
 import { InstalledPlugins } from './InstalledPlugins';
 import { StackImport } from './StackImport';
+import { StackTemplates } from './StackTemplates';
 
 export function PluginManager() {
     const [activeTab, setActiveTab] = useState('browser');
@@ -11,6 +12,7 @@ export function PluginManager() {
     const tabs = [
         { id: 'browser', label: 'Plugin Browser', icon: Package },
         { id: 'installed', label: 'Installed', icon: Download },
+        { id: 'stacks', label: 'Stack Templates', icon: Layers },
         { id: 'import', label: 'Import Stack', icon: Import },
     ];
 
@@ -24,7 +26,7 @@ export function PluginManager() {
                     </div>
                 </div>
 
-                <div className="flex gap-6">
+                <div className="flex gap-6 overflow-x-auto scrollbar-none">
                     {tabs.map((tab) => {
                         const Icon = tab.icon;
                         const isActive = activeTab === tab.id;
@@ -33,7 +35,7 @@ export function PluginManager() {
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`
-                                    flex items-center gap-2 pb-3 text-sm font-medium transition-all relative
+                                    flex items-center gap-2 pb-3 text-sm font-medium transition-all relative whitespace-nowrap
                                     ${isActive
                                         ? 'text-primary-600 dark:text-primary-400'
                                         : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
@@ -53,6 +55,7 @@ export function PluginManager() {
             <CardContent className="p-6">
                 {activeTab === 'browser' && <PluginBrowser />}
                 {activeTab === 'installed' && <InstalledPlugins />}
+                {activeTab === 'stacks' && <StackTemplates />}
                 {activeTab === 'import' && <StackImport />}
             </CardContent>
         </Card>

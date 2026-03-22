@@ -460,14 +460,13 @@ def memory_intensive():
 
 ## Related Documentation
 
-- [Orchestrators Guide](./orchestrators.md) - Configure different orchestrators
-- [Pipeline Optimization](./optimization.md) - Optimize pipeline performance
-- [Cost Management](./cost_management.md) - Control cloud spending
-- [Kubernetes Integration](./kubernetes.md) - Deploy on Kubernetes
+- [Orchestrators Guide](api/orchestrators.md) - Configure different orchestrators
+- [Pipeline Optimization](user-guide/performance.md) - Optimize pipeline performance
+- [Kubernetes Integration](integrations/kubernetes.md) - Deploy on Kubernetes
 
 ## API Reference
 
 For complete API documentation, see:
-- [`flowyml.core.resources.ResourceRequirements`](../api/resources.md#resourcerequirements)
-- [`flowyml.core.resources.GPUConfig`](../api/resources.md#gpuconfig)
-- [`flowyml.core.resources.NodeAffinity`](../api/resources.md#nodeaffinity)
+- [`flowyml.core.resources.ResourceRequirements`](api/types.md#flowyml.core.resources.ResourceRequirements)
+- [`flowyml.core.resources.GPUConfig`](api/types.md#flowyml.core.resources.GPUConfig)
+- [`flowyml.core.resources.NodeAffinity`](api/types.md#flowyml.core.resources.NodeAffinity)

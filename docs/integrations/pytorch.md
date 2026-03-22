@@ -2,10 +2,8 @@
 
 Dynamic neural networks, orchestrated by flowyml.
 
-> [!NOTE]
-> **What you'll learn**: How to manage PyTorch training loops and models with automatic metadata extraction
->
-> **Key insight**: flowyml automatically extracts model architecture, parameters, and device info so you can focus on the gradients.
+!!! info "What you'll learn"
+    How to manage PyTorch training loops and models with automatic metadata extraction — architecture, parameters, and device info captured automatically.
 
 ## Why PyTorch + flowyml?
 

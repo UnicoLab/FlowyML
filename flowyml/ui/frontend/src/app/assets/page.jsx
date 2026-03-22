@@ -249,7 +249,7 @@ export function Assets() {
         <div className="h-screen flex flex-col overflow-hidden bg-gradient-to-br from-slate-50 via-slate-50 to-blue-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800">
             {/* Header */}
             <header className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg border-b border-slate-200 dark:border-slate-700 px-6 py-4 shrink-0">
-                <div className="flex items-center justify-between gap-6 max-w-[2000px] mx-auto">
+                <div className="flex items-center justify-between gap-4 max-w-[2000px] mx-auto flex-wrap">
                     {/* Title & Stats */}
                     <div className="flex items-center gap-6">
                     <div>
@@ -660,8 +660,9 @@ function ExplorerRun({ runId, assets, expanded, onToggle, onAssetSelect, typeFil
 function AssetTable({ assets, onSelect, sortConfig, onSort, selectedAsset }) {
     return (
         <div className="h-full flex flex-col bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
+          <div className="overflow-x-auto flex-1 flex flex-col">
             {/* Table Header */}
-            <div className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 px-4 py-3 grid grid-cols-[80px,1fr,120px,200px,140px,140px,100px,50px] gap-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+            <div className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 px-4 py-3 grid grid-cols-[80px,1fr,120px,200px,140px,140px,100px,50px] gap-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider min-w-[900px]">
                 <div>Type</div>
                 <SortableHeader label="Name" sortKey="name" sortConfig={sortConfig} onSort={onSort} />
                 <div>Step</div>
@@ -684,6 +685,7 @@ function AssetTable({ assets, onSelect, sortConfig, onSort, selectedAsset }) {
                     />
                 ))}
             </div>
+          </div>
         </div>
     );
 }
@@ -735,7 +737,7 @@ function AssetRow({ asset, onSelect, isEven, isSelected }) {
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
             onClick={() => onSelect(asset)}
-            className={`px-4 py-3 grid grid-cols-[80px,1fr,120px,200px,140px,140px,100px,50px] gap-4 items-center cursor-pointer transition-colors border-b border-slate-100 dark:border-slate-700/50 group ${
+            className={`px-4 py-3 grid grid-cols-[80px,1fr,120px,200px,140px,140px,100px,50px] gap-4 items-center cursor-pointer transition-colors border-b border-slate-100 dark:border-slate-700/50 group min-w-[900px] ${
                 isSelected
                     ? 'bg-blue-100 dark:bg-blue-900/40 border-l-4 border-l-blue-500'
                     : `hover:bg-blue-50 dark:hover:bg-blue-900/20 ${isEven ? '' : 'bg-slate-50/50 dark:bg-slate-800/30'}`

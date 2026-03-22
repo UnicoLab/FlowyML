@@ -2,10 +2,8 @@
 
 Classic ML pipelines made robust and reproducible.
 
-> [!NOTE]
-> **What you'll learn**: How to version and deploy sklearn models with automatic metadata extraction
->
-> **Key insight**: Turn your notebook scripts into production pipelines with full hyperparameter tracking.
+!!! info "What you'll learn"
+    How to version and deploy sklearn models with automatic metadata extraction. Turn notebook scripts into production pipelines.
 
 ## Why Scikit-Learn + flowyml?
 

@@ -165,7 +165,7 @@ class Pipeline:
         version: str | None = None,
         project_name: str | None = None,
         project: str | None = None,  # For backward compatibility
-        **kwargs,
+        **kwargs: Any,
     ):
         """Create a Pipeline or VersionedPipeline instance.
 
@@ -198,7 +198,7 @@ class Pipeline:
         project_name: str | None = None,  # Project name to attach to (creates if doesn't exist)
         version: str | None = None,  # If provided, VersionedPipeline is created via __new__
         auto_discover: bool = False,  # Auto-discover @step-decorated functions
-        **kwargs,
+        **kwargs: Any,
     ):
         """Initialize pipeline.
 
@@ -368,7 +368,7 @@ class Pipeline:
         cls,
         *steps: Step,
         name: str,
-        **kwargs,
+        **kwargs: Any,
     ) -> "Pipeline":
         """Create a pipeline from an explicit list of steps.
 
@@ -430,7 +430,7 @@ class Pipeline:
         outputs: list[str] | None = None,
         input_mapping: dict[str, str] | None = None,
         output_mapping: dict[str, str] | None = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> "Pipeline":
         """Add a sub-pipeline as a step in this pipeline.
 
@@ -560,7 +560,7 @@ class Pipeline:
         docker_config: Any | None = None,  # DockerConfig
         context: dict[str, Any] | None = None,  # Context vars override
         auto_start_ui: bool = True,  # Auto-start UI server
-        **kwargs,
+        **kwargs: Any,
     ) -> PipelineResult:
         """Execute the pipeline.
 
@@ -753,7 +753,7 @@ class Pipeline:
         self,
         run_id: str,
         from_step: str | None = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> "PipelineResult":
         """Re-run a pipeline from a checkpoint, resuming from where it left off.
 

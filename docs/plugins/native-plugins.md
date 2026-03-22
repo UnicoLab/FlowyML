@@ -2,7 +2,7 @@
 
 FlowyML provides a powerful, extensible plugin system that allows you to integrate with external tools **without requiring any framework dependencies**. Simply install the plugin you need, and FlowyML handles the rest.
 
-## Quick Start
+## Quick Start 🚀
 
 ```bash
 # List available plugins
@@ -29,7 +29,7 @@ tracker.log_metrics({"accuracy": 0.95})
 tracker.end_run()
 ```
 
-## Key Benefits
+## Key Benefits 🎯
 
 | Feature | FlowyML Plugins |
 |---------|-----------------|
@@ -39,7 +39,7 @@ tracker.end_run()
 | **Easy to extend** | Create your own plugins |
 | **Community support** | Install plugins from git |
 
-## Available Plugins
+## Available Plugins 📦
 
 ### Experiment Trackers
 
@@ -111,7 +111,7 @@ tracker.end_run()
 | `vertex_endpoint` | Vertex AI Endpoints | google-cloud-aiplatform |
 | `sagemaker_endpoint` | SageMaker Endpoints | boto3 |
 
-## Plugin Usage Examples
+## Plugin Usage Examples 💡
 
 ### MLflow Experiment Tracking
 
@@ -199,7 +199,7 @@ tracker.set_tag("model_uri", model_uri)
 tracker.end_run()
 ```
 
-## CLI Commands
+## CLI Commands 🖥️
 
 ```bash
 # List all available plugins
@@ -228,7 +228,7 @@ flowyml plugin uninstall mlflow
 flowyml plugin install-git https://github.com/user/flowyml-custom-plugin.git
 ```
 
-## Creating Custom Plugins
+## Creating Custom Plugins 🔧
 
 You can create your own plugins by extending the base classes:
 
@@ -282,7 +282,7 @@ pip install my-flowyml-plugin
 flowyml plugin list --installed  # Shows your plugin
 ```
 
-## Need Help?
+## Need Help? 🆘
 
 - 💬 Join our [Discord community](https://discord.gg/flowyml)
 - 📖 Read the [API Reference](../api/plugins.md)

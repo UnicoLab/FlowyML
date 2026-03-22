@@ -46,7 +46,7 @@ class SubPipelineStep(Step):
         outputs: list[str] | None = None,
         input_mapping: dict[str, str] | None = None,
         output_mapping: dict[str, str] | None = None,
-        **step_kwargs,
+        **step_kwargs: Any,
     ):
         """Initialize sub-pipeline step.
 
@@ -79,7 +79,7 @@ class SubPipelineStep(Step):
         # Mark as sub-pipeline for orchestrator detection
         self._is_sub_pipeline = True
 
-    def _execute_sub_pipeline(self, *args, **kwargs) -> Any:
+    def _execute_sub_pipeline(self, *args: Any, **kwargs: Any) -> Any:
         """Execute the sub-pipeline with mapped inputs.
 
         Args:
@@ -122,7 +122,7 @@ class SubPipelineStep(Step):
         # Return the full result if no mapping
         return result
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
         """Execute the sub-pipeline step."""
         return self._execute_sub_pipeline(*args, **kwargs)
 
@@ -134,7 +134,7 @@ def sub_pipeline(
     outputs: list[str] | None = None,
     input_mapping: dict[str, str] | None = None,
     output_mapping: dict[str, str] | None = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> SubPipelineStep:
     """Create a sub-pipeline step from a Pipeline object.
 

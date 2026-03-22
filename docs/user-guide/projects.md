@@ -34,7 +34,7 @@ print(f"Total artifacts: {stats['total_artifacts']}")
 
 ## Project Management 🏗️
 
-### Creating Projects
+### Creating Projects 🏗️
 
 ```python
 from flowyml import ProjectManager
@@ -56,7 +56,7 @@ for proj in projects:
 project = manager.get_project("ml_platform")
 ```
 
-### Project Structure
+## Project Structure 📂
 
 Each project has its own directory structure:
 
@@ -72,7 +72,7 @@ projects/
 
 ## Working with Projects 🛠️
 
-### Creating Pipelines
+### Creating Pipelines 🏗️
 
 You can create pipelines in projects in two ways:
 
@@ -110,7 +110,7 @@ The `project_name` parameter automatically:
 - Attaches the pipeline to the project
 - Uses the project's metadata store and runs directory
 
-### Querying Project Data
+### Querying Project Data 🔍
 
 ```python
 # List all runs in the project
@@ -130,7 +130,7 @@ for artifact in artifacts:
 models = project.get_artifacts(artifact_type="model")
 ```
 
-### Project Statistics
+### Project Statistics 📊
 
 ```python
 stats = project.get_stats()
@@ -148,7 +148,7 @@ Artifacts: {stats['total_artifacts']}
 
 FlowyML is built for scale. You can isolate different teams, clients, or environments into dedicated projects.
 
-### How Isolation Works
+### How Isolation Works 🛡️
 
 Every project has its own **isolated resources**:
 
@@ -184,7 +184,7 @@ for client in clients:
     result = pipeline.run()
 ```
 
-### Resource Tracking
+### Resource Tracking 💸
 
 ```python
 def get_client_usage(client_name):
@@ -207,7 +207,7 @@ for client in clients:
 
 ## Best Practices 💡
 
-### 1. Project Naming
+### 1. Project Naming 🏷️
 
 ```python
 # Use descriptive, hierarchical names
@@ -217,7 +217,7 @@ project = Project("company_product_ml")
 project = Project("data_team_recommendations")
 ```
 
-### 2. Pipeline Organization
+### 2. Pipeline Organization 📂
 
 ```python
 project = Project("sales_analytics")
@@ -229,7 +229,7 @@ project.create_pipeline("reporting_dashboard")
 project.create_pipeline("forecasting_model")
 ```
 
-### 3. Cleanup Old Data
+### 3. Data Hygiene & Cleanup 🧹
 
 ```python
 # Export project before cleanup
@@ -244,7 +244,7 @@ pipelines = project.get_pipelines()
 
 ## Integration Examples 🔌
 
-### With Versioning
+### With Versioning 📑
 
 ```python
 from flowyml import VersionedPipeline, Pipeline, context
@@ -275,7 +275,7 @@ versioned.save_version()
 versioned.run()
 ```
 
-### With Scheduling
+### With Scheduling ⏰
 
 ```python
 from flowyml import PipelineScheduler
@@ -297,7 +297,7 @@ scheduler.schedule_daily(
 
 ## API Reference 📚
 
-### Project
+### Project 🏗️
 
 **Constructor**:
 ```python
@@ -316,7 +316,7 @@ Project(
 - `get_stats() -> Dict` - Get project statistics
 - `export_metadata(path: str)` - Export project metadata
 
-### ProjectManager
+### ProjectManager 🛠️
 
 **Methods**:
 - `create_project(name: str, description: str = "") -> Project` - Create new project

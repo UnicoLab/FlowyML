@@ -86,7 +86,7 @@ class VertexAIOrchestrator(RemoteOrchestrator):
         docker_config: DockerConfig | None = None,
         inputs: dict[str, Any] | None = None,
         context: dict[str, Any] | None = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> "SubmissionResult":
         """Run pipeline on Vertex AI.
 

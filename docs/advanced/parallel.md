@@ -2,12 +2,10 @@
 
 flowyml allows you to execute independent steps concurrently, slashing pipeline runtime by running tasks in parallel.
 
-> [!NOTE]
-> **What you'll learn**: How to run multiple steps at once to speed up execution
->
-> **Key insight**: Most ML pipelines have independent branches (e.g., processing different datasets). Running them sequentially is a waste of time.
+!!! info "What you'll learn"
+    How to run multiple steps at once to speed up execution. Most ML pipelines have independent branches — running them sequentially is a waste of time.
 
-## Why Parallelism Matters
+## Why Parallelism Matters ⚡
 
 **Without parallelism**:
 - **Slow execution**: Steps run one after another (A → B → C)
@@ -19,7 +17,7 @@ flowyml allows you to execute independent steps concurrently, slashing pipeline 
 - **Resource efficiency**: Utilize all CPU cores
 - **Scalability**: Process 10x data in the same amount of time
 
-## Enabling Parallelism
+## Enabling Parallelism 🔧
 
 You can enable parallel execution by using the `ParallelExecutor`. It automatically detects independent steps in your DAG and runs them concurrently.
 
@@ -60,7 +58,7 @@ def batch_process(items):
     return results
 ```
 
-## Decision Guide: Execution Backends
+## Decision Guide: Execution Backends ⚖️
 
 | Backend | Best For | Why |
 |---------|----------|-----|
@@ -77,7 +75,7 @@ def batch_process(items):
 - Uploading files to S3
 - Querying databases
 
-## Real-World Pattern: Batch Processing
+## Real-World Pattern: Batch Processing 🌍
 
 Process a large dataset by splitting it into chunks and processing them in parallel.
 
@@ -104,5 +102,5 @@ for i in range(10):
 pipeline.run(executor=ParallelExecutor(max_workers=4, backend="process"))
 ```
 
-> [!TIP]
-> **Performance Tip**: Set `max_workers` to `cpu_count() - 1` to keep one core free for the system.
+!!! tip "Performance Tip"
+    Set `max_workers` to `cpu_count() - 1` to keep one core free for the system.

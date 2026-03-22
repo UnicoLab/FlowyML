@@ -1,69 +1,143 @@
-# Materializers 📦
+# 📦 Materializers
 
-Teach flowyml how to save and load your custom objects.
+!!! info "What you'll learn"
+    How to teach FlowyML to serialize and deserialize your custom objects. If you can't save it, you can't cache it, version it, or inspect it in the UI.
 
-> [!NOTE]
-> **What you'll learn**: How to make any Python object persistable and trackable
->
-> **Key insight**: If you can't save it, you can't cache it, version it, or inspect it. Materializers bridge the gap between memory and storage.
+Materializers control **how FlowyML persists and loads artifacts**. Built-in materializers handle common types automatically; custom materializers let you support any Python object.
 
-## Why Custom Serialization Matters
+---
 
-**Without materializers**:
-- **Pickle hell**: Relying on `pickle` for everything (brittle, insecure)
-- **Lost metadata**: Saving a model as bytes loses its hyperparameters
-- **No visualization**: The UI can't show a preview of a custom object
+## Why Custom Serialization Matters 🤔
 
-**With flowyml materializers**:
-- **Optimized storage**: Save large arrays as Parquet/Numpy, not JSON
-- **Rich visualization**: Tell the UI how to display your object
-- **Cross-language support**: Save as standard formats (ONNX, CSV) usable by other tools
+| Without Materializers | With Materializers |
+|---|---|
+| Relying on `pickle` for everything (brittle, insecure) | Optimized format per type |
+| Saving a model as bytes loses its metadata | Save with hyperparameters and metadata |
+| The UI can't show a preview of custom objects | Rich visualization in the dashboard |
+| Non-portable: only Python can read pickle | Standard formats (Parquet, ONNX, CSV) |
 
-## 📦 Built-in Materializers
+---
 
-flowyml automatically selects the appropriate materializer based on the type hint or object type.
+## Built-in Materializers 📦
 
-- **PandasMaterializer**: Parquet or CSV.
-- **NumpyMaterializer**: `.npy` files.
-- **JsonMaterializer**: JSON files.
-- **PickleMaterializer**: Fallback for arbitrary Python objects.
+FlowyML automatically selects the appropriate materializer based on type hints:
 
-## 🛠 Custom Materializers
+| Materializer | Types | Format | When Used |
+|---|---|---|---|
+| `PandasMaterializer` | `pd.DataFrame`, `pd.Series` | Parquet or CSV | DataFrames and Series |
+| `NumpyMaterializer` | `np.ndarray` | `.npy` | NumPy arrays |
+| `JsonMaterializer` | `dict`, `list`, `str`, `int`, `float` | JSON | Simple Python types |
+| `PickleMaterializer` | Anything else | Pickle | Fallback for arbitrary objects |
 
-To support a custom type, subclass `BaseMaterializer`.
+Usage is automatic — just add type hints to your steps:
 
-## Real-World Pattern: PyTorch Model Wrapper
+```python
+import pandas as pd
+from flowyml import step
 
-Save PyTorch models with their metadata in a clean, versioned way.
+@step(outputs=["features"])
+def create_features(raw_data: pd.DataFrame) -> pd.DataFrame:
+    """FlowyML auto-selects PandasMaterializer for both input and output."""
+    return raw_data.drop(columns=["id"])
+```
+
+---
+
+## 🛠 Creating Custom Materializers
+
+Subclass `BaseMaterializer` to support your own types:
+
+### Example: PyTorch Model Materializer
 
 ```python
 import torch
 from flowyml.io import BaseMaterializer
 
 class PyTorchMaterializer(BaseMaterializer):
+    """Save and load PyTorch models with metadata."""
     ASSOCIATED_TYPES = (torch.nn.Module,)
 
     def handle_input(self, data_type):
-        # Load model state dict
-        with open(self.artifact.uri, 'rb') as f:
-            return torch.load(f)
+        """Load a model from the artifact store."""
+        with open(self.artifact.uri, "rb") as f:
+            return torch.load(f, weights_only=False)
 
     def handle_return(self, model):
-        # Save model state dict
-        with open(self.artifact.uri, 'wb') as f:
+        """Save a model to the artifact store."""
+        with open(self.artifact.uri, "wb") as f:
             torch.save(model, f)
-
-# Register it once
-from flowyml import materializer_registry
-materializer_registry.register(PyTorchMaterializer)
 ```
 
-## 🎯 Usage
-
-Once registered, flowyml will automatically use your materializer when a step returns a `CustomGraph` object.
+### Example: ONNX Model Materializer
 
 ```python
-@step
-def build_graph() -> CustomGraph:
-    return CustomGraph(...)
+import onnx
+from flowyml.io import BaseMaterializer
+
+class ONNXMaterializer(BaseMaterializer):
+    """Save models in cross-platform ONNX format."""
+    ASSOCIATED_TYPES = (onnx.ModelProto,)
+
+    def handle_input(self, data_type):
+        return onnx.load(self.artifact.uri)
+
+    def handle_return(self, model):
+        onnx.save(model, self.artifact.uri)
 ```
+
+---
+
+## Registering Materializers 🔧
+
+Register once at startup — FlowyML will auto-select it whenever the matching type appears:
+
+```python
+from flowyml import materializer_registry
+
+# Register custom materializer
+materializer_registry.register(PyTorchMaterializer)
+materializer_registry.register(ONNXMaterializer)
+```
+
+---
+
+## Using Custom Types in Steps 🧩
+
+Once registered, FlowyML automatically uses your materializer when a step returns the associated type:
+
+```python
+import torch.nn as nn
+
+@step(outputs=["model"])
+def train_model(features) -> nn.Module:
+    """FlowyML auto-uses PyTorchMaterializer for nn.Module."""
+    model = nn.Sequential(nn.Linear(10, 5), nn.ReLU(), nn.Linear(5, 1))
+    # ... train ...
+    return model
+```
+
+---
+
+## `BaseMaterializer` API
+
+| Method | Description |
+|---|---|
+| `handle_input(data_type)` | Deserialize artifact from storage → Python object |
+| `handle_return(obj)` | Serialize Python object → artifact in storage |
+
+| Class Variable | Type | Description |
+|---|---|---|
+| `ASSOCIATED_TYPES` | `tuple[type, ...]` | Types this materializer handles |
+
+---
+
+## Best Practices 💡
+
+!!! tip "Use type hints"
+    FlowyML selects materializers based on type hints. Always annotate your step return types for automatic serialization.
+
+!!! tip "Prefer standard formats"
+    Save models as ONNX, datasets as Parquet, configs as JSON. This makes artifacts usable outside Python.
+
+!!! warning "Avoid pickle in production"
+    The `PickleMaterializer` is the fallback — it's insecure and non-portable. Register custom materializers for production types.

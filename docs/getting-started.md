@@ -1,30 +1,31 @@
-# Getting Started with FlowyML 🚀
+# 🚀 Getting Started with FlowyML
 
 Welcome to FlowyML! In the next 5-10 minutes, you'll go from zero to running your first production-ready pipeline. No prior MLOps experience required.
 
-## What You'll Learn & Why
+<div class="hero-section" markdown>
 
-> [!NOTE]
-> **What you'll build**: A complete ML pipeline with data loading, training, and real-time monitoring.
->
-> **What you'll master**: The core concepts that make FlowyML powerful: steps, pipelines, context injection, and the visual UI.
->
-> **Why this matters**: These same patterns scale from quick prototypes to enterprise deployments serving millions of predictions.
+## 🎯 What You'll Build
 
-## Installation 📦
+A complete ML pipeline with data loading, processing, context injection, and real-time monitoring. These patterns scale from quick prototypes to enterprise deployments.
+
+</div>
+
+---
+
+## 📦 Installation
 
 FlowyML requires Python 3.9 or higher.
 
-### Basic Installation
+### 🔧 Basic Installation
 
 ```bash
 pip install flowyml
 ```
 
-> [!TIP]
-> **Pro Tip**: Use a virtual environment (`venv` or `conda`) to avoid dependency conflicts with other projects.
+!!! tip "💡 Pro Tip"
+    Use a virtual environment (`venv` or `conda`) to avoid dependency conflicts with other projects.
 
-### Full Installation (Recommended)
+### 🌟 Full Installation (Recommended)
 
 Includes UI support and common ML dependencies:
 
@@ -35,7 +36,7 @@ pip install "flowyml[all]"
 
 **What this gets you**: The web dashboard, Keras integration, cloud storage backends, and everything you need for production deployments. Start with this unless you have size constraints.
 
-### Verify Installation
+### ✅ Verify Installation
 
 ```bash
 flowyml --version
@@ -43,7 +44,9 @@ flowyml --version
 
 You should see the version number. If not, check that your Python PATH is configured correctly.
 
-## Your First Project 📁
+---
+
+## 📁 Your First Project
 
 Let's create a new project using the CLI.
 
@@ -63,14 +66,16 @@ my-first-project/
     └── pipeline.py      # Your pipeline code lives here
 ```
 
-> [!TIP]
-> **Why this structure?** It separates code (`src/`), configuration (`flowyml.yaml`), and dependencies (`requirements.txt`) — exactly what you need for clean version control and team collaboration.
+!!! tip "🏗️ Why this structure?"
+    It separates code (`src/`), configuration (`flowyml.yaml`), and dependencies (`requirements.txt`) — exactly what you need for clean version control and team collaboration.
 
-## Creating a Pipeline 🧪
+---
+
+## 🧪 Creating a Pipeline
 
 Open `src/pipeline.py` and replace its content with this simple example:
 
-```python
+```python linenums="1"
 from flowyml import Pipeline, step, context
 
 # 1. Define Steps
@@ -104,7 +109,7 @@ if __name__ == "__main__":
         print(f"✗ Pipeline failed")
 ```
 
-### Understanding What Just Happened
+### 🔬 Understanding What Just Happened
 
 Let's break down the key concepts:
 
@@ -116,10 +121,12 @@ Let's break down the key concepts:
 
 4. **Execution**: `pipeline.run()` executes all steps in the right order and returns a result object with status and outputs.
 
-> [!IMPORTANT]
-> **Why this matters**: This same pattern works whether you have 3 steps or 300. The complexity doesn't grow with your pipeline.
+!!! important "🎯 Why this matters"
+    This same pattern works whether you have 3 steps or 300. The complexity doesn't grow with your pipeline.
 
-## Running the Pipeline ▶️
+---
+
+## ▶️ Running the Pipeline
 
 Execute the script:
 
@@ -136,10 +143,12 @@ Processing 5 items...
 Result: {'processed': [2, 4, 6, 8, 10]}
 ```
 
-> [!TIP]
-> **Pro Tip**: Pipelines are idempotent by default. Run it again and watch how caching kicks in — steps that haven't changed won't re-execute.
+!!! tip "⚡ Caching in Action"
+    Pipelines are idempotent by default. Run it again and watch how caching kicks in — steps that haven't changed won't re-execute.
 
-## Visualizing with the UI 🖥️
+---
+
+## 🖥️ Visualizing with the UI
 
 Now, let's see your pipeline in the FlowyML UI — this is where the magic happens for debugging and monitoring.
 
@@ -156,8 +165,8 @@ You'll see:
 🔌 API: http://localhost:8080/api
 ```
 
-> [!NOTE]
-> **What's running**: A lightweight FastAPI server that displays your pipeline runs,  DAG visualizations, and artifact inspection — all in real-time.
+!!! note "🔧 What's running"
+    A lightweight FastAPI server that displays your pipeline runs, DAG visualizations, and artifact inspection — all in real-time.
 
 **Step 2: Run your pipeline** (in a separate terminal)
 
@@ -169,24 +178,23 @@ python src/pipeline.py
 
 Open your browser to `http://localhost:8080`. You'll see:
 
-- **Pipeline DAG**: Visual graph showing step dependencies
-- **Real-time execution**: Steps highlight as they run
-- **Artifact inspection**: Click any step to see its inputs/outputs
-- **Run history**: Compare different runs side-by-side
+- **📊 Pipeline DAG**: Visual graph showing step dependencies
+- **⚡ Real-time execution**: Steps highlight as they run
+- **🔍 Artifact inspection**: Click any step to see its inputs/outputs
+- **📜 Run history**: Compare different runs side-by-side
 
-**Why the UI matters**: Imagine debugging a failed step at 3 AM in production. Instead of grep'ing through logs, you see exactly:
-- Which step failed
-- What its inputs were
-- The full error traceback
-- What downstream steps were skipped
+!!! success "🎉 Why the UI matters"
+    Imagine debugging a failed step at 3 AM in production. Instead of grep'ing through logs, you see exactly: which step failed, what its inputs were, the full error traceback, and what downstream steps were skipped.
 
-## Adding Context & Parameters 🎛️
+---
+
+## 🎛️ Adding Context & Parameters
 
 Let's make the pipeline configurable using **context** — one of FlowyML's killer features.
 
 Update your pipeline:
 
-```python
+```python linenums="1"
 from flowyml import Pipeline, step, context
 
 @step(outputs=["data"])
@@ -228,59 +236,60 @@ Processing with multiplier=3...
 Result: {'processed': [0, 3, 6, 9, 12, ...]}
 ```
 
-### The Power of Context Injection
+### 💡 The Power of Context Injection
 
-> [!TIP]
-> **Why this is revolutionary**: You just separated configuration from code. The same pipeline can run with different configs for:
-> - **Dev**: Small dataset for fast iteration
-> - **Staging**: Medium dataset for integration testing
-> - **Production**: Full dataset for real predictions
->
-> Change the context, not the code. This is how you go from prototype to production without rewriting.
+!!! tip "🔑 Why this is revolutionary"
+    You just separated configuration from code. The same pipeline can run with different configs for **Dev** (small dataset), **Staging** (medium dataset), and **Production** (full dataset). Change the context, not the code.
 
-## Next Steps 📚
+---
+
+## 📚 Next Steps
 
 Congratulations! You've built a complete pipeline with monitoring. Here's where to go next based on your goals:
 
-### 🎯 I want to build production pipelines
+<div class="header-grid" markdown>
 
-→ **[Projects & Multi-Tenancy](user-guide/projects.md)**: Learn to organize multiple pipelines, isolate environments, and manage teams
+<div class="header-card" markdown>
+### 🎯 Production Pipelines
 
-→ **[Scheduling](user-guide/scheduling.md)**: Automate your pipelines with cron-style scheduling
+- **[Projects & Multi-Tenancy](user-guide/projects.md)** — Organize teams & environments
+- **[Scheduling](user-guide/scheduling.md)** — Cron-style automation
+- **[Versioning](user-guide/versioning.md)** — Track & rollback changes
+</div>
 
-→ **[Versioning](user-guide/versioning.md)**: Track pipeline changes and rollback when needed
+<div class="header-card" markdown>
+### 🚀 Performance & Scale
 
-### 🚀 I want to optimize performance
+- **[Caching Strategies](advanced/caching.md)** — Save compute costs
+- **[Parallel Execution](advanced/parallel.md)** — Run steps concurrently
+- **[Performance Guide](user-guide/performance.md)** — Benchmarks & tuning
+</div>
 
-→ **[Caching Strategies](advanced/caching.md)**: Save compute time and costs with intelligent caching
+<div class="header-card" markdown>
+### 🔬 Advanced ML Features
 
-→ **[Parallel Execution](advanced/parallel.md)**: Run independent steps concurrently
+- **[Assets & Lineage](core/assets.md)** — Typed artifacts
+- **[Model Registry](user-guide/model-registry.md)** — Version models
+- **[LLM Tracing](advanced/llm-tracing.md)** — GenAI costs & tracing
+</div>
 
-→ **[Performance Guide](user-guide/performance.md)**: Benchmark and optimize your pipelines
+</div>
 
-### 🔬 I want advanced ML features
+### 🧠 Deep Dive into Concepts
 
-→ **[Assets & Lineage](core/assets.md)**: Work with typed artifacts (Datasets, Models, Metrics)
+→ **[Core Concepts: Pipelines](core/pipelines.md)** — Master pipeline design patterns
 
-→ **[Model Registry](user-guide/model-registry.md)**: Version and manage models
+→ **[Core Concepts: Steps](core/steps.md)** — Learn step best practices
 
-→ **[LLM Tracing](advanced/llm-tracing.md)**: Track GenAI costs and performance
+→ **[Core Concepts: Context](core/context.md)** — Advanced context injection techniques
 
-### 🧠 I want to understand concepts deeply
+### 🎨 Integrate with Your Stack
 
-→ **[Core Concepts: Pipelines](core/pipelines.md)**: Master pipeline design patterns
+→ **[Keras Integration](integrations/keras.md)** — Automatic experiment tracking
 
-→ **[Core Concepts: Steps](core/steps.md)**: Learn step best practices
+→ **[GCP Integration](integrations/gcp.md)** — Deploy to Google Cloud
 
-→ **[Core Concepts: Context](core/context.md)**: Advanced context injection techniques
-
-### 🎨 I want to integrate with my stack
-
-→ **[Keras Integration](integrations/keras.md)**: Automatic experiment tracking for Keras
-
-→ **[GCP Integration](integrations/gcp.md)**: Deploy to Google Cloud Platform
-
-→ **[Custom Components](guides/custom-components.md)**: Extend FlowyML for your needs
+→ **[Custom Components](guides/custom-components.md)** — Extend FlowyML
 
 ---
 

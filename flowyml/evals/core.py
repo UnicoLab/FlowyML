@@ -201,10 +201,7 @@ class EvalResult:
             from flowyml.monitoring.notifications import get_notifier
 
             notifier = get_notifier()
-            if channel:
-                notifier.notify(title=title, message=message, level="warning", channel=channel)
-            else:
-                notifier.notify(title=title, message=message, level="warning")
+            notifier.notify(title=title, message=message, level="warning")
         except (ImportError, Exception) as exc:
             logger.warning("Could not send regression notification: %s", exc)
             logger.warning(message)

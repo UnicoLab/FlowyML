@@ -543,8 +543,6 @@ def set_url(server: str, ui: str) -> None:
         click.echo(f"✓ Remote UI URL set to '{ui}'")
     cfg.save()
 
-    cfg.save()
-
 
 @config.command("set-token")
 @click.argument("token")

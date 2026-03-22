@@ -106,6 +106,8 @@ def observe_chain(
 ):
     """Decorator for automatic observability on LangChain functions.
 
+    Works with **both sync and async** functions.
+
     Example::
 
         @observe_chain(name="qa_bot", project="support")
@@ -114,28 +116,57 @@ def observe_chain(
                 {"question": question},
                 config=flowyml_session.config,
             )
+
+
+        @observe_chain(name="async_qa", project="support")
+        async def async_answer(question: str, flowyml_session=None):
+            return await chain.ainvoke(
+                {"question": question},
+                config=flowyml_session.config,
+            )
     """
     import functools
     import inspect
 
     def decorator(func):
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            session_name = name or func.__name__
-            with trace_chain(
-                name=session_name,
-                project=project,
-                tags=tags,
-                auto_log=auto_log,
-                verbose=verbose,
-                print_summary=print_summary,
-            ) as session:
-                sig = inspect.signature(func)
-                if "flowyml_session" in sig.parameters:
-                    kwargs["flowyml_session"] = session
-                return func(*args, **kwargs)
+        if inspect.iscoroutinefunction(func):
 
-        return wrapper
+            @functools.wraps(func)
+            async def async_wrapper(*args, **kwargs):
+                session_name = name or func.__name__
+                with trace_chain(
+                    name=session_name,
+                    project=project,
+                    tags=tags,
+                    auto_log=auto_log,
+                    verbose=verbose,
+                    print_summary=print_summary,
+                ) as session:
+                    sig = inspect.signature(func)
+                    if "flowyml_session" in sig.parameters:
+                        kwargs["flowyml_session"] = session
+                    return await func(*args, **kwargs)
+
+            return async_wrapper
+        else:
+
+            @functools.wraps(func)
+            def wrapper(*args, **kwargs):
+                session_name = name or func.__name__
+                with trace_chain(
+                    name=session_name,
+                    project=project,
+                    tags=tags,
+                    auto_log=auto_log,
+                    verbose=verbose,
+                    print_summary=print_summary,
+                ) as session:
+                    sig = inspect.signature(func)
+                    if "flowyml_session" in sig.parameters:
+                        kwargs["flowyml_session"] = session
+                    return func(*args, **kwargs)
+
+            return wrapper
 
     return decorator
 

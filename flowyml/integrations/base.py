@@ -800,40 +800,72 @@ def observe(
 ):
     """Decorator for automatic observability on any function.
 
-    Injects a ``flowyml_session`` keyword argument with the active
-    :class:`TraceSession` if the function signature accepts it.
+    Works with **both sync and async** functions.  Injects a
+    ``flowyml_session`` keyword argument with the active
+    :class:`BaseTracer` if the function signature accepts it.
 
-    Example::
+    Example (sync)::
 
         @observe(name="summarize", project="demo")
         def summarize(text: str, flowyml_session=None):
-            # flowyml_session.session contains the TraceSession
             span = flowyml_session.start_span("llm", "summarize_call")
             result = call_llm(text)
             span.set_tokens(prompt_tokens=50, completion_tokens=100, model="gpt-4o")
             flowyml_session.end_span(span, outputs={"result": result})
             return result
+
+    Example (async)::
+
+        @observe(name="async_agent", project="demo")
+        async def run_agent(query: str, flowyml_session=None):
+            result = await agent.ainvoke(
+                {"messages": [("human", query)]},
+                config=flowyml_session.config,
+            )
+            return result
     """
 
     def decorator(func):
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            session_name = name or func.__name__
-            with trace(
-                session_name,
-                project=project,
-                framework=framework,
-                tags=tags,
-                auto_log=auto_log,
-                verbose=verbose,
-                print_summary=print_summary,
-            ) as tracer:
-                sig = inspect.signature(func)
-                if "flowyml_session" in sig.parameters:
-                    kwargs["flowyml_session"] = tracer
-                return func(*args, **kwargs)
+        if inspect.iscoroutinefunction(func):
 
-        return wrapper
+            @functools.wraps(func)
+            async def async_wrapper(*args, **kwargs):
+                session_name = name or func.__name__
+                with trace(
+                    session_name,
+                    project=project,
+                    framework=framework,
+                    tags=tags,
+                    auto_log=auto_log,
+                    verbose=verbose,
+                    print_summary=print_summary,
+                ) as tracer:
+                    sig = inspect.signature(func)
+                    if "flowyml_session" in sig.parameters:
+                        kwargs["flowyml_session"] = tracer
+                    return await func(*args, **kwargs)
+
+            return async_wrapper
+        else:
+
+            @functools.wraps(func)
+            def wrapper(*args, **kwargs):
+                session_name = name or func.__name__
+                with trace(
+                    session_name,
+                    project=project,
+                    framework=framework,
+                    tags=tags,
+                    auto_log=auto_log,
+                    verbose=verbose,
+                    print_summary=print_summary,
+                ) as tracer:
+                    sig = inspect.signature(func)
+                    if "flowyml_session" in sig.parameters:
+                        kwargs["flowyml_session"] = tracer
+                    return func(*args, **kwargs)
+
+            return wrapper
 
     return decorator
 

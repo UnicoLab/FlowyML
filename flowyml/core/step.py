@@ -207,7 +207,7 @@ class Step:
             source_line=self.source_line,
         )
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
         """Execute the step function."""
         # Check condition if present
         if self.condition:

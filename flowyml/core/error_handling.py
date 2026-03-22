@@ -333,7 +333,7 @@ def execute_with_retry(
     func: Callable,
     retry_config: RetryConfig,
     *args,
-    **kwargs,
+    **kwargs: Any,
 ) -> Any:
     """Execute function with retry logic.
 

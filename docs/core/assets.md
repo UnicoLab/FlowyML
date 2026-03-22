@@ -2,12 +2,10 @@
 
 In flowyml, data lineage and artifact tracking are first-class features. Every piece of data flowing through your pipeline is tracked, versioned, and queryable.
 
-> [!NOTE]
-> **What you'll learn**: How to work with typed assets (Datasets, Models, Metrics) and track complete data lineage
->
-> **Key insight**: **Reproducibility requires lineage**. flowyml tracks not just what models you trained, but what data created them, which code version, and all hyperparameters.
+!!! info "What you'll learn"
+    How to work with typed assets (Datasets, Models, Metrics) and track complete data lineage. **Reproducibility requires lineage** — flowyml tracks not just what models you trained, but what data created them.
 
-## Why Assets Matter
+## Why Assets Matter 🛡️
 
 **Without structured assets**, teams face:
 - **"Which data trained this model?"** — Unknown, guesswork
@@ -21,8 +19,8 @@ In flowyml, data lineage and artifact tracking are first-class features. Every p
 - **Audit trails**: Full provenance from raw data to predictions
 - **Reproducibility**: Re-create any result on demand
 
-> [!IMPORTANT]
-> **For regulated industries** (finance, healthcare, legal): Asset lineage isn't optional. flowyml provides audit-ready traceability out of the box.
+!!! important "For regulated industries"
+    In finance, healthcare, and legal — asset lineage isn't optional. flowyml provides audit-ready traceability out of the box.
 
 ## The Asset Hierarchy 🏛️
 
@@ -31,7 +29,7 @@ flowyml provides specialized classes for different ML artifact types:
 - **Asset**: The base class for all versioned objects.
 - **Dataset**: Represents data (DataFrames, file paths, tensors).
 - **Model**: Represents trained ML models.
-- **Metrics**: Represents evaluation results (accuracy, loss).
+- **[UI Guide](../user-guide/ui.md)**: Learn how to visualize assets in the FlowyML dashboard.
 - **FeatureSet**: Represents engineered features.
 - **Report**: Represents generated reports and documentation.
 - **Artifact**: Generic artifact for configs, checkpoints, files, etc.
@@ -53,18 +51,18 @@ Assets are the primary mechanism for **Type-Based Routing**. When a step returns
 | `Report` | Artifact Store | — |
 | `Artifact` | Artifact Store | — |
 
-> [!TIP]
-> **The Benefit**: You can switch from local JSON storage to a production-grade Vertex AI Model Registry without changing a single line of your model training code.
+!!! tip "The Benefit"
+    You can switch from local JSON storage to a production-grade Vertex AI Model Registry without changing a single line of your model training code.
 
 ## Creating Assets 🔨
 
 You can create assets explicitly using the `.create()` factory method. This automatically handles versioning, metadata generation, and lineage tracking.
 
-> [!IMPORTANT]
-> **Assets interface data field** is not about passing the data to the asset, but rather about the asset's interface on which data to register. This can be a model (Keras) or dataset (Pandas) etc ... Which data take into account when creating the asset.
+!!! important "Assets interface data field"
+    The data field is not about passing the data to the asset, but rather about the asset's interface on which data to register. This can be a model (Keras) or dataset (Pandas) etc.
 
 
-### Datasets
+### Datasets 📊
 
 FlowyML automatically extracts statistics and metadata from various data formats!
 
@@ -105,7 +103,7 @@ dataset = Dataset.from_parquet("data.parquet", name="my_data")
 - TensorFlow `tf.data.Dataset`
 - Lists of dictionaries
 
-### Models
+### Models 🤖
 
 FlowyML automatically extracts model metadata from all major ML frameworks!
 
@@ -154,7 +152,7 @@ model_asset = Model.from_sklearn(model, name="my_model")
 - XGBoost/LightGBM/CatBoost
 - Hugging Face Transformers
 
-### Metrics
+### Metrics 📈
 
 ```python
 from flowyml import Metrics

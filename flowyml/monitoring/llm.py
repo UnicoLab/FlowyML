@@ -12,7 +12,7 @@ class LLMEvent:
     """Event representing an LLM interaction."""
 
     event_id: str
-    trace_id: str
+    trace_id: str | None
     parent_id: str | None
     event_type: str  # 'llm', 'tool', 'chain', 'agent'
     name: str
@@ -35,7 +35,7 @@ class LLMEvent:
     def end(self, outputs: dict[str, Any] | None = None, error: str | None = None) -> None:
         """End the event."""
         self.end_time = time.time()
-        self.duration = self.end_time - self.start_time
+        self.duration = self.end_time - self.start_time if self.start_time else 0.0
         self.outputs = outputs
         if error:
             self.status = "error"
@@ -123,7 +123,7 @@ class LLMTracer:
 tracer = LLMTracer()
 
 
-def trace_llm(name: str = None, event_type: str = "llm"):
+def trace_llm(name: str | None = None, event_type: str = "llm"):
     """Decorator to trace LLM calls."""
 
     def decorator(func):
@@ -153,7 +153,7 @@ def trace_llm(name: str = None, event_type: str = "llm"):
                 return result
             except Exception as e:
                 tracer.end_event(error=str(e))
-                raise e
+                raise
 
         return wrapper
 

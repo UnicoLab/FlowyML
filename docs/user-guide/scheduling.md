@@ -2,12 +2,10 @@
 
 Automate pipeline execution so you never miss a deadline.
 
-> [!NOTE]
-> **What you'll learn**: How to schedule pipelines for recurring execution with zero manual intervention
->
-> **Key insight**: Manual pipeline execution doesn't scale. Scheduling turns ad-hoc jobs into reliable automation.
+!!! info "What you'll learn"
+    How to schedule pipelines for recurring execution with zero manual intervention. Manual pipeline execution doesn't scale — scheduling turns ad-hoc jobs into reliable automation.
 
-## Why Scheduling Matters
+## Why Scheduling Matters ⏰
 
 **Without scheduling**:
 - **Manual overhead**: "Did someone run the daily ETL?"
@@ -19,7 +17,7 @@ Automate pipeline execution so you never miss a deadline.
 - **Multi-timezone**: Run at 9 AM local time for each region
 - **Fault-tolerant**: Survives restarts, prevents duplicate runs
 
-## Decision Guide: Scheduling Strategy
+## Decision Guide: Strategy ⚖️
 
 | Use Case | Schedule Type | Example |
 |----------|---------------|----------|
@@ -71,7 +69,7 @@ scheduler.start()
 
 ## Schedule Types 📅
 
-### Cron Schedule (New!)
+### Cron Schedule ⚙️
 
 Use standard cron expressions for complex schedules. Requires `croniter`.
 
@@ -93,7 +91,7 @@ scheduler.schedule_cron(
 )
 ```
 
-### Daily Schedule
+### Daily Schedule 🌞
 
 Run at a specific time each day.
 
@@ -107,7 +105,7 @@ scheduler.schedule_daily(
 )
 ```
 
-### Hourly Schedule
+### Hourly Schedule 🕒
 
 Run at a specific minute each hour.
 
@@ -119,7 +117,7 @@ scheduler.schedule_hourly(
 )
 ```
 
-### Interval Schedule
+### Interval Schedule ⏱️
 
 Run at regular intervals.
 
@@ -134,7 +132,7 @@ scheduler.schedule_interval(
 
 ## Advanced Features ⚡
 
-### Persistence
+### Persistence 💾
 
 Schedules are automatically persisted to a local SQLite database (`.flowyml_scheduler.db`) using SQLAlchemy. This ensures that schedules are not lost if the application restarts and provides better type safety and database portability.
 
@@ -156,7 +154,7 @@ config = SchedulerConfig(
 scheduler = PipelineScheduler(config=config)
 ```
 
-### Distributed Scheduling
+### Distributed Scheduling 🌐
 
 For multi-server deployments, flowyml supports distributed locking to prevent duplicate executions.
 
@@ -172,7 +170,7 @@ config = SchedulerConfig(
 scheduler = PipelineScheduler(config=config)
 ```
 
-### Timezone Support
+### Timezone Support 🌍
 
 All schedule methods accept a `timezone` argument. Requires `pytz`.
 
@@ -185,7 +183,7 @@ scheduler.schedule_daily(
 )
 ```
 
-### Monitoring & Health
+### Monitoring & Health 🏥
 
 The scheduler tracks metrics and health status.
 
@@ -196,7 +194,7 @@ print(f"Status: {health['status']}")
 print(f"Success Rate: {health['metrics']['success_rate']:.1%}")
 ```
 
-### Execution History
+### Execution History 📜
 
 The scheduler automatically tracks execution history for all scheduled runs, including:
 - Start and completion times
@@ -260,7 +258,7 @@ The scheduler is fully integrated with the flowyml Backend API.
 
 ## Deployment 🚀
 
-### Docker with Persistence
+### Docker Deployment 🐳
 
 Mount a volume to persist the scheduler database.
 
@@ -269,7 +267,7 @@ VOLUME /app/.flowyml_scheduler.db
 CMD ["python", "scheduler.py"]
 ```
 
-### Environment Variables
+### Environment Config ⚙️
 
 Configure the scheduler via environment variables:
 

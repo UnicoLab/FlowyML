@@ -282,9 +282,9 @@ npm run dev  # Runs on http://localhost:5173 with hot reload
 
 ## 📚 Additional Resources
 
-- [FlowyML Documentation](https://unicolab.github.io/FlowyML/latest)
+- [FlowyML Documentation](https://docs.flowyml.ai/latest)
 - [API Reference](http://localhost:8080/docs)
-- [Contributing Guide](CONTRIBUTING.md)
+- [Contributing Guide](contributing.md)
 
 ---
 

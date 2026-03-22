@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { fetchApi } from '../../utils/api';
 import {
     Microscope,
     Play,
@@ -384,7 +385,7 @@ export function ModelExplorer() {
 
     const fetchDeployments = async () => {
         try {
-            const response = await fetch('/api/deployments/');
+            const response = await fetchApi('/api/deployments/');
             const data = await response.json();
             const running = (Array.isArray(data) ? data : []).filter(d => d.status === 'running');
             setDeployments(running);
@@ -400,7 +401,7 @@ export function ModelExplorer() {
     // Fetch model info (real introspection from loaded model)
     const fetchModelInfo = async (deploymentId) => {
         try {
-            const response = await fetch(`/api/explorer/model-info/${deploymentId}`);
+            const response = await fetchApi(`/api/explorer/model-info/${deploymentId}`);
             if (response.ok) {
                 const data = await response.json();
                 setModelInfo(data);
@@ -423,7 +424,7 @@ export function ModelExplorer() {
     // Fetch deployment logs
     const fetchLogs = async (deploymentId) => {
         try {
-            const response = await fetch(`/api/explorer/logs/${deploymentId}?lines=50`);
+            const response = await fetchApi(`/api/explorer/logs/${deploymentId}?lines=50`);
             if (response.ok) {
                 const data = await response.json();
                 setLogs(data.logs || []);
@@ -454,7 +455,7 @@ export function ModelExplorer() {
         }
 
         try {
-            const response = await fetch(`/api/explorer/schema/${deployment.model_artifact_id}`);
+            const response = await fetchApi(`/api/explorer/schema/${deployment.model_artifact_id}`);
             const data = await response.json();
             setSchema(data);
             setSweepResults(null); // Clear previous sweep results
@@ -494,7 +495,7 @@ export function ModelExplorer() {
             const results = await Promise.all(
                 selectedModels.map(async (model) => {
                     const startTime = Date.now();
-                    const response = await fetch('/api/explorer/predict', {
+                    const response = await fetchApi('/api/explorer/predict', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -576,7 +577,7 @@ export function ModelExplorer() {
                 sweepValues.push(sweepMin + step * i);
             }
 
-            const response = await fetch('/api/explorer/sweep', {
+            const response = await fetchApi('/api/explorer/sweep', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -630,7 +631,7 @@ export function ModelExplorer() {
     return (
         <div className="p-6 h-[calc(100vh-20px)] overflow-hidden flex flex-col max-w-full mx-auto">
             {/* Header */}
-            <div className="flex items-center justify-between mb-6 shrink-0">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 shrink-0">
                 <div className="flex items-center gap-4">
                     <div className="p-3 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl text-white shadow-lg shadow-violet-500/20">
                         <Microscope size={28} />
@@ -746,10 +747,10 @@ export function ModelExplorer() {
             </AnimatePresence>
 
             {/* Main Layout Grid */}
-            <div className="grid grid-cols-12 gap-6 flex-1 min-h-0">
+            <div className="flex flex-col lg:grid lg:grid-cols-12 gap-6 flex-1 min-h-0">
 
                 {/* LEFT SIDEBAR - CONFIGURATION */}
-                <div className="col-span-3 h-full border-r border-slate-200/50 dark:border-slate-700/50 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl flex flex-col shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-20">
+                <div className="lg:col-span-3 h-full lg:border-r border-slate-200/50 dark:border-slate-700/50 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl flex flex-col shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-20">
                     <div className="p-4 flex-1 overflow-y-auto space-y-6 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
                         {/* Model Selection */}
                         <div className="space-y-3">
@@ -868,7 +869,7 @@ export function ModelExplorer() {
                 </div>
 
                 {/* RIGHT MAIN - TABS & CONTENT */}
-                <div className="col-span-9 flex flex-col h-full overflow-hidden bg-white/30 dark:bg-slate-900/30 backdrop-blur-sm relative">
+                <div className="lg:col-span-9 flex flex-col h-full overflow-hidden bg-white/30 dark:bg-slate-900/30 backdrop-blur-sm relative">
                     {/* Fluid Mesh Background for Main Content */}
                     <div className="absolute inset-0 bg-gradient-to-br from-white/40 via-transparent to-white/40 pointer-events-none" />
 

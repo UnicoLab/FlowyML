@@ -82,7 +82,7 @@ class RemoteOrchestrator(Orchestrator):
         docker_config: DockerConfig | None = None,
         inputs: dict[str, Any] | None = None,
         context: dict[str, Any] | None = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> SubmissionResult:
         """Submit pipeline to remote infrastructure.
 

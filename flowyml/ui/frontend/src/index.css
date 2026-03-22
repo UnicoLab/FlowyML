@@ -4,8 +4,44 @@
 
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  @apply bg-slate-50 text-slate-900;
+  @apply bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100;
+}
+
+/* ── Scrollbar Utilities ─────────────────────────────────────────── */
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  @apply bg-slate-200 dark:bg-slate-700 rounded-full;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  @apply bg-slate-300 dark:bg-slate-600;
+}
+
+/* ── Responsive Table Wrapper ────────────────────────────────────── */
+.table-responsive {
+  @apply w-full overflow-x-auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Sidebar Overlay Backdrop ────────────────────────────────────── */
+.sidebar-backdrop {
+  @apply fixed inset-0 bg-black/40 backdrop-blur-sm z-30;
+}
+
+/* ── Focus ring utility ──────────────────────────────────────────── */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:ring-offset-1;
 }

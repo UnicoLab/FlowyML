@@ -2,6 +2,17 @@
 
 FlowyML's evaluation framework treats evaluations as **first-class pipeline citizens** — not afterthoughts. It provides a unified interface for classical ML and GenAI evaluations, with built-in regression detection, CI/CD gates, and production monitoring.
 
+```mermaid
+flowchart LR
+    D[EvalDataset] --> E[evaluate]
+    S[Scorers] --> E
+    E --> R[EvalResult]
+    R --> A[EvalAssert CI/CD]
+    R --> C[Compare Baseline]
+    R --> UI[Dashboard]
+    R --> T[TraceBridge]
+```
+
 ## Quick Start
 
 ```python

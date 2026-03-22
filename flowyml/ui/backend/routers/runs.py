@@ -48,9 +48,9 @@ def _sort_runs(runs):
 @router.get("/")
 async def list_runs(
     limit: int = 20,
-    project: str = None,
-    pipeline_name: str = None,
-    status: str = None,
+    project: str | None = None,
+    pipeline_name: str | None = None,
+    status: str | None = None,
 ):
     """List all runs, optionally filtered by project, pipeline_name, and status."""
     try:

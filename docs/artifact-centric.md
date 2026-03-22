@@ -1,67 +1,81 @@
-To understand the shift from Task-Centric (traditional) to Artifact-Centric (FlowyML) pipelines, we have to look at how the execution engine views the relationship between code and data.
+# Artifact-Centric Architecture 📦
 
-Technically, this isn't just a naming convention; it’s a change in how the Directed Acyclic Graph (DAG) is constructed and how the state is persisted.
+At its core, **FlowyML is an Artifact-Centric framework**. While traditional orchestrators (like Airflow, Jenkins, or Prefect) focus on the *Verbs* (Tasks), FlowyML focuses on the *Nouns* (Data Assets).
 
-1. Declarative Signatures vs. Imperative Sequences
-In a task-centric system (like Airflow), you define the order of operations. You essentially write a script that says, "Run preprocess, then run train." The movement of data between them is usually an afterthought—you manualy pass S3 paths or local file locations between functions.
+This isn't just a naming choice; it's a fundamental shift in how pipelines are built, validated, and scaled.
 
-In FlowyML (Artifact-Centric), the system builds the DAG by looking at the Input/Output signatures of your steps.
+---
 
-Technical Implementation: When you define a step, you declare: "I produce an artifact named 'train_data' of type Dataset." The Orchestrator looks at another step that says, "I require an input named 'train_data' of type Dataset."
-Result: The "edge" in the graph is formed automatically because of a data dependency, not because you wrote step_a >> step_b. If you change an output name, the graph breaks at build-time (checked by the
+## 🏗️ Task-Centric vs. Artifact-Centric
 
-TypeValidator
-).
-2. The Global Artifact Catalog vs. Manual "Handoffs"
-The biggest technical hurdle in task-centric pipelines is the "handoff." You often see code like: pd.read_csv(f"s3://my-bucket/{run_id}/data.csv"). This hardcodes the infrastructure and pathing logic inside your business logic.
+### 1. The Death of the "Manual Arrow"
+In a **Task-Centric** system, you define the order of execution. You tell the system: "Run Task A, then Task B."
+```python
+# Task-Centric (Airflow style)
+task_a >> task_b
+```
+The movement of data between them is usually an afterthought—you manually pass S3 paths or local file locations between functions.
 
-In an artifact-centric system, FlowyML uses the Catalog (Registry Pattern):
+In **Artifact-Centric FlowyML**, you never define arrows. You define what data you *need* and what data you *produce*. The system builds the Directed Acyclic Graph (DAG) for you by matching these assets.
 
-Unique Identity: Every artifact is registered in the
+```python linenums="1"
+# Artifact-Centric (FlowyML style)
+@step(outputs=["clean_data"])
+def preprocess(): ...
 
-Catalog
- (via
+@step(inputs=["clean_data"], outputs=["model"])
+def train(clean_data): ...
+```
+**Technical Benefit**: If you add a third step that also needs `clean_data`, FlowyML automatically forks the graph. If you remove an output that is needed downstream, the pipeline fails at **build-time**, not at 3 AM when the file isn't found.
 
-register()
- which I just fixed) with a
+### 2. The Global Artifact Catalog
+The biggest technical hurdle in task-centric pipelines is the **"Handoff"**. You often see code like:
+`pd.read_csv(f"s3://my-bucket/{run_id}/data.csv")`
 
-content_hash
-, source_step, and source_run_id.
-Discovery: A downstream step doesn't need to know where the model is stored (S3 vs. Azure vs. Local). It asks the Catalog for the artifact by name/version. The
+This hardcodes your infrastructure directly into your machine learning code.
 
-CatalogBackend
- resolves the storage URI and handles the high-level fetching.
-Immutability: Each artifact is a record of truth. If the input data hash hasn't changed, the system knows it can skip the task entirely (Caching/Memoization).
-3. Automatic Lineage (The "Parents" Concept)
-In task-centric systems, if you find a bad model in production, tracing it back to the exact version of the SQL query and the raw CSV that created it is a manual forensic exercise.
+In FlowyML, steps don't know *where* data lives. They only know what it's called.
+1. **Discovery**: A downstream step asks the **Catalog** for the artifact by name and version.
+2. **Resolution**: The `ArtifactStore` (S3, GCS, Azure, or Local) resolves the physical location and handles the fetching/deserialization.
+3. **Immutability**: Every artifact is uniquely identified by a `content_hash`. If the input artifact hasn't changed, the step is skipped entirely (Intelligent Caching).
 
-In Artifact-Centric FlowyML:
+### 3. Automatic Lineage (The "Data DNA")
+In task-centric systems, if you find a bad model in production, tracing it back to the exact SQL query or raw CSV that created it is a forensic exercise.
 
-Lineage Tracking: As seen in the
+In FlowyML, every Artifact carries its **Lineage**:
+- **Parents**: Which assets were used to create this?
+- **Step**: Which function version created this?
+- **Run**: Which specific execution cycle produced it?
 
-CatalogEntry
- structure, every artifact stores parent_ids.
-Technical Flow: When Step B consumes Artifact A, FlowyML automatically records that Artifact A is the parent of whatever Step B produces.
-Observability: You can call
+You can call `get_lineage(artifact_id)` to get a full recursive tree of every transformation that touched that specific piece of data.
 
-get_lineage(artifact_id)
- to get a full recursive tree of every transformation that touched that specific piece of data, from raw ingestion to the final insight.
-4. Infrastructure as Configuration (flowyml.yaml)
-In task-centric code, you often specify cpu=4, memory='16Gi' inside your Python @task decorator. This locks your code to specific hardware.
+---
 
-In Artifact-Centric design, we decouple "What happens" from "Where it happens":
+## 📊 Technical Comparison
 
-The Code: Pure Python logic defined by inputs and outputs.
-The YAML: Defines the Stack. It specifies that the "Model" artifact produced by train_step should be stored in an S3ArtifactStore and that the step should run on a KubernetesOrchestrator.
-Benefit: You can run the exact same artifact logic on your local machine (using
+| Feature | Task-Centric (ZenML / Airflow) | Artifact-Centric (FlowyML) |
+|---------|-------------------------------|----------------------------|
+| **Core focus** | "What do I run?" (**Verbs**) | "What do I produce?" (**Nouns**) |
+| **DAG Construction** | Imperative (Manual arrows) | **Declarative (Auto-Inferred)** |
+| **Data Flow** | Manual "handoffs" (XCom/Paths) | **Seamless** (Managed by Registry) |
+| **Validation** | Runtime failure (late detection) | **Compile-time** (Static validation) |
+| **Portability** | Hardcoded file paths/infra | **Stack-based** (Abstracted URIs) |
+| **Debugging** | "Why did Task X fail?" | "How was Artifact Y created?" |
 
-LocalCatalogBackend
-) or in Great-Grandchild-scale production without changing a single line of Python.
-Summary Comparison
-Metric	Task-Centric	Artifact-Centric (FlowyML)
-Logic Focus	"What do I run?" (Verbs)	"What do I produce?" (Nouns)
-Data Flow	Manual path passing	Automatic resolution via Catalog
-Validation	Errors happen at runtime (file not found)	Errors happen at build-time (type mismatch)
-Debugging	Check the logs of Task X	Inspect the state of Artifact Y
-Portability	Hardcoded file paths/infra	Stack-based storage abstraction
-By focusing on the Artifact, FlowyML treats data as a first-class citizen of the deployment, enabling reproducible machine learning where every result is mathematically linked to its origin.
+---
+
+## 🛠️ Performance Benefits
+
+Because FlowyML understands the *data* and not just the *steps*, it can optimize execution in ways task-based systems cannot:
+
+1. **Lazy Loading**: If an artifact is 50GB, FlowyML only fetches it from cloud storage if a downstream step actually requests it.
+2. **Intelligent Caching**: Since we hash the *content* of artifacts, we can skip expensive training runs even if the code changed slightly (like a comment), as long as the inputs and effective logic remain the same.
+3. **Parallelism without Overhead**: Multiple steps requiring the same artifact can run in parallel without the artifact being downloaded multiple times (using shared memory materializers).
+
+---
+
+## 💡 Summary Comparison
+
+> "Artifact-Centricity means your pipeline is a **database of transformations**, rather than a script of events."
+
+By focusing on the **Artifact**, FlowyML treats data as a first-class citizen. Every result is mathematically linked to its origin, enabling truly reproducible machine learning.

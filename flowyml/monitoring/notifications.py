@@ -32,13 +32,14 @@ class ConsoleNotifier(NotificationChannel):
     """Print notifications to console."""
 
     def send(self, notification: Notification) -> bool:
-        {
+        emoji = {
             "info": "ℹ️",
             "warning": "⚠️",
             "error": "❌",
             "success": "✅",
         }.get(notification.level, "📢")
 
+        print(f"{emoji} [{notification.level.upper()}] {notification.title}: {notification.message}")
         return True
 
 

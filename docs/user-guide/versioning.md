@@ -2,10 +2,8 @@
 
 Track changes to your pipelines like you track code with Git.
 
-> [!NOTE]
-> **What you'll learn**: How to version your pipelines and compare changes over time
->
-> **Key insight**: "What changed between v1 and v2?" is a question you'll ask every week. Versioning answers it instantly.
+!!! info "What you'll learn"
+    How to version your pipelines and compare changes over time. "What changed between v1 and v2?" is a question you'll ask every week — versioning answers it instantly.
 
 ## Why Versioning Matters
 

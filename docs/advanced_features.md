@@ -1,646 +1,290 @@
-# Advanced Features Guide
+# ⚡ Advanced Features — Feature Encyclopedia
+
+FlowyML isn't just for building DAGs; it's an enterprise-grade platform designed to handle the complexities of production machine learning. This guide is your gateway to every advanced capability.
+
+<div class="hero-section" markdown>
+
+## 🗺️ Master Every Feature
+
+From intelligent caching to GenAI observability — these are the features that set FlowyML apart from every other ML framework.
+
+</div>
+
+---
+
+## 📚 Feature Index
+
+<div class="header-grid" markdown>
+
+<div class="header-card" markdown>
+### ⚡ Execution & Performance
+- **[Step Grouping](#-step-grouping)** — Co-locate steps in one container
+- **[Caching](advanced/caching.md)** — Skip redundant compute
+- **[Parallel Execution](advanced/parallel.md)** — Run steps concurrently
+- **[Map Tasks](advanced/map-tasks.md)** — Fan-out processing
+</div>
+
+<div class="header-card" markdown>
+### 🧠 Intelligence & AI
+- **[GenAI Observability](#-genai--llm-observability)** — LLM tracing & costing
+- **[Evaluations](evaluations.md)** — 17+ built-in scorers
+- **[Judge Arena](advanced/eval-arena.md)** — A/B test evaluators
+- **[Dynamic Workflows](#-dynamic-sub-pipelines)** — Runtime DAG generation
+</div>
+
+<div class="header-card" markdown>
+### 🛡️ Reliability & Ops
+- **[Checkpointing](#-checkpointing)** — Resume from failures
+- **[Error Handling](advanced/error-handling.md)** — Retries & circuit breakers
+- **[Notifications](#-notification-hub)** — Slack, Email, Custom
+- **[Drift Detection](#-data-drift-monitoring)** — Statistical monitors
+</div>
+
+</div>
+
+---
 
 ## ⚡ Step Grouping
 
-Group consecutive pipeline steps to execute in the same container/environment, reducing overhead while maintaining clear step boundaries.
+**Step Grouping** allows you to run multiple consecutive steps in the same execution environment (container/process). This is critical for optimizing performance when you have many small steps.
 
-### Basic Usage
+!!! tip "🎯 When to use"
+    Use grouping for small, sequential tasks (clean → transform → validate) that don't need separate containers. Skip it for heavy compute steps that benefit from isolated resources.
 
-```python
-from flowyml import Pipeline, step
-from flowyml.core.resources import ResourceRequirements, GPUConfig
+```python linenums="1"
+from flowyml import step
 
-# Group preprocessing steps
-@step(outputs=["raw_data"], execution_group="preprocessing")
-def load_data():
-    return fetch_from_source()
+# These three steps will execute in ONE container
+@step(outputs=["raw"], execution_group="prep")
+def load(): ...
 
-@step(inputs=["raw_data"], outputs=["clean_data"], execution_group="preprocessing")
-def clean_data(raw_data):
-    return preprocess(raw_data)
+@step(inputs=["raw"], outputs=["clean"], execution_group="prep")
+def clean(raw): ...
 
-@step(inputs=["clean_data"], outputs=["features"], execution_group="preprocessing")
-def extract_features(clean_data):
-    return transform(clean_data)
-
-pipeline = Pipeline("data_pipeline")
-pipeline.add_step(load_data)
-pipeline.add_step(clean_data)
-pipeline.add_step(extract_features)
-
-result = pipeline.run()
-# All three steps run in the same container
+@step(inputs=["clean"], outputs=["stats"], execution_group="prep")
+def analyze(clean): ...
 ```
 
-### Resource Aggregation
+!!! info "📊 Resource Aggregation"
+    FlowyML intelligently calculates the resources needed for a group by taking the **Maximum** of all participants. If Step A needs 1 GPU and Step B needs 2 GPUs, the entire group will provision 2 GPUs.
 
-When steps are grouped, flowyml automatically aggregates their resource requirements:
-
-```python
-@step(
-    outputs=["data"],
-    execution_group="training",
-    resources=ResourceRequirements(cpu="2", memory="4Gi")
-)
-def prepare_data():
-    return "data"
-
-@step(
-    inputs=["data"],
-    outputs=["model"],
-    execution_group="training",
-    resources=ResourceRequirements(
-        cpu="8",
-        memory="16Gi",
-        gpu=GPUConfig(gpu_type="nvidia-a100", count=2)
-    )
-)
-def train_model(data):
-    return "model"
-
-# Group executes with: cpu="8", memory="16Gi", gpu=2x A100 (max of all)
-```
-
-**Aggregation Strategy:**
-- **CPU/Memory**: Maximum across all steps
-- **GPU**: Maximum count, best GPU type (A100 > V100 > T4)
-- **Storage**: Maximum across all steps
-
-### Smart Sequential Analysis
-
-flowyml only groups steps that can execute consecutively in the DAG:
-
-```python
-# Consecutive: A → B → C (all in "group1")
-# Result: Single group with all three steps ✅
-
-# Non-consecutive: A ("group1") → X (no group) → B ("group1")
-# Result: A and B run separately (not consecutive) ✅
-```
-
-### Inspection
-
-After building, inspect created groups:
-
-```python
-pipeline.build()
-
-for group in pipeline.step_groups:
-    print(f"Group: {group.group_name}")
-    print(f"  Steps: {[s.name for s in group.steps]}")
-    print(f"  Resources: CPU={group.aggregated_resources.cpu}")
-```
-
-See [Step Grouping Guide](step-grouping.md) for complete documentation.
+→ **Deep Dive**: [Step Grouping Guide](advanced/step-grouping.md)
 
 ---
 
-## 🤖 GenAI & LLM Monitoring
+## 🕵️ GenAI & LLM Observability
 
-### LLM Call Tracing
+FlowyML provides deep tracing for LLM applications. Unlike generic loggers, we understand the structure of GenAI chains.
 
-flowyml provides built-in tracing for LLM calls, allowing you to monitor token usage, costs, and execution traces.
+<div class="header-grid" markdown>
 
-#### Basic Usage
+<div class="header-card" markdown>
+### 🔍 Waterfall View
+See nested calls (Chain → Retrieval → LLM) with per-step token counts and timing.
+</div>
 
-```python
+<div class="header-card" markdown>
+### 💰 Auto-Costing
+Automatic cost calculation for OpenAI, Anthropic, Cohere, and LlamaIndex models.
+</div>
+
+<div class="header-card" markdown>
+### 🔗 Trace-to-Eval
+Bridge production traces directly into an [Evaluation Dataset](evaluations.md) for offline scoring.
+</div>
+
+</div>
+
+```python linenums="1"
 from flowyml import trace_llm
 
-@trace_llm(name="text_generation")
-def generate_text(prompt: str):
-    response = openai.chat.completions.create(
-        model="gpt-4",
-        messages=[{"role": "user", "content": prompt}]
-    )
-    return response.choices[0].message.content
-
-# Automatically traced
-result = generate_text("Write a haiku about ML")
+@trace_llm(name="qa_system", model="gpt-4o")
+def ask(question: str):
+    # This entire execution, including tokens and cost,
+    # is tracked and visible in the FlowyML Dashboard.
+    return llm.invoke(question)
 ```
 
-#### Nested Traces
-
-```python
-from flowyml import trace_llm, tracer
-
-@trace_llm(name="rag_pipeline", event_type="chain")
-def rag_pipeline(query: str):
-    # Child trace 1
-    context = retrieve_context(query)
-    # Child trace 2
-    answer = generate_answer(query, context)
-    return answer
-
-@trace_llm(name="retrieval", event_type="tool")
-def retrieve_context(query: str):
-    # Your retrieval logic
-    return context
-
-@trace_llm(name="generation", event_type="llm")
-def generate_answer(query: str, context: str):
-    # Your generation logic
-    return answer
-```
-
-#### Viewing Traces
-
-Traces are automatically saved to the metadata store and can be viewed via:
-
-1. **Python API:**
-```python
-from flowyml.storage.metadata import SQLiteMetadataStore
-
-store = SQLiteMetadataStore()
-trace_events = store.get_trace(trace_id="...")
-```
-
-2. **Web UI:**
-Navigate to `http://localhost:8080/api/traces` to see all traces.
-
----
-
-## 🔔 Notification System
-
-### Setup Notifications
-
-```python
-from flowyml import configure_notifications
-
-configure_notifications(
-    console=True,
-    slack_webhook="https://hooks.slack.com/services/YOUR/WEBHOOK/URL",
-    email_config={
-        'smtp_host': 'smtp.gmail.com',
-        'smtp_port': 587,
-        'username': 'your-email@gmail.com',
-        'password': 'your-app-password',
-        'from_addr': 'your-email@gmail.com',
-        'to_addrs': ['team@company.com']
-    }
-)
-```
-
-### Using Notifications
-
-```python
-from flowyml import get_notifier
-
-notifier = get_notifier()
-
-# Manual notifications
-notifier.notify(
-    title="Model Training Complete",
-    message="Accuracy: 95.2%",
-    level="success"  # 'info', 'warning', 'error', 'success'
-)
-
-# Event-based notifications
-notifier.on_pipeline_start("training_pipeline", run_id)
-notifier.on_pipeline_success("training_pipeline", run_id, duration=120.5)
-notifier.on_pipeline_failure("training_pipeline", run_id, error="Out of memory")
-notifier.on_drift_detected("user_age", psi=0.25)
-```
-
-### Custom Notification Channels
-
-```python
-from flowyml import NotificationManager, NotificationChannel, Notification
-
-class CustomNotifier(NotificationChannel):
-    def send(self, notification: Notification) -> bool:
-        # Your custom logic (e.g., Discord, Teams, PagerDuty)
-        return True
-
-manager = NotificationManager()
-manager.add_channel(CustomNotifier())
-```
-
----
-
-## 📅 Pipeline Scheduling
-
-### Schedule Pipelines
-
-```python
-from flowyml import PipelineScheduler, Pipeline
-
-scheduler = PipelineScheduler()
-
-# Create your pipeline
-pipeline = Pipeline("daily_training")
-# ... add steps ...
-
-# Schedule daily at 2:00 AM
-scheduler.schedule_daily(
-    name="daily_training",
-    pipeline_func=lambda: pipeline.run(),
-    hour=2,
-    minute=0
-)
-
-# Schedule every 6 hours
-scheduler.schedule_interval(
-    name="data_refresh",
-    pipeline_func=lambda: refresh_pipeline.run(),
-    hours=6
-)
-
-# Schedule hourly at :15
-scheduler.schedule_hourly(
-    name="hourly_check",
-    pipeline_func=lambda: check_pipeline.run(),
-    minute=15
-)
-
-# Start the scheduler
-scheduler.start()  # Non-blocking (daemon thread)
-
-# Or run blocking
-# scheduler.start(blocking=True)
-```
-
-### Managing Schedules
-
-```python
-# List all schedules
-scheduler.list_schedules()
-
-# Disable a schedule
-scheduler.disable("daily_training")
-
-# Enable a schedule
-scheduler.enable("daily_training")
-
-# Remove a schedule
-scheduler.unschedule("daily_training")
-
-# Stop the scheduler
-scheduler.stop()
-```
-
----
-
-## 🏆 Model Leaderboard
-
-### Track Model Performance
-
-```python
-from flowyml import ModelLeaderboard
-
-# Create leaderboard for a metric
-leaderboard = ModelLeaderboard(
-    metric="accuracy",
-    higher_is_better=True
-)
-
-# Add model scores
-leaderboard.add_score(
-    model_name="bert-base-uncased",
-    run_id="run_123",
-    score=0.92,
-    metadata={"epochs": 10, "learning_rate": 0.001}
-)
-
-leaderboard.add_score(
-    model_name="distilbert-base",
-    run_id="run_124",
-    score=0.89
-)
-
-# Display rankings
-leaderboard.display(n=10)
-```
-
-**Output:**
-```
-🏆 Model Leaderboard - accuracy
-================================================================================
-Rank   Model Name                     Score           Run ID
---------------------------------------------------------------------------------
-1      bert-base-uncased              0.9200          run_123
-2      distilbert-base                0.8900          run_124
-================================================================================
-```
-
-### Compare Runs
-
-```python
-from flowyml import compare_runs
-
-comparison = compare_runs(
-    run_ids=["run_123", "run_124", "run_125"],
-    metrics=["accuracy", "f1_score", "precision", "recall"]
-)
-
-print(comparison)
-```
-
----
-
-## 📦 Pipeline Templates
-
-### Using Templates
-
-```python
-from flowyml import create_from_template, list_templates
-
-# See available templates
-templates = list_templates()
-print(templates)  # ['ml_training', 'etl', 'data_pipeline', 'ab_test']
-
-# Create ML training pipeline
-pipeline = create_from_template(
-    'ml_training',
-    name='my_training_pipeline',
-    data_loader=load_data,
-    preprocessor=preprocess_data,
-    trainer=train_model,
-    evaluator=evaluate_model,
-    model_saver=save_model
-)
-
-result = pipeline.run()
-```
-
-### Available Templates
-
-#### 1. ML Training Template
-```python
-pipeline = create_from_template(
-    'ml_training',
-    data_loader=lambda: load_dataset(),
-    preprocessor=lambda dataset: preprocess(dataset),
-    trainer=lambda processed_data: train(processed_data),
-    evaluator=lambda model, data: evaluate(model, data),
-    model_saver=lambda model: save(model)
-)
-```
-
-#### 2. ETL Template
-```python
-pipeline = create_from_template(
-    'etl',
-    extractor=lambda: extract_from_db(),
-    transformer=lambda raw_data: transform(raw_data),
-    loader=lambda transformed_data: load_to_warehouse(transformed_data)
-)
-```
-
-#### 3. A/B Test Template
-```python
-pipeline = create_from_template(
-    'ab_test',
-    data_loader=lambda: load_test_data(),
-    model_a_trainer=lambda data: train_variant_a(data),
-    model_b_trainer=lambda data: train_variant_b(data),
-    comparator=lambda metrics_a, metrics_b: compare(metrics_a, metrics_b)
-)
-```
-
----
-
-## 💾 Checkpointing
-
-### Enable Checkpointing
-
-```python
-from flowyml import PipelineCheckpoint
-
-checkpoint = PipelineCheckpoint(run_id="my_run_123")
-
-# Save state after expensive computation
-@step(outputs=["processed_data"])
-def expensive_preprocessing():
-    data = do_expensive_work()
-    checkpoint.save_step_state("preprocessing", data)
-    return data
-
-# Check if checkpoint exists
-if checkpoint.exists():
-    resume_point = checkpoint.resume_point()
-    print(f"Can resume from: {resume_point}")
-
-    # Load previous state
-    state = checkpoint.load_step_state("preprocessing")
-```
-
-### Wrapper for Automatic Checkpointing
-
-```python
-from flowyml import checkpoint_enabled_pipeline
-
-pipeline = Pipeline("training")
-# ... add steps ...
-
-# Enable checkpointing
-pipeline = checkpoint_enabled_pipeline(pipeline, run_id="run_123")
-
-# Run will now prompt to resume if checkpoint exists
-result = pipeline.run()
-```
+→ **Deep Dive**: [LLM Tracing Guide](advanced/llm-tracing.md) · [Eval Adapters](advanced/eval-adapters.md)
 
 ---
 
 ## 👤 Human-in-the-Loop
 
-### Approval Steps
+Some actions shouldn't be fully automated. FlowyML provides **Approval Gates** that pause pipeline execution and notify your team.
 
-```python
-from flowyml import Pipeline, step, approval
+```python linenums="1"
+from flowyml import Pipeline, approval
 
-pipeline = Pipeline("deployment")
-
-@step(outputs=["model"])
-def train_model():
-    # Training logic
-    return model
-
-# Add approval gate
-approval_step = approval(
-    name="approve_deployment",
-    approver="ml-team",
-    timeout_seconds=3600,
-    auto_approve_if=lambda: os.getenv("CI") == "true"
-)
-
+pipeline = Pipeline("deploy-to-prod")
 pipeline.add_step(train_model)
-pipeline.add_step(approval_step)
 
-@step(inputs=["model"])
-def deploy_model(model):
-    # Deployment logic
-    pass
+# The pipeline will PAUSE here and notify the team
+pipeline.add_step(
+    approval(
+        name="release_gate",
+        approver="senior-ds@company.com",
+        timeout_seconds=3600
+    )
+)
 
-pipeline.add_step(deploy_model)
+pipeline.add_step(deploy_trigger)
 ```
 
-When run interactively:
-```
-✋ Step 'approve_deployment' requires approval.
-   Waiting for approval from: ml-team
-   Timeout: 3600s
-   Approve execution? [y/N]: y
-✅ Approved.
-```
+!!! warning "⏱️ Timeout Behavior"
+    If no approval is received within `timeout_seconds`, the pipeline will fail safely. Set this based on your team's SLA.
+
+→ **Deep Dive**: [Human-in-the-Loop Guide](advanced/human-in-the-loop.md)
 
 ---
 
-## 🧪 Keras Integration
+## 💾 Checkpointing
 
-### Automatic Experiment Tracking
+ML training is expensive and prone to transient failures (preemptible instances, OOM, network). FlowyML **Checkpoints** ensure you never lose progress.
 
-```python
-from flowyml import flowymlKerasCallback
-import tensorflow as tf
+- **🔄 Automatic State Saving**: Every artifact is saved to the `ArtifactStore`
+- **⚡ Intelligent Resumption**: Use `pipeline.rerun(run_id="...")` to skip the 10-hour processing and jump straight to the training step that failed
+- **🔒 Immutable Snapshots**: Pipeline snapshots guarantee reproducibility
 
-model = tf.keras.Sequential([...])
-model.compile(optimizer='adam', loss='sparse_categorical_crossentropy')
+```python linenums="1"
+# Resume from failure — skips all completed steps
+result = pipeline.rerun(run_id="previous_failed_run")
 
-# Add flowyml callback
-model.fit(
-    x_train, y_train,
-    epochs=10,
-    validation_data=(x_val, y_val),
-    callbacks=[
-        flowymlKerasCallback(
-            experiment_name="mnist_classification",
-            run_name="baseline_v1",
-            log_model=True,
-            log_every_epoch=True
-        )
-    ]
-)
+# Resume from a specific step
+result = pipeline.rerun(run_id="abc-123", from_step="train_model")
 ```
 
-**Automatically logs:**
-- Training and validation metrics
-- Model architecture
-- Optimizer configuration
-- Training parameters (epochs, batch size)
-- Model checkpoints (if `log_model=True`)
+→ **Deep Dive**: [Checkpointing & Experiment Tracking Guide](advanced/checkpointing.md)
 
 ---
 
-## 📊 Data Drift Detection
+## 📊 Data Drift Monitoring
 
-### Monitor Distribution Shifts
+FlowyML includes high-performance statistical utilities to monitor your data distribution and detect model degradation before it reaches production.
 
-```python
-from flowyml import detect_drift, compute_stats
+```python linenums="1"
+from flowyml.monitoring import detect_drift
 
-# Training data (reference)
-train_feature = train_df['age'].values
-
-# Production data (current)
-prod_feature = prod_df['age'].values
-
-# Detect drift
-drift_result = detect_drift(
-    reference_data=train_feature,
-    current_data=prod_feature,
-    threshold=0.1  # PSI threshold
+# Compare current production batch vs. historical training baseline
+drift = detect_drift(
+    reference_data=baseline_df['age'],
+    current_data=production_df['age'],
+    threshold=0.1
 )
 
-if drift_result['drift_detected']:
-    print(f"⚠️ Drift detected!")
-    print(f"PSI: {drift_result['psi']:.4f}")
-    print(f"Reference stats: {drift_result['reference_stats']}")
-    print(f"Current stats: {drift_result['current_stats']}")
-
-    # Send notification
-    from flowyml import get_notifier
-    notifier = get_notifier()
-    notifier.on_drift_detected('age', drift_result['psi'])
+if drift['drift_detected']:
+    # Automatically triggers a Slack alert via flowyml Notification System
+    send_alert(f"Drift detected in 'age' (PSI: {drift['psi']})")
 ```
 
-### Compute Statistics
-
-```python
-from flowyml import compute_stats
-
-stats = compute_stats(data_array)
-print(stats)
-```
-
-**Output:**
-```python
-{
-    'count': 10000,
-    'mean': 35.2,
-    'std': 12.5,
-    'min': 18.0,
-    'max': 85.0,
-    'median': 34.0,
-    'q25': 26.0,
-    'q75': 45.0
-}
-```
+→ **Deep Dive**: [Data Drift Guide](advanced/data-drift.md)
 
 ---
 
-## 🔗 Integration Examples
+## 🔔 Notification Hub
 
-### Complete Example
+Connect your pipelines to the tools your team uses. Configure once — all pipelines inherit the channels.
 
-```python
-from flowyml import (
-    Pipeline, step, context,
-    configure_notifications,
-    PipelineScheduler,
-    ModelLeaderboard,
-    detect_drift,
-    get_notifier
+```python linenums="1"
+from flowyml import configure_notifications
+
+configure_notifications(
+    slack_webhook="https://hooks.slack.com/...",
+    email_config={...},
+    console=True
 )
 
-# 1. Setup notifications
-configure_notifications(console=True, slack_webhook="...")
+# Steps will automatically report start/success/failure to these channels
+```
 
-# 2. Create pipeline
-ctx = context(model_type="random_forest", n_estimators=100)
-pipeline = Pipeline("production_training", context=ctx)
+| Channel | Setup | Best For |
+|---------|-------|----------|
+| 🖥️ Console | Always enabled | Development & debugging |
+| 💬 Slack | `slack_webhook` URL | Real-time team alerts |
+| 📧 Email | `email_config` dict | Daily summaries & reports |
+| 🔧 Custom | Your subclass | Discord, PagerDuty, Teams |
 
-@step(outputs=["train_data", "val_data"])
-def load_and_validate():
-    train = load_training_data()
-    val = load_validation_data()
+→ **Deep Dive**: [Notifications & Alerts Guide](advanced/notifications.md)
 
-    # Check for drift
-    drift = detect_drift(historical_data, train)
-    if drift['drift_detected']:
-        get_notifier().on_drift_detected('features', drift['psi'])
+---
 
-    return train, val
+## 📅 Scheduling & Automation
 
-@step(inputs=["train_data"], outputs=["model"])
-def train_model(train_data, model_type: str, n_estimators: int):
-    model = RandomForestClassifier(n_estimators=n_estimators)
-    model.fit(train_data.X, train_data.y)
-    return model
+Run your pipelines on a schedule without needing a separate cron job or Airflow instance.
 
-@step(inputs=["model", "val_data"], outputs=["metrics"])
-def evaluate(model, val_data):
-    predictions = model.predict(val_data.X)
-    accuracy = accuracy_score(val_data.y, predictions)
-    return {"accuracy": accuracy}
+```python linenums="1"
+from flowyml import PipelineScheduler
 
-pipeline.add_step(load_and_validate)
-pipeline.add_step(train_model)
-pipeline.add_step(evaluate)
-
-# 3. Schedule daily training
 scheduler = PipelineScheduler()
 scheduler.schedule_daily(
-    name="daily_retrain",
-    pipeline_func=lambda: pipeline.run(),
-    hour=2
+    "model_refresh",
+    lambda: my_pipeline.run(),
+    hour=3
 )
 scheduler.start()
-
-# 4. Track on leaderboard
-leaderboard = ModelLeaderboard("accuracy")
-# After each run, add to leaderboard
 ```
+
+→ **Deep Dive**: [Scheduling Guide](user-guide/scheduling.md)
 
 ---
 
-For more examples, see the `/examples` directory in the repository.
+## 🏆 Model Leaderboard & Comparisons
+
+Keep track of your best experiments with an automatic leaderboard.
+
+```python linenums="1"
+from flowyml import ModelLeaderboard
+
+board = ModelLeaderboard(metric="val_accuracy", higher_is_better=True)
+board.add_score("res-net-50", run_id="r1", score=0.94)
+board.add_score("vit-base", run_id="r2", score=0.96)
+
+# Prints a beautiful CLI table or renders in the Dashboard
+board.display()
+```
+
+→ **Deep Dive**: [Model Leaderboard Guide](advanced/model-leaderboard.md)
+
+---
+
+## 🧠 Dynamic Sub-Pipelines
+
+For advanced users, FlowyML allows you to generate entire pipelines *at runtime*. This is perfect for Hyperparameter Search or Cross-Validation.
+
+```python linenums="1"
+from flowyml import dynamic, Pipeline, step
+
+@dynamic(outputs=["best_model"])
+def hp_search(lrs: list):
+    sub = Pipeline("sweep")
+    for lr in lrs:
+        @step(outputs=[f"model_{lr}"])
+        def train(): return train_with_lr(lr)
+        sub.add_step(train)
+    return sub
+```
+
+→ **Deep Dive**: [Dynamic Workflows Guide](advanced/dynamic-workflows.md) · [Sub-Pipelines Guide](advanced/subpipelines.md)
+
+---
+
+## 📐 What's Next?
+
+<div class="header-grid" markdown>
+
+<div class="header-card" markdown>
+### 🚀 Deploy
+Learn how to deploy your pipelines as REST APIs in the **[Deployment Lab](user-guide/deployments.md)**.
+</div>
+
+<div class="header-card" markdown>
+### 🔌 Extend
+Explore the **[Plugin API](api/plugins.md)** to build your own custom integrations.
+</div>
+
+<div class="header-card" markdown>
+### 💻 Examples
+Browse the **[Examples Gallery](examples.md)** for production-ready pipeline templates.
+</div>
+
+</div>

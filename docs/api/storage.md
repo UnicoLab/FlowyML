@@ -1,9 +1,6 @@
 # Storage API Reference
 
-## ArtifactStore
+Storage backends for flowyml:
 
-::: flowyml.storage.artifacts.ArtifactStore
-
-## MetadataStore
-
-::: flowyml.storage.metadata.MetadataStore
+- [Artifact Stores](artifact_stores.md): Storage for step outputs (GCS, Local, etc.)
+- [Metadata Stores](metadata_stores.md): Storage for run metadata and lineage (SQLite, etc.)

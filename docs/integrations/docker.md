@@ -1,54 +1,104 @@
-# Docker Integration 🐳
+# 🐳 Docker Integration
 
-Containerize your pipelines for reproducible execution anywhere.
+!!! info "What you'll learn"
+    How to run pipelines in isolated Docker containers — eliminate "it works on my machine" bugs forever.
 
-> [!NOTE]
-> **What you'll learn**: How to run pipelines in isolated Docker containers
->
-> **Key insight**: Eliminate "it works on my machine" bugs forever.
+Containerize your pipelines for reproducible execution anywhere — from a laptop to a Kubernetes cluster.
 
-## Why Use Docker?
+---
 
-- **Isolation**: Each step runs in its own clean environment.
-- **Reproducibility**: The exact same code and dependencies run in dev, staging, and prod.
-- **Portability**: Move from local Docker to Kubernetes or Cloud without code changes.
+## Why Docker?
+
+| Feature | Benefit |
+|---|---|
+| **Isolation** | Each step runs in a clean environment |
+| **Reproducibility** | Identical code and dependencies in dev, staging, prod |
+| **Portability** | Move from local Docker to K8s or cloud without code changes |
+| **Dependency Control** | No conflicts between different step requirements |
+
+---
 
 ## 🐳 Running on Docker
 
-flowyml can automatically build and run your steps in Docker containers.
-
-### Configuration
+FlowyML can automatically build and run your steps in Docker containers:
 
 ```python
 from flowyml.integrations.docker import DockerOrchestrator
 
-# Run pipeline in Docker
 pipeline.run(
     orchestrator=DockerOrchestrator(
-        image="python:3.9-slim",  # Base image
-        install_deps=True         # Auto-install requirements.txt
+        image="python:3.11-slim",    # Base image
+        install_deps=True,            # Auto-install requirements.txt
     )
 )
 ```
 
+### Configuration
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `image` | `str` | `python:3.11-slim` | Base Docker image |
+| `install_deps` | `bool` | `True` | Auto-install `requirements.txt` |
+| `dockerfile` | `str` | `None` | Path to custom Dockerfile |
+| `build_context` | `str` | `"."` | Docker build context |
+| `volumes` | `dict` | `{}` | Volume mounts (host:container) |
+| `env_vars` | `dict` | `{}` | Environment variables |
+
+---
+
 ## 🛠 Custom Dockerfiles
 
-For complex dependencies, provide your own Dockerfile.
+For complex dependencies, provide your own Dockerfile:
 
 ```python
 orchestrator = DockerOrchestrator(
     dockerfile="./Dockerfile",
-    build_context="."
+    build_context=".",
 )
 ```
 
 ### Example Dockerfile
 
 ```dockerfile
-FROM python:3.9
-RUN apt-get update && apt-get install -y gcc
+FROM python:3.11-slim
+
+# System dependencies
+RUN apt-get update && apt-get install -y gcc libgomp1 && rm -rf /var/lib/apt/lists/*
+
+# Python dependencies
 COPY requirements.txt .
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Application code
 COPY . /app
 WORKDIR /app
 ```
+
+---
+
+## 🔗 Volume Mounts
+
+Mount local directories into the container for data access:
+
+```python
+orchestrator = DockerOrchestrator(
+    image="python:3.11-slim",
+    volumes={
+        "/data/training": "/app/data",       # Host → Container
+        "/models/registry": "/app/models",
+    },
+)
+```
+
+---
+
+## Best Practices
+
+!!! tip "Pin image versions"
+    Use `python:3.11.7-slim` instead of `python:3.11-slim` for reproducible builds.
+
+!!! tip "Multi-stage builds"
+    Use multi-stage Dockerfiles to keep images small — build dependencies in one stage, copy only artifacts to the final stage.
+
+!!! warning "GPU support"
+    For GPU steps, use NVIDIA base images (e.g., `nvidia/cuda:12.0-runtime`) and install `nvidia-docker2`.

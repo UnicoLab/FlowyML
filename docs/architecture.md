@@ -1,79 +1,140 @@
-# Architecture 🏗️
+# 🏗️ Architecture
 
-flowyml is designed as a modular, layered system that separates pipeline definition, execution, storage, and visualization.
+!!! info "What you'll learn"
+    How FlowyML is structured internally — from pipeline definition to execution, storage, and visualization. Understanding the architecture helps you make better design decisions and troubleshoot issues.
 
-## High-Level Architecture 🗺️
+FlowyML is designed as a modular, layered system that separates **pipeline definition**, **execution**, **storage**, and **visualization** into independent components.
+
+---
+
+## High-Level Architecture
 
 ```mermaid
 graph TD
-    User[User Code] --> API[Core API]
-    API --> Compiler[DAG Compiler]
-    Compiler --> Executor[Executor Engine]
+    User["User Code<br/>(@step, Pipeline)"] --> API["Core API"]
+    API --> Compiler["DAG Compiler"]
+    Compiler --> Executor["Executor Engine"]
 
-    Executor --> Local[Local Runner]
-    Executor --> Dist[Distributed Runner]
+    Executor --> Local["LocalOrchestrator"]
+    Executor --> Remote["RemoteOrchestrator<br/>(SageMaker, Vertex AI, K8s)"]
+    Executor --> Docker["DockerOrchestrator"]
 
-    Local --> Cache[Cache Store]
-    Local --> Artifacts[Artifact Store]
-    Local --> Metadata[Metadata Store]
+    Local --> Cache["Cache Store"]
+    Local --> Artifacts["Artifact Store<br/>(Local, S3, GCS, Azure)"]
+    Local --> Metadata["Metadata Store<br/>(SQLite, PostgreSQL)"]
 
-    Metadata --> UI[UI Backend]
-    UI --> Frontend[React Dashboard]
+    Metadata --> UIBackend["UI Backend<br/>(FastAPI)"]
+    UIBackend --> Frontend["React Dashboard"]
+
+    Remote --> CloudAPI["Cloud APIs"]
 ```
 
-## Core Components 🧩
+---
+
+## Core Components
 
 ### 1. Pipeline Definition Layer
-- **Pipeline**: The container for steps and configuration.
-- **Step**: A unit of work, wrapped by the `@step` decorator.
-- **Context**: Manages parameters and runtime state.
+
+The user-facing API for defining ML workflows:
+
+| Component | Role |
+|---|---|
+| **Pipeline** | Container for steps, config, and execution |
+| **Step** | Unit of work, wrapped by `@step` decorator |
+| **Context** | Manages parameters and runtime state injection |
+| **Assets** | Typed artifacts (Model, Dataset, Metric) with lineage |
 
 ### 2. Execution Engine
-- **DAG**: Directed Acyclic Graph representing dependencies.
-- **Executor**: Handles the execution of the DAG.
-    - `LocalExecutor`: Runs steps in the current process/thread.
-    - `DistributedExecutor`: (Planned) Runs steps on remote workers.
-- **Cache**: Intercepts execution to return stored results if inputs haven't changed.
+
+Handles DAG compilation and execution:
+
+| Component | Role |
+|---|---|
+| **DAG Compiler** | Builds dependency graph from step inputs/outputs |
+| **LocalOrchestrator** | Executes steps in current process/thread |
+| **DockerOrchestrator** | Runs steps in isolated Docker containers |
+| **RemoteOrchestrator** | Submits jobs to cloud platforms (async) |
+| **Cache** | Intercepts execution; returns stored results if unchanged |
 
 ### 3. Storage Layer
-- **Artifact Store**: Stores large binary objects (datasets, models).
-    - Local Filesystem
-    - S3 / GCS / Azure Blob (via `fsspec`)
-- **Metadata Store**: Stores lightweight metadata about runs, steps, and artifacts.
-    - SQLite (default)
-    - PostgreSQL / MySQL
+
+Persists artifacts and metadata:
+
+| Store | Default | Alternatives |
+|---|---|---|
+| **Artifact Store** | Local filesystem | S3, GCS, Azure Blob (via `fsspec`) |
+| **Metadata Store** | SQLite | PostgreSQL, MySQL |
 
 ### 4. UI Architecture
 
-The UI follows a decoupled client-server architecture.
+Decoupled client-server architecture:
 
-#### Backend (FastAPI)
-- **API Endpoints**: REST API for pipelines, runs, and assets.
-- **Static File Serving**: Serves the compiled React frontend.
-- **State Management**: Reads from the Metadata Store.
+| Layer | Technology | Role |
+|---|---|---|
+| **Backend** | FastAPI | REST API for pipelines, runs, assets, traces |
+| **Frontend** | React + Vite | SPA with DAG visualization (`reactflow`) |
+| **Transport** | REST (WebSocket planned) | Real-time updates via polling |
 
-#### Frontend (React + Vite)
-- **SPA**: Single Page Application.
-- **Visualization**: Uses `reactflow` for DAG visualization.
-- **Real-time**: Polls backend for updates (WebSocket planned).
+---
 
-## Data Flow 🔄
+## Data Flow
 
-1.  **Definition**: User defines `@pipeline` and `@step` functions.
-2.  **Compilation**: When `pipeline()` is called, flowyml builds a DAG based on data dependencies.
-3.  **Execution**:
-    - Executor traverses the DAG topologically.
-    - For each step:
-        - Check Cache: If valid cache exists, skip execution and return result.
-        - Execute: Run the user function with injected context.
-        - Store: Save output artifacts and metadata.
-4.  **Monitoring**:
-    - Metadata is written to SQLite.
-    - UI Backend reads SQLite and serves data to Frontend.
+```mermaid
+sequenceDiagram
+    participant User
+    participant Pipeline
+    participant Compiler as DAG Compiler
+    participant Cache
+    participant Executor
+    participant Store as Artifact Store
+    participant Meta as Metadata Store
+    participant UI
 
-## Design Principles 💡
+    User->>Pipeline: pipeline.run()
+    Pipeline->>Compiler: Build DAG from steps
+    Compiler->>Executor: Topological execution order
 
-- **Zero Config**: Works out of the box with sensible defaults.
-- **Asset-Centric**: Focus on the data (artifacts) produced, not just the tasks.
-- **Framework Agnostic**: Works with PyTorch, TensorFlow, sklearn, or raw Python.
-- **Progressive Disclosure**: Simple for beginners, powerful for experts.
+    loop For each step
+        Executor->>Cache: Check cache (code hash + input hash)
+        alt Cache hit
+            Cache-->>Executor: Return cached result
+        else Cache miss
+            Executor->>Executor: Execute step function
+            Executor->>Store: Save output artifacts
+            Executor->>Cache: Store result in cache
+        end
+        Executor->>Meta: Write run metadata
+    end
+
+    Meta-->>UI: Dashboard reads metadata
+```
+
+---
+
+## Design Principles
+
+| Principle | What It Means |
+|---|---|
+| **Zero Config** | Works out of the box with sensible defaults |
+| **Asset-Centric** | Focus on data produced (artifacts), not just tasks |
+| **Framework Agnostic** | Works with PyTorch, TensorFlow, sklearn, or raw Python |
+| **Progressive Disclosure** | Simple for beginners, powerful for experts |
+| **Infrastructure as Config** | Change deployment target via env variable, not code |
+
+---
+
+## Module Map
+
+```
+flowyml/
+├── core/               # Pipeline, Step, Context, DAG
+├── io/                 # Materializers (serialization/deserialization)
+├── storage/            # Artifact Store, Metadata Store, Cache
+├── integrations/       # Cloud providers, ML frameworks
+├── monitoring/         # Alerts, System/Pipeline monitors, Data drift
+├── tracking/           # Experiment tracking, Model leaderboard
+├── evals/              # Evaluation framework (17+ scorers)
+├── plugins/            # Plugin system (native + external)
+├── stacks/             # Stack management (local, cloud, hybrid)
+└── ui/                 # FastAPI backend + React frontend
+```

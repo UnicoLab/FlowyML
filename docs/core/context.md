@@ -2,12 +2,10 @@
 
 flowyml's context system eliminates configuration hell by providing automatic parameter injection across pipeline steps.
 
-> [!NOTE]
-> **What you'll learn**: How to manage configuration without hardcoding, enabling the same pipeline to run in dev/staging/prod
->
-> **Key insight**: Context separates **what** your pipeline does from **how** it's configured. Change parameters, not code.
+!!! info "What you'll learn"
+    How to manage configuration without hardcoding, enabling the same pipeline to run in dev/staging/prod. Context separates **what** your pipeline does from **how** it's configured.
 
-## Why Context Matters
+## Why Context Matters 💡
 
 **Without context**, ML pipelines suffer from:
 - **Hardcoded parameters**: `learning_rate = 0.001` buried in code
@@ -21,10 +19,10 @@ flowyml's context system eliminates configuration hell by providing automatic pa
 - **Centralized configuration**: All parameters in one place
 - **Type safety**: Type hints validate parameters automatically
 
-> [!TIP]
-> **The killer feature**: Run the same pipeline with different configs just by swapping context. No code changes to go from dev (small dataset, CPU) to prod (full dataset, GPU).
+!!! tip "The killer feature"
+    Run the same pipeline with different configs just by swapping context. No code changes to go from dev (small dataset, CPU) to prod (full dataset, GPU).
 
-## The Context Object
+## The Context Object 📦
 
 The `Context` object serves as a container for:
 1. **Global Parameters**: Hyperparameters, configuration settings
@@ -32,7 +30,7 @@ The `Context` object serves as a container for:
 3. **Runtime Settings**: Batch sizes, resource requirements
 4. **Domain Logic**: Business rules, thresholds
 
-### Creating a Context
+### Creating a Context 🏗️
 
 You can create a context with any number of keyword arguments:
 
@@ -49,7 +47,7 @@ ctx = context(
 )
 ```
 
-### Using Context with Pipelines
+### Using Context with Pipelines 🎢
 
 ```python
 from flowyml import Pipeline, context
@@ -64,7 +62,7 @@ pipeline = Pipeline("training_pipeline", context=ctx)
 
 The most powerful feature of flowyml's context is **automatic parameter injection**. If a step function argument matches a key in the context, flowyml will automatically inject the value when the step is executed.
 
-### Example
+### Prototypical Example 🧪
 
 ```python
 from flowyml import Pipeline, step, context
@@ -98,7 +96,7 @@ pipeline.add_step(evaluate)
 result = pipeline.run()
 ```
 
-### How It Works
+### How Injection Works ⚙️
 
 1. **Parameter Matching**: flowyml inspects each step function's signature
 2. **Context Lookup**: For each parameter, it checks if a matching key exists in the context
@@ -131,7 +129,7 @@ result = pipeline.run(context={"epochs": 20, "learning_rate": 0.05})
 # Now uses epochs=20 and learning_rate=0.05
 ```
 
-### Use Cases for Overrides
+### Common Use Cases 🌍
 
 1. **Experimentation**: Try different hyperparameters quickly
 2. **Production vs Development**: Different settings for different environments
@@ -144,7 +142,7 @@ for lr in [0.001, 0.01, 0.1]:
     print(f"LR={lr}: accuracy={result.outputs['metrics'].accuracy}")
 ```
 
-## Context Updates
+## Dynamic Context Updates ♻️
 
 You can also update the context dynamically:
 
@@ -159,7 +157,7 @@ ctx.update({"learning_rate": 0.01, "batch_size": 32})
 
 ## Accessing Context Data 🔍
 
-### Individual Parameters
+### Functional Parameters 🎯
 
 Most commonly, you just declare parameters in your step function:
 
@@ -170,7 +168,7 @@ def my_step(param1: str, param2: int):
     print(f"{param1}, {param2}")
 ```
 
-### Full Context Access
+### Direct Access 🔓
 
 If you need access to the entire context object:
 
@@ -185,7 +183,7 @@ def inspect_context(context):
         use_param(context["optional_param"])
 ```
 
-### Context Properties
+### Context APIs 🛠️
 
 The Context object provides useful methods:
 
@@ -207,7 +205,7 @@ if "a" in ctx:
     print(ctx["a"])
 ```
 
-## Mixing Input Data and Context Parameters
+## Data & Parameters Mix 🧬
 
 Steps can receive both pipeline data (from previous steps) and context parameters:
 
@@ -260,9 +258,9 @@ ctx = context(
 )
 ```
 
-## Advanced Patterns
+## Advanced Patterns ⚡
 
-### Environment-Specific Contexts
+### Environment-Specific Config 🌍
 
 ```python
 import os
@@ -286,7 +284,7 @@ def get_context():
 pipeline = Pipeline("adaptive", context=get_context())
 ```
 
-### Nested Configuration
+### Hierarchical Config 📂
 
 ```python
 ctx = context(
@@ -309,7 +307,7 @@ def train(model_config: dict, training_config: dict):
     ...
 ```
 
-### Context Inheritance
+### Inheritance & Composition 👪
 
 ```python
 # Base context
@@ -418,7 +416,7 @@ def create_training_pipeline(context):
 
 ## Debugging Context Issues 🔧
 
-### Check Context Contents
+### Inspecting State 👁️
 
 ```python
 ctx = context(a=1, b=2, c=3)
@@ -431,7 +429,7 @@ pipeline = Pipeline("debug", context=ctx)
 result = pipeline.run(debug=True)  # Shows parameter injection
 ```
 
-### Missing Parameter Errors
+### Troubleshooting Failures 🚨
 
 If a step requires a parameter not in the context or previous outputs:
 
@@ -448,5 +446,5 @@ pipeline.run()  # Error: Missing required parameters: ['required_param']
 
 - **[Pipelines](pipelines.md)**: Learn how to build workflows
 - **[Steps](steps.md)**: Master step configuration
-- **[Configuration](configuration.md)**: External configuration files
-- **[Caching](caching.md)**: Understand caching with context
+- **[Configuration](../user-guide/configuration.md)**: Pipeline-level configuration and environment variables.
+- **[Caching](../advanced/caching.md)**: How context parameters affect step caching.

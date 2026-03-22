@@ -2,7 +2,7 @@
 
 This guide provides **copy-paste ready examples** for common plugin use cases.
 
-## Example 1: Run on Kubernetes in 5 Minutes
+## Example 1: Run on Kubernetes in 5 Minutes ☸️
 
 ```python
 # install.sh
@@ -52,7 +52,7 @@ stacks:
 python pipeline.py
 ```
 
-## Example 2: MLflow + S3 Production Stack
+## Example 2: MLflow + S3 Production Stack 🔬
 
 ```python
 # setup.sh
@@ -124,7 +124,7 @@ stacks:
 # export AWS_SECRET_ACCESS_KEY=xxx
 ```
 
-## Example 3: Vertex AI on GCP
+## Example 3: Vertex AI on GCP ☁️
 
 ```python
 # gcp_pipeline.py
@@ -177,7 +177,7 @@ stacks:
         bucket: gs://my-ml-bucket
 ```
 
-## Example 4: Hybrid Stack (Multiple Frameworks)
+## Example 4: Hybrid Stack (Multiple Frameworks) 🔀
 
 Combine components from different sources:
 
@@ -216,7 +216,7 @@ pipeline.add_step(process)
 result = pipeline.run()
 ```
 
-## Example 5: Import Existing ZenML Stack
+## Example 5: Import Existing ZenML Stack 📥
 
 ```bash
 # Step 1: List your ZenML stacks
@@ -232,7 +232,7 @@ cat flowyml.yaml
 flowyml run my_pipeline.py --stack production
 ```
 
-## Example 6: Custom Component from Local File
+## Example 6: Custom Component from Local File 📄
 
 ```python
 # my_components.py
@@ -249,7 +249,7 @@ from flowyml.stacks.plugins import load_component
 load_component("/path/to/my_components.py:MyCustomOrchestrator")
 ```
 
-## Example 7: Load from PyPI Package
+## Example 7: Load from PyPI Package 📦
 
 ```python
 # If you published a flowyml plugin to PyPI
@@ -264,7 +264,7 @@ registry = get_component_registry()
 my_component = registry.get_orchestrator("my_custom_orch")
 ```
 
-## Example 8: Multi-Cloud Setup
+## Example 8: Multi-Cloud Setup 🌍
 
 ```yaml
 # flowyml.yaml
@@ -310,7 +310,7 @@ pipeline.run(stack="gcp_production")  # Run on GCP
 pipeline.run(stack="azure_production")  # Run on Azure
 ```
 
-## Common Patterns
+## Common Patterns 🧩
 
 ### Pattern 1: Development → Staging → Production
 
@@ -376,7 +376,7 @@ def train_and_register():
     return model
 ```
 
-## Quick Reference
+## Quick Reference 📋
 
 ```bash
 # Plugin Management
@@ -398,7 +398,7 @@ flowyml run pipeline.py --stack production
 flowyml run pipeline.py --stack kubernetes --resources gpu_training
 ```
 
-## Next Steps
+## Next Steps 📚
 
 - [Plugin System Overview](./overview.md)
 - [External Frameworks Guide](./external-frameworks.md)

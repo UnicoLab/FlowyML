@@ -2,12 +2,10 @@
 
 Steps are the atomic units of work in flowyml pipelines. They transform regular Python functions into tracked, cacheable, retriable building blocks.
 
-> [!NOTE]
-> **What you'll learn**: How to design reusable, testable steps that compose into production pipelines
->
-> **Key insight**: Well-designed steps are **pure, focused, and composable**. They work in isolation, cache intelligently, and combine into complex workflows.
+!!! info "What you'll learn"
+    How to design reusable, testable steps that compose into production pipelines. Well-designed steps are **pure, focused, and composable**.
 
-## Why Steps Matter
+## Why Steps Matter 👣
 
 **Without steps**, you have:
 - Functions scattered across files, hard to reuse
@@ -22,9 +20,9 @@ Steps are the atomic units of work in flowyml pipelines. They transform regular 
 - **Full observability**: See inputs, outputs, duration for every execution
 - **Testability**: Each step is a pure function you can unit test
 
-## Step Design Principles
+## Step Design Principles ⚖️
 
-### 1. **Steps Should Be Pure Functions**
+### 1. Pure Functions 🧪
 
 ```python
 # ✅ Good: Pure function, deterministic output
@@ -42,7 +40,7 @@ def clean_data_impure():
 
 **Why**: Pure functions are testable, cacheable, and parallelizable. Side effects break caching and make debugging nightmares.
 
-### 2. **One Step, One Responsibility**
+### 2. Single Responsibility 🎯
 
 ```python
 # ✅ Good: Focused steps, independently cacheable
@@ -63,7 +61,7 @@ def split_and_train_and_evaluate(data):
 
 **Why**: Granular steps enable better caching. Tweaking training doesn't re-run data splitting.
 
-### 3. **Explicit Is Better Than Implicit**
+### 3. Explicit vs. Implicit 📢
 
 ```python
 # ✅ Good: Clear inputs/outputs
@@ -79,7 +77,7 @@ def clean(data):
 
 **Why**: Explicit `inputs`/`outputs` enable DAG visualization, validation, and better error messages.
 
-## Anatomy of a Step
+## Anatomy of a Step 🦴
 
 A step is a Python function with the `@step` decorator:
 
@@ -93,7 +91,7 @@ def my_step(input_data):
     return processed
 ```
 
-## The `@step` Decorator
+## The @step Decorator 🪄
 
 The `@step` decorator accepts several arguments to configure behavior:
 
@@ -109,8 +107,8 @@ The `@step` decorator accepts several arguments to configure behavior:
 | `resources` | `dict` | Resource requirements (e.g., `{"gpu": 1}`) | `None` |
 | `execution_group`| `str` | Name of the group to run steps together | `None` |
 
-> [!TIP]
-> **🚀 Performance: Step Grouping**: Use `execution_group` to run multiple steps in the same container. This eliminates the container startup overhead for consecutive small steps. See [Step Grouping](../advanced/step-grouping.md) for details.
+!!! tip "Performance: Step Grouping"
+    Use `execution_group` to run multiple steps in the same container. This eliminates the container startup overhead for consecutive small steps. See [Step Grouping](../advanced/step-grouping.md) for details.
 
 ### Example with Full Configuration
 
@@ -242,12 +240,12 @@ def load_data() -> Dataset:
 2.  **Infrastructure Abstraction**: You don't need to know the GCS/S3 path inside your training function.
 3.  **Validation**: FlowyML ensures that downstream steps receive the correct object types.
 
-> [!TIP]
-> **Pro Tip**: Use the `Model`, `Dataset`, and `Metrics` classes provided by FlowyML to get the full benefit of auto-extraction and routing.
+!!! tip "Pro Tip"
+    Use the `Model`, `Dataset`, and `Metrics` classes provided by FlowyML to get the full benefit of auto-extraction and routing.
 
 ---
 
-## Anatomy of a Step
+## Caching Strategies 💾
 
 flowyml supports intelligent caching to avoid re-running expensive steps:
 
@@ -352,7 +350,7 @@ Resources are used by:
 - **Cloud stacks**: To provision appropriate instances
 - **Kubernetes**: To set pod resources
 
-## Decision Guide: Caching Strategies
+## Decision Guide: Caching ⚖️
 
 | Scenario | Use | Why |
 |----------|-----|-----|
@@ -418,7 +416,7 @@ def test_pipeline_integration():
 
 ---
 
-## Step Execution Lifecycle
+## Step Execution Lifecycle ♻️
 
 Understanding what happens when a step runs:
 
@@ -438,8 +436,8 @@ for step_name, step_result in result.step_results.items():
     print(f"{step_name}: {step_result.duration_seconds:.2f}s, cached={step_result.cached}")
 ```
 
-> [!TIP]
-> **Performance insight**: Viewing cached steps in the UI shows how much time you're saving. A well-cached pipeline can go from hours to minutes during iteration.
+!!! tip "Performance insight"
+    Viewing cached steps in the UI shows how much time you're saving. A well-cached pipeline can go from hours to minutes during iteration.
 
 ## Best Practices 💡
 
@@ -528,7 +526,7 @@ def predict(features: pd.DataFrame, threshold: float = 0.5) -> pd.Series:
     ...
 ```
 
-## Advanced Step Patterns
+## Advanced Step Patterns ⚡
 
 ### Conditional Execution
 
@@ -578,5 +576,5 @@ for model_type in ["xgboost", "random_forest", "neural_net"]:
 
 - **[Pipelines](pipelines.md)**: Connect steps into workflows
 - **[Context](context.md)**: Master parameter injection
-- **[Caching](caching.md)**: Understand caching strategies
-- **[Error Handling](../advanced/error-handling.md)**: Advanced error handling patterns
+- **[Caching](../advanced/caching.md)**: Learn how to skip expensive steps with intelligent caching.
+- **[Debugging](../advanced/debugging.md)**: Use the interactive debugger with `debug=True`.

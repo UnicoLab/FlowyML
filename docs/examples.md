@@ -431,7 +431,7 @@ All examples are designed to be modified and extended. Try:
 
 ## Next Steps
 
-- **[User Guide](user-guide/pipelines.md)**: Learn concepts in depth
+- **[User Guide](core/pipelines.md)**: Learn concepts in depth
 - **[API Reference](api/core.md)**: Explore all available APIs
 - **[Contributing](contributing.md)**: Add your own examples!
 

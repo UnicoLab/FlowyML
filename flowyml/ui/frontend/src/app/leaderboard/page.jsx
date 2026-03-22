@@ -29,7 +29,7 @@ export function Leaderboard() {
 
     return (
         <div className="p-6">
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
                 <h1 className="text-2xl font-bold flex items-center gap-2 text-slate-900 dark:text-white">
                     <Trophy className="text-yellow-500" />
                     Model Leaderboard
@@ -80,7 +80,8 @@ export function Leaderboard() {
                 />
             ) : (
                 <div className="bg-white dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-                    <table className="w-full">
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[600px]">
                         <thead>
                             <tr className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
                                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Rank</th>
@@ -126,6 +127,7 @@ export function Leaderboard() {
                             ))}
                         </tbody>
                     </table>
+                  </div>
                 </div>
             )}
         </div>

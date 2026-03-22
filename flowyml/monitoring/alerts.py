@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, NoReturn
+from typing import Any
 from datetime import datetime
 import logging
 
@@ -24,15 +24,30 @@ class Alert:
 
 
 class AlertHandler:
-    def handle(self, alert: Alert) -> NoReturn:
+    def handle(self, alert: Alert) -> None:
         raise NotImplementedError
 
 
 class ConsoleAlertHandler(AlertHandler):
     def handle(self, alert: Alert) -> None:
-        # Simple ANSI colors if supported
-        if alert.level == AlertLevel.ERROR or alert.level == AlertLevel.CRITICAL or alert.level == AlertLevel.WARNING:
-            pass
+        prefix = {
+            AlertLevel.INFO: "ℹ️  [INFO]",
+            AlertLevel.WARNING: "⚠️  [WARNING]",
+            AlertLevel.ERROR: "❌ [ERROR]",
+            AlertLevel.CRITICAL: "🚨 [CRITICAL]",
+        }.get(alert.level, "📢 [ALERT]")
+        logger.log(
+            {
+                AlertLevel.INFO: logging.INFO,
+                AlertLevel.WARNING: logging.WARNING,
+                AlertLevel.ERROR: logging.ERROR,
+                AlertLevel.CRITICAL: logging.CRITICAL,
+            }.get(alert.level, logging.INFO),
+            "%s %s — %s",
+            prefix,
+            alert.title,
+            alert.message,
+        )
 
 
 class AlertManager:
@@ -48,7 +63,7 @@ class AlertManager:
         title: str,
         message: str,
         level: AlertLevel = AlertLevel.INFO,
-        metadata: dict = None,
+        metadata: dict | None = None,
     ) -> None:
         alert = Alert(title=title, message=message, level=level, metadata=metadata)
         self.history.append(alert)
@@ -63,7 +78,7 @@ class AlertManager:
         message: str,
         title: str = "Pipeline Alert",
         level: AlertLevel = AlertLevel.INFO,
-        metadata: dict = None,
+        metadata: dict | None = None,
     ) -> None:
         """Convenience method for sending alerts."""
         self.send_alert(title=title, message=message, level=level, metadata=metadata)

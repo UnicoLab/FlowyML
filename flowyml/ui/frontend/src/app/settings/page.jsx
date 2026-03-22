@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { fetchApi } from '../../utils/api';
 import {
     Settings as SettingsIcon,
     Palette,
@@ -40,7 +41,7 @@ export function Settings() {
 
     const fetchServerInfo = async () => {
         try {
-            const response = await fetch('/api/execution/info');
+            const response = await fetchApi('/api/execution/info');
             if (response.ok) {
                 const data = await response.json();
                 setServerInfo(data);
@@ -81,7 +82,7 @@ export function Settings() {
     return (
         <div className="p-6 max-w-4xl mx-auto space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                     <h1 className="text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
                         <div className="p-3 bg-gradient-to-br from-slate-600 to-slate-800 rounded-xl text-white">

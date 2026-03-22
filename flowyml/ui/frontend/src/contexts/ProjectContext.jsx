@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { fetchApi } from '../utils/api';
 
 const ProjectContext = createContext();
 
@@ -14,7 +15,7 @@ export function ProjectProvider({ children }) {
 
     useEffect(() => {
         // Fetch available projects
-        fetch('/api/projects/')
+        fetchApi('/api/projects/')
             .then(res => res.json())
             .then(data => {
                 setProjects(data.projects || []);
@@ -46,7 +47,7 @@ export function ProjectProvider({ children }) {
     const refreshProjects = async () => {
         setLoading(true);
         try {
-            const res = await fetch('/api/projects/');
+            const res = await fetchApi('/api/projects/');
             const data = await res.json();
             setProjects(data.projects || []);
         } catch (err) {

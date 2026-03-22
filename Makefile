@@ -1,7 +1,8 @@
 .PHONY: help install install-dev install-ui clean test test-unit test-integration test-coverage \
         backend-dev backend-start frontend-dev frontend-build frontend-install \
         ui-dev ui-start ui-stop ui-status all-dev setup lint format check \
-        cache-clear cache-stats init run docker-build docker-up docker-down docker-logs docker-clean
+        cache-clear cache-stats init run docker-build docker-up docker-down docker-logs docker-clean \
+        notebook-dev notebook-start notebook-test notebook-build notebook-clean notebook-setup
 
 # Variables
 POETRY := poetry
@@ -248,6 +249,30 @@ all-dev: docker-up ## Start full stack with Docker
 	@echo "✅ Docker stack running!"
 	@echo "Backend: http://localhost:8080"
 	@echo "Frontend: http://localhost:80"
+
+# =============================================================================
+# 🌊 FlowyML Notebook
+# =============================================================================
+
+NOTEBOOK_DIR := flowyml-notebook
+
+notebook-setup: ## 🔧 Setup Notebook (install deps + frontend)
+	$(MAKE) -C $(NOTEBOOK_DIR) setup
+
+notebook-dev: ## 🔥 Launch Notebook in dev mode (hot reload)
+	$(MAKE) -C $(NOTEBOOK_DIR) dev
+
+notebook-start: ## 🚀 Launch Notebook with production build
+	$(MAKE) -C $(NOTEBOOK_DIR) start
+
+notebook-test: ## 🧪 Run notebook tests
+	$(MAKE) -C $(NOTEBOOK_DIR) test
+
+notebook-build: ## 📦 Build notebook frontend for distribution
+	$(MAKE) -C $(NOTEBOOK_DIR) build
+
+notebook-clean: ## 🧹 Clean notebook build artifacts
+	$(MAKE) -C $(NOTEBOOK_DIR) clean
 
 
 local-deploy: ## Start full local stack (App, DB, Observability)

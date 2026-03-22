@@ -2,12 +2,10 @@
 
 Pipelines are the core abstraction in flowyml — they represent workflows that orchestrate your ML operations from data to deployment.
 
-> [!NOTE]
-> **What you'll learn**: How to design, build, and run production-grade pipelines
->
-> **Key insight**: A well-designed pipeline is infrastructure-agnostic. Write it once, run it anywhere (local, staging, production) without code changes.
+!!! info "What you'll learn"
+    How to design, build, and run production-grade pipelines. A well-designed pipeline is infrastructure-agnostic — write it once, run it anywhere.
 
-## Why Pipelines Matter
+## Why Pipelines Matter 💡
 
 Without pipelines, ML workflows are often:
 - **Scripts scattered across notebooks** — Hard to reproduce, impossible to version
@@ -21,11 +19,11 @@ Without pipelines, ML workflows are often:
 - **Built-in observability** — Track every run, inspect every artifact
 - **Environment portability** — Same code, different stacks
 
-## Pipeline Design Principles
+## Pipeline Design Principles ⚖️
 
 Before diving into code, understand these design principles:
 
-### 1. **Steps Should Be Pure Functions**
+### 1. Pure Functions 🧪
 
 ```python
 # ✅ Good: Pure function, testable in isolation
@@ -42,7 +40,7 @@ def clean_data():
 
 **Why**: Pure functions are testable, cacheable, and parallelizable.
 
-### 2. **One Step, One Responsibility**
+### 2. Single Responsibility 🎯
 
 ```python
 # ✅ Good: Focused steps
@@ -63,7 +61,7 @@ def split_and_train(data):
 
 **Why**: Granular steps enable better caching, debugging, and reuse.
 
-### 3. **Configuration Belongs in Context**
+### 3. Context Injection 📜
 
 ```python
 # ✅ Good: Context injection
@@ -84,7 +82,7 @@ def train(data):
 
 **Why**: Separation of code and config enables dev/staging/prod with one codebase.
 
-### 4. **Use Type-Based Routing (New in 1.8.0)**
+### 4. Type-Based Routing 📥
 
 Instead of manual wiring, use return type hints to let FlowyML route your assets.
 
@@ -111,7 +109,7 @@ Understanding the lifecycle of a FlowyML pipeline helps you build better product
 
 ---
 
-## Creating Your First Pipeline
+## Creating Your First Pipeline 🚀
 
 Here's a complete, runnable example:
 
@@ -142,8 +140,8 @@ if result.success:
     print(f"✓ Pipeline run complete: {result.run_id}")
 ```
 
-> [!TIP]
-> **Visualization**: You can view the DAG of any pipeline before running it by calling `pipeline.build()` followed by `print(pipeline.dag.visualize())`.
+!!! tip
+    You can view the DAG of any pipeline before running it by calling `pipeline.build()` followed by `print(pipeline.dag.visualize())`.
 
 ## Pipeline Configuration ⚙️
 
@@ -238,7 +236,7 @@ result = pipeline.run(stack=my_production_stack)
 result = pipeline.run(debug=True)
 ```
 
-## The `PipelineResult` Object
+## The PipelineResult Object 📄
 
 The result of a pipeline execution is a `PipelineResult` object:
 
@@ -276,7 +274,7 @@ if result.success:
             print(f"  Artifact: {step_result.artifact_uri}")
 ```
 
-## Pipeline Building
+## Pipeline Building 🏗️
 
 ### Adding Steps
 
@@ -340,7 +338,7 @@ result = pipeline.run(stack=stack)
 
 See the [Stack Architecture](../architecture/stacks.md) guide for more details on stacks.
 
-## Advanced Features
+## Advanced Features ⚡
 
 ### Pipeline Versioning (VersionedPipeline)
 
@@ -413,8 +411,8 @@ result = pipeline.rerun(run_id="previous-run-id")
 result = pipeline.rerun(run_id="previous-run-id", from_step="train_model")
 ```
 
-> [!TIP]
-> `rerun()` requires checkpointing to be enabled. Set `enable_checkpointing=True` in the Pipeline constructor (it's `True` by default via config).
+!!! tip
+    `rerun()` requires checkpointing to be enabled. Set `enable_checkpointing=True` in the Pipeline constructor (it's `True` by default via config).
 
 See the full guide: [Checkpointing](../advanced/checkpointing.md)
 
@@ -518,7 +516,7 @@ def flaky_step():
 
 See the [Stack Architecture](../architecture/stacks.md) guide for more details on stacks.
 
-## Pipeline Patterns & Anti-Patterns
+## Patterns & Anti-Patterns ✅
 
 ### ✅ Pattern: Environment-Agnostic Design
 
@@ -618,7 +616,7 @@ def train_model(data):
 
 ---
 
-## Decision Guide: When to Split Steps
+## Decision Guide ⚖️
 
 | Scenario | Split? | Reason |
 |----------|--------|--------|
@@ -630,7 +628,7 @@ def train_model(data):
 
 ---
 
-## Real-World Pipeline Examples
+## Real-World Examples 🌍
 
 ### ML Training Pipeline
 
@@ -685,7 +683,7 @@ print(f"Model accuracy: {result.outputs['accuracy']:.2%}")
 
 ---
 
-## Best Practices Summary
+## Best Practices 💡
 
 1. **Name descriptively**: `customer_churn_prediction` > `pipeline1`
 2. **Explicit dependencies**: Always declare `inputs` and `outputs`

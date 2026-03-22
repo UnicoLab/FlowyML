@@ -2,10 +2,33 @@
 
 flowyml provides built-in observability for Large Language Models (LLMs), giving you X-ray vision into your GenAI applications.
 
-> [!NOTE]
-> **What you'll learn**: How to track token usage, costs, and latency for every LLM call
->
-> **Key insight**: LLMs are black boxes. Tracing turns them into transparent, measurable components.
+!!! tip "Comprehensive Guide Available"
+    For full integration docs covering LangGraph, LangChain, OpenAI, CrewAI, session tracing, auto-evaluations, and more — see the **[GenAI Observability Guide](../integrations/genai-observability.md)**.
+
+!!! info "What you'll learn"
+    How to track token usage, costs, and latency for every LLM call. LLMs are black boxes — tracing turns them into transparent, measurable components.
+
+## Architecture
+
+```mermaid
+flowchart TB
+    subgraph Decorators["Decorator Layer"]
+        TL["@trace_llm"]
+        OB["@observe"]
+        TG["trace_graph()"]
+        TO["TracedOpenAI"]
+    end
+    TL -->|captures| E[Trace Event / Span]
+    OB -->|captures| E
+    TG -->|captures| E
+    TO -->|captures| E
+    E -->|stores| S[SQLite Metadata Store]
+    S -->|serves| API[REST API /api/traces]
+    API -->|renders| UI[Traces Dashboard]
+    E -->|bridge| B[TraceBridge]
+    B -->|converts| D[EvalDataset]
+    D -->|scores| R[Evaluation Result]
+```
 
 ## Why Tracing Matters
 
@@ -78,8 +101,8 @@ def generate_answer(query: str, context: str):
     )
 ```
 
-> [!TIP]
-> **Pro Tip**: Use `event_type="chain"` for the parent function and `"llm"` or `"tool"` for children. This creates a beautiful nested waterfall view in the UI.
+!!! tip "Pro Tip"
+    Use `event_type="chain"` for the parent function and `"llm"` or `"tool"` for children. This creates a beautiful nested waterfall view in the UI.
 
 ## 📊 Viewing Traces
 
@@ -117,3 +140,84 @@ You can add custom attributes to your traces for better filtering and analysis.
 def categorize_text(text):
     # ...
 ```
+
+---
+
+## 🔌 Trace → Evaluation (TraceBridge)
+
+Convert traced LLM interactions into evaluation datasets for automated quality auditing:
+
+```python
+from flowyml.evals import evaluate_traces, Relevance, Toxicity
+
+results = evaluate_traces(
+    trace_ids=["trace-001", "trace-002"],
+    scorers=[Relevance(), Toxicity()],
+    experiment="trace_quality_audit",
+)
+print(results.summary)  # {'relevance': 0.92, 'toxicity': 0.03}
+```
+
+!!! tip "Continuous Monitoring"
+    Combine `evaluate_traces()` with `EvalSchedule` to automatically evaluate new traces every night.
+
+---
+
+## 💰 Cost Reference
+
+| Model | Input (per 1K) | Output (per 1K) |
+|---|---|---|
+| `gpt-4o` | $0.005 | $0.015 |
+| `gpt-4o-mini` | $0.00015 | $0.0006 |
+| `gpt-4-turbo` | $0.01 | $0.03 |
+| `claude-3-opus` | $0.015 | $0.075 |
+| `claude-3-sonnet` | $0.003 | $0.015 |
+
+!!! info "Custom Cost Models"
+    Override pricing with `@trace_llm(cost_per_1k_input=..., cost_per_1k_output=...)`.
+
+---
+
+## 🌐 REST API
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/api/traces/` | GET | List traces (filterable by project, type, trace_id) |
+| `/api/traces/{trace_id}` | GET | Get a specific trace tree |
+| `/api/traces/` | POST | Create or update a trace event |
+
+```python
+import requests
+
+# List recent traces
+traces = requests.get("http://localhost:8080/api/traces/?limit=10").json()
+
+# Get a specific trace tree
+tree = requests.get(f"http://localhost:8080/api/traces/{trace_id}").json()
+```
+
+---
+
+## 📐 Event Types Reference
+
+| Event Type | Description | Use Case |
+|---|---|---|
+| `llm` | A direct LLM API call | `openai.chat.completions.create()` |
+| `chat_model` | A chat model call | `ChatOpenAI.invoke()` |
+| `chain` | A parent wrapper/chain | RAG pipeline, multi-step workflow |
+| `tool` | A tool/function call | Vector DB search, API call, calc |
+| `agent` | An autonomous agent loop | ReAct agent, planning loops |
+| `agent_action` | A specific agent action | Tool selection within agent loop |
+| `embedding` | Embedding generation | `openai.embeddings.create()` |
+| `retriever` | RAG retriever | Vector DB search |
+| `graph_node` | LangGraph node execution | State machine transitions |
+| `session` | Session-level event | Multi-turn conversation |
+| `custom` | User-defined event | Any custom span |
+
+---
+
+## Next Steps
+
+- **[GenAI Observability Guide](../integrations/genai-observability.md)** — Full integration docs for LangGraph, LangChain, OpenAI, CrewAI, session tracing, auto-evals
+- **[Evaluations](../evaluations.md)** — Built-in scorers for quality, toxicity, and relevance
+- **[Notifications](notifications.md)** — Set up alerts when traces breach quality thresholds

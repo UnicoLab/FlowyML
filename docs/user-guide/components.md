@@ -612,7 +612,7 @@ flowyml run pipeline.py --stack airflow_stack
 Apache-2.0
 ```
 
-## API Reference
+## API Reference {#api-reference}
 
 ### ComponentRegistry
 

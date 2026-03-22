@@ -3,12 +3,12 @@
  * Communicates with the backend API for plugin operations.
  */
 
-const API_BASE_URL = '/api';
+import { fetchApi } from '../utils/api';
 
 class PluginService {
     async getAvailablePlugins() {
         try {
-            const response = await fetch(`${API_BASE_URL}/plugins/available`);
+            const response = await fetchApi('/api/plugins/available');
             if (!response.ok) throw new Error('Failed to fetch available plugins');
             return await response.json();
         } catch (error) {
@@ -19,7 +19,7 @@ class PluginService {
 
     async getInstalledPlugins() {
         try {
-            const response = await fetch(`${API_BASE_URL}/plugins/installed`);
+            const response = await fetchApi('/api/plugins/installed');
             if (!response.ok) throw new Error('Failed to fetch installed plugins');
             return await response.json();
         } catch (error) {
@@ -30,7 +30,7 @@ class PluginService {
 
     async installPlugin(pluginId) {
         try {
-            const response = await fetch(`${API_BASE_URL}/plugins/install`, {
+            const response = await fetchApi('/api/plugins/install', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ plugin_id: pluginId })
@@ -50,7 +50,7 @@ class PluginService {
 
     async uninstallPlugin(pluginId) {
         try {
-            const response = await fetch(`${API_BASE_URL}/plugins/uninstall/${pluginId}`, {
+            const response = await fetchApi(`/api/plugins/uninstall/${pluginId}`, {
                 method: 'POST'
             });
 
@@ -68,9 +68,7 @@ class PluginService {
 
     async importStack(stackName, type = 'zenml') {
         try {
-            // currently backend only supports zenml import at this endpoint
-            // in the future we can add ?type= param or body field
-            const response = await fetch(`${API_BASE_URL}/plugins/import-stack`, {
+            const response = await fetchApi('/api/plugins/import-stack', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ stack_name: stackName })

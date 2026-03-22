@@ -1,13 +1,7 @@
 # Core API Reference
 
-## Pipeline
+The core components of flowyml:
 
-::: flowyml.core.pipeline.Pipeline
-
-## Step
-
-::: flowyml.core.step.Step
-
-## Context
-
-::: flowyml.core.context.Context
+- [Pipeline](pipeline.md): The main entry point for defining workflows.
+- [Step](step.md): Individual units of work.
+- [Context](context.md): Pipeline-wide configuration and metadata.

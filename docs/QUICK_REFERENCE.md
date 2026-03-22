@@ -1,9 +1,7 @@
 # 🚀 FlowyML Quick Reference
 
-> [!NOTE]
-> **What this page is**: A cheat sheet for common FlowyML commands and patterns. Perfect for bookmarking.
->
-> **When to use it**: You know what you want to do, you just need the syntax.
+!!! note "What this page is"
+    A cheat sheet for common FlowyML commands and patterns. You know what you want to do, you just need the syntax.
 
 ## 📝 Decision Guide: Which Command Do I Need?
 
@@ -43,8 +41,8 @@ flowyml stack set-default NAME # Set which stack runs by default
 
 **When to use**: Managing multiple deployment targets (local, staging, production).
 
-> [!TIP]
-> **Pro tip**: Run `flowyml stack list` to verify your configuration before deploying to production.
+!!! tip
+    Run `flowyml stack list` to verify your configuration before deploying to production.
 
 ### ZenML Integration
 
@@ -543,8 +541,8 @@ pipeline = Pipeline("trainer-azure", stack=stack)
 pipeline.run()
 ```
 
-> [!TIP]
-> Authenticate with each cloud provider (gcloud, aws configure, az login) before running remote stacks. The optional extras install the required SDKs (`google-cloud-aiplatform`, `boto3`, `azure-ai-ml`, etc.).
+!!! tip
+    Authenticate with each cloud provider (gcloud, aws configure, az login) before running remote stacks. The optional extras install the required SDKs (`google-cloud-aiplatform`, `boto3`, `azure-ai-ml`, etc.).
 
 ## 📈 Production Metrics API
 
@@ -574,8 +572,8 @@ curl -H "Authorization: Bearer <READ_TOKEN>" \
 
 Tokens scoped to a project can only write/read metrics for that project.
 
-> [!TIP]
-> The UI and CLI also surface the same data via `/api/projects/<project>/metrics?model_name=...`, which is perfect for dashboards scoped to a single project.
+!!! tip
+    The UI and CLI also surface the same data via `/api/projects/<project>/metrics?model_name=...`, which is perfect for dashboards scoped to a single project.
 
 ---
 
@@ -765,5 +763,5 @@ with manager.use_stack("gcp-prod"):  # Temporary switch
 
 ---
 
-> [!TIP]
-> **Bookmark this page!** Use it as your go-to reference when you need quick command syntax.
+!!! tip
+    **Bookmark this page!** Use it as your go-to reference when you need quick command syntax.

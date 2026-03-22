@@ -1,4 +1,4 @@
-# Step Grouping
+# Step Grouping ⚡
 
 **Efficiently execute multiple steps in the same environment/container**
 
@@ -317,7 +317,7 @@ def evaluate_model(model):
 
 ## See Also
 
-- [Resource Specification](../core/resources.md) - Define resource requirements
+- **[Resource Specification](../resources.md)**: Learn more about setting CPU, GPU, and memory requirements.
 - [Pipeline Execution](../core/pipelines.md) - Understand pipeline execution
 - [Caching](caching.md) - Optimize with caching strategies
 - [Examples](/examples/step_grouping_example.py) - Full working examples
