@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
     ClipboardCheck, RefreshCw, Plus, Activity, TrendingUp, TrendingDown,
     CheckCircle2, XCircle, ChevronRight, Filter, Search, Percent,
-    BarChart3, Sparkles, ArrowUpDown,
+    BarChart3, Sparkles, ArrowUpDown, Cpu, Database, Upload,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card } from '../../components/ui/Card';
@@ -48,10 +48,15 @@ function KPICard({ icon: Icon, label, value, subtitle, color = 'primary', index 
 // ─── New Evaluation Modal ──────────────────────────────────────────
 function NewEvalModal({ open, onClose, onSubmit, scorers }) {
     const [formData, setFormData] = useState({
+        dataSource: 'json',
         dataJson: '[\n  {\n    "inputs": {"query": "What is ML?"},\n    "outputs": "Machine Learning is a branch of AI.",\n    "context": ["ML is a subset of artificial intelligence."]\n  }\n]',
+        runId: '',
+        datasetName: '',
         selectedScorers: [],
         experiment: '',
         threshold: '0.7',
+        model: 'auto',
+        customModel: '',
     });
     const [submitting, setSubmitting] = useState(false);
 
@@ -60,11 +65,16 @@ function NewEvalModal({ open, onClose, onSubmit, scorers }) {
         setSubmitting(true);
         try {
             const data = JSON.parse(formData.dataJson);
+            const modelToUse = formData.model === 'custom' ? formData.customModel : (formData.model === 'auto' ? undefined : formData.model);
             const result = await onSubmit({
                 data,
                 scorers: formData.selectedScorers,
                 experiment: formData.experiment || undefined,
                 threshold: parseFloat(formData.threshold) || undefined,
+                model: modelToUse,
+                data_source: formData.dataSource,
+                run_id: formData.dataSource === 'run' ? formData.runId : undefined,
+                dataset_name: formData.dataSource === 'dataset' ? formData.datasetName : undefined,
             });
             onClose(result);
         } catch (err) {
@@ -110,18 +120,110 @@ function NewEvalModal({ open, onClose, onSubmit, scorers }) {
                     </div>
 
                     <form onSubmit={handleSubmit} className="p-6 space-y-5">
-                        {/* Data */}
+                        {/* Model / LLM Evaluator */}
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                                Evaluation Data (JSON)
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-2">
+                                <Cpu size={14} className="text-violet-500" />
+                                Model / LLM Evaluator
                             </label>
-                            <textarea
-                                value={formData.dataJson}
-                                onChange={e => setFormData(p => ({ ...p, dataJson: e.target.value }))}
-                                rows={6}
-                                className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-sm font-mono p-3 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
-                            />
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
+                                Select the LLM that will power the evaluation scorers
+                            </p>
+                            <select
+                                value={formData.model}
+                                onChange={e => setFormData(p => ({ ...p, model: e.target.value }))}
+                                className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-sm p-2.5 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                            >
+                                <option value="auto">Default (Auto-detect)</option>
+                                <option value="gpt-4">GPT-4</option>
+                                <option value="gpt-4o">GPT-4o</option>
+                                <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                                <option value="claude-3-opus">Claude 3 Opus</option>
+                                <option value="claude-3-sonnet">Claude 3 Sonnet</option>
+                                <option value="custom">Custom Model...</option>
+                            </select>
+                            {formData.model === 'custom' && (
+                                <input
+                                    type="text"
+                                    placeholder="e.g. mistral-7b, llama-3-70b, your-deployment/model"
+                                    value={formData.customModel}
+                                    onChange={e => setFormData(p => ({ ...p, customModel: e.target.value }))}
+                                    className="w-full mt-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-sm p-2.5 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                />
+                            )}
+                            <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1.5">
+                                Configure additional models in Settings → Integrations
+                            </p>
                         </div>
+
+                        {/* Data Source Selector */}
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-2">
+                                <Database size={14} className="text-teal-500" />
+                                Data Source
+                            </label>
+                            <div className="grid grid-cols-3 gap-2 mb-3">
+                                {[
+                                    { id: 'json', label: 'Paste JSON', icon: Upload },
+                                    { id: 'run', label: 'From Run', icon: Activity },
+                                    { id: 'dataset', label: 'From Dataset', icon: Database },
+                                ].map(src => (
+                                    <button
+                                        key={src.id}
+                                        type="button"
+                                        onClick={() => setFormData(p => ({ ...p, dataSource: src.id }))}
+                                        className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${formData.dataSource === src.id
+                                            ? 'bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 ring-1 ring-primary-300 dark:ring-primary-700'
+                                            : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600'
+                                        }`}
+                                    >
+                                        <src.icon size={12} />
+                                        {src.label}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {formData.dataSource === 'json' && (
+                                <textarea
+                                    value={formData.dataJson}
+                                    onChange={e => setFormData(p => ({ ...p, dataJson: e.target.value }))}
+                                    rows={6}
+                                    className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-sm font-mono p-3 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                                />
+                            )}
+                            {formData.dataSource === 'run' && (
+                                <input
+                                    type="text"
+                                    placeholder="Enter Run ID (e.g. a9e1412f-xxxx-xxxx)"
+                                    value={formData.runId}
+                                    onChange={e => setFormData(p => ({ ...p, runId: e.target.value }))}
+                                    className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-sm p-2.5 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                />
+                            )}
+                            {formData.dataSource === 'dataset' && (
+                                <input
+                                    type="text"
+                                    placeholder="Dataset name or artifact ID"
+                                    value={formData.datasetName}
+                                    onChange={e => setFormData(p => ({ ...p, datasetName: e.target.value }))}
+                                    className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-sm p-2.5 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                />
+                            )}
+                        </div>
+
+                        {/* Data - only show if JSON source */}
+                        {formData.dataSource === 'json' && (
+                        <div className="border-t border-slate-100 dark:border-slate-700 pt-4">
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                                Data Preview
+                            </label>
+                            <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
+                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                    {(() => { try { return `${JSON.parse(formData.dataJson).length} sample(s) loaded`; } catch { return 'Invalid JSON'; } })()}
+                                </p>
+                            </div>
+                        </div>
+                        )}
 
                         {/* Scorers */}
                         <div>

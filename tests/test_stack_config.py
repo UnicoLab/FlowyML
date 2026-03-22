@@ -353,11 +353,30 @@ def yaml_path(tmp_path):
 @pytest.fixture(autouse=True)
 def _reset_singletons():
     """Reset singletons between tests."""
+    import sys
     from flowyml.plugins.stack_config import StackManager
 
     StackManager.reset()
+
+    # Also reset the global component registry so that @register_component
+    # decorators in GCP/AWS modules fire again on next import.
+    import flowyml.stacks.plugins as _plugins_mod
+
+    _plugins_mod._global_component_registry = None
+
+    # Remove cached provider modules so _ensure_providers_loaded() re-imports
+    # them and their @register_component decorators fire on the fresh registry.
+    for mod_name in list(sys.modules):
+        if mod_name.startswith(("flowyml.stacks.gcp", "flowyml.stacks.aws", "flowyml.stacks.azure")):
+            del sys.modules[mod_name]
+
     yield
+
     StackManager.reset()
+    _plugins_mod._global_component_registry = None
+    for mod_name in list(sys.modules):
+        if mod_name.startswith(("flowyml.stacks.gcp", "flowyml.stacks.aws", "flowyml.stacks.azure")):
+            del sys.modules[mod_name]
 
 
 class TestStackYAMLParsing:

@@ -169,7 +169,7 @@ export function DeploymentLab() {
                     model_artifact_id: '',
                     model_version: null,
                     port: null,
-                    config: { rate_limit: 100, timeout_seconds: 30, max_batch_size: 1, enable_cors: true }
+                    config: { rate_limit: 100, timeout_seconds: 30, max_batch_size: 1, enable_cors: true, ttl_seconds: null }
                 });
                 fetchDeployments();
             }

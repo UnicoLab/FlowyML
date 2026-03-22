@@ -182,30 +182,30 @@ export function Settings() {
                 </div>
 
                 <div className="space-y-4">
-                    <label className="flex items-center justify-between cursor-not-allowed opacity-60">
+                    <label className="flex items-center justify-between cursor-pointer">
                         <div>
-                            <div className="font-medium text-slate-900 dark:text-white flex items-center gap-2">
+                            <div className="font-medium text-slate-900 dark:text-white">
                                 Auto-upload Artifacts
-                                <Badge variant="secondary" className="text-xs">Coming Soon</Badge>
                             </div>
                             <div className="text-sm text-slate-500">Automatically upload artifacts to remote storage</div>
+                            <div className="text-xs text-slate-400 dark:text-slate-500 mt-1">Requires a remote storage backend (S3, GCS) to be configured in your stack</div>
                         </div>
                         <input
                             type="checkbox"
                             checked={settings.artifactUpload}
-                            disabled
-                            className="w-5 h-5 rounded text-slate-400 cursor-not-allowed"
+                            onChange={(e) => handleSettingChange('artifactUpload', e.target.checked)}
+                            className="w-5 h-5 rounded text-primary-600 focus:ring-primary-500"
                         />
                     </label>
 
-                    <div className="opacity-60">
+                    <div>
                         <div className="flex items-center justify-between mb-2">
                             <div>
-                                <div className="font-medium text-slate-900 dark:text-white flex items-center gap-2">
+                                <div className="font-medium text-slate-900 dark:text-white">
                                     Data Retention
-                                    <Badge variant="secondary" className="text-xs">Coming Soon</Badge>
                                 </div>
                                 <div className="text-sm text-slate-500">Days to keep run history</div>
+                                <div className="text-xs text-slate-400 dark:text-slate-500 mt-1">Runs older than this will be cleaned up automatically</div>
                             </div>
                             <Badge variant="secondary">{settings.dataRetention} days</Badge>
                         </div>
@@ -214,9 +214,13 @@ export function Settings() {
                             min="7"
                             max="365"
                             value={settings.dataRetention}
-                            disabled
-                            className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-not-allowed"
+                            onChange={(e) => handleSettingChange('dataRetention', parseInt(e.target.value))}
+                            className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer"
                         />
+                        <div className="flex justify-between text-xs text-slate-400 mt-1">
+                            <span>7 days</span>
+                            <span>365 days</span>
+                        </div>
                     </div>
                 </div>
             </Card>

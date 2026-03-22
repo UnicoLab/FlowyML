@@ -352,6 +352,43 @@ function TraceDetailPanel({ traceData, onClose }) {
                 </div>
             )}
 
+            {/* Prompt / Completion Preview */}
+            {root && (root.inputs || root.outputs) && (
+                <div className="shrink-0 px-5 py-3 border-b border-slate-200 dark:border-slate-700 space-y-3">
+                    <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Quick Preview</p>
+                    {root.inputs && Object.keys(root.inputs).length > 0 && (
+                        <div>
+                            <p className="text-[10px] font-medium text-indigo-500 dark:text-indigo-400 mb-1 flex items-center gap-1">
+                                <span className="w-2 h-2 rounded-full bg-indigo-400 inline-block" /> Prompt / Input
+                            </p>
+                            <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-2.5 border border-slate-200 dark:border-slate-700">
+                                <p className="text-xs text-slate-600 dark:text-slate-300 font-mono whitespace-pre-wrap break-words line-clamp-4">
+                                    {(() => {
+                                        const val = typeof root.inputs === 'string' ? root.inputs : JSON.stringify(root.inputs, null, 2);
+                                        return val.length > 300 ? val.substring(0, 300) + '…' : val;
+                                    })()}
+                                </p>
+                            </div>
+                        </div>
+                    )}
+                    {root.outputs && Object.keys(root.outputs).length > 0 && (
+                        <div>
+                            <p className="text-[10px] font-medium text-violet-500 dark:text-violet-400 mb-1 flex items-center gap-1">
+                                <span className="w-2 h-2 rounded-full bg-violet-400 inline-block" /> Completion / Output
+                            </p>
+                            <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-2.5 border border-slate-200 dark:border-slate-700">
+                                <p className="text-xs text-slate-600 dark:text-slate-300 font-mono whitespace-pre-wrap break-words line-clamp-4">
+                                    {(() => {
+                                        const val = typeof root.outputs === 'string' ? root.outputs : JSON.stringify(root.outputs, null, 2);
+                                        return val.length > 300 ? val.substring(0, 300) + '…' : val;
+                                    })()}
+                                </p>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+
             {/* Span Tree */}
             <div className="flex-1 overflow-y-auto px-3 py-4">
                 <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3 px-2">Span Waterfall</p>
@@ -590,6 +627,11 @@ export function Traces() {
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-2 shrink-0">
+                                                    {trace.model && (
+                                                        <span className="text-[10px] px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 rounded-md font-mono border border-indigo-200 dark:border-indigo-700 truncate max-w-[140px]">
+                                                            {trace.model}
+                                                        </span>
+                                                    )}
                                                     <span className={`w-2 h-2 rounded-full ${stCfg.dot}`} />
                                                     <ChevronRight size={14} className="text-slate-300 group-hover:text-slate-500 transition-colors" />
                                                 </div>
@@ -614,7 +656,7 @@ export function Traces() {
                                                     </div>
                                                 )}
                                                 {trace.model && (
-                                                    <span className="ml-auto text-[10px] px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 rounded font-mono truncate max-w-[120px]">
+                                                    <span className="hidden lg:inline ml-auto text-[10px] px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 rounded font-mono truncate max-w-[120px]">
                                                         {trace.model}
                                                     </span>
                                                 )}

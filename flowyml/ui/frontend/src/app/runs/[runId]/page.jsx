@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { fetchApi } from '../../../utils/api';
 import { downloadArtifactById } from '../../../utils/downloads';
 import { useParams, Link } from 'react-router-dom';
-import { CheckCircle, XCircle, Clock, Calendar, Package, ArrowRight, BarChart2, FileText, Database, Box, ChevronRight, Activity, Layers, Code2, Terminal, Info, X, Maximize2, TrendingUp, TrendingDown, Download, ArrowDownCircle, ArrowUpCircle, Tag, Zap, AlertCircle, FolderPlus, Cloud, Server, LineChart, Minimize2 } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Calendar, Package, ArrowRight, BarChart2, FileText, Database, Box, ChevronRight, Activity, Layers, Code2, Terminal, Info, X, Maximize2, TrendingUp, TrendingDown, Download, ArrowDownCircle, ArrowUpCircle, Tag, Zap, AlertCircle, FolderPlus, Cloud, Server, LineChart, Minimize2, RefreshCw } from 'lucide-react';
 import { Card } from '../../../components/ui/Card';
 import { Badge } from '../../../components/ui/Badge';
 import { Button } from '../../../components/ui/Button';
@@ -167,21 +167,53 @@ export function RunDetails() {
     const selectedStepArtifacts = artifacts.filter(a => a.step === selectedStep);
     const selectedStepMetrics = metrics.filter(m => m.step === selectedStep || m.name.startsWith(selectedStep));
 
+    const handleRefresh = async () => {
+        setLoading(true);
+        try {
+            const [runRes, assetsRes] = await Promise.all([
+                fetchApi(`/api/runs/${runId}`),
+                fetchApi(`/api/assets?run_id=${runId}`)
+            ]);
+            const runData = await runRes.json();
+            const assetsData = await assetsRes.json();
+            let metricsData = [];
+            try {
+                const mRes = await fetchApi(`/api/runs/${runId}/metrics`);
+                if (mRes.ok) {
+                    const mJson = await mRes.json();
+                    metricsData = mJson.metrics || [];
+                }
+            } catch (e) {
+                console.warn("Failed to fetch metrics", e);
+            }
+            setRun(runData);
+            setArtifacts(assetsData.assets || []);
+            setMetrics(metricsData);
+            if (runData.steps && Object.keys(runData.steps).length > 0 && !selectedStep) {
+                setSelectedStep(Object.keys(runData.steps)[0]);
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
-                <div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
+                <div className="min-w-0">
                     <div className="flex items-center gap-2 mb-2">
                         <Link to="/runs" className="text-sm text-slate-500 hover:text-slate-700 transition-colors">Runs</Link>
                         <ChevronRight size={14} className="text-slate-300" />
-                        <span className="text-sm text-slate-900 dark:text-white font-medium">{run.run_id}</span>
+                        <span className="text-sm text-slate-900 dark:text-white font-medium truncate">{run.run_id}</span>
                     </div>
-                    <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
-                        <div className={`w-3 h-3 rounded-full ${run.status === 'completed' ? 'bg-emerald-500' : run.status === 'failed' ? 'bg-rose-500' : 'bg-amber-500'}`} />
-                        Run: <span className="font-mono text-slate-500">{run.run_id?.substring(0, 8) || runId?.substring(0, 8) || 'N/A'}</span>
+                    <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
+                        <div className={`w-3 h-3 rounded-full shrink-0 ${run.status === 'completed' ? 'bg-emerald-500' : run.status === 'failed' ? 'bg-rose-500' : 'bg-amber-500'}`} />
+                        Run: <span className="font-mono text-slate-500 truncate">{run.run_id?.substring(0, 8) || runId?.substring(0, 8) || 'N/A'}</span>
                     </h2>
-                    <p className="text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2">
+                    <p className="text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2 flex-wrap">
                         <Layers size={16} />
                         Pipeline: <span className="font-medium text-slate-700 dark:text-slate-200">{run.pipeline_name}</span>
                         {cloudStatus?.is_remote && (
@@ -198,8 +230,12 @@ export function RunDetails() {
                         )}
                     </p>
                 </div>
-                <div className="flex flex-col items-end gap-2">
-                    <div className="flex items-center gap-2">
+                <div className="flex flex-col items-start sm:items-end gap-2 shrink-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading}>
+                            <RefreshCw size={14} className={`mr-1.5 ${loading ? 'animate-spin' : ''}`} />
+                            Refresh
+                        </Button>
                         <ProjectSelector currentProject={run.project} onUpdate={handleProjectUpdate} />
                         <Badge variant={statusVariant} className="text-sm px-4 py-1.5 uppercase tracking-wide shadow-sm">
                             {cloudStatus?.cloud_status?.status || run.status}
@@ -221,7 +257,7 @@ export function RunDetails() {
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
                 <StatsCard
                     icon={<Clock size={24} />}
                     label="Duration"
@@ -257,7 +293,7 @@ export function RunDetails() {
                     <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
                         <Activity className="text-primary-500" /> Pipeline Execution Graph
                     </h3>
-                    <div className={`min-h-[500px] ${stepPanelExpanded ? 'h-[500px]' : 'h-[calc(100vh-240px)]'}`}>
+                    <div className={`min-h-[400px] ${stepPanelExpanded ? 'h-[500px]' : 'h-[min(700px,calc(100vh-280px))]'}`}>
                         {run.dag ? (
                             <PipelineGraph
                                 dag={run.dag}
@@ -314,8 +350,18 @@ export function RunDetails() {
                                 }}
                             />
                         ) : (
-                            <Card className="h-full flex items-center justify-center">
-                                <p className="text-slate-500">DAG visualization not available</p>
+                            <Card className="h-full flex flex-col items-center justify-center gap-4">
+                                <div className="w-16 h-16 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 rounded-2xl flex items-center justify-center">
+                                    <Activity size={28} className="text-slate-400" />
+                                </div>
+                                <div className="text-center">
+                                    <p className="text-slate-600 dark:text-slate-300 font-medium">DAG visualization not available</p>
+                                    <p className="text-sm text-slate-400 dark:text-slate-500 mt-1">The pipeline graph data may not have been recorded for this run</p>
+                                </div>
+                                <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading}>
+                                    <RefreshCw size={14} className={`mr-1.5 ${loading ? 'animate-spin' : ''}`} />
+                                    Re-fetch Run Data
+                                </Button>
                             </Card>
                         )}
                     </div>
@@ -398,9 +444,8 @@ export function RunDetails() {
                                 </TabButton>
                             </div>
 
-                            {/* Tab Content - Larger when expanded */}
-                            <div className={`mt-4 overflow-y-auto transition-all duration-300 ${stepPanelExpanded ? 'max-h-[600px]' : 'max-h-[450px]'
-                                }`}>
+                            {/* Tab Content */}
+                            <div className="mt-4 overflow-y-auto transition-all duration-300">
                                 {activeTab === 'overview' && (
                                     <OverviewTab
                                         stepData={selectedStepData}

@@ -1,6 +1,7 @@
 """Main CLI entry point for flowyml."""
 
-import click
+import rich_click as click
+from flowyml.cli.rich_utils import recho
 from pathlib import Path
 from flowyml.utils.config import get_config
 
@@ -13,14 +14,76 @@ from flowyml.cli.models import (
 )
 from flowyml.cli.evals import eval_cli
 
+# ── Rich-Click Styling Configuration ────────────────────────────────
+click.rich_click.USE_RICH_MARKUP = True
+click.rich_click.USE_MARKDOWN = False
+click.rich_click.SHOW_ARGUMENTS = True
+click.rich_click.GROUP_ARGUMENTS_OPTIONS = True
+click.rich_click.STYLE_ERRORS_SUGGESTION = "magenta italic"
+click.rich_click.ERRORS_SUGGESTION = "Try running the '--help' flag for more information."
+click.rich_click.ERRORS_EPILOGUE = "To get help, run: [bold cyan]flowyml --help[/]"
+click.rich_click.STYLE_HELPTEXT = ""
+click.rich_click.STYLE_OPTION = "bold cyan"
+click.rich_click.STYLE_SWITCH = "bold green"
+click.rich_click.STYLE_METAVAR = "bold yellow"
+click.rich_click.STYLE_USAGE = "bold"
+click.rich_click.STYLE_USAGE_COMMAND = "bold cyan"
+click.rich_click.MAX_WIDTH = 100
+click.rich_click.SHOW_METAVARS_COLUMN = True
+click.rich_click.APPEND_METAVARS_HELP = False
+click.rich_click.COMMAND_GROUPS = {
+    "flowyml": [
+        {
+            "name": "🚀 Quick Start",
+            "commands": ["go", "stop", "status", "info", "tui"],
+        },
+        {
+            "name": "⚡ Pipeline Execution",
+            "commands": ["run", "init", "logs"],
+        },
+        {
+            "name": "📊 Data & Tracking",
+            "commands": ["experiment", "models", "eval"],
+        },
+        {
+            "name": "🔧 Infrastructure",
+            "commands": ["stack", "config", "cache", "db", "schedule"],
+        },
+        {
+            "name": "🌐 Services",
+            "commands": ["ui", "zenml", "plugin"],
+        },
+    ],
+}
+click.rich_click.OPTION_GROUPS = {
+    "flowyml run": [
+        {
+            "name": "Execution Options",
+            "options": ["--stack", "--context", "--debug", "--retry"],
+        },
+    ],
+    "flowyml go": [
+        {
+            "name": "Server Options",
+            "options": ["--host", "--port", "--open-browser"],
+        },
+    ],
+}
+
 
 @click.group()
 @click.version_option(version="0.1.0", prog_name="flowyml")
 def cli() -> None:
-    """Flowyml - Next-Generation ML Pipeline Framework.
+    """[bold cyan]🌊 FlowyML[/] — Next-Generation ML Pipeline Framework
 
     A developer-first ML pipeline orchestration framework that makes
-    ML pipelines feel effortless while providing production-grade capabilities.
+    ML pipelines feel [bold]effortless[/] while providing production-grade
+    capabilities.
+
+    [dim]Get started:[/]  [bold]flowyml go[/]          Launch the dashboard
+    [dim]Terminal UI:[/]   [bold]flowyml tui[/]         Full-screen dashboard
+    [dim]System info:[/]   [bold]flowyml info[/]        Show system status
+    [dim]Run pipeline:[/]  [bold]flowyml run <name>[/]  Execute a pipeline
     """
     pass
 
@@ -39,16 +102,16 @@ def init(name: str, template: str, directory: str) -> None:
     from flowyml.cli.init import init_project
 
     project_dir = Path(directory) / name
-    click.echo(f"Initializing flowyml project '{name}' with template '{template}'...")
+    recho(f"Initializing flowyml project '{name}' with template '{template}'...")
 
     try:
         init_project(name, template, project_dir)
-        click.echo(f"✓ Project '{name}' created successfully at {project_dir}")
-        click.echo("\nNext steps:")
-        click.echo(f"  cd {name}")
-        click.echo("  flowyml run training_pipeline")
+        recho(f"[green]✓Project '{name}' created successfully at {project_dir}")
+        recho("\nNext steps:")
+        recho(f"  cd {name}")
+        recho("  flowyml run training_pipeline")
     except Exception as e:
-        click.echo(f"✗ Error creating project: {e}", err=True)
+        recho(f"[red]✗Error creating project: {e}", err=True)
         raise click.Abort()
 
 
@@ -69,20 +132,20 @@ def run(pipeline_name: str, stack: str, context: tuple, debug: bool, retry: int 
         key, value = param.split("=", 1)
         ctx_params[key] = value
 
-    click.echo(f"Running pipeline '{pipeline_name}' on stack '{stack}'...")
+    recho(f"Running pipeline '{pipeline_name}' on stack '{stack}'...")
 
     kwargs = {}
     if retry:
         kwargs["retry_policy"] = OrchestratorRetryPolicy(max_attempts=retry)
-        click.echo(f"  Retry policy enabled: max_attempts={retry}")
+        recho(f"  Retry policy enabled: max_attempts={retry}")
 
     try:
         result = run_pipeline(pipeline_name, stack, ctx_params, debug, **kwargs)
-        click.echo("✓ Pipeline completed successfully")
-        click.echo(f"  Run ID: {result.get('run_id', 'N/A')}")
-        click.echo(f"  Duration: {result.get('duration', 'N/A')}")
+        recho("[green]✓Pipeline completed successfully")
+        recho(f"  Run ID: {result.get('run_id', 'N/A')}")
+        recho(f"  Duration: {result.get('duration', 'N/A')}")
     except Exception as e:
-        click.echo(f"✗ Pipeline failed: {e}", err=True)
+        recho(f"[red]✗Pipeline failed: {e}", err=True)
         raise click.Abort()
 
 
@@ -135,10 +198,10 @@ def create_schedule(pipeline_name: str, schedule_type: str, value: str, stack: s
         elif schedule_type == "hourly":
             scheduler.schedule_hourly(pipeline_name, job_func, minute=int(value))
 
-        click.echo(f"✓ Schedule created for '{pipeline_name}' ({schedule_type}={value})")
-        click.echo("  Note: Ensure the scheduler service is running to execute this schedule.")
+        recho(f"[green]✓Schedule created for '{pipeline_name}' ({schedule_type}={value})")
+        recho("  Note: Ensure the scheduler service is running to execute this schedule.")
     except Exception as e:
-        click.echo(f"✗ Error creating schedule: {e}", err=True)
+        recho(f"[red]✗Error creating schedule: {e}", err=True)
 
 
 @schedule.command("list")
@@ -150,14 +213,14 @@ def list_schedules() -> None:
     jobs = scheduler.get_jobs()
 
     if not jobs:
-        click.echo("No active schedules found.")
+        recho("No active schedules found.")
         return
 
-    click.echo(f"Found {len(jobs)} schedules:\n")
+    recho(f"Found {len(jobs)} schedules:\n")
     for job in jobs:
-        click.echo(f"  {job.id} - {job.name}")
-        click.echo(f"    Next run: {job.next_run_time}")
-        click.echo()
+        recho(f"  {job.id} - {job.name}")
+        recho(f"    Next run: {job.next_run_time}")
+        recho()
 
 
 @schedule.command("start")
@@ -166,7 +229,7 @@ def start_scheduler() -> None:
     from flowyml.core.scheduler import PipelineScheduler
     import time
 
-    click.echo("🚀 Starting Scheduler Service...")
+    recho("[bold cyan]🚀 Starting Scheduler Service...")
     scheduler = PipelineScheduler()
 
     try:
@@ -177,12 +240,12 @@ def start_scheduler() -> None:
         # The current Scheduler implementation supports SQLite persistence for job state,
         # but we need to re-register jobs on startup.
 
-        click.echo("  Scheduler running. Press Ctrl+C to stop.")
+        recho("  Scheduler running. Press Ctrl+C to stop.")
         while True:
             scheduler.run_pending()
             time.sleep(1)
     except KeyboardInterrupt:
-        click.echo("\n🛑 Scheduler stopped.")
+        recho("\n🛑 Scheduler stopped.")
 
 
 @cli.group()
@@ -202,16 +265,16 @@ def start(host: str, port: int, dev: bool, open_browser: bool) -> None:
 
     # Check if already running
     if is_ui_running(host, port):
-        click.echo(f"ℹ️  UI server is already running at http://{host}:{port}")
+        recho(f"[yellow]ℹ️  UI server is already running at http://{host}:{port}")
         if open_browser:
             import webbrowser
 
             webbrowser.open(f"http://{host}:{port}")
         return
 
-    click.echo(f"🚀 Starting flowyml UI on http://{host}:{port}...")
+    recho(f"[bold cyan]🚀 Starting flowyml UI on http://{host}:{port}...")
     if dev:
-        click.echo("   Development mode: Auto-reload enabled")
+        recho("   Development mode: Auto-reload enabled")
 
     try:
         from flowyml.cli.ui import start_ui_server
@@ -231,20 +294,20 @@ def start(host: str, port: int, dev: bool, open_browser: bool) -> None:
 
         start_ui_server(host, port, dev)
     except ImportError:
-        click.echo("✗ UI server not available. Install with: pip install flowyml[ui]", err=True)
+        recho("[red]✗UI server not available. Install with: pip install flowyml[ui]", err=True)
         raise click.Abort()
     except Exception as e:
-        click.echo(f"✗ Error starting UI: {e}", err=True)
+        recho(f"[red]✗Error starting UI: {e}", err=True)
         raise click.Abort()
 
 
 @ui.command()
 def stop() -> None:
     """Stop the flowyml UI server."""
-    click.echo("Stopping flowyml UI server...")
-    click.echo("ℹ️  To stop the UI server:")
-    click.echo("   - If running in foreground: Press Ctrl+C")
-    click.echo("   - If running in background: pkill -f 'flowyml ui start'")
+    recho("Stopping flowyml UI server...")
+    recho("[yellow]ℹ️  To stop the UI server:")
+    recho("   - If running in foreground: Press Ctrl+C")
+    recho("   - If running in background: pkill -f 'flowyml ui start'")
 
 
 @ui.command()
@@ -256,12 +319,12 @@ def status(host: str, port: int) -> None:
 
     if is_ui_running(host, port):
         url = get_ui_url(host, port)
-        click.echo(f"✅ UI server is running at {url}")
-        click.echo("   Status: Healthy")
-        click.echo(f"   Health endpoint: {url}/api/health")
+        recho(f"[green]✅UI server is running at {url}")
+        recho("   Status: Healthy")
+        recho(f"   Health endpoint: {url}/api/health")
     else:
-        click.echo(f"❌ UI server is not running on {host}:{port}")
-        click.echo(f"   Start with: flowyml ui start --host {host} --port {port}")
+        recho(f"[red]❌UI server is not running on {host}:{port}")
+        recho(f"   Start with: flowyml ui start --host {host} --port {port}")
 
 
 @cli.group()
@@ -276,18 +339,43 @@ def experiment() -> None:
 def list_experiments(limit: int, pipeline: str) -> None:
     """List experiments."""
     from flowyml.cli.experiment import list_experiments_cmd
+    from flowyml.cli.rich_utils import get_console, RICH_AVAILABLE
 
     try:
         experiments = list_experiments_cmd(limit, pipeline)
-        click.echo(f"Found {len(experiments)} experiments:\n")
+        console = get_console()
 
-        for exp in experiments:
-            click.echo(f"  {exp['name']}")
-            click.echo(f"    Runs: {exp.get('num_runs', 0)}")
-            click.echo(f"    Created: {exp.get('created_at', 'N/A')}")
-            click.echo()
+        if RICH_AVAILABLE and console:
+            from rich.table import Table as RichTable
+            from rich import box as rich_box
+
+            table = RichTable(
+                title=f"[bold cyan]🧪 Experiments ({len(experiments)})[/bold cyan]",
+                box=rich_box.ROUNDED,
+                border_style="cyan",
+            )
+            table.add_column("Name", style="cyan", width=30)
+            table.add_column("Runs", justify="right", style="green", width=8)
+            table.add_column("Project", style="yellow", width=20)
+            table.add_column("Created", style="dim", width=20)
+
+            for exp in experiments:
+                table.add_row(
+                    exp.get("name", "—"),
+                    str(exp.get("num_runs", exp.get("run_count", 0))),
+                    exp.get("project", "—"),
+                    (exp.get("created_at") or "—")[:19],
+                )
+            console.print(table)
+        else:
+            recho(f"Found {len(experiments)} experiments:\n")
+            for exp in experiments:
+                recho(f"  {exp['name']}")
+                recho(f"    Runs: {exp.get('num_runs', 0)}")
+                recho(f"    Created: {exp.get('created_at', 'N/A')}")
+                recho()
     except Exception as e:
-        click.echo(f"✗ Error listing experiments: {e}", err=True)
+        recho(f"[red]✗Error listing experiments: {e}", err=True)
 
 
 @experiment.command()
@@ -296,14 +384,14 @@ def compare(run_ids: tuple) -> None:
     """Compare multiple experiment runs."""
     from flowyml.cli.experiment import compare_runs
 
-    click.echo(f"Comparing {len(run_ids)} runs...")
+    recho(f"Comparing {len(run_ids)} runs...")
 
     try:
         comparison = compare_runs(list(run_ids))
-        click.echo("\nComparison Results:")
-        click.echo(comparison)
+        recho("\nComparison Results:")
+        recho(comparison)
     except Exception as e:
-        click.echo(f"✗ Error comparing runs: {e}", err=True)
+        recho(f"[red]✗Error comparing runs: {e}", err=True)
 
 
 @cli.group()
@@ -315,11 +403,52 @@ def stack() -> None:
 @stack.command("list")
 def list_stacks() -> None:
     """List available stacks."""
-    click.echo("Available stacks:\n")
-    click.echo("  local (default) - Local execution")
-    click.echo("  aws             - AWS (SageMaker, S3, Step Functions)")
-    click.echo("  gcp             - Google Cloud (Vertex AI, GCS)")
-    click.echo("  azure           - Azure (ML, Blob Storage)")
+    from flowyml.cli.rich_utils import get_console, RICH_AVAILABLE
+
+    console = get_console()
+
+    stacks = [
+        ("local", "Local", "Default local execution", True),
+        ("aws", "AWS", "SageMaker, S3, Step Functions", False),
+        ("gcp", "GCP", "Vertex AI, GCS, Cloud Run", False),
+        ("azure", "Azure", "Azure ML, Blob Storage", False),
+    ]
+
+    # Try to get real stack info
+    try:
+        from flowyml.utils.stack_config import StackManager
+
+        sm = StackManager()
+        active = sm.active_stack_name
+    except Exception:
+        active = "local"
+
+    if RICH_AVAILABLE and console:
+        from rich.table import Table as RichTable
+        from rich import box as rich_box
+
+        table = RichTable(
+            title="[bold cyan]🏗  Available Stacks[/bold cyan]",
+            box=rich_box.ROUNDED,
+            border_style="cyan",
+        )
+        table.add_column("Stack", style="cyan", width=12)
+        table.add_column("Type", width=10)
+        table.add_column("Description", width=35)
+        table.add_column("Status", justify="center", width=10)
+
+        for name, stype, desc, _ in stacks:
+            is_active = name == active
+            status = "[bold green]✅ Active[/]" if is_active else "[dim]—[/]"
+            style = "bold green" if is_active else ""
+            table.add_row(name, stype, desc, status, style=style)
+
+        console.print(table)
+    else:
+        recho("Available stacks:\n")
+        for name, stype, desc, _ in stacks:
+            marker = " (active)" if name == active else ""
+            recho(f"  {name:<12} {stype:<10} {desc}{marker}")
 
 
 @stack.command()
@@ -329,7 +458,7 @@ def switch(stack_name: str) -> None:
     config = get_config()
     config.default_stack = stack_name
     config.save()
-    click.echo(f"✓ Switched to stack '{stack_name}'")
+    recho(f"[green]✓Switched to stack '{stack_name}'")
 
 
 @cli.group()
@@ -342,19 +471,43 @@ def cache() -> None:
 def stats() -> None:
     """Show cache statistics."""
     from flowyml.core.cache import CacheStore
+    from flowyml.cli.rich_utils import get_console, RICH_AVAILABLE
 
     try:
         cache = CacheStore()
-        stats = cache.get_stats()
+        cache_stats = cache.get_stats()
+        console = get_console()
 
-        click.echo("Cache Statistics:\n")
-        click.echo(f"  Hits: {stats['hits']}")
-        click.echo(f"  Misses: {stats['misses']}")
-        click.echo(f"  Hit Rate: {stats.get('hit_rate', 0):.1%}")
-        click.echo(f"  Total Entries: {stats.get('total_entries', 0)}")
-        click.echo(f"  Size: {stats.get('size_mb', 0):.2f} MB")
+        if RICH_AVAILABLE and console:
+            from flowyml.cli.rich_utils import print_kv_panel, print_stats_cards
+
+            cards = [
+                ("Hits", str(cache_stats.get("hits", 0)), "green"),
+                ("Misses", str(cache_stats.get("misses", 0)), "red"),
+                ("Hit Rate", f"{cache_stats.get('hit_rate', 0):.1%}", "cyan"),
+                ("Entries", str(cache_stats.get("total_entries", 0)), "yellow"),
+            ]
+            print_stats_cards(cards, console=console)
+            print_kv_panel(
+                "💾 Cache Statistics",
+                {
+                    "Size": f"{cache_stats.get('size_mb', 0):.2f} MB",
+                    "Hits": str(cache_stats.get("hits", 0)),
+                    "Misses": str(cache_stats.get("misses", 0)),
+                    "Hit Rate": f"{cache_stats.get('hit_rate', 0):.1%}",
+                    "Total Entries": str(cache_stats.get("total_entries", 0)),
+                },
+                console=console,
+            )
+        else:
+            recho("Cache Statistics:\n")
+            recho(f"  Hits: {cache_stats['hits']}")
+            recho(f"  Misses: {cache_stats['misses']}")
+            recho(f"  Hit Rate: {cache_stats.get('hit_rate', 0):.1%}")
+            recho(f"  Total Entries: {cache_stats.get('total_entries', 0)}")
+            recho(f"  Size: {cache_stats.get('size_mb', 0):.2f} MB")
     except Exception as e:
-        click.echo(f"✗ Error getting cache stats: {e}", err=True)
+        recho(f"[red]✗Error getting cache stats: {e}", err=True)
 
 
 @cache.command()
@@ -366,9 +519,9 @@ def clear() -> None:
     try:
         cache = CacheStore()
         cache.clear()
-        click.echo("✓ Cache cleared successfully")
+        recho("[green]✓Cache cleared successfully")
     except Exception as e:
-        click.echo(f"✗ Error clearing cache: {e}", err=True)
+        recho(f"[red]✗Error clearing cache: {e}", err=True)
 
 
 @cli.group()
@@ -399,8 +552,8 @@ def migrate(revision: str, sql: bool) -> None:
     import os
 
     db_url = os.getenv("FLOWYML_DATABASE_URL", "sqlite:///flowyml.db")
-    click.echo("🔄 Running database migrations...")
-    click.echo(f"   Database: {db_url[:50]}...")
+    recho("🔄 Running database migrations...")
+    recho(f"   Database: {db_url[:50]}...")
 
     try:
         from alembic.config import Config
@@ -414,9 +567,9 @@ def migrate(revision: str, sql: bool) -> None:
             command.upgrade(alembic_cfg, revision, sql=True)
         else:
             command.upgrade(alembic_cfg, revision)
-            click.echo(f"✅ Migrations applied successfully to revision: {revision}")
+            recho(f"[green]✅Migrations applied successfully to revision: {revision}")
     except Exception as e:
-        click.echo(f"❌ Migration failed: {e}", err=True)
+        recho(f"[red]❌Migration failed: {e}", err=True)
         raise click.Abort()
 
 
@@ -432,7 +585,7 @@ def downgrade(revision: str) -> None:
     import os
 
     db_url = os.getenv("FLOWYML_DATABASE_URL", "sqlite:///flowyml.db")
-    click.echo("🔄 Downgrading database...")
+    recho("🔄 Downgrading database...")
 
     try:
         from alembic.config import Config
@@ -442,9 +595,9 @@ def downgrade(revision: str) -> None:
         alembic_cfg.set_main_option("sqlalchemy.url", db_url)
 
         command.downgrade(alembic_cfg, revision)
-        click.echo(f"✅ Downgraded to revision: {revision}")
+        recho(f"[green]✅Downgraded to revision: {revision}")
     except Exception as e:
-        click.echo(f"❌ Downgrade failed: {e}", err=True)
+        recho(f"[red]❌Downgrade failed: {e}", err=True)
         raise click.Abort()
 
 
@@ -462,10 +615,10 @@ def current() -> None:
         alembic_cfg = Config("alembic.ini")
         alembic_cfg.set_main_option("sqlalchemy.url", db_url)
 
-        click.echo("Current database revision:")
+        recho("Current database revision:")
         command.current(alembic_cfg, verbose=True)
     except Exception as e:
-        click.echo(f"❌ Failed to get current revision: {e}", err=True)
+        recho(f"[red]❌Failed to get current revision: {e}", err=True)
 
 
 @db.command("history")
@@ -476,10 +629,241 @@ def history() -> None:
         from alembic import command
 
         alembic_cfg = Config("alembic.ini")
-        click.echo("Migration history:")
+        recho("Migration history:")
         command.history(alembic_cfg, verbose=True)
     except Exception as e:
-        click.echo(f"❌ Failed to get history: {e}", err=True)
+        recho(f"[red]❌Failed to get history: {e}", err=True)
+
+
+@db.command("reset")
+@click.option("--all", "purge_all", is_flag=True, help="Purge ALL tables")
+@click.option("--runs", "purge_runs", is_flag=True, help="Purge runs, metrics, params, artifacts")
+@click.option("--traces", "purge_traces", is_flag=True, help="Purge traces")
+@click.option("--artifacts", "purge_artifacts", is_flag=True, help="Purge artifacts")
+@click.option("--models", "purge_models", is_flag=True, help="Purge model versions")
+@click.option("--experiments", "purge_experiments", is_flag=True, help="Purge experiments")
+@click.option("--metrics", "purge_metrics", is_flag=True, help="Purge metrics")
+@click.option("--backup/--no-backup", default=True, help="Backup DB before reset (default: yes)")
+@click.option("--yes", "-y", is_flag=True, help="Skip confirmation prompt")
+def db_reset(
+    purge_all: bool,
+    purge_runs: bool,
+    purge_traces: bool,
+    purge_artifacts: bool,
+    purge_models: bool,
+    purge_experiments: bool,
+    purge_metrics: bool,
+    backup: bool,
+    yes: bool,
+) -> None:
+    r"""Reset (purge) database tables.
+
+    Selectively delete data from the metadata database. Use --all to wipe
+    everything, or pick specific tables to purge.
+
+    \b
+    Examples:
+        flowyml db reset --all --yes           # Wipe everything, no prompt
+        flowyml db reset --runs --traces       # Purge runs and traces
+        flowyml db reset --all --no-backup     # Reset without backup
+    """
+    from flowyml.cli.rich_utils import get_console, print_db_stats
+
+    console = get_console()
+
+    # Determine what to purge
+    targets: list[str] = []
+    if purge_all:
+        targets = [
+            "experiment_runs",
+            "metrics",
+            "model_metrics",
+            "parameters",
+            "artifacts",
+            "traces",
+            "pipeline_templates",
+            "pipeline_definitions",
+            "model_versions",
+            "experiments",
+            "projects",
+            "runs",
+        ]
+    else:
+        if purge_runs:
+            targets.extend(["experiment_runs", "metrics", "parameters", "artifacts", "runs"])
+        if purge_traces:
+            targets.append("traces")
+        if purge_artifacts and "artifacts" not in targets:
+            targets.append("artifacts")
+        if purge_models:
+            targets.append("model_versions")
+        if purge_experiments:
+            if "experiment_runs" not in targets:
+                targets.append("experiment_runs")
+            targets.append("experiments")
+        if purge_metrics:
+            if "metrics" not in targets:
+                targets.append("metrics")
+            if "model_metrics" not in targets:
+                targets.append("model_metrics")
+
+    if not targets:
+        recho("No tables selected. Use --all or pick specific tables (--runs, --traces, etc.)")
+        recho("Run 'flowyml db reset --help' for options.")
+        return
+
+    # Show current stats
+    try:
+        from flowyml.storage.sql import SQLMetadataStore
+        from sqlalchemy import func, select, delete as sa_delete
+
+        store = SQLMetadataStore()
+        all_tables = {
+            "runs": store.runs,
+            "artifacts": store.artifacts,
+            "metrics": store.metrics,
+            "model_metrics": store.model_metrics,
+            "parameters": store.parameters,
+            "experiments": store.experiments,
+            "experiment_runs": store.experiment_runs,
+            "traces": store.traces,
+            "pipeline_definitions": store.pipeline_definitions,
+            "projects": store.projects,
+            "model_versions": store.model_versions,
+            "pipeline_templates": store.pipeline_templates,
+        }
+
+        # Count rows before
+        before_counts: dict[str, int] = {}
+        with store.engine.connect() as conn:
+            for name in targets:
+                tbl = all_tables.get(name)
+                if tbl is not None:
+                    cnt = conn.execute(select(func.count()).select_from(tbl)).scalar() or 0
+                    before_counts[name] = cnt
+
+        total_before = sum(before_counts.values())
+
+        if console:
+            print_db_stats(before_counts, console=console)
+            console.print(f"[bold yellow]⚠  Will delete {total_before} rows from {len(targets)} table(s)[/bold yellow]")
+        else:
+            recho(f"\nWill delete {total_before} rows from {len(targets)} table(s):")
+            for name, cnt in before_counts.items():
+                recho(f"  {name}: {cnt} rows")
+
+        if total_before == 0:
+            recho("\n✅ Tables are already empty. Nothing to reset.")
+            return
+
+        # Confirmation
+        if not yes:
+            if not click.confirm("\n🔥 Proceed with database reset?", default=False):
+                recho("Cancelled.")
+                return
+
+        # Backup
+        if backup:
+            db_file = Path(".flowyml/metadata.db")
+            if db_file.exists():
+                import shutil
+                from datetime import datetime as dt
+
+                backup_path = db_file.with_suffix(f".{dt.now().strftime('%Y%m%d_%H%M%S')}.bak")
+                shutil.copy2(db_file, backup_path)
+                recho(f"💾 Backup saved to {backup_path}")
+
+        # Purge
+        deleted: dict[str, int] = {}
+        with store.engine.connect() as conn:
+            for name in targets:
+                tbl = all_tables.get(name)
+                if tbl is not None:
+                    result = conn.execute(sa_delete(tbl))
+                    deleted[name] = result.rowcount
+            conn.commit()
+
+        total_deleted = sum(deleted.values())
+
+        if console:
+            from rich.table import Table as RichTable
+            from rich import box as rich_box
+
+            table = RichTable(
+                title="[bold green]✅ Database Reset Complete[/bold green]",
+                box=rich_box.ROUNDED,
+                border_style="green",
+            )
+            table.add_column("Table", style="cyan")
+            table.add_column("Deleted", justify="right", style="red")
+            for name, cnt in deleted.items():
+                table.add_row(name, str(cnt))
+            table.add_row("─" * 25, "─" * 8, style="dim")
+            table.add_row("[bold]TOTAL[/]", f"[bold red]{total_deleted}[/]")
+            console.print(table)
+        else:
+            recho(f"\n✅ Deleted {total_deleted} rows total.")
+            for name, cnt in deleted.items():
+                recho(f"  {name}: {cnt} rows deleted")
+
+    except Exception as e:
+        recho(f"[red]❌Reset failed: {e}", err=True)
+        raise click.Abort()
+
+
+@db.command("stats")
+def db_stats_cmd() -> None:
+    """Show database table statistics and size."""
+    from flowyml.cli.rich_utils import get_console, print_db_stats
+
+    console = get_console()
+
+    try:
+        from flowyml.storage.sql import SQLMetadataStore
+        from sqlalchemy import func, select
+
+        store = SQLMetadataStore()
+        all_tables = {
+            "runs": store.runs,
+            "artifacts": store.artifacts,
+            "metrics": store.metrics,
+            "model_metrics": store.model_metrics,
+            "parameters": store.parameters,
+            "experiments": store.experiments,
+            "experiment_runs": store.experiment_runs,
+            "traces": store.traces,
+            "pipeline_definitions": store.pipeline_definitions,
+            "projects": store.projects,
+            "model_versions": store.model_versions,
+            "pipeline_templates": store.pipeline_templates,
+        }
+
+        counts: dict[str, int] = {}
+        with store.engine.connect() as conn:
+            for name, tbl in all_tables.items():
+                try:
+                    cnt = conn.execute(select(func.count()).select_from(tbl)).scalar() or 0
+                    counts[name] = cnt
+                except Exception:
+                    counts[name] = 0
+
+        # Get DB file size
+        db_file = Path(".flowyml/metadata.db")
+        if db_file.exists():
+            size = db_file.stat().st_size
+            if size < 1024:
+                db_size = f"{size} B"
+            elif size < 1024 * 1024:
+                db_size = f"{size / 1024:.1f} KB"
+            else:
+                db_size = f"{size / (1024 * 1024):.2f} MB"
+        else:
+            db_size = "N/A"
+
+        print_db_stats(counts, db_size=db_size, console=console)
+
+    except Exception as e:
+        recho(f"[red]❌Error getting DB stats: {e}", err=True)
 
 
 # Register model commands
@@ -493,6 +877,180 @@ models.add_command(delete_model)
 cli.add_command(eval_cli)
 
 
+# ============================================================================
+# flowyml info - Premium system dashboard
+# ============================================================================
+
+
+@cli.command("info")
+def system_info() -> None:
+    r"""📋 Show FlowyML system information and statistics.
+
+    Displays a premium dashboard with version info, configuration,
+    database statistics, and system health at a glance.
+
+    \b
+    Examples:
+        flowyml info
+    """
+    import platform
+    import sys
+    from flowyml.cli.rich_utils import (
+        get_console,
+        print_banner,
+        print_kv_panel,
+        print_stats_cards,
+        print_db_stats,
+    )
+    from flowyml.ui.utils import is_ui_running
+
+    console = get_console()
+
+    # Banner
+    print_banner(console=console, subtitle="Next-Generation ML Pipeline Framework")
+
+    # System info
+    try:
+        import flowyml
+
+        version = getattr(flowyml, "__version__", "0.1.0")
+    except Exception:
+        version = "0.1.0"
+
+    cfg = get_config()
+    ui_running = is_ui_running("localhost", cfg.ui_port)
+    ui_status = f"✅ Running on :{cfg.ui_port}" if ui_running else f"❌ Not running (port {cfg.ui_port})"
+
+    system_data = {
+        "FlowyML Version": version,
+        "Python": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
+        "Platform": platform.platform(),
+        "Home Directory": str(cfg.flowyml_home),
+        "Default Stack": cfg.default_stack,
+        "Execution Mode": cfg.execution_mode,
+        "Caching": "✅ Enabled" if cfg.enable_caching else "❌ Disabled",
+        "Log Level": cfg.log_level,
+        "UI Server": ui_status,
+    }
+
+    if console:
+        print_kv_panel("🌊 System Information", system_data, console=console)
+    else:
+        recho("\n🌊 System Information")
+        for k, v in system_data.items():
+            recho(f"  {k:<20} {v}")
+        recho()
+
+    # DB stats
+    try:
+        from flowyml.storage.sql import SQLMetadataStore
+        from sqlalchemy import func, select
+
+        store = SQLMetadataStore()
+        all_tables = {
+            "runs": store.runs,
+            "artifacts": store.artifacts,
+            "metrics": store.metrics,
+            "traces": store.traces,
+            "experiments": store.experiments,
+            "model_versions": store.model_versions,
+        }
+
+        counts: dict[str, int] = {}
+        with store.engine.connect() as conn:
+            for name, tbl in all_tables.items():
+                try:
+                    cnt = conn.execute(select(func.count()).select_from(tbl)).scalar() or 0
+                    counts[name] = cnt
+                except Exception:
+                    counts[name] = 0
+
+        # Stat cards
+        cards = [
+            ("Total Runs", str(counts.get("runs", 0)), "green"),
+            ("Experiments", str(counts.get("experiments", 0)), "cyan"),
+            ("Models", str(counts.get("model_versions", 0)), "magenta"),
+            ("Traces", str(counts.get("traces", 0)), "yellow"),
+        ]
+        print_stats_cards(cards, console=console)
+
+        # DB file size
+        db_file = Path(".flowyml/metadata.db")
+        if db_file.exists():
+            size = db_file.stat().st_size
+            db_size = f"{size / (1024 * 1024):.2f} MB" if size >= 1024 * 1024 else f"{size / 1024:.1f} KB"
+        else:
+            db_size = "N/A"
+
+        print_db_stats(counts, db_size=db_size, console=console)
+
+    except Exception:
+        if console:
+            console.print("[dim]Database not available[/dim]")
+        else:
+            recho("  Database: not available")
+
+    # Quick commands
+    if console:
+        from rich.panel import Panel as RichPanel
+        from rich import box as rich_box
+
+        tips = (
+            "[bold cyan]Quick Commands:[/]\n\n"
+            "  flowyml go          [dim]Start UI dashboard[/]\n"
+            "  flowyml run <file>  [dim]Run a pipeline[/]\n"
+            "  flowyml tui         [dim]Open terminal dashboard[/]\n"
+            "  flowyml db stats    [dim]Show database statistics[/]\n"
+            "  flowyml db reset    [dim]Reset database[/]\n"
+            "  flowyml stack list  [dim]List configured stacks[/]\n"
+            "  flowyml models list [dim]List registered models[/]\n"
+        )
+        console.print(RichPanel(tips, border_style="dim", box=rich_box.ROUNDED))
+    else:
+        recho("\nQuick Commands:")
+        recho("  flowyml go          Start UI dashboard")
+        recho("  flowyml run <file>  Run a pipeline")
+        recho("  flowyml tui         Open terminal dashboard")
+        recho("  flowyml db reset    Reset database")
+
+
+# ============================================================================
+# flowyml tui - Terminal User Interface
+# ============================================================================
+
+
+@cli.command("tui")
+def launch_tui() -> None:
+    r"""🖥  Launch the interactive Terminal User Interface.
+
+    Opens a full-screen Textual dashboard with tabs for:
+    - Dashboard: stats, recent runs
+    - Runs: browsable run list with detail view
+    - Database: table statistics and purge tools
+    - Config: current configuration
+
+    \b
+    Navigation:
+      Tab/Shift+Tab - Switch tabs
+      q             - Quit
+      r             - Refresh data
+
+    \b
+    Examples:
+        flowyml tui
+    """
+    try:
+        from flowyml.cli.tui import launch_tui as _launch
+
+        _launch()
+    except ImportError:
+        recho("[red]❌TUI requires 'textual'. Install with: pip install textual", err=True)
+        raise click.Abort()
+    except Exception as e:
+        recho(f"[red]❌TUI error: {e}", err=True)
+        raise click.Abort()
+
+
 @cli.group()
 def config() -> None:
     """Configuration management commands."""
@@ -502,21 +1060,32 @@ def config() -> None:
 @config.command("show")
 def show_config() -> None:
     """Show current configuration."""
-    cfg = get_config()
+    from flowyml.cli.rich_utils import get_console, RICH_AVAILABLE, print_kv_panel
 
-    click.echo("flowyml Configuration:\n")
-    click.echo(f"  flowyml Home: {cfg.flowyml_home}")
-    click.echo(f"  Artifacts Dir: {cfg.artifacts_dir}")
-    click.echo(f"  Metadata DB: {cfg.metadata_db}")
-    click.echo(f"  Default Stack: {cfg.default_stack}")
-    click.echo(f"  Execution Mode: {cfg.execution_mode}")
+    cfg = get_config()
+    console = get_console()
+
+    data = {
+        "FlowyML Home": str(cfg.flowyml_home),
+        "Artifacts Dir": str(cfg.artifacts_dir),
+        "Metadata DB": str(cfg.metadata_db),
+        "Default Stack": cfg.default_stack,
+        "Execution Mode": cfg.execution_mode,
+        "Enable Caching": "✅ Yes" if cfg.enable_caching else "❌ No",
+        "Log Level": cfg.log_level,
+        "UI Port": str(cfg.ui_port),
+        "Debug Mode": "✅ Yes" if cfg.debug_mode else "❌ No",
+    }
     if cfg.execution_mode == "remote":
-        click.echo(f"  Remote Server URL: {cfg.remote_server_url}")
-        click.echo(f"  Remote UI URL: {cfg.remote_ui_url}")
-    click.echo(f"  Enable Caching: {cfg.enable_caching}")
-    click.echo(f"  Log Level: {cfg.log_level}")
-    click.echo(f"  UI Port: {cfg.ui_port}")
-    click.echo(f"  Debug Mode: {cfg.debug_mode}")
+        data["Remote Server URL"] = cfg.remote_server_url
+        data["Remote UI URL"] = cfg.remote_ui_url
+
+    if RICH_AVAILABLE and console:
+        print_kv_panel("⚙  FlowyML Configuration", data, console=console)
+    else:
+        recho("FlowyML Configuration:\n")
+        for k, v in data.items():
+            recho(f"  {k:<20} {v}")
 
 
 @config.command("set-mode")
@@ -526,7 +1095,7 @@ def set_mode(mode: str) -> None:
     cfg = get_config()
     cfg.execution_mode = mode
     cfg.save()
-    click.echo(f"✓ Execution mode set to '{mode}'")
+    recho(f"[green]✓Execution mode set to '{mode}'")
 
 
 @config.command("set-url")
@@ -537,10 +1106,10 @@ def set_url(server: str, ui: str) -> None:
     cfg = get_config()
     if server:
         cfg.remote_server_url = server
-        click.echo(f"✓ Remote server URL set to '{server}'")
+        recho(f"[green]✓Remote server URL set to '{server}'")
     if ui:
         cfg.remote_ui_url = ui
-        click.echo(f"✓ Remote UI URL set to '{ui}'")
+        recho(f"[green]✓Remote UI URL set to '{ui}'")
     cfg.save()
 
 
@@ -551,7 +1120,7 @@ def set_token(token: str) -> None:
     cfg = get_config()
     cfg.api_token = token
     cfg.save()
-    click.echo(f"✓ API token set (length: {len(token)})")
+    recho(f"[green]✓API token set (length: {len(token)})")
 
 
 @cli.command()
@@ -560,14 +1129,83 @@ def set_token(token: str) -> None:
 @click.option("--tail", default=100, help="Number of lines to show")
 def logs(run_id: str, step: str, tail: int) -> None:
     """View logs for a pipeline run."""
-    click.echo(f"Logs for run '{run_id}':")
+    from flowyml.cli.rich_utils import get_console, RICH_AVAILABLE
 
-    if step:
-        click.echo(f"  Step: {step}")
+    console = get_console()
 
-    click.echo("\nLog entries:")
-    click.echo(f"  (Showing last {tail} lines)")
-    click.echo("  [Log output would appear here]")
+    try:
+        from flowyml.storage.sql import SQLMetadataStore
+
+        store = SQLMetadataStore()
+        run = store.load_run(run_id)
+
+        if not run:
+            recho(f"[red]❌Run '{run_id}' not found.", err=True)
+            return
+
+        if RICH_AVAILABLE and console:
+            from rich.panel import Panel as RichPanel
+            from rich import box as rich_box
+
+            st = run.get("status", "—")
+            ico = {"completed": "✅", "failed": "❌", "running": "⏳"}.get(st, "❓")
+
+            lines = [
+                f"[bold cyan]📋 Run: {run_id}[/]",
+                f"  Pipeline:  {run.get('pipeline_name', '—')}",
+                f"  Status:    {ico} {st}",
+                f"  Started:   {run.get('start_time', '—')}",
+                f"  Ended:     {run.get('end_time', '—')}",
+            ]
+            dur = run.get("duration")
+            if isinstance(dur, (int, float)):
+                lines.append(f"  Duration:  {dur:.2f}s")
+
+            steps = run.get("steps") or run.get("step_results") or []
+            if isinstance(steps, list) and steps:
+                lines.append(f"\n[bold yellow]Steps ({len(steps)}):[/]")
+                for s in steps:
+                    if isinstance(s, dict):
+                        sn = s.get("step_name") or s.get("name", "—")
+                        ss = s.get("status", "—")
+                        si = {"completed": "✅", "failed": "❌", "running": "⏳"}.get(ss, "❓")
+                        sd = s.get("duration")
+                        sds = f" ({sd:.2f}s)" if isinstance(sd, (int, float)) else ""
+                        if step and sn != step:
+                            continue
+                        lines.append(f"  {si} {sn}{sds}")
+                        if s.get("error"):
+                            lines.append(f"     [red]Error: {s['error']}[/]")
+
+            metrics = run.get("metrics") or {}
+            if metrics:
+                lines.append("\n[bold green]Metrics:[/]")
+                for k, v in sorted(metrics.items()):
+                    lines.append(
+                        f"  {k}: {v:.4f}" if isinstance(v, float) else f"  {k}: {v}",
+                    )
+
+            console.print(
+                RichPanel(
+                    "\n".join(lines),
+                    border_style="cyan",
+                    box=rich_box.ROUNDED,
+                ),
+            )
+        else:
+            recho(f"Run: {run_id}")
+            recho(f"  Pipeline: {run.get('pipeline_name', '—')}")
+            recho(f"  Status: {run.get('status', '—')}")
+            steps = run.get("steps") or run.get("step_results") or []
+            if isinstance(steps, list):
+                for s in steps:
+                    if isinstance(s, dict):
+                        sn = s.get("step_name") or s.get("name", "—")
+                        if step and sn != step:
+                            continue
+                        recho(f"  Step: {sn} — {s.get('status', '—')}")
+    except Exception as e:
+        recho(f"[red]❌Error loading run: {e}", err=True)
 
 
 # ============================================================================
@@ -631,9 +1269,9 @@ def go(host: str, port: int, open_browser: bool) -> None:
                 ),
             )
         else:
-            click.echo("✅ flowyml is already running!")
-            click.echo(f"🌐 Dashboard: {url}")
-            click.echo("\nRun 'flowyml stop' to stop the server.")
+            recho("[green]✅flowyml is already running!")
+            recho(f"🌐 Dashboard: {url}")
+            recho("\nRun 'flowyml stop' to stop the server.")
 
         if open_browser:
             import webbrowser
@@ -645,7 +1283,7 @@ def go(host: str, port: int, open_browser: bool) -> None:
     if rich_available:
         console.print("[bold cyan]🌊 flowyml[/bold cyan] - Starting up...\n")
     else:
-        click.echo("🌊 flowyml - Starting up...")
+        recho("🌊 flowyml - Starting up...")
 
     try:
         # Start uvicorn as a background process
@@ -727,13 +1365,13 @@ def go(host: str, port: int, open_browser: bool) -> None:
                 )
                 console.print("[dim]automatically show a clickable URL when they run.[/dim]")
             else:
-                click.echo("✅ flowyml is ready!")
-                click.echo(f"🌐 Dashboard: {url}")
-                click.echo(f"📊 View pipelines: {url}/pipelines")
-                click.echo(f"📜 View runs: {url}/runs")
-                click.echo("\nRun 'flowyml stop' to stop the server.")
-                click.echo("\nTip: The dashboard runs in the background. Your pipelines will")
-                click.echo("automatically show a clickable URL when they run.")
+                recho("[green]✅flowyml is ready!")
+                recho(f"🌐 Dashboard: {url}")
+                recho(f"📊 View pipelines: {url}/pipelines")
+                recho(f"📜 View runs: {url}/runs")
+                recho("\nRun 'flowyml stop' to stop the server.")
+                recho("\nTip: The dashboard runs in the background. Your pipelines will")
+                recho("automatically show a clickable URL when they run.")
 
             if open_browser:
                 import webbrowser
@@ -769,12 +1407,12 @@ def go(host: str, port: int, open_browser: bool) -> None:
                 ),
             )
         else:
-            click.echo(f"❌ Failed to start flowyml UI server: {e}")
-            click.echo("Possible issues:")
-            click.echo(f"  • Port {port} might be in use")
-            click.echo("  • Missing dependencies (uvicorn, fastapi)")
-            click.echo(f"\nTry: flowyml go --port {port + 1}")
-            click.echo("Or run 'flowyml ui start' for verbose output.")
+            recho(f"[red]❌Failed to start flowyml UI server: {e}")
+            recho("Possible issues:")
+            recho(f"  • Port {port} might be in use")
+            recho("  • Missing dependencies (uvicorn, fastapi)")
+            recho(f"\nTry: flowyml go --port {port + 1}")
+            recho("Or run 'flowyml ui start' for verbose output.")
 
 
 @cli.command("stop")
@@ -829,7 +1467,7 @@ def stop_server(host: str, port: int) -> None:
                         f"[green]✅ flowyml server (PID {pid}) stopped successfully.[/green]",
                     )
                 else:
-                    click.echo(f"✅ flowyml server (PID {pid}) stopped successfully.")
+                    recho(f"[green]✅flowyml server (PID {pid}) stopped successfully.")
                 return
             except ProcessLookupError:
                 # Process already dead, clean up PID file
@@ -838,7 +1476,7 @@ def stop_server(host: str, port: int) -> None:
                 if rich_available:
                     console.print(f"[red]❌ Permission denied to stop process {pid}[/red]")
                 else:
-                    click.echo(f"❌ Permission denied to stop process {pid}")
+                    recho(f"[red]❌Permission denied to stop process {pid}")
                 return
         except (ValueError, IndexError):
             # Invalid PID file, remove it
@@ -849,7 +1487,7 @@ def stop_server(host: str, port: int) -> None:
         if rich_available:
             console.print(f"[yellow]ℹ️  No flowyml server running on {host}:{port}[/yellow]")
         else:
-            click.echo(f"ℹ️  No flowyml server running on {host}:{port}")
+            recho(f"[yellow]ℹ️  No flowyml server running on {host}:{port}")
         return
 
     # Server is running but we don't have a PID file - must be from 'flowyml ui start'
@@ -874,11 +1512,11 @@ def stop_server(host: str, port: int) -> None:
             ),
         )
     else:
-        click.echo("ℹ️  Server running but not started with 'flowyml go'.")
-        click.echo("To stop it:")
-        click.echo("  • If running in foreground: Press Ctrl+C")
-        click.echo(f"  • Find and kill: pkill -f 'uvicorn.*:{port}'")
-        click.echo(f"  • Or find PID: lsof -i :{port}")
+        recho("[yellow]ℹ️  Server running but not started with 'flowyml go'.")
+        recho("To stop it:")
+        recho("  • If running in foreground: Press Ctrl+C")
+        recho(f"  • Find and kill: pkill -f 'uvicorn.*:{port}'")
+        recho(f"  • Or find PID: lsof -i :{port}")
 
 
 @cli.command("status")
@@ -926,9 +1564,9 @@ def server_status(host: str, port: int) -> None:
                 ),
             )
         else:
-            click.echo("✅ flowyml is running")
-            click.echo(f"🌐 Dashboard: {url}")
-            click.echo(f"💚 Health: {url}/api/health")
+            recho("[green]✅flowyml is running")
+            recho(f"🌐 Dashboard: {url}")
+            recho(f"💚 Health: {url}/api/health")
     else:
         if rich_available:
             panel_content = Text()
@@ -946,8 +1584,8 @@ def server_status(host: str, port: int) -> None:
                 ),
             )
         else:
-            click.echo(f"❌ flowyml is not running on {host}:{port}")
-            click.echo("Start with: flowyml go")
+            recho(f"[red]❌flowyml is not running on {host}:{port}")
+            recho("Start with: flowyml go")
 
 
 # ============================================================================
@@ -979,24 +1617,24 @@ def list_zenml_integrations(installed: bool) -> None:
 
     if installed:
         integrations = registry.list_installed_zenml_integrations()
-        click.echo("Installed ZenML integrations:\n")
+        recho("Installed ZenML integrations:\n")
     else:
         integrations = registry.list_zenml_integrations()
-        click.echo("Available ZenML integrations:\n")
+        recho("Available ZenML integrations:\n")
 
     if not integrations:
-        click.echo("  No integrations found.")
-        click.echo("\n  Make sure ZenML is installed: pip install zenml")
+        recho("  No integrations found.")
+        recho("\n  Make sure ZenML is installed: pip install zenml")
         return
 
     for name in sorted(integrations):
-        click.echo(f"  • {name}")
+        recho(f"  • {name}")
 
-    click.echo(f"\nTotal: {len(integrations)} integrations")
+    recho(f"\nTotal: {len(integrations)} integrations")
 
     if not installed:
-        click.echo("\nTo install an integration:")
-        click.echo("  flowyml zenml install <integration_name>")
+        recho("\nTo install an integration:")
+        recho("  flowyml zenml install <integration_name>")
 
 
 @zenml.command("install")
@@ -1014,18 +1652,18 @@ def install_zenml_integration(integration_name: str) -> None:
     """
     from flowyml.stacks.plugins import get_component_registry
 
-    click.echo(f"Installing ZenML integration '{integration_name}'...")
+    recho(f"Installing ZenML integration '{integration_name}'...")
 
     registry = get_component_registry()
     success = registry.install_zenml_integration(integration_name)
 
     if success:
-        click.echo(f"✓ Successfully installed '{integration_name}'")
-        click.echo("\nTo use this integration in FlowyML:")
-        click.echo(f"  flowyml zenml import {integration_name}")
+        recho(f"[green]✓Successfully installed '{integration_name}'")
+        recho("\nTo use this integration in FlowyML:")
+        recho(f"  flowyml zenml import {integration_name}")
     else:
-        click.echo(f"✗ Failed to install '{integration_name}'", err=True)
-        click.echo("  Check that ZenML is installed and the integration name is correct.")
+        recho(f"[red]✗Failed to install '{integration_name}'", err=True)
+        recho("  Check that ZenML is installed and the integration name is correct.")
 
 
 @zenml.command("import")
@@ -1042,20 +1680,20 @@ def import_zenml_integration(integration_name: str) -> None:
     """
     from flowyml.stacks.plugins import get_component_registry
 
-    click.echo(f"Importing ZenML integration '{integration_name}'...")
+    recho(f"Importing ZenML integration '{integration_name}'...")
 
     registry = get_component_registry()
     components = registry.import_zenml_integration(integration_name)
 
     if components:
-        click.echo(f"✓ Successfully imported {len(components)} components:\n")
+        recho(f"[green]✓Successfully imported {len(components)} components:\n")
         for comp in components:
-            click.echo(f"  • {comp.__name__}")
-        click.echo("\nThese components are now available in your FlowyML stacks.")
+            recho(f"  • {comp.__name__}")
+        recho("\nThese components are now available in your FlowyML stacks.")
     else:
-        click.echo(f"✗ No components imported from '{integration_name}'", err=True)
-        click.echo("  Make sure the integration is installed:")
-        click.echo(f"    flowyml zenml install {integration_name}")
+        recho(f"[red]✗No components imported from '{integration_name}'", err=True)
+        recho("  Make sure the integration is installed:")
+        recho(f"    flowyml zenml install {integration_name}")
 
 
 @zenml.command("import-all")
@@ -1070,26 +1708,26 @@ def import_all_zenml_integrations() -> None:
     """
     from flowyml.stacks.plugins import get_component_registry
 
-    click.echo("Importing all installed ZenML integrations...")
+    recho("Importing all installed ZenML integrations...")
 
     registry = get_component_registry()
     result = registry.import_all_zenml()
 
     if result:
         total = sum(len(comps) for comps in result.values())
-        click.echo(f"✓ Successfully imported {total} components from {len(result)} integrations:\n")
+        recho(f"[green]✓Successfully imported {total} components from {len(result)} integrations:\n")
 
         for integration_name, components in result.items():
-            click.echo(f"  {integration_name}:")
+            recho(f"  {integration_name}:")
             for comp in components:
-                click.echo(f"    • {comp.__name__}")
+                recho(f"    • {comp.__name__}")
 
-        click.echo("\nAll components are now available in your FlowyML stacks.")
+        recho("\nAll components are now available in your FlowyML stacks.")
     else:
-        click.echo("✗ No components imported", err=True)
-        click.echo("  Make sure ZenML is installed and you have some integrations installed:")
-        click.echo("    pip install zenml")
-        click.echo("    flowyml zenml install mlflow")
+        recho("[red]✗No components imported", err=True)
+        recho("  Make sure ZenML is installed and you have some integrations installed:")
+        recho("    pip install zenml")
+        recho("    flowyml zenml install mlflow")
 
 
 @zenml.command("status")
@@ -1109,7 +1747,7 @@ def zenml_status() -> None:
         zenml_version = None
 
     if zenml_available:
-        click.echo(f"✓ ZenML is installed (version {zenml_version})\n")
+        recho(f"[green]✓ZenML is installed (version {zenml_version})\n")
 
         from flowyml.stacks.plugins import get_component_registry
 
@@ -1118,24 +1756,24 @@ def zenml_status() -> None:
         available = registry.list_zenml_integrations()
         installed = registry.list_installed_zenml_integrations()
 
-        click.echo(f"  Available integrations: {len(available)}")
-        click.echo(f"  Installed integrations: {len(installed)}")
+        recho(f"  Available integrations: {len(available)}")
+        recho(f"  Installed integrations: {len(installed)}")
 
         if installed:
-            click.echo(f"\n  Installed: {', '.join(installed[:5])}")
+            recho(f"\n  Installed: {', '.join(installed[:5])}")
             if len(installed) > 5:
-                click.echo(f"             ...and {len(installed) - 5} more")
+                recho(f"             ...and {len(installed) - 5} more")
 
-        click.echo("\n  Quick start:")
-        click.echo("    flowyml zenml import-all  # Import all installed integrations")
+        recho("\n  Quick start:")
+        recho("    flowyml zenml import-all  # Import all installed integrations")
     else:
-        click.echo("✗ ZenML is not installed\n")
-        click.echo("  To install ZenML:")
-        click.echo("    pip install zenml")
-        click.echo("\n  After installing, you can:")
-        click.echo("    flowyml zenml list        # List available integrations")
-        click.echo("    flowyml zenml install aws # Install an integration")
-        click.echo("    flowyml zenml import-all  # Import all components")
+        recho("[red]✗ZenML is not installed\n")
+        recho("  To install ZenML:")
+        recho("    pip install zenml")
+        recho("\n  After installing, you can:")
+        recho("    flowyml zenml list        # List available integrations")
+        recho("    flowyml zenml install aws # Install an integration")
+        recho("    flowyml zenml import-all  # Import all components")
 
 
 # =============================================================================
@@ -1198,10 +1836,10 @@ def plugin_list(installed: bool, plugin_type: str) -> None:
         title = "Available Plugins"
 
     if not plugins:
-        click.echo("No plugins found.")
+        recho("No plugins found.")
         return
 
-    click.echo(f"\n📦 {title}:\n")
+    recho(f"\n📦 {title}:\n")
 
     # Group by type for better display
     from flowyml.plugins import get_plugin_info
@@ -1218,12 +1856,12 @@ def plugin_list(installed: bool, plugin_type: str) -> None:
             grouped[type_name].append((name, info.description, status))
 
     for type_name, items in sorted(grouped.items()):
-        click.echo(f"  {type_name}:")
+        recho(f"  {type_name}:")
         for name, desc, status in sorted(items):
-            click.echo(f"    {status} {name:<20} - {desc[:50]}")
-        click.echo()
+            recho(f"    {status} {name:<20} - {desc[:50]}")
+        recho()
 
-    click.echo("Install a plugin with: flowyml plugin install <name>")
+    recho("Install a plugin with: flowyml plugin install <name>")
 
 
 @plugin.command("install")
@@ -1246,24 +1884,24 @@ def plugin_install(name: str, upgrade: bool) -> None:
     info = get_plugin_info(name)
 
     if not info:
-        click.echo(f"✗ Plugin '{name}' not found", err=True)
-        click.echo("\nAvailable plugins:")
+        recho(f"[red]✗Plugin '{name}' not found", err=True)
+        recho("\nAvailable plugins:")
         for p in manager.list_available()[:10]:
-            click.echo(f"  • {p}")
+            recho(f"  • {p}")
         if len(manager.list_available()) > 10:
-            click.echo(f"  ... and {len(manager.list_available()) - 10} more")
+            recho(f"  ... and {len(manager.list_available()) - 10} more")
         return
 
-    click.echo(f"Installing plugin '{name}'...")
-    click.echo(f"  Packages: {', '.join(info.packages)}")
+    recho(f"Installing plugin '{name}'...")
+    recho(f"  Packages: {', '.join(info.packages)}")
 
     if manager.install(name, upgrade=upgrade):
-        click.echo(f"\n✓ Plugin '{name}' installed successfully!")
-        click.echo("\nUsage:")
-        click.echo("  from flowyml.plugins import get_plugin")
-        click.echo(f'  plugin = get_plugin("{name}")')
+        recho(f"\n✓ Plugin '{name}' installed successfully!")
+        recho("\nUsage:")
+        recho("  from flowyml.plugins import get_plugin")
+        recho(f'  plugin = get_plugin("{name}")')
     else:
-        click.echo(f"\n✗ Failed to install '{name}'", err=True)
+        recho(f"\n✗ Failed to install '{name}'", err=True)
 
 
 @plugin.command("info")
@@ -1280,28 +1918,28 @@ def plugin_info(name: str) -> None:
     manager = get_manager()
 
     if not info:
-        click.echo(f"✗ Plugin '{name}' not found", err=True)
+        recho(f"[red]✗Plugin '{name}' not found", err=True)
         return
 
     is_installed = manager.is_installed(name)
     status = "✓ Installed" if is_installed else "○ Not installed"
 
-    click.echo(f"\n📦 Plugin: {info.name}")
-    click.echo(f"   Status: {status}")
-    click.echo(f"   Type: {info.plugin_type.value.replace('_', ' ').title()}")
-    click.echo(f"   Description: {info.description}")
-    click.echo(f"   Version: {info.version}")
-    click.echo(f"   Author: {info.author}")
-    click.echo("\n   Packages:")
+    recho(f"\n📦 Plugin: {info.name}")
+    recho(f"   Status: {status}")
+    recho(f"   Type: {info.plugin_type.value.replace('_', ' ').title()}")
+    recho(f"   Description: {info.description}")
+    recho(f"   Version: {info.version}")
+    recho(f"   Author: {info.author}")
+    recho("\n   Packages:")
     for pkg in info.packages:
-        click.echo(f"     • {pkg}")
+        recho(f"     • {pkg}")
     if info.tags:
-        click.echo(f"\n   Tags: {', '.join(info.tags)}")
+        recho(f"\n   Tags: {', '.join(info.tags)}")
     if info.documentation_url:
-        click.echo(f"\n   Docs: {info.documentation_url}")
+        recho(f"\n   Docs: {info.documentation_url}")
 
     if not is_installed:
-        click.echo(f"\n   Install with: flowyml plugin install {name}")
+        recho(f"\n   Install with: flowyml plugin install {name}")
 
 
 @plugin.command("uninstall")
@@ -1317,15 +1955,15 @@ def plugin_uninstall(name: str) -> None:
     manager = get_manager()
 
     if not manager.is_installed(name):
-        click.echo(f"Plugin '{name}' is not installed")
+        recho(f"Plugin '{name}' is not installed")
         return
 
-    click.echo(f"Uninstalling plugin '{name}'...")
+    recho(f"Uninstalling plugin '{name}'...")
 
     if manager.uninstall(name):
-        click.echo(f"✓ Plugin '{name}' uninstalled")
+        recho(f"[green]✓Plugin '{name}' uninstalled")
     else:
-        click.echo(f"✗ Failed to uninstall '{name}'", err=True)
+        recho(f"[red]✗Failed to uninstall '{name}'", err=True)
 
 
 @plugin.command("install-git")
@@ -1340,13 +1978,13 @@ def plugin_install_git(git_url: str) -> None:
 
     manager = get_manager()
 
-    click.echo(f"Installing plugin from {git_url}...")
+    recho(f"Installing plugin from {git_url}...")
 
     if manager.install_from_git(git_url):
-        click.echo("✓ Plugin installed from git!")
-        click.echo("  Run 'flowyml plugin list --installed' to see available plugins")
+        recho("[green]✓Plugin installed from git!")
+        recho("  Run 'flowyml plugin list --installed' to see available plugins")
     else:
-        click.echo("✗ Failed to install from git", err=True)
+        recho("[red]✗Failed to install from git", err=True)
 
 
 # =============================================================================
@@ -1399,7 +2037,7 @@ def stack_init(
     config_path = "flowyml.yaml"
 
     if os.path.exists(config_path) and not force:
-        click.echo(f"✗ {config_path} already exists. Use --force to overwrite.", err=True)
+        recho(f"[red]✗{config_path} already exists. Use --force to overwrite.", err=True)
         return
 
     content = generate_config_template(
@@ -1412,18 +2050,18 @@ def stack_init(
     with open(config_path, "w") as f:
         f.write(content)
 
-    click.echo(f"✓ Created {config_path}")
-    click.echo("\nNext steps:")
-    click.echo("  1. Edit flowyml.yaml with your settings")
+    recho(f"[green]✓Created {config_path}")
+    recho("\nNext steps:")
+    recho("  1. Edit flowyml.yaml with your settings")
 
     # Show which plugins to install
     plugins_to_install = [p for p in [tracker, store, orchestrator, registry] if p]
     if plugins_to_install:
-        click.echo(f"  2. Install plugins: flowyml plugin install {' '.join(plugins_to_install)}")
+        recho(f"  2. Install plugins: flowyml plugin install {' '.join(plugins_to_install)}")
 
-    click.echo("  3. Use in code:")
-    click.echo("     from flowyml.plugins import start_run, log_metrics, save_model")
-    click.echo('     start_run("my_training")')
+    recho("  3. Use in code:")
+    recho("     from flowyml.plugins import start_run, log_metrics, save_model")
+    recho('     start_run("my_training")')
 
 
 @stack.command("show")
@@ -1438,10 +2076,10 @@ def stack_show() -> None:
     plugins_config = config.plugins_config
 
     if not plugins_config:
-        click.echo("No stack configured. Run 'flowyml stack init' to create flowyml.yaml")
+        recho("No stack configured. Run 'flowyml stack init' to create flowyml.yaml")
         return
 
-    click.echo("\n📦 Current Stack:\n")
+    recho("\n📦 Current Stack:\n")
 
     validation = validate_stack()
 
@@ -1451,23 +2089,23 @@ def stack_show() -> None:
             is_installed = validation.get(role, False)
             status = "✓" if is_installed else "○"
 
-            click.echo(f"  {status} {role}:")
-            click.echo(f"      type: {plugin_type}")
+            recho(f"  {status} {role}:")
+            recho(f"      type: {plugin_type}")
 
             # Show key config values (not sensitive ones)
             for key, value in conf.items():
                 if key != "type" and "key" not in key.lower() and "secret" not in key.lower():
-                    click.echo(f"      {key}: {value}")
-            click.echo()
+                    recho(f"      {key}: {value}")
+            recho()
 
     # Show missing plugins
     missing = [role for role, installed in validation.items() if not installed]
     if missing:
-        click.echo("⚠️  Some plugins are not installed:")
+        recho("⚠️  Some plugins are not installed:")
         for role in missing:
             plugin_type = plugins_config.get(role, {}).get("type")
             if plugin_type:
-                click.echo(f"    flowyml plugin install {plugin_type}")
+                recho(f"    flowyml plugin install {plugin_type}")
 
 
 @stack.command("validate")
@@ -1478,36 +2116,36 @@ def stack_validate() -> None:
     """
     from flowyml.plugins import get_config, validate_stack
 
-    click.echo("Validating stack configuration...\n")
+    recho("Validating stack configuration...\n")
 
     config = get_config()
 
     if not config._config_path:
-        click.echo("✗ No flowyml.yaml found", err=True)
-        click.echo("  Run 'flowyml stack init' to create one")
+        recho("[red]✗No flowyml.yaml found", err=True)
+        recho("  Run 'flowyml stack init' to create one")
         return
 
-    click.echo(f"Config file: {config._config_path}\n")
+    recho(f"Config file: {config._config_path}\n")
 
     validation = validate_stack()
 
     if not validation:
-        click.echo("No plugins configured")
+        recho("No plugins configured")
         return
 
     all_valid = True
     for role, is_installed in validation.items():
         status = "✓" if is_installed else "✗"
-        click.echo(f"  {status} {role}")
+        recho(f"  {status} {role}")
         if not is_installed:
             all_valid = False
 
-    click.echo()
+    recho()
     if all_valid:
-        click.echo("✓ All plugins are installed and ready!")
+        recho("[green]✓All plugins are installed and ready!")
     else:
-        click.echo("✗ Some plugins need to be installed")
-        click.echo("  Run 'flowyml stack show' for installation commands")
+        recho("[red]✗Some plugins need to be installed")
+        recho("  Run 'flowyml stack show' for installation commands")
 
 
 @stack.command("install")
@@ -1520,26 +2158,26 @@ def stack_install() -> None:
     manager = get_manager()
 
     if not plugins_config:
-        click.echo("No stack configured. Run 'flowyml stack init' first.")
+        recho("No stack configured. Run 'flowyml stack init' first.")
         return
 
-    click.echo("Installing stack plugins...\n")
+    recho("Installing stack plugins...\n")
 
     for _role, conf in plugins_config.items():
         if isinstance(conf, dict):
             plugin_type = conf.get("type")
             if plugin_type:
                 if manager.is_installed(plugin_type):
-                    click.echo(f"  ✓ {plugin_type} (already installed)")
+                    recho(f"  ✓ {plugin_type} (already installed)")
                 else:
-                    click.echo(f"  Installing {plugin_type}...")
+                    recho(f"  Installing {plugin_type}...")
                     if manager.install(plugin_type):
-                        click.echo(f"  ✓ {plugin_type} installed")
+                        recho(f"  ✓ {plugin_type} installed")
                     else:
-                        click.echo(f"  ✗ Failed to install {plugin_type}")
+                        recho(f"  ✗ Failed to install {plugin_type}")
 
-    click.echo("\n✓ Stack installation complete!")
-    click.echo("  Run 'flowyml stack validate' to verify the configuration")
+    recho("\n✓ Stack installation complete!")
+    recho("  Run 'flowyml stack validate' to verify the configuration")
 
 
 if __name__ == "__main__":

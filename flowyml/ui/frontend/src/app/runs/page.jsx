@@ -138,7 +138,7 @@ export function Runs() {
                 <div className="h-full max-w-[1800px] mx-auto px-6 py-6">
                     <div className="h-full flex flex-col md:flex-row gap-4 md:gap-6">
                         {/* Left Sidebar - Navigation */}
-                        <div className="w-full md:w-[320px] shrink-0 flex flex-col bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm max-h-[300px] md:max-h-none">
+                        <div className="w-full md:w-[320px] shrink-0 flex flex-col bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm h-[280px] md:h-auto">
                             <div className="p-3 border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 flex justify-between items-center">
                                 <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Explorer</h3>
                                 {pipelineFilter && (

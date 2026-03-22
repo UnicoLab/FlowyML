@@ -4,9 +4,10 @@ Allows running pipelines with different stacks from command line
 without modifying pipeline code.
 """
 
-import click
+import rich_click as click
 import sys
 from pathlib import Path
+from flowyml.cli.rich_utils import recho
 
 
 @click.group()
@@ -33,20 +34,20 @@ def list_components(component_type: str | None) -> None:
 
     if component_type:
         if component_type in components:
-            click.echo(f"\n{component_type.capitalize()}:")
+            recho(f"\n{component_type.capitalize()}:")
             for name in components[component_type]:
-                click.echo(f"  • {name}")
+                recho(f"  • {name}")
         else:
-            click.echo(f"Unknown component type: {component_type}", err=True)
+            recho(f"Unknown component type: {component_type}", err=True)
         return
 
-    click.echo("\n📦 Registered Components:")
+    recho("\n📦 Registered Components:")
     for comp_type, names in components.items():
         if names:
-            click.echo(f"\n{comp_type.capitalize()}:")
+            recho(f"\n{comp_type.capitalize()}:")
             for name in names:
-                click.echo(f"  • {name}")
-    click.echo()
+                recho(f"  • {name}")
+    recho()
 
 
 @component.command("load")
@@ -69,7 +70,7 @@ def load_component_cli(source: str, name: str | None) -> None:
 
     try:
         load_component(source, name)
-        click.echo(f"✅ Loaded component from: {source}")
+        recho(f"[green]✅Loaded component from: {source}")
 
         # Show what was loaded
         from flowyml.stacks.plugins import get_component_registry
@@ -77,14 +78,14 @@ def load_component_cli(source: str, name: str | None) -> None:
         registry = get_component_registry()
         components = registry.list_all()
 
-        click.echo("\nAvailable components:")
+        recho("\nAvailable components:")
         for comp_type, names in components.items():
             for comp_name in names:
                 if name and comp_name == name:
-                    click.echo(f"  • {comp_name} [{comp_type}] ⭐ NEW")
+                    recho(f"  • {comp_name} [{comp_type}] ⭐ NEW")
 
     except Exception as e:
-        click.echo(f"❌ Error loading component: {e}", err=True)
+        recho(f"[red]❌Error loading component: {e}", err=True)
         sys.exit(1)
 
 
@@ -109,18 +110,18 @@ def list_stacks(config: str | None) -> None:
     stacks = manager.list_stacks()
 
     if not stacks:
-        click.echo("No stacks configured. Create a flowyml.yaml file with 'stacks:' section.")
+        recho("No stacks configured. Create a flowyml.yaml file with 'stacks:' section.")
         return
 
     active = manager.active_stack_name
 
-    click.echo("\n📦 Configured stacks:")
+    recho("\n📦 Configured stacks:")
     for stack_name in stacks:
         marker = " ✓ (active)" if stack_name == active else ""
         stack = manager.get_stack(stack_name)
         orch_type = stack.orchestrator.get("type", "local") if stack and stack.orchestrator else "local"
-        click.echo(f"  • {stack_name}{marker} [orchestrator: {orch_type}]")
-    click.echo()
+        recho(f"  • {stack_name}{marker} [orchestrator: {orch_type}]")
+    recho()
 
 
 @stack.command("show")
@@ -139,49 +140,49 @@ def show_stack(stack_name: str, config: str | None) -> None:
     stack = manager.get_stack(stack_name)
 
     if not stack:
-        click.echo(f"Stack '{stack_name}' not found", err=True)
+        recho(f"Stack '{stack_name}' not found", err=True)
         available = manager.list_stacks()
         if available:
-            click.echo(f"Available stacks: {', '.join(available)}")
+            recho(f"Available stacks: {', '.join(available)}")
         sys.exit(1)
 
     is_active = stack_name == manager.active_stack_name
     status = " (active)" if is_active else ""
 
-    click.echo(f"\n📦 Stack: {stack_name}{status}")
-    click.echo("─" * 40)
+    recho(f"\n📦 Stack: {stack_name}{status}")
+    recho("─" * 40)
 
     # Show components
     if stack.orchestrator:
-        click.echo(f"\n🎯 Orchestrator: {stack.orchestrator.get('type', 'unknown')}")
+        recho(f"\n🎯 Orchestrator: {stack.orchestrator.get('type', 'unknown')}")
         for k, v in stack.orchestrator.items():
             if k != "type":
-                click.echo(f"   {k}: {v}")
+                recho(f"   {k}: {v}")
 
     if stack.artifact_store:
-        click.echo(f"\n💾 Artifact Store: {stack.artifact_store.get('type', 'unknown')}")
+        recho(f"\n💾 Artifact Store: {stack.artifact_store.get('type', 'unknown')}")
         for k, v in stack.artifact_store.items():
             if k != "type":
-                click.echo(f"   {k}: {v}")
+                recho(f"   {k}: {v}")
 
     if stack.experiment_tracker:
-        click.echo(f"\n📊 Experiment Tracker: {stack.experiment_tracker.get('type', 'unknown')}")
+        recho(f"\n📊 Experiment Tracker: {stack.experiment_tracker.get('type', 'unknown')}")
 
     if stack.model_registry:
-        click.echo(f"\n📝 Model Registry: {stack.model_registry.get('type', 'unknown')}")
+        recho(f"\n📝 Model Registry: {stack.model_registry.get('type', 'unknown')}")
 
     if stack.model_deployer:
-        click.echo(f"\n🚀 Model Deployer: {stack.model_deployer.get('type', 'unknown')}")
+        recho(f"\n🚀 Model Deployer: {stack.model_deployer.get('type', 'unknown')}")
 
     if stack.container_registry:
-        click.echo(f"\n🐳 Container Registry: {stack.container_registry.get('type', 'unknown')}")
+        recho(f"\n🐳 Container Registry: {stack.container_registry.get('type', 'unknown')}")
 
     if stack.artifact_routing:
-        click.echo("\n📍 Artifact Routing:")
+        recho("\n📍 Artifact Routing:")
         for type_name, rule in stack.artifact_routing.rules.items():
-            click.echo(f"   {type_name}: store={rule.store}, register={rule.register}")
+            recho(f"   {type_name}: store={rule.store}, register={rule.register}")
 
-    click.echo()
+    recho()
 
 
 @stack.command("set-default")
@@ -256,7 +257,7 @@ def register_stack(stack_name: str, config_file: str) -> None:
 
     config_path = Path(config_file)
     if not config_path.exists():
-        click.echo(f"Config file not found: {config_file}", err=True)
+        recho(f"Config file not found: {config_file}", err=True)
         sys.exit(1)
 
     try:
@@ -267,9 +268,9 @@ def register_stack(stack_name: str, config_file: str) -> None:
         manager = get_stack_manager()
         manager.register_stack(stack_name, stack_config)
 
-        click.echo(f"✅ Registered stack '{stack_name}' from {config_file}")
+        recho(f"[green]✅Registered stack '{stack_name}' from {config_file}")
     except Exception as e:
-        click.echo(f"❌ Error registering stack: {e}", err=True)
+        recho(f"[red]❌Error registering stack: {e}", err=True)
         sys.exit(1)
 
 
@@ -322,11 +323,11 @@ def run(
     # Determine stack to use
     stack_name = stack or loader.get_default_stack() or "local"
 
-    click.echo(f"🚀 Running pipeline: {pipeline_file}")
-    click.echo(f"📦 Stack: {stack_name}")
+    recho(f"[bold cyan]🚀 Running pipeline: {pipeline_file}")
+    recho(f"📦 Stack: {stack_name}")
 
     if resources:
-        click.echo(f"💻 Resources: {resources}")
+        recho(f"💻 Resources: {resources}")
 
     # --- Hydrate stack using StackManager (new path) ---
     manager = get_stack_manager()
@@ -340,7 +341,7 @@ def run(
 
         legacy_config = loader.get_stack_config(stack_name)
         if not legacy_config:
-            click.echo(f"Stack '{stack_name}' not found in configuration", err=True)
+            recho(f"Stack '{stack_name}' not found in configuration", err=True)
             sys.exit(1)
         stack_instance = create_stack_from_config(legacy_config, stack_name)
 
@@ -363,20 +364,20 @@ def run(
             context_dict[key] = value
 
     if dry_run:
-        click.echo("\n🔍 Dry run - configuration:")
-        click.echo(f"  Stack: {stack_instance}")
-        click.echo(f"  Resources: {resource_config}")
-        click.echo(f"  Docker: {docker_config}")
-        click.echo(f"  Context: {context_dict}")
+        recho("\n🔍 Dry run - configuration:")
+        recho(f"  Stack: {stack_instance}")
+        recho(f"  Resources: {resource_config}")
+        recho(f"  Docker: {docker_config}")
+        recho(f"  Context: {context_dict}")
         return
 
     # Load and run pipeline
-    click.echo("\n⚙️  Loading pipeline...")
+    recho("\n⚙️  Loading pipeline...")
 
     # Import the pipeline file
     spec = importlib.util.spec_from_file_location("pipeline_module", pipeline_file)
     if spec is None or spec.loader is None:
-        click.echo(f"Could not load pipeline file: {pipeline_file}", err=True)
+        recho(f"Could not load pipeline file: {pipeline_file}", err=True)
         sys.exit(1)
 
     module = importlib.util.module_from_spec(spec)
@@ -392,13 +393,13 @@ def run(
             break
 
     if pipeline is None:
-        click.echo("No Pipeline instance found in file", err=True)
+        recho("No Pipeline instance found in file", err=True)
         sys.exit(1)
 
     # Override stack
     pipeline.stack = stack_instance
 
-    click.echo("🏃 Running pipeline...\n")
+    recho("🏃 Running pipeline...\n")
 
     # Run pipeline
     result = pipeline.run(
@@ -407,8 +408,8 @@ def run(
         docker_config=docker_config,
     )
 
-    click.echo("\n✅ Pipeline completed successfully!")
-    click.echo(f"Results: {result}")
+    recho("\n✅ Pipeline completed successfully!")
+    recho(f"Results: {result}")
 
 
 @cli.command()
@@ -426,7 +427,7 @@ def init(output: str) -> None:
 
     if example_path.exists():
         shutil.copy(example_path, output_path)
-        click.echo(f"✅ Created {output}")
+        recho(f"[green]✅Created {output}")
     else:
         # Create basic config
         basic_config = """# flowyml Configuration
@@ -453,12 +454,12 @@ docker:
         with open(output_path, "w") as f:
             f.write(basic_config)
 
-        click.echo(f"✅ Created {output}")
+        recho(f"[green]✅Created {output}")
 
-    click.echo("\nNext steps:")
-    click.echo("  1. Edit flowyml.yaml to configure your stacks")
-    click.echo("  2. Run: flowyml stack list")
-    click.echo("  3. Run your pipeline: flowyml run pipeline.py")
+    recho("\nNext steps:")
+    recho("  1. Edit flowyml.yaml to configure your stacks")
+    recho("  2. Run: flowyml stack list")
+    recho("  3. Run your pipeline: flowyml run pipeline.py")
 
 
 @cli.group()
@@ -477,16 +478,16 @@ def list_plugins(installed: bool) -> None:
     plugins = registry.list_plugins()
 
     if not plugins:
-        click.echo("No plugins found.")
+        recho("No plugins found.")
         return
 
-    click.echo("\n🔌 Plugins:")
+    recho("\n🔌 Plugins:")
     for p in plugins:
         status = "✅ Installed" if p.is_installed else "Available"
-        click.echo(f"  • {p.name} ({p.version}) - {status}")
+        recho(f"  • {p.name} ({p.version}) - {status}")
         if p.description:
-            click.echo(f"    {p.description}")
-    click.echo()
+            recho(f"    {p.description}")
+    recho()
 
 
 @plugin.command("search")
@@ -494,7 +495,7 @@ def list_plugins(installed: bool) -> None:
 @click.option("--source", "-s", type=click.Choice(["pypi", "zenml", "all"]), default="all")
 def search_plugins(query: str | None, source: str) -> None:
     """Search for available plugins."""
-    click.echo(f"Searching for plugins matching '{query or '*'}' from {source}...")
+    recho(f"Searching for plugins matching '{query or '*'}' from {source}...")
 
     # In a real implementation, this would query PyPI or a central registry
     # For now, we'll simulate discovery of common ZenML plugins
@@ -511,13 +512,13 @@ def search_plugins(query: str | None, source: str) -> None:
     found = False
     for p in common_plugins:
         if not query or query.lower() in p["name"] or query.lower() in p["desc"].lower():
-            click.echo(f"\n📦 {p['name']}")
-            click.echo(f"   {p['desc']}")
-            click.echo(f"   Install: flowyml plugin install {p['name']}")
+            recho(f"\n📦 {p['name']}")
+            recho(f"   {p['desc']}")
+            recho(f"   Install: flowyml plugin install {p['name']}")
             found = True
 
     if not found:
-        click.echo("No plugins found matching your query.")
+        recho("No plugins found matching your query.")
 
 
 @plugin.command("install")
@@ -540,11 +541,11 @@ def install_plugin(plugin_name: str) -> None:
                 console.print(f"[bold red]❌ Failed to install {plugin_name}[/bold red]")
 
     except ImportError:
-        click.echo(f"Installing {plugin_name}...")
+        recho(f"Installing {plugin_name}...")
         if registry.install_plugin(plugin_name):
-            click.echo(f"✅ Successfully installed {plugin_name}!")
+            recho(f"[green]✅Successfully installed {plugin_name}!")
         else:
-            click.echo(f"❌ Failed to install {plugin_name}")
+            recho(f"[red]❌Failed to install {plugin_name}")
 
 
 @plugin.command("info")
@@ -584,9 +585,9 @@ def plugin_info(plugin_name: str) -> None:
         console.print(Panel(Markdown(content), title="Plugin Info", expand=False))
 
     except ImportError:
-        click.echo(f"Plugin: {info['name']}")
-        click.echo(f"Version: {info['version']}")
-        click.echo(f"Description: {info['description']}")
+        recho(f"Plugin: {info['name']}")
+        recho(f"Version: {info['version']}")
+        recho(f"Description: {info['description']}")
 
 
 @plugin.command("import-zenml-stack")
@@ -612,7 +613,7 @@ def import_zenml_stack(stack_name: str, output: str) -> None:
         if use_rich:
             console.print(f"🔍 Analyzing ZenML stack [bold cyan]'{stack_name}'[/bold cyan]...")
         else:
-            click.echo(f"🔍 Analyzing ZenML stack '{stack_name}'...")
+            recho(f"🔍 Analyzing ZenML stack '{stack_name}'...")
 
         migration_data = migrator.migrate_zenml_stack(stack_name)
 
@@ -623,10 +624,10 @@ def import_zenml_stack(stack_name: str, output: str) -> None:
             for p in migration_data["plugins"]:
                 console.print(f"  • [cyan]{p['name']}[/cyan] ([dim]{p['source']}[/dim])")
         else:
-            click.echo(msg)
-            click.echo("\nPlugins to configure:")
+            recho(msg)
+            recho("\nPlugins to configure:")
             for p in migration_data["plugins"]:
-                click.echo(f"  • {p['name']} ({p['source']})")
+                recho(f"  • {p['name']} ({p['source']})")
 
         if click.confirm(f"\nGenerate configuration in {output}?", default=True):
             yaml_content = migrator.generate_yaml(migration_data)
@@ -648,15 +649,15 @@ def import_zenml_stack(stack_name: str, output: str) -> None:
                     ),
                 )
             else:
-                click.echo(f"✅ Successfully imported stack to {output}")
-                click.echo(f"You can now use it with: flowyml run --stack {stack_name}")
+                recho(f"[green]✅Successfully imported stack to {output}")
+                recho(f"You can now use it with: flowyml run --stack {stack_name}")
 
     except ImportError:
-        click.echo("❌ ZenML is not installed. Install it with: pip install zenml", err=True)
+        recho("[red]❌ZenML is not installed. Install it with: pip install zenml", err=True)
     except ValueError as e:
-        click.echo(f"❌ {e}", err=True)
+        recho(f"[red]❌{e}", err=True)
     except Exception as e:
-        click.echo(f"❌ Migration failed: {e}", err=True)
+        recho(f"[red]❌Migration failed: {e}", err=True)
 
 
 if __name__ == "__main__":

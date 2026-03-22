@@ -7,7 +7,8 @@ listing, comparing evaluations, and managing scorers.
 import json
 import logging
 
-import click
+import rich_click as click
+from flowyml.cli.rich_utils import recho
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +58,7 @@ def run_eval(data, scorers, experiment, threshold, output, fmt):
         else:
             eval_ds = EvalDataset(name="cli_dataset", data=raw_data)
     else:
-        click.echo(f"❌ Unsupported data format: {data}. Use .csv or .json")
+        recho(f"[red]❌Unsupported data format: {data}. Use .csv or .json")
         raise SystemExit(1)
 
     # Build scorers
@@ -67,14 +68,14 @@ def run_eval(data, scorers, experiment, threshold, output, fmt):
             scorer = get_scorer(s_name, threshold=threshold)
             scorer_list.append(scorer)
         except ValueError as e:
-            click.echo(f"❌ {e}")
+            recho(f"[red]❌{e}")
             raise SystemExit(1)
 
     if not scorer_list:
-        click.echo("❌ No scorers specified. Use --scorers <name>")
+        recho("[red]❌No scorers specified. Use --scorers <name>")
         raise SystemExit(1)
 
-    click.echo(f"🔄 Running {len(scorer_list)} scorer(s) on {eval_ds.num_examples} examples...")
+    recho(f"🔄 Running {len(scorer_list)} scorer(s) on {eval_ds.num_examples} examples...")
 
     # Run evaluation
     result = evaluate(
@@ -86,39 +87,39 @@ def run_eval(data, scorers, experiment, threshold, output, fmt):
 
     # Display results
     if fmt == "json":
-        click.echo(json.dumps(result.to_dict(), indent=2, default=str))
+        recho(json.dumps(result.to_dict(), indent=2, default=str))
     elif fmt == "summary":
-        click.echo(f"\n📊 Evaluation Summary (ID: {result.eval_id[:8]})")
-        click.echo(f"   Dataset: {result.dataset_name} ({eval_ds.num_examples} examples)")
-        click.echo(f"   Passed: {'✅' if result.passed else '❌'}")
-        click.echo(f"   Pass Rate: {result.pass_rate:.1%}")
-        click.echo("\n   Scores:")
+        recho(f"\n📊 Evaluation Summary (ID: {result.eval_id[:8]})")
+        recho(f"   Dataset: {result.dataset_name} ({eval_ds.num_examples} examples)")
+        recho(f"   Passed: {'✅' if result.passed else '❌'}")
+        recho(f"   Pass Rate: {result.pass_rate:.1%}")
+        recho("\n   Scores:")
         for name, value in result.summary.items():
             status = "✅" if result.scores.get(name, [{}])[0].passed is not False else "❌"
-            click.echo(f"   {status} {name}: {value:.4f}")
+            recho(f"   {status} {name}: {value:.4f}")
     else:
         # Table format
-        click.echo(f"\n{'─' * 60}")
-        click.echo(f"  📊 Evaluation Results  |  ID: {result.eval_id[:8]}")
-        click.echo(f"{'─' * 60}")
-        click.echo(f"  {'Scorer':<25} {'Score':>10} {'Status':>8}")
-        click.echo(f"  {'─' * 45}")
+        recho(f"\n{'─' * 60}")
+        recho(f"  📊 Evaluation Results  |  ID: {result.eval_id[:8]}")
+        recho(f"{'─' * 60}")
+        recho(f"  {'Scorer':<25} {'Score':>10} {'Status':>8}")
+        recho(f"  {'─' * 45}")
         for name, value in result.summary.items():
             feedbacks = result.scores.get(name, [])
             passed = feedbacks[0].passed if feedbacks else None
             status = "✅" if passed is True else ("❌" if passed is False else "—")
-            click.echo(f"  {name:<25} {value:>10.4f} {status:>8}")
-        click.echo(f"{'─' * 60}")
-        click.echo(
+            recho(f"  {name:<25} {value:>10.4f} {status:>8}")
+        recho(f"{'─' * 60}")
+        recho(
             f"  Overall: {'✅ PASSED' if result.passed else '❌ FAILED'}  |  Pass Rate: {result.pass_rate:.1%}",
         )
-        click.echo(f"{'─' * 60}")
+        recho(f"{'─' * 60}")
 
     # Save output
     if output:
         with open(output, "w") as f:
             json.dump(result.to_dict(), f, indent=2, default=str)
-        click.echo(f"\n💾 Results saved to {output}")
+        recho(f"\n💾 Results saved to {output}")
 
 
 @eval_cli.command("list")
@@ -132,10 +133,10 @@ def list_evals(experiment, limit):
 
         flowyml eval list -e my_experiment -n 10
     """
-    click.echo("📋 Recent Evaluation Runs")
-    click.echo(f"{'─' * 70}")
-    click.echo(f"  {'ID':<10} {'Experiment':<20} {'Status':<12} {'Scorers':<20} {'Date'}")
-    click.echo(f"  {'─' * 65}")
+    recho("📋 Recent Evaluation Runs")
+    recho(f"{'─' * 70}")
+    recho(f"  {'ID':<10} {'Experiment':<20} {'Status':<12} {'Scorers':<20} {'Date'}")
+    recho(f"  {'─' * 65}")
 
     try:
         from flowyml.storage.sql import SQLMetadataStore
@@ -148,7 +149,7 @@ def list_evals(experiment, limit):
             eval_runs = [r for r in eval_runs if experiment in r.get("pipeline_name", "")]
 
         if not eval_runs:
-            click.echo("  No evaluation runs found.")
+            recho("  No evaluation runs found.")
         else:
             for run in eval_runs[:limit]:
                 run_id = run.get("run_id", "")[:8]
@@ -159,12 +160,12 @@ def list_evals(experiment, limit):
                 if len(scorer_names) > 3:
                     scorers_str += f" +{len(scorer_names)-3}"
                 date = run.get("start_time", "—")[:16]
-                click.echo(f"  {run_id:<10} {exp:<20} {status:<12} {scorers_str:<20} {date}")
+                recho(f"  {run_id:<10} {exp:<20} {status:<12} {scorers_str:<20} {date}")
 
     except Exception as e:
-        click.echo(f"  ⚠️ Could not load runs: {e}")
+        recho(f"  ⚠️ Could not load runs: {e}")
 
-    click.echo(f"{'─' * 70}")
+    recho(f"{'─' * 70}")
 
 
 @eval_cli.command("show")
@@ -181,16 +182,16 @@ def show_eval(eval_id):
         store = SQLMetadataStore()
         run = store.load_run(eval_id)
         if not run:
-            click.echo(f"❌ Evaluation '{eval_id}' not found")
+            recho(f"[red]❌Evaluation '{eval_id}' not found")
             raise SystemExit(1)
 
-        click.echo(f"\n📊 Evaluation: {eval_id}")
-        click.echo(json.dumps(run, indent=2, default=str))
+        recho(f"\n📊 Evaluation: {eval_id}")
+        recho(json.dumps(run, indent=2, default=str))
 
     except SystemExit:
         raise
     except Exception as e:
-        click.echo(f"❌ Error: {e}")
+        recho(f"[red]❌Error: {e}")
 
 
 @eval_cli.command("compare")
@@ -203,11 +204,11 @@ def compare_evals(eval_ids, threshold):
         flowyml eval compare abc12345 def67890
     """
     if len(eval_ids) < 2:
-        click.echo("❌ Need at least 2 evaluation IDs to compare")
+        recho("[red]❌Need at least 2 evaluation IDs to compare")
         raise SystemExit(1)
 
-    click.echo(f"\n📊 Comparing {len(eval_ids)} Evaluations")
-    click.echo(f"{'─' * 70}")
+    recho(f"\n📊 Comparing {len(eval_ids)} Evaluations")
+    recho(f"{'─' * 70}")
 
     try:
         from flowyml.storage.sql import SQLMetadataStore
@@ -219,17 +220,17 @@ def compare_evals(eval_ids, threshold):
             if run:
                 runs.append(run)
             else:
-                click.echo(f"  ⚠️ Could not load: {eid}")
+                recho(f"  ⚠️ Could not load: {eid}")
 
         if len(runs) >= 2:
             metrics_a = runs[0].get("metrics", {})
             metrics_b = runs[1].get("metrics", {})
             all_metrics = set(metrics_a.keys()) | set(metrics_b.keys())
 
-            click.echo(
+            recho(
                 f"  {'Metric':<20} {eval_ids[0][:8]:>10} {eval_ids[1][:8]:>10} {'Delta':>10} {'Status':>8}",
             )
-            click.echo(f"  {'─' * 60}")
+            recho(f"  {'─' * 60}")
 
             for metric in sorted(all_metrics):
                 val_a = metrics_a.get(metric, "—")
@@ -237,16 +238,16 @@ def compare_evals(eval_ids, threshold):
                 if isinstance(val_a, (int, float)) and isinstance(val_b, (int, float)):
                     delta = val_a - val_b
                     status = "⬆️" if delta > threshold else ("⬇️" if delta < -threshold else "➡️")
-                    click.echo(
+                    recho(
                         f"  {metric:<20} {val_a:>10.4f} {val_b:>10.4f} {delta:>+10.4f} {status}",
                     )
                 else:
-                    click.echo(f"  {metric:<20} {str(val_a):>10} {str(val_b):>10}")
+                    recho(f"  {metric:<20} {str(val_a):>10} {str(val_b):>10}")
 
     except Exception as e:
-        click.echo(f"❌ Error: {e}")
+        recho(f"[red]❌Error: {e}")
 
-    click.echo(f"{'─' * 70}")
+    recho(f"{'─' * 70}")
 
 
 @eval_cli.command("scorers")
@@ -268,18 +269,18 @@ def list_available_scorers(scorer_type):
 
     scorers = list_scorers(scorer_type)
 
-    click.echo("\n🎯 Available Scorers")
+    recho("\n🎯 Available Scorers")
     if scorer_type:
-        click.echo(f"   (filtered: {scorer_type})")
-    click.echo(f"{'─' * 70}")
-    click.echo(f"  {'Name':<25} {'Type':<18} {'Description'}")
-    click.echo(f"  {'─' * 65}")
+        recho(f"   (filtered: {scorer_type})")
+    recho(f"{'─' * 70}")
+    recho(f"  {'Name':<25} {'Type':<18} {'Description'}")
+    recho(f"  {'─' * 65}")
 
     for s in scorers:
-        click.echo(f"  {s['name']:<25} {s['type']:<18} {s['description'][:30]}")
+        recho(f"  {s['name']:<25} {s['type']:<18} {s['description'][:30]}")
 
-    click.echo(f"{'─' * 70}")
-    click.echo(f"  Total: {len(scorers)} scorer(s)")
+    recho(f"{'─' * 70}")
+    recho(f"  Total: {len(scorers)} scorer(s)")
 
 
 @eval_cli.command("assert")
@@ -320,7 +321,7 @@ def assert_eval(data, scorers, min_score, max_score, pass_rate, fail_on_error):
         else:
             eval_ds = EvalDataset(name="assert_dataset", data=raw_data)
     else:
-        click.echo(f"❌ Unsupported data format: {data}")
+        recho(f"[red]❌Unsupported data format: {data}")
         raise SystemExit(1)
 
     # Build scorers
@@ -329,7 +330,7 @@ def assert_eval(data, scorers, min_score, max_score, pass_rate, fail_on_error):
         try:
             scorer_list.append(get_scorer(s_name))
         except ValueError as e:
-            click.echo(f"❌ {e}")
+            recho(f"[red]❌{e}")
             raise SystemExit(1)
 
     # Run evaluation
@@ -351,19 +352,19 @@ def assert_eval(data, scorers, min_score, max_score, pass_rate, fail_on_error):
         all_passed = False
 
     # Display results
-    click.echo(f"\n{'─' * 60}")
-    click.echo("  🔍 Assertion Results")
-    click.echo(f"{'─' * 60}")
+    recho(f"\n{'─' * 60}")
+    recho("  🔍 Assertion Results")
+    recho(f"{'─' * 60}")
 
     for a in assertions.results:
         status = "✅" if a.passed else "❌"
-        click.echo(f"  {status} {a.name}: {a.message}")
+        recho(f"  {status} {a.name}: {a.message}")
 
-    click.echo(f"{'─' * 60}")
+    recho(f"{'─' * 60}")
 
     if all_passed:
-        click.echo("  ✅ All assertions PASSED")
+        recho("  ✅ All assertions PASSED")
     else:
-        click.echo("  ❌ Some assertions FAILED")
+        recho("  ❌ Some assertions FAILED")
         if fail_on_error:
             raise SystemExit(1)

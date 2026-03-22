@@ -1,10 +1,11 @@
 """CLI commands for model registry management."""
 
-import click
+import rich_click as click
 from pathlib import Path
 from flowyml.registry.model_registry import ModelRegistry, ModelStage
 from flowyml.utils.config import get_config
 from flowyml.cli.rich_utils import get_console, print_rich_text, print_rich_panel
+from flowyml.cli.rich_utils import recho
 
 
 def get_registry() -> ModelRegistry:
@@ -107,8 +108,8 @@ def list_models(model_name: str | None, stage: str | None) -> None:
                 console.print()
             else:
                 # Fallback to simple output
-                click.echo(f"\n📦 Model: {model_name}")
-                click.echo(f"   Versions: {len(versions)}\n")
+                recho(f"\n📦 Model: {model_name}")
+                recho(f"   Versions: {len(versions)}\n")
                 versions.sort(key=lambda v: v.created_at, reverse=True)
                 for version in versions:
                     stage_icon = {
@@ -117,19 +118,19 @@ def list_models(model_name: str | None, stage: str | None) -> None:
                         ModelStage.PRODUCTION: "✅",
                         ModelStage.ARCHIVED: "📦",
                     }.get(version.stage, "📌")
-                    click.echo(f"  {stage_icon} {version.version}")
-                    click.echo(f"     Stage: {version.stage.value}")
-                    click.echo(f"     Framework: {version.framework}")
-                    click.echo(f"     Created: {version.created_at}")
+                    recho(f"  {stage_icon} {version.version}")
+                    recho(f"     Stage: {version.stage.value}")
+                    recho(f"     Framework: {version.framework}")
+                    recho(f"     Created: {version.created_at}")
                     if version.metrics:
                         metrics_str = ", ".join(f"{k}={v:.4f}" for k, v in version.metrics.items())
-                        click.echo(f"     Metrics: {metrics_str}")
+                        recho(f"     Metrics: {metrics_str}")
                     if version.tags:
                         tags_str = ", ".join(f"{k}={v}" for k, v in version.tags.items())
-                        click.echo(f"     Tags: {tags_str}")
+                        recho(f"     Tags: {tags_str}")
                     if version.description:
-                        click.echo(f"     Description: {version.description}")
-                    click.echo()
+                        recho(f"     Description: {version.description}")
+                    recho()
         else:
             # List all models
             model_names = registry.list_models()
@@ -188,7 +189,7 @@ def list_models(model_name: str | None, stage: str | None) -> None:
                 console.print()
             else:
                 # Fallback to simple output
-                click.echo(f"\n📦 Registered Models: {len(model_names)}\n")
+                recho(f"\n📦 Registered Models: {len(model_names)}\n")
                 for name in sorted(model_names):
                     versions = registry.list_versions(name)
                     latest = registry.get_latest_version(name)
@@ -199,16 +200,16 @@ def list_models(model_name: str | None, stage: str | None) -> None:
                             ModelStage.PRODUCTION: "✅",
                             ModelStage.ARCHIVED: "📦",
                         }.get(latest.stage, "📌")
-                        click.echo(f"  {stage_icon} {name}")
-                        click.echo(f"     Versions: {len(versions)}")
-                        click.echo(f"     Latest: {latest.version} ({latest.stage.value})")
-                        click.echo()
+                        recho(f"  {stage_icon} {name}")
+                        recho(f"     Versions: {len(versions)}")
+                        recho(f"     Latest: {latest.version} ({latest.stage.value})")
+                        recho()
                     else:
-                        click.echo(f"  📌 {name} (no versions)")
-                        click.echo()
+                        recho(f"  📌 {name} (no versions)")
+                        recho()
 
     except Exception as e:
-        click.echo(f"✗ Error listing models: {e}", err=True)
+        recho(f"[red]✗Error listing models: {e}", err=True)
         raise click.Abort()
 
 
@@ -273,17 +274,17 @@ def promote_model(model_name: str, version: str, to_stage: str) -> None:
             console.print(content)
             console.print(table)
         else:
-            click.echo(
+            recho(
                 f"✅ {stage_icon} Model '{model_name}' version '{version}' promoted to {to_stage}",
             )
-            click.echo(f"   Previous stage: {model_version.stage.value}")
-            click.echo(f"   New stage: {updated_version.stage.value}")
+            recho(f"   Previous stage: {model_version.stage.value}")
+            recho(f"   New stage: {updated_version.stage.value}")
 
     except ValueError as e:
-        click.echo(f"❌ Error: {e}", err=True)
+        recho(f"[red]❌Error: {e}", err=True)
         raise click.Abort()
     except Exception as e:
-        click.echo(f"✗ Error promoting model: {e}", err=True)
+        recho(f"[red]✗Error promoting model: {e}", err=True)
         raise click.Abort()
 
 
@@ -374,31 +375,31 @@ def show_model(model_name: str, version: str) -> None:
                 console.print()
         else:
             # Fallback to simple output
-            click.echo(f"\n{stage_icon} Model: {model_name}")
-            click.echo(f"   Version: {model_version.version}")
-            click.echo(f"   Stage: {model_version.stage.value}")
-            click.echo(f"   Framework: {model_version.framework}")
-            click.echo(f"   Created: {model_version.created_at}")
-            click.echo(f"   Updated: {model_version.updated_at}")
-            click.echo(f"   Path: {model_version.model_path}")
+            recho(f"\n{stage_icon} Model: {model_name}")
+            recho(f"   Version: {model_version.version}")
+            recho(f"   Stage: {model_version.stage.value}")
+            recho(f"   Framework: {model_version.framework}")
+            recho(f"   Created: {model_version.created_at}")
+            recho(f"   Updated: {model_version.updated_at}")
+            recho(f"   Path: {model_version.model_path}")
             if model_version.description:
-                click.echo(f"   Description: {model_version.description}")
+                recho(f"   Description: {model_version.description}")
             if model_version.author:
-                click.echo(f"   Author: {model_version.author}")
+                recho(f"   Author: {model_version.author}")
             if model_version.parent_version:
-                click.echo(f"   Parent Version: {model_version.parent_version}")
+                recho(f"   Parent Version: {model_version.parent_version}")
             if model_version.metrics:
-                click.echo("\n   Metrics:")
+                recho("\n   Metrics:")
                 for key, value in sorted(model_version.metrics.items()):
-                    click.echo(f"     {key}: {value:.6f}")
+                    recho(f"     {key}: {value:.6f}")
             if model_version.tags:
-                click.echo("\n   Tags:")
+                recho("\n   Tags:")
                 for key, value in sorted(model_version.tags.items()):
-                    click.echo(f"     {key}: {value}")
-            click.echo()
+                    recho(f"     {key}: {value}")
+            recho()
 
     except Exception as e:
-        click.echo(f"✗ Error showing model: {e}", err=True)
+        recho(f"[red]✗Error showing model: {e}", err=True)
         raise click.Abort()
 
 
@@ -416,7 +417,7 @@ def delete_model(model_name: str, version: str) -> None:
 
         model_version = registry.get_version(model_name, version)
         if not model_version:
-            click.echo(f"❌ Model '{model_name}' version '{version}' not found.")
+            recho(f"[red]❌Model '{model_name}' version '{version}' not found.")
             raise click.Abort()
 
         # Delete model file
@@ -439,8 +440,8 @@ def delete_model(model_name: str, version: str) -> None:
 
             registry._save_metadata()
 
-        click.echo(f"✅ Deleted model '{model_name}' version '{version}'")
+        recho(f"[green]✅Deleted model '{model_name}' version '{version}'")
 
     except Exception as e:
-        click.echo(f"✗ Error deleting model: {e}", err=True)
+        recho(f"[red]✗Error deleting model: {e}", err=True)
         raise click.Abort()
