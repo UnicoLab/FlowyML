@@ -10,7 +10,7 @@ class TestConditionalWithAssets:
     def test_metrics_create_with_dict(self):
         """Test Metrics.create() with metrics dict parameter (user's example)."""
 
-        @step(inputs=["model/trained"], outputs=["metrics/evaluation"])
+        @step(inputs=["model/trained"], outputs=["metrics/evaluation"], register=False)
         def evaluate_model(model):
             """Evaluate the trained model."""
             metrics = {"test_accuracy": 0.93, "test_loss": 0.07}
@@ -20,15 +20,15 @@ class TestConditionalWithAssets:
                 metadata={"source": "example"},
             )
 
-        @step
+        @step(register=False)
         def deploy_model():
             return "deployed"
 
-        @step
+        @step(register=False)
         def retrain_model():
             return "retrained"
 
-        @step(outputs=["model/trained"])
+        @step(outputs=["model/trained"], register=False)
         def train_model():
             return "model_data"
 
@@ -54,7 +54,7 @@ class TestConditionalWithAssets:
     def test_metrics_dict_access_patterns(self):
         """Test all access patterns for Metrics in conditions."""
 
-        @step(outputs=["metrics/evaluation"])
+        @step(outputs=["metrics/evaluation"], register=False)
         def evaluate_model():
             metrics = {"test_accuracy": 0.93, "test_loss": 0.07}
             return Metrics.create(
@@ -63,11 +63,11 @@ class TestConditionalWithAssets:
                 metadata={"source": "example"},
             )
 
-        @step
+        @step(register=False)
         def deploy_model():
             return "deployed"
 
-        @step
+        @step(register=False)
         def retrain_model():
             return "retrained"
 
@@ -91,7 +91,7 @@ class TestConditionalWithAssets:
     def test_metrics_data_access(self):
         """Test accessing Metrics via .data property."""
 
-        @step(outputs=["metrics/evaluation"])
+        @step(outputs=["metrics/evaluation"], register=False)
         def evaluate_model():
             return Metrics.create(
                 name="example_metrics",
@@ -99,11 +99,11 @@ class TestConditionalWithAssets:
                 test_loss=0.07,
             )
 
-        @step
+        @step(register=False)
         def deploy_model():
             return "deployed"
 
-        @step
+        @step(register=False)
         def retrain_model():
             return "retrained"
 
@@ -125,7 +125,7 @@ class TestConditionalWithAssets:
     def test_metrics_dict_style_access(self):
         """Test accessing Metrics via dict-style access."""
 
-        @step(outputs=["metrics/evaluation"])
+        @step(outputs=["metrics/evaluation"], register=False)
         def evaluate_model():
             return Metrics.create(
                 name="example_metrics",
@@ -133,11 +133,11 @@ class TestConditionalWithAssets:
                 test_loss=0.07,
             )
 
-        @step
+        @step(register=False)
         def deploy_model():
             return "deployed"
 
-        @step
+        @step(register=False)
         def retrain_model():
             return "retrained"
 
@@ -158,7 +158,7 @@ class TestConditionalWithAssets:
     def test_model_properties_access(self):
         """Test accessing Model properties in conditions."""
 
-        @step(outputs=["model/trained"])
+        @step(outputs=["model/trained"], register=False)
         def train_model():
             return Model(
                 name="test_model",
@@ -167,11 +167,11 @@ class TestConditionalWithAssets:
                 architecture="resnet50",
             )
 
-        @step
+        @step(register=False)
         def deploy_model():
             return "deployed"
 
-        @step
+        @step(register=False)
         def skip_deploy():
             return "skipped"
 
@@ -192,7 +192,7 @@ class TestConditionalWithAssets:
     def test_dataset_properties_access(self):
         """Test accessing Dataset properties in conditions."""
 
-        @step(outputs=["data/processed"])
+        @step(outputs=["data/processed"], register=False)
         def process_data():
             return Dataset(
                 name="processed_data",
@@ -200,11 +200,11 @@ class TestConditionalWithAssets:
                 properties={"samples": 10000, "size": "1GB"},
             )
 
-        @step
+        @step(register=False)
         def use_large_processing():
             return "large"
 
-        @step
+        @step(register=False)
         def use_small_processing():
             return "small"
 
@@ -225,7 +225,7 @@ class TestConditionalWithAssets:
     def test_featureset_properties_access(self):
         """Test accessing FeatureSet properties in conditions."""
 
-        @step(outputs=["features/engineered"])
+        @step(outputs=["features/engineered"], register=False)
         def engineer_features():
             return FeatureSet.create(
                 name="engineered_features",
@@ -234,11 +234,11 @@ class TestConditionalWithAssets:
                 num_samples=2,
             )
 
-        @step
+        @step(register=False)
         def use_complex_model():
             return "complex"
 
-        @step
+        @step(register=False)
         def use_simple_model():
             return "simple"
 
@@ -259,7 +259,7 @@ class TestConditionalWithAssets:
     def test_metrics_metadata_access(self):
         """Test accessing Metrics metadata in conditions."""
 
-        @step(outputs=["metrics/evaluation"])
+        @step(outputs=["metrics/evaluation"], register=False)
         def evaluate_model():
             return Metrics.create(
                 name="example_metrics",
@@ -267,11 +267,11 @@ class TestConditionalWithAssets:
                 metadata={"source": "example", "stage": "production"},
             )
 
-        @step
+        @step(register=False)
         def deploy_model():
             return "deployed"
 
-        @step
+        @step(register=False)
         def skip_deploy():
             return "skipped"
 

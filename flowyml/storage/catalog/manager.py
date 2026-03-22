@@ -174,6 +174,10 @@ class ArtifactCatalog:
         """List artifacts with optional filters."""
         return self._backend.list_artifacts(**filters)
 
+    def list(self, **filters) -> list[CatalogEntry]:  # noqa: A003
+        """Alias for list_artifacts() for convenience."""
+        return self._backend.list_artifacts(**filters)
+
     def tag(self, artifact_id: str, **tags: str) -> None:
         """Add or update tags on an artifact."""
         self._backend.tag(artifact_id, tags)

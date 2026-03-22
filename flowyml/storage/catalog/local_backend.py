@@ -179,6 +179,10 @@ class LocalCatalogBackend(CatalogBackend):
 
         return entries
 
+    def list(self, **kwargs) -> list[CatalogEntry]:  # noqa: A003
+        """Alias for list_artifacts() for convenience."""
+        return self.list_artifacts(**kwargs)
+
     def tag(self, artifact_id: str, tags: dict[str, str]) -> None:
         """Add or update tags on an artifact."""
         entry = self.get(artifact_id)

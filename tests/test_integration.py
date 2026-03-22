@@ -59,11 +59,11 @@ class TestFeatureIntegration(unittest.TestCase):
         # Create pipeline
         pipeline = project.create_pipeline("versioned_training")
 
-        @step(outputs=["data"])
+        @step(outputs=["data"], register=False)
         def load_data():
             return np.random.rand(100, 10)
 
-        @step(inputs=["data"], outputs=["model"])
+        @step(inputs=["data"], outputs=["model"], register=False)
         def train(data):
             return {"weights": np.random.rand(10)}
 
@@ -96,14 +96,14 @@ class TestFeatureIntegration(unittest.TestCase):
 
         call_count = {"load": 0, "train": 0}
 
-        @step(outputs=["data"])
+        @step(outputs=["data"], register=False)
         def load_data():
             call_count["load"] += 1
             data = np.random.rand(50, 5)
             checkpoint.save_step_state("load_data", data)
             return data
 
-        @step(inputs=["data"], outputs=["model"])
+        @step(inputs=["data"], outputs=["model"], register=False)
         def train(data, learning_rate: float):
             call_count["train"] += 1
             model = {"lr": learning_rate}
@@ -135,14 +135,14 @@ class TestFeatureIntegration(unittest.TestCase):
 
         execution_log = []
 
-        @step(outputs=["data"])
+        @step(outputs=["data"], register=False)
         @trace_step()
         @profile_step()
         def load_data():
             execution_log.append("load")
             return np.random.rand(10, 3)
 
-        @step(inputs=["data"], outputs=["processed"])
+        @step(inputs=["data"], outputs=["processed"], register=False)
         @profile_step()
         def process(data):
             execution_log.append("process")
@@ -170,7 +170,7 @@ class TestFeatureIntegration(unittest.TestCase):
 
         reference_data = np.random.normal(0, 1, 1000)
 
-        @step(outputs=["train_data", "test_data"])
+        @step(outputs=["train_data", "test_data"], register=False)
         def load_data():
             train = np.random.normal(0, 1, 800)
             test = np.random.normal(0, 1, 200)
@@ -182,7 +182,7 @@ class TestFeatureIntegration(unittest.TestCase):
 
             return train, test
 
-        @step(inputs=["train_data", "test_data"], outputs=["metrics"])
+        @step(inputs=["train_data", "test_data"], outputs=["metrics"], register=False)
         def train_and_evaluate(train_data, test_data):
             accuracy = 0.85 + np.random.rand() * 0.1
             return {"accuracy": accuracy}
@@ -212,12 +212,12 @@ class TestFeatureIntegration(unittest.TestCase):
         versioned = VersionedPipeline("debug_versioned", versions_dir=self.test_dir)
         versioned.version = "v1.0.0"
 
-        @step(outputs=["data"])
+        @step(outputs=["data"], register=False)
         @profile_step()
         def load():
             return {"values": [1, 2, 3]}
 
-        @step(inputs=["data"], outputs=["processed"])
+        @step(inputs=["data"], outputs=["processed"], register=False)
         def process(data):
             return {"values": [x * 2 for x in data["values"]]}
 
@@ -244,7 +244,7 @@ class TestFeatureIntegration(unittest.TestCase):
 
         pipeline = Pipeline("memo_test", cache_dir=os.path.join(self.test_dir, "cache"))
 
-        @step(outputs=["result"])
+        @step(outputs=["result"], register=False)
         def compute_step():
             # Call multiple times with same input
             r1 = expensive_compute(5)
@@ -266,7 +266,7 @@ class TestFeatureIntegration(unittest.TestCase):
 
         execution_count = {"count": 0}
 
-        @step(outputs=["result"])
+        @step(outputs=["result"], register=False)
         def task():
             execution_count["count"] += 1
             return {"done": True}
@@ -298,15 +298,15 @@ class TestFeatureIntegration(unittest.TestCase):
         pipeline2 = project.create_pipeline("training")
         pipeline3 = project.create_pipeline("evaluation")
 
-        @step(outputs=["data"])
+        @step(outputs=["data"], register=False)
         def prepare():
             return {"prepared": True}
 
-        @step(outputs=["model"])
+        @step(outputs=["model"], register=False)
         def train():
             return {"trained": True}
 
-        @step(outputs=["metrics"])
+        @step(outputs=["metrics"], register=False)
         def evaluate():
             return {"accuracy": 0.9}
 
@@ -350,22 +350,22 @@ class TestFeatureIntegration(unittest.TestCase):
         leaderboard = ModelLeaderboard("f1_score", metadata_store=project.metadata_store)
 
         # Define workflow steps
-        @step(outputs=["data"])
+        @step(outputs=["data"], register=False)
         @profile_step()
         def load_data():
             return np.random.rand(100, 5)
 
-        @step(inputs=["data"], outputs=["train", "test"])
+        @step(inputs=["data"], outputs=["train", "test"], register=False)
         def split_data(data):
             split_idx = int(len(data) * 0.8)
             return data[:split_idx], data[split_idx:]
 
-        @step(inputs=["train"], outputs=["model"])
+        @step(inputs=["train"], outputs=["model"], register=False)
         @profile_step()
         def train_model(train):
             return {"weights": np.random.rand(5), "bias": 0.1}
 
-        @step(inputs=["model", "test"], outputs=["metrics"])
+        @step(inputs=["model", "test"], outputs=["metrics"], register=False)
         def evaluate_model(model, test):
             f1 = 0.75 + np.random.rand() * 0.2
             return {"f1_score": f1, "accuracy": 0.85}
