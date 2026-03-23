@@ -1,6 +1,7 @@
 name: Deploy PR Pages Preview
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - dev
