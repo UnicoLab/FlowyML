@@ -2,6 +2,60 @@
 
 <!-- version list -->
 
+## v1.9.0 (2026-03-23)
+
+### Bug Fixes
+
+- Aligning packages data
+  ([`1c22633`](https://github.com/UnicoLab/FlowyML/commit/1c226337915b749630102c3eec3b6397e77033ba))
+
+- Distributed tests system
+  ([`ebf8141`](https://github.com/UnicoLab/FlowyML/commit/ebf814185f1b0acaec9885ee0ee57bb3bfa24cb0))
+
+- Formatting
+  ([`a467d92`](https://github.com/UnicoLab/FlowyML/commit/a467d92d156d99530d16f7446ca76e85a16225e8))
+
+- Testing and everything else
+  ([`6511648`](https://github.com/UnicoLab/FlowyML/commit/651164868b453d4f1354dca12a8c2fbb84c110d5))
+
+### Chores
+
+- Save last release version for recovery [skip ci]
+  ([`1e94c0c`](https://github.com/UnicoLab/FlowyML/commit/1e94c0cf5f6336088927a7d0b54690441e21bf6b))
+
+### Continuous Integration
+
+- Add workflow_dispatch to PR preview workflow
+  ([`8b7f3e3`](https://github.com/UnicoLab/FlowyML/commit/8b7f3e3a9a1052e79f3b0c5d303d48f36a897c15))
+
+### Documentation
+
+- Adding gui overview
+  ([`03f486b`](https://github.com/UnicoLab/FlowyML/commit/03f486bfd870af262e0ee31d76d6e19a39b42d97))
+
+### Features
+
+- Adding checkpoint and prompt artifacts + docs alignment
+  ([`55a40bc`](https://github.com/UnicoLab/FlowyML/commit/55a40bcdd344645de2bfa4fb5c7fe8afe4a6d1e8))
+
+- Adding evals and GenAI observability features
+  ([`3948e56`](https://github.com/UnicoLab/FlowyML/commit/3948e5640fbc53eda1461b8cef6ba9d0cdce9b08))
+
+- Adding new features and improvement for stability
+  ([`ded6126`](https://github.com/UnicoLab/FlowyML/commit/ded612604547163bb0696a7af8d528e655edf595))
+
+- Automatic steps discovery and steps registry with filtering
+  ([`f56b059`](https://github.com/UnicoLab/FlowyML/commit/f56b0591b0c2ec24aecfe3b6a22f6c5e859fa4e0))
+
+### Refactoring
+
+- Cli and fixing errors
+  ([`dae0d2e`](https://github.com/UnicoLab/FlowyML/commit/dae0d2e02012ab19db610e2310a339c3eece8988))
+
+- Improving documentation
+  ([`ef6b4cd`](https://github.com/UnicoLab/FlowyML/commit/ef6b4cd390af39db0a9c30ca9cc2beb2cdcaee09))
+
+
 ## v1.8.0 (2026-01-31)
 
 ### Features
