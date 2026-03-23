@@ -120,7 +120,7 @@ def list_stacks(config: str | None) -> None:
         marker = " ✓ (active)" if stack_name == active else ""
         stack = manager.get_stack(stack_name)
         orch_type = stack.orchestrator.get("type", "local") if stack and stack.orchestrator else "local"
-        recho(f"  • {stack_name}{marker} [orchestrator: {orch_type}]")
+        recho(f"  • {stack_name}{marker} \\[orchestrator: {orch_type}]")
     recho()
 
 

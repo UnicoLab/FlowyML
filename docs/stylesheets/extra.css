@@ -1016,3 +1016,32 @@
     gap: 1rem;
   }
 }
+
+/* ================================================================
+   GUI OVERVIEW — Premium Screenshot Showcase
+   ================================================================ */
+
+/* Screenshot images — polished display with shadow & hover */
+.md-typeset img[alt*="FlowyML"] {
+  border-radius: var(--fm-radius);
+  box-shadow: var(--fm-shadow-lg);
+  border: 1px solid rgba(99, 102, 241, 0.12);
+  transition: transform var(--fm-transition), box-shadow var(--fm-transition);
+  margin: 1.2em 0;
+  width: 100%;
+}
+
+.md-typeset img[alt*="FlowyML"]:hover {
+  transform: scale(1.015);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.18), var(--fm-shadow-glow);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+[data-md-color-scheme="slate"] .md-typeset img[alt*="FlowyML"] {
+  border-color: rgba(99, 102, 241, 0.2);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}
+
+[data-md-color-scheme="slate"] .md-typeset img[alt*="FlowyML"]:hover {
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5), 0 0 24px rgba(99, 102, 241, 0.2);
+}

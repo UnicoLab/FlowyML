@@ -102,6 +102,7 @@ nav:
   - 📥 Installation: INSTALLATION.md
   - 🚀 Getting Started: getting-started.md
   - 📚 Quick Reference: QUICK_REFERENCE.md
+  - 🖥️ GUI Overview: gui-overview.md
   - 🚂 Migration & Upgrades: migration_guide.md
   - 📚 Core Concepts:
     - 🎢 Pipelines: core/pipelines.md
