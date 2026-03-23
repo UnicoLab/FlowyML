@@ -96,8 +96,8 @@ flowyml ui start
 
 ## Learn More
 
-- [flowyml Documentation](https://docs.flowyml.ai)
-- [Examples](https://github.com/flowyml/flowyml/examples)
+- [flowyml Documentation](https://unicolab.github.io/FlowyML/latest/)
+- [Examples](https://github.com/UnicoLab/FlowyML/tree/main/examples)
 """,
             "flowyml.yaml": """# flowyml project configuration
 

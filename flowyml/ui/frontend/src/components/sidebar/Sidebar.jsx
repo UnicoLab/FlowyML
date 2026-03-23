@@ -95,7 +95,7 @@ export function Sidebar({ collapsed, setCollapsed, isMobile = false, mobileOpen 
                     <img
                         src="/logo.png"
                         alt="FlowyML"
-                        className="w-12 h-12 min-w-[48px] rounded-lg shadow-lg object-contain bg-white dark:bg-slate-800"
+                        className="w-12 h-12 min-w-[48px] rounded-lg shadow-lg object-cover object-top bg-white dark:bg-slate-800"
                         onError={() => setLogoError(true)}
                     />
                 )}

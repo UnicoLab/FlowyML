@@ -1,34 +1,21 @@
 """Rich utilities for CLI commands."""
 
+from __future__ import annotations
+
 import sys
 
-try:
-    from rich.console import Console
-    from rich.table import Table
-    from rich.panel import Panel
-    from rich.text import Text
-    from rich import box
-    from rich.tree import Tree
-    from rich.columns import Columns
-    from rich.rule import Rule
-    from rich.progress import Progress
+from rich.console import Console
+from rich.table import Table
+from rich.panel import Panel
+from rich.text import Text
+from rich import box
+from rich.columns import Columns
 
-    RICH_AVAILABLE = True
-except ImportError:
-    RICH_AVAILABLE = False
-    Console = None
-    Table = None
-    Panel = None
-    Text = None
-    box = None
-    Tree = None
-    Columns = None
-    Rule = None
-    Progress = None
+RICH_AVAILABLE = True
 
 # Module-level consoles (created once, reused)
-_console = Console() if RICH_AVAILABLE else None
-_err_console = Console(stderr=True) if RICH_AVAILABLE else None
+_console = Console()
+_err_console = Console(stderr=True)
 
 
 def get_console() -> Console | None:

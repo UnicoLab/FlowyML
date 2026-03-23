@@ -9038,4 +9038,4 @@ ui = ["fastapi", "python-multipart", "uvicorn", "websockets"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<4.0"
-content-hash = "d70abae1450125f87e0d61a4cd3134b3ab5a6403ea4e903eec865cb7b91ae511"
+content-hash = "2d616ffeebe3fbde7d6f7dd1970e27211df5fe4d46d5c6864377646d0caed0cd"

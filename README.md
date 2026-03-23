@@ -138,11 +138,11 @@ pip install "flowyml[all]"
 
 ## 📚 Documentation
 
-Visit [docs.flowyml.ai](https://docs.flowyml.ai) for:
-- **[Getting Started](https://docs.flowyml.ai/getting-started)**
-- **[Core Concepts](https://docs.flowyml.ai/core/pipelines)**
-- **[Type-Based Routing](https://docs.flowyml.ai/plugins/type_routing)**
-- **[API Reference](https://docs.flowyml.ai/api/core)**
+Visit [FlowyML Docs](https://unicolab.github.io/FlowyML/latest/) for:
+- **[Getting Started](https://unicolab.github.io/FlowyML/latest/getting-started)**
+- **[Core Concepts](https://unicolab.github.io/FlowyML/latest/core/pipelines)**
+- **[Type-Based Routing](https://unicolab.github.io/FlowyML/latest/plugins/type_routing)**
+- **[API Reference](https://unicolab.github.io/FlowyML/latest/api/core)**
 
 ---
 <p align="center">

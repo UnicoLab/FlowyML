@@ -654,7 +654,7 @@ load_component("my_package.components") # 4. Dynamic
 pip install flowyml
 
 github.com/UnicoLab/FlowyML
-docs.flowyml.ai
+unicolab.github.io/FlowyML/latest/
 
 Apache 2.0 · Open Source
 v1.0 → v1.8 in 3 months · Active Development

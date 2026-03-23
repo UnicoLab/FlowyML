@@ -32,7 +32,7 @@ from flowyml.stacks.plugins import (
 
 # ZenML integration - lazy imports to avoid errors when ZenML is not installed
 # NOTE: These functions are deprecated. Use native FlowyML plugins instead.
-# See: https://docs.flowyml.ai/plugins/native-plugins/
+# See: https://unicolab.github.io/FlowyML/latest/plugins/native-plugins/
 def get_zenml_bridge():
     """Get a ZenML bridge for importing ZenML components.
 
@@ -44,7 +44,7 @@ def get_zenml_bridge():
 
     warnings.warn(
         "get_zenml_bridge() is deprecated. Use native FlowyML plugins instead. "
-        "See: https://docs.flowyml.ai/plugins/native-plugins/",
+        "See: https://unicolab.github.io/FlowyML/latest/plugins/native-plugins/",
         DeprecationWarning,
         stacklevel=2,
     )
@@ -68,7 +68,7 @@ def import_all_zenml():
 
     warnings.warn(
         "import_all_zenml() is deprecated. Use native FlowyML plugins instead. "
-        "See: https://docs.flowyml.ai/plugins/native-plugins/",
+        "See: https://unicolab.github.io/FlowyML/latest/plugins/native-plugins/",
         DeprecationWarning,
         stacklevel=2,
     )
