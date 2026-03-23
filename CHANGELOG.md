@@ -2,6 +2,22 @@
 
 <!-- version list -->
 
+## v1.9.1 (2026-03-23)
+
+### Bug Fixes
+
+- Bumping version
+  ([`0cb4589`](https://github.com/UnicoLab/FlowyML/commit/0cb4589c2d582df9516cf6afd33115a61692abc0))
+
+- Update doc links, fix sidebar logo clipping, make rich a core dep
+  ([`a50727b`](https://github.com/UnicoLab/FlowyML/commit/a50727b518442b3ba979610581aee5c77885511a))
+
+### Chores
+
+- Save last release version for recovery [skip ci]
+  ([`d23ac28`](https://github.com/UnicoLab/FlowyML/commit/d23ac286826946d1117bb84f409beb2e500e323b))
+
+
 ## v1.9.0 (2026-03-23)
 
 ### Bug Fixes
