@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v1.9.2 (2026-03-28)
+
+### Bug Fixes
+
+- Add frontend build step to release pipeline to include frontend assets in PyPI package
+  ([`e2dcd79`](https://github.com/UnicoLab/FlowyML/commit/e2dcd797c6c3fb65798cea5f611225af6d5d0ef2))
+
+### Chores
+
+- Save last release version for recovery [skip ci]
+  ([`a9e9e96`](https://github.com/UnicoLab/FlowyML/commit/a9e9e961ddd8660ee2a9e82e8899182ce96995b3))
+
+
 ## v1.9.1 (2026-03-23)
 
 ### Bug Fixes
