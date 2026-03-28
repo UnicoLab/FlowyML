@@ -48,6 +48,17 @@ jobs:
           echo "Setting package version to ${{ inputs.RELEASE_VERSION }}"
           poetry version ${{ inputs.RELEASE_VERSION }}
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Build frontend
+        run: |
+          cd flowyml/ui/frontend
+          npm install
+          npm run build
+
       - name: Build and publish to PyPI
         id: publish_pypi
         run: |
@@ -63,6 +74,7 @@ jobs:
         run: |
           echo "First attempt failed, retrying..."
           sleep 10
+          rm -rf dist
           poetry config pypi-token.pypi ${{ secrets.PYPI_TOKEN }}
           poetry build
           poetry publish
