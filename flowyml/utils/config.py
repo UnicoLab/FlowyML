@@ -125,8 +125,16 @@ class FlowymlConfig:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "FlowymlConfig":
-        """Create config from dictionary."""
-        return cls(**data)
+        """Create config from dictionary.
+
+        Unknown keys are silently ignored to allow forward/backward
+        compatibility with project-level flowyml.yaml files.
+        """
+        import dataclasses
+
+        valid_fields = {f.name for f in dataclasses.fields(cls)}
+        filtered = {k: v for k, v in data.items() if k in valid_fields}
+        return cls(**filtered)
 
     def save(self, path: Path | None = None) -> None:
         """Save config to file.
@@ -172,6 +180,12 @@ _global_config: FlowymlConfig | None = None
 def get_config() -> FlowymlConfig:
     """Get global flowyml configuration.
 
+    Config is loaded with the following priority:
+    1. FLOWYML_CONFIG environment variable (explicit path)
+    2. ./flowyml.yaml in current working directory (project-level)
+    3. ./flowyml.yml in current working directory (project-level, alt extension)
+    4. ~/.flowyml/config.yaml (user-level default)
+
     Returns:
         Global FlowymlConfig instance
     """
@@ -183,8 +197,17 @@ def get_config() -> FlowymlConfig:
         if config_path:
             _global_config = FlowymlConfig.load(Path(config_path))
         else:
-            # Load from default location
-            _global_config = FlowymlConfig.load()
+            # Auto-discover project-level config (flowyml.yaml in CWD)
+            project_yaml = Path.cwd() / "flowyml.yaml"
+            project_yml = Path.cwd() / "flowyml.yml"
+
+            if project_yaml.exists():
+                _global_config = FlowymlConfig.load(project_yaml)
+            elif project_yml.exists():
+                _global_config = FlowymlConfig.load(project_yml)
+            else:
+                # Fall back to user-level default
+                _global_config = FlowymlConfig.load()
 
         # Apply environment variable overrides
         env_config = get_env_config()

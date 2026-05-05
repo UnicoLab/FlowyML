@@ -112,14 +112,29 @@ class SubPipelineStep(Step):
         )
 
         # Map child outputs to parent outputs
-        if self.output_mapping and hasattr(result, "outputs"):
+        if self.output_mapping:
+            # Collect ALL child outputs from step results + result.outputs
+            all_child_outputs = dict(result.outputs) if hasattr(result, "outputs") else {}
+
+            # Also scan individual step results for their outputs
+            if hasattr(result, "step_results"):
+                for step_name, step_res in result.step_results.items():
+                    if step_res.success and step_res.output is not None:
+                        if isinstance(step_res.output, dict):
+                            all_child_outputs.update(step_res.output)
+                        else:
+                            # Use step name as key for non-dict outputs
+                            all_child_outputs[step_name] = step_res.output
+
             mapped_outputs = {}
             for child_name, parent_name in self.output_mapping.items():
-                if child_name in result.outputs:
-                    mapped_outputs[parent_name] = result.outputs[child_name]
-            return mapped_outputs
+                if child_name in all_child_outputs:
+                    mapped_outputs[parent_name] = all_child_outputs[child_name]
 
-        # Return the full result if no mapping
+            if mapped_outputs:
+                return mapped_outputs
+
+        # Return the full result if no mapping or no matches
         return result
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:

@@ -1270,7 +1270,7 @@ class Pipeline:
                             except Exception:
                                 data_value = str(value.data)[:1000]
                         else:
-                            data_value = str(value.data)[:1000] if value.data else None
+                            data_value = str(value.data)[:1000] if value.data is not None else None
 
                         artifact_metadata = {
                             "artifact_id": artifact_id,
