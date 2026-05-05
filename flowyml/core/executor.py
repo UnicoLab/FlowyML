@@ -72,7 +72,7 @@ class MonitorThread(threading.Thread):
         log_capture: LogCapture | None = None,
         interval: int = 5,
     ):
-        super().__init__()
+        super().__init__(daemon=True)
         self.run_id = run_id
         self.step_name = step_name
         self.target_tid = target_tid
