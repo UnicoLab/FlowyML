@@ -280,8 +280,13 @@ def _sync_cloud_status(run: dict, store: SQLiteMetadataStore) -> dict:
     if not platform and remote_job_id:
         if "pipelineJobs" in remote_job_id or "customJobs" in remote_job_id:
             platform = "vertex_ai"
+        elif remote_job_id.startswith("arn:aws:"):
+            platform = "sagemaker"
+        elif "microsoft" in remote_job_id.lower() or "azure" in remote_job_id.lower():
+            platform = "azure_ml"
 
-    if not remote_job_id or platform not in ("vertex_ai", "gcp"):
+    supported_platforms = ("vertex_ai", "gcp", "sagemaker", "aws", "azure_ml", "azure")
+    if not remote_job_id or platform not in supported_platforms:
         return run
 
     try:
@@ -467,10 +472,10 @@ def _sync_cloud_status(run: dict, store: SQLiteMetadataStore) -> dict:
                     updated_meta["cloud_steps"] = cloud_groups
                 store.save_run(run_id, {**run, "metadata": updated_meta})
 
-                # Auto-discover GCS artifacts for completed runs
+                # Auto-discover cloud artifacts for completed runs
                 if new_status in ("completed", "failed"):
                     try:
-                        _discover_gcs_artifacts_for_run(run, store, logger)
+                        _discover_cloud_artifacts_for_run(run, store, logger, platform)
                     except Exception as e:
                         logger.warning("Artifact discovery failed: %s", e)
         except Exception as e:
@@ -492,8 +497,48 @@ def _sync_cloud_status(run: dict, store: SQLiteMetadataStore) -> dict:
     return run
 
 
+def _discover_cloud_artifacts_for_run(run: dict, store, logger, platform: str = "vertex_ai"):
+    """Discover and register cloud artifacts using the appropriate provider.
+
+    Dispatches to GCP/AWS/Azure provider based on platform, then registers
+    discovered artifacts into the local metadata store.
+    """
+    from flowyml.ui.backend.cloud_providers import get_provider
+
+    provider = get_provider(platform)
+    if not provider:
+        logger.info("No cloud provider for platform: %s", platform)
+        return
+
+    run_id = run.get("run_id")
+    if not run_id:
+        return
+
+    artifacts = provider.discover_artifacts(run, run_id)
+    if not artifacts:
+        logger.info("No cloud artifacts found for run %s", run_id)
+        return
+
+    for art in artifacts:
+        store.save_asset(
+            run_id=run_id,
+            artifact_id=art.artifact_id,
+            name=art.name,
+            asset_type=art.artifact_type,
+            step=art.step,
+            path=art.path,
+            size_bytes=art.size_bytes,
+            materializer=art.materializer,
+            storage=art.storage,
+            created_at=art.created_at,
+            properties=art.properties,
+        )
+
+    logger.info("Discovered %d cloud artifacts for run %s", len(artifacts), run_id)
+
+
 def _discover_gcs_artifacts_for_run(run: dict, store, logger):
-    """Discover and register GCS artifacts for a completed remote run."""
+    """Discover and register GCS artifacts for a completed remote run (legacy fallback)."""
     import json as json_mod
 
     try:
@@ -858,7 +903,7 @@ async def get_step_logs(run_id: str, step_name: str, offset: int = 0):
             "has_more": False,
         }
 
-    # No local log file — check if this is a remote run and fetch from Cloud Logging
+    # No local log file — check if this is a remote run and fetch from cloud provider
     store = get_store()
     run = store.load_run(run_id)
     if not run:
@@ -868,10 +913,16 @@ async def get_step_logs(run_id: str, step_name: str, offset: int = 0):
     if not remote_job_id:
         return {"logs": "", "offset": 0, "has_more": False}
 
-    # Fetch logs from GCP Cloud Logging
-    cloud_logs = await anyio.to_thread.run_sync(
-        lambda: _fetch_cloud_logs(run, step_name, remote_job_id),
-    )
+    # Use multi-cloud provider abstraction
+    from flowyml.ui.backend.cloud_providers import detect_provider
+
+    provider = detect_provider(run)
+    if provider:
+        cloud_logs = await anyio.to_thread.run_sync(
+            lambda: provider.get_step_logs(run, step_name, remote_job_id),
+        )
+    else:
+        cloud_logs = "[Unsupported cloud platform — no log provider available]"
 
     return {
         "logs": cloud_logs,
