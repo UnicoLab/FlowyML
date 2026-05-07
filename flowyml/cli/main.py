@@ -1,5 +1,6 @@
 """Main CLI entry point for flowyml."""
 
+import os
 import rich_click as click
 from flowyml.cli.rich_utils import recho
 from pathlib import Path
@@ -146,6 +147,153 @@ def run(pipeline_name: str, stack: str, context: tuple, debug: bool, retry: int 
         recho(f"  Duration: {result.get('duration', 'N/A')}")
     except Exception as e:
         recho(f"[red]✗Pipeline failed: {e}", err=True)
+        raise click.Abort()
+
+
+@cli.command("step-runner")
+@click.option(
+    "--pipeline",
+    "pipeline_module",
+    envvar="FLOWYML_PIPELINE_MODULE",
+    help="Pipeline module path (module:function)",
+)
+@click.option("--steps", "step_names", envvar="FLOWYML_STEP_NAMES", help="Comma-separated step names to execute")
+@click.option("--run-id", envvar="FLOWYML_RUN_ID", help="Run identifier for artifact namespacing")
+@click.option("--group", "group_name", envvar="FLOWYML_EXECUTION_GROUP", default="", help="Execution group name")
+@click.option(
+    "--artifact-dir",
+    envvar="FLOWYML_ARTIFACT_DIR",
+    default=None,
+    help="Artifact directory for intermediate results",
+)
+def step_runner_cmd(
+    pipeline_module: str | None,
+    step_names: str | None,
+    run_id: str | None,
+    group_name: str,
+    artifact_dir: str | None,
+) -> None:
+    r"""Run specific pipeline steps (used by remote containers).
+
+    This command is the container-side entrypoint for per-group remote
+    execution. The orchestrator submits containers that invoke this
+    command with the appropriate step names.
+
+    Can be invoked via CLI args or environment variables:
+
+    \b
+    Examples:
+        flowyml step-runner --pipeline my.mod:build_pipe --steps step1,step2 --run-id abc123
+        FLOWYML_PIPELINE_MODULE=... FLOWYML_STEP_NAMES=... flowyml step-runner
+    """
+    import logging
+    import json as _json
+    import sys
+    from flowyml.core.step_runner import StepRunner
+
+    # ── Platform-aware log configuration ──────────────────────────────
+    platform = os.environ.get("FLOWYML_PLATFORM", "").lower()
+
+    if platform == "gcp":
+        # GCP Cloud Logging: structured JSON on stdout for proper severity parsing
+        class GCPFormatter(logging.Formatter):
+            """Format log records as JSON for Google Cloud Logging."""
+
+            _SEVERITY_MAP = {
+                "DEBUG": "DEBUG",
+                "INFO": "INFO",
+                "WARNING": "WARNING",
+                "ERROR": "ERROR",
+                "CRITICAL": "CRITICAL",
+            }
+
+            def format(self, record: logging.LogRecord) -> str:  # noqa: A003
+                entry = {
+                    "severity": self._SEVERITY_MAP.get(record.levelname, "DEFAULT"),
+                    "message": record.getMessage(),
+                    "logger": record.name,
+                }
+                if record.exc_info and record.exc_info[0]:
+                    entry["exception"] = self.formatException(record.exc_info)
+                return _json.dumps(entry, ensure_ascii=False)
+
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setFormatter(GCPFormatter())
+        logging.root.handlers.clear()
+        logging.root.addHandler(handler)
+        logging.root.setLevel(logging.INFO)
+    else:
+        # Local / generic: clean human-readable format
+        logging.basicConfig(
+            level=logging.INFO,
+            format="%(asctime)s | %(levelname)-8s | %(name)s — %(message)s",
+            datefmt="%H:%M:%S",
+        )
+
+    # ── Intercept loguru → route through stdlib logging ───────────────
+    # This prevents duplicate log lines (one from loguru, one from stdlib)
+    try:
+        from loguru import logger as loguru_logger
+
+        # Remove loguru default stderr sink, add a stdlib-routing sink
+        loguru_logger.remove()
+
+        def _loguru_sink(message):
+            """Route loguru messages through stdlib logging."""
+            record = message.record
+            level = record["level"].name
+            stdlib_level = getattr(logging, level, logging.INFO)
+            logging.getLogger(record["name"]).log(
+                stdlib_level,
+                record["message"],
+            )
+
+        loguru_logger.add(_loguru_sink, level="INFO", format="{message}")
+    except ImportError:
+        pass  # loguru not installed, no interception needed
+
+    if not pipeline_module:
+        # Try to read from flowyml.yaml
+        try:
+            config = get_config()
+            pipeline_module = config.get("pipeline_module")
+        except Exception:
+            pass
+
+    if not pipeline_module:
+        recho("[red]✗ --pipeline or FLOWYML_PIPELINE_MODULE is required", err=True)
+        raise click.Abort()
+    if not step_names:
+        recho("[red]✗ --steps or FLOWYML_STEP_NAMES is required", err=True)
+        raise click.Abort()
+    if not run_id:
+        import uuid
+
+        run_id = uuid.uuid4().hex[:8]
+
+    steps_list = [s.strip() for s in step_names.split(",") if s.strip()]
+
+    recho("[bold cyan]🔧 FlowyML Step Runner[/]")
+    recho(f"  Pipeline: {pipeline_module}")
+    recho(f"  Steps:    {', '.join(steps_list)}")
+    recho(f"  Run ID:   {run_id}")
+    recho(f"  Stack:    {os.environ.get('FLOWYML_STACK', 'local')}")
+    recho(f"  Platform: {platform or 'local'}")
+    if group_name:
+        recho(f"  Group:    {group_name}")
+
+    try:
+        runner = StepRunner(
+            pipeline_module=pipeline_module,
+            step_names=steps_list,
+            run_id=run_id,
+            group_name=group_name,
+            artifact_dir=artifact_dir,
+        )
+        results = runner.run()
+        recho(f"[green]✓ {len(results)} steps completed successfully")
+    except Exception as e:
+        recho(f"[red]✗ Step runner failed: {e}", err=True)
         raise click.Abort()
 
 
@@ -392,73 +540,6 @@ def compare(run_ids: tuple) -> None:
         recho(comparison)
     except Exception as e:
         recho(f"[red]✗Error comparing runs: {e}", err=True)
-
-
-@cli.group()
-def stack() -> None:
-    """Stack management commands."""
-    pass
-
-
-@stack.command("list")
-def list_stacks() -> None:
-    """List available stacks."""
-    from flowyml.cli.rich_utils import get_console, RICH_AVAILABLE
-
-    console = get_console()
-
-    stacks = [
-        ("local", "Local", "Default local execution", True),
-        ("aws", "AWS", "SageMaker, S3, Step Functions", False),
-        ("gcp", "GCP", "Vertex AI, GCS, Cloud Run", False),
-        ("azure", "Azure", "Azure ML, Blob Storage", False),
-    ]
-
-    # Try to get real stack info
-    try:
-        from flowyml.utils.stack_config import StackManager
-
-        sm = StackManager()
-        active = sm.active_stack_name
-    except Exception:
-        active = "local"
-
-    if RICH_AVAILABLE and console:
-        from rich.table import Table as RichTable
-        from rich import box as rich_box
-
-        table = RichTable(
-            title="[bold cyan]🏗  Available Stacks[/bold cyan]",
-            box=rich_box.ROUNDED,
-            border_style="cyan",
-        )
-        table.add_column("Stack", style="cyan", width=12)
-        table.add_column("Type", width=10)
-        table.add_column("Description", width=35)
-        table.add_column("Status", justify="center", width=10)
-
-        for name, stype, desc, _ in stacks:
-            is_active = name == active
-            status = "[bold green]✅ Active[/]" if is_active else "[dim]—[/]"
-            style = "bold green" if is_active else ""
-            table.add_row(name, stype, desc, status, style=style)
-
-        console.print(table)
-    else:
-        recho("Available stacks:\n")
-        for name, stype, desc, _ in stacks:
-            marker = " (active)" if name == active else ""
-            recho(f"  {name:<12} {stype:<10} {desc}{marker}")
-
-
-@stack.command()
-@click.argument("stack_name")
-def switch(stack_name: str) -> None:
-    """Switch active stack."""
-    config = get_config()
-    config.default_stack = stack_name
-    config.save()
-    recho(f"[green]✓Switched to stack '{stack_name}'")
 
 
 @cli.group()
@@ -2178,6 +2259,112 @@ def stack_install() -> None:
 
     recho("\n✓ Stack installation complete!")
     recho("  Run 'flowyml stack validate' to verify the configuration")
+
+
+@stack.command("list")
+def list_stacks() -> None:
+    """List available stacks from flowyml.yaml."""
+    from flowyml.cli.rich_utils import get_console, RICH_AVAILABLE
+
+    console = get_console()
+
+    stacks = [
+        ("local", "Local", "Default local execution", True),
+    ]
+    active = "local"
+
+    # Try to get real stack info from flowyml.yaml
+    try:
+        from flowyml.plugins.stack_config import get_stack_manager
+
+        sm = get_stack_manager()
+        active = sm.active_stack_name
+        real_stacks = sm.list_stacks()
+        if real_stacks:
+            stacks = []
+            for sname in real_stacks:
+                sc = sm.get_stack(sname)
+                orch_type = (sc.orchestrator or {}).get("type", "local")
+                desc = f"{orch_type} orchestrator"
+                stacks.append((sname, orch_type.capitalize(), desc, sname == active))
+    except Exception:
+        pass
+
+    if RICH_AVAILABLE and console:
+        from rich.table import Table as RichTable
+        from rich import box as rich_box
+
+        table = RichTable(
+            title="[bold cyan]🏗  Available Stacks[/bold cyan]",
+            box=rich_box.ROUNDED,
+            border_style="cyan",
+        )
+        table.add_column("Stack", style="cyan", width=16)
+        table.add_column("Type", width=12)
+        table.add_column("Description", width=35)
+        table.add_column("Status", justify="center", width=10)
+
+        for name, stype, desc, _ in stacks:
+            is_active = name == active
+            status = "[bold green]✅ Active[/]" if is_active else "[dim]—[/]"
+            style = "bold green" if is_active else ""
+            table.add_row(name, stype, desc, status, style=style)
+
+        console.print(table)
+    else:
+        recho("Available stacks:\n")
+        for name, stype, desc, _ in stacks:
+            marker = " (active)" if name == active else ""
+            recho(f"  {name:<16} {stype:<12} {desc}{marker}")
+
+
+@stack.command("switch")
+@click.argument("stack_name")
+def stack_switch(stack_name: str) -> None:
+    """Switch active stack.
+
+    Examples:
+        flowyml stack switch gcp-prod
+        flowyml stack switch local
+    """
+    try:
+        from flowyml.plugins.stack_config import get_stack_manager
+
+        sm = get_stack_manager()
+        available = sm.list_stacks()
+        if stack_name not in available:
+            recho(f"[red]✗Stack '{stack_name}' not found. Available: {', '.join(available)}")
+            return
+        sm.set_active_stack(stack_name)
+        recho(f"[green]✓ Switched to stack '{stack_name}'")
+    except Exception as e:
+        recho(f"[red]✗Error switching stack: {e}", err=True)
+
+
+@stack.command("info")
+def stack_info() -> None:
+    """Show detailed info about the active stack."""
+    try:
+        from flowyml.plugins.stack_config import get_stack_manager
+
+        sm = get_stack_manager()
+        active = sm.active_stack_name
+        sc = sm.get_stack(active)
+
+        recho(f"\n[bold cyan]🏗  Active Stack: {active}[/]\n")
+        if sc.orchestrator:
+            recho(f"  [cyan]Orchestrator:[/]  {sc.orchestrator.get('type', '—')}")
+        if sc.artifact_store:
+            recho(f"  [cyan]Artifact Store:[/] {sc.artifact_store.get('type', '—')}")
+            if "bucket" in (sc.artifact_store or {}):
+                recho(f"                     bucket={sc.artifact_store['bucket']}")
+        if sc.container_registry:
+            recho(f"  [cyan]Registry:[/]       {sc.container_registry.get('type', '—')}")
+        if sc.model_deployer:
+            recho(f"  [cyan]Deployer:[/]       {sc.model_deployer.get('type', '—')}")
+        recho()
+    except Exception as e:
+        recho(f"[red]✗Error: {e}", err=True)
 
 
 if __name__ == "__main__":

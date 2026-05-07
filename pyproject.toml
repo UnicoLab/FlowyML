@@ -54,6 +54,7 @@ scikit-learn = {version = ">=1.0.0", optional = true}
 google-cloud-aiplatform = {version = ">=1.35.0", optional = true}
 google-cloud-storage = {version = ">=2.10.0", optional = true}
 kfp = {version = ">=2.0", optional = true}
+kfp-server-api = {version = ">=2.0.0", optional = true}
 boto3 = {version = ">=1.28", optional = true}
 sagemaker = {version = ">=2.100", optional = true}
 mlflow = {version = ">=2.0", optional = true}
@@ -107,7 +108,7 @@ mkdocs-include-markdown-plugin = "^7.2.0"
 pytorch = ["torch"]
 tensorflow = ["tensorflow"]
 sklearn = ["scikit-learn"]
-gcp = ["google-cloud-aiplatform", "google-cloud-storage"]
+gcp = ["google-cloud-aiplatform", "google-cloud-storage", "kfp", "kfp-server-api"]
 aws = ["boto3"]
 azure = ["azure-ai-ml", "azure-identity", "azure-storage-blob"]
 # UI extra kept for backward compatibility (dependencies are now in main)

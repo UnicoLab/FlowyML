@@ -91,7 +91,26 @@ async def list_runs(
             runs = [r for r in runs if r.get("project") == project]
 
         runs = _sort_runs(runs)[:limit]
-        return {"runs": runs}
+
+        # Auto-sync cloud status for remote runs still in submitted/running
+        synced_runs = []
+        for run in runs:
+            if run.get("status") in ("submitted", "running"):
+                metadata = run.get("metadata", {})
+                if isinstance(metadata, str):
+                    try:
+                        metadata = json.loads(metadata)
+                    except Exception:
+                        metadata = {}
+                if metadata.get("remote_job_id"):
+                    try:
+                        store = get_store()
+                        run = _sync_cloud_status(run, store)
+                    except Exception:
+                        pass
+            synced_runs.append(run)
+
+        return {"runs": synced_runs}
     except Exception as e:
         return {"runs": [], "error": str(e)}
 
@@ -142,10 +161,18 @@ async def create_run(run: RunCreate):
 
 @router.get("/{run_id}")
 async def get_run(run_id: str):
-    """Get details for a specific run."""
-    run, _ = _find_run(run_id)
+    """Get details for a specific run.
+
+    For remote (cloud) runs that are still 'submitted', automatically
+    syncs the latest status from the cloud orchestrator.
+    """
+    run, store = _find_run(run_id)
     if not run:
         raise HTTPException(status_code=404, detail="Run not found")
+
+    # ── Auto-sync cloud status for remote runs ──────────────────────────
+    if run.get("status") in ("submitted", "running"):
+        run = _sync_cloud_status(run, store)
 
     # Mark dead steps
     dead_steps = _get_dead_steps(run_id)
@@ -216,6 +243,355 @@ def _find_store_for_run(run_id: str) -> SQLiteMetadataStore:
     if store:
         return store
     raise HTTPException(status_code=404, detail="Run not found")
+
+
+def _sync_cloud_status(run: dict, store: SQLiteMetadataStore) -> dict:
+    """Sync run status from cloud orchestrator (Vertex AI, etc.).
+
+    Called when a run has status 'submitted' or 'running' to pull the
+    latest execution state from the cloud provider and update the
+    local metadata DB.
+
+    Args:
+        run: The run dict from the metadata store.
+        store: The metadata store to update.
+
+    Returns:
+        Updated run dict.
+    """
+    import logging
+
+    logger = logging.getLogger("flowyml.ui.cloud_sync")
+
+    # Get remote job ID — may be at top level or in metadata
+    metadata = run.get("metadata", {})
+    if isinstance(metadata, str):
+        try:
+            metadata = json.loads(metadata)
+        except Exception:
+            metadata = {}
+    if not isinstance(metadata, dict):
+        metadata = {}
+
+    remote_job_id = run.get("remote_job_id") or metadata.get("remote_job_id")
+    platform = run.get("platform") or metadata.get("platform") or metadata.get("orchestrator_type")
+
+    # Infer platform from remote_job_id format if not explicitly set
+    if not platform and remote_job_id:
+        if "pipelineJobs" in remote_job_id or "customJobs" in remote_job_id:
+            platform = "vertex_ai"
+
+    if not remote_job_id or platform not in ("vertex_ai", "gcp"):
+        return run
+
+    try:
+        from google.cloud import aiplatform
+
+        # Extract project and location from the job resource name
+        # Format: projects/{id}/locations/{loc}/pipelineJobs/{name}
+        parts = remote_job_id.split("/")
+        if len(parts) >= 6:
+            project = parts[1]
+            location = parts[3]
+        else:
+            return run
+
+        aiplatform.init(project=project, location=location)
+        job = aiplatform.PipelineJob.get(remote_job_id)
+
+        # Map GCP state to FlowyML status
+        state_map = {
+            "PIPELINE_STATE_QUEUED": "submitted",
+            "PIPELINE_STATE_PENDING": "submitted",
+            "PIPELINE_STATE_RUNNING": "running",
+            "PIPELINE_STATE_SUCCEEDED": "completed",
+            "PIPELINE_STATE_FAILED": "failed",
+            "PIPELINE_STATE_CANCELLING": "stopping",
+            "PIPELINE_STATE_CANCELLED": "cancelled",
+            "PIPELINE_STATE_PAUSED": "paused",
+        }
+        gcp_state = job.state.name if job.state else "UNKNOWN"
+        new_status = state_map.get(gcp_state, run.get("status", "unknown"))
+
+        # Extract task details (GCP groups)
+        # Task states use different enum names than pipeline states
+        task_state_map = {
+            "QUEUED": "submitted",
+            "PENDING": "submitted",
+            "RUNNING": "running",
+            "SUCCEEDED": "completed",
+            "FAILED": "failed",
+            "CANCELLING": "stopping",
+            "CANCELLED": "cancelled",
+            "SKIPPED": "skipped",
+            "NOT_TRIGGERED": "skipped",
+        }
+        cloud_groups = {}
+        task_details = job.task_details or []
+        for task in task_details:
+            task_state = task.state.name if task.state else "UNKNOWN"
+            task_status = task_state_map.get(task_state, state_map.get(task_state, "unknown"))
+            error_msg = task.error.message if task.error and task.error.message else None
+            # Extract per-task timing
+            task_duration = None
+            task_start = None
+            task_end = None
+            try:
+                if task.start_time and task.end_time:
+                    task_duration = (task.end_time - task.start_time).total_seconds()
+                    task_start = task.start_time.isoformat()
+                    task_end = task.end_time.isoformat()
+            except Exception:
+                pass
+            cloud_groups[task.task_name] = {
+                "status": task_status,
+                "success": task_status == "completed",
+                "error": error_msg,
+                "duration": task_duration,
+                "start_time": task_start,
+                "end_time": task_end,
+            }
+
+        # Build dashboard URL
+        # remote_job_id format: projects/{project_num}/locations/{loc}/pipelineJobs/{job_id}
+        job_short = remote_job_id.split("/")[-1]
+        # Resolve project ID — GCP console needs project ID, not number
+        project_id = project  # default from remote_job_id (may be a number)
+        try:
+            # If it looks like a number, try to resolve to project ID
+            if project.isdigit():
+                # Try gcloud default project first
+                import subprocess
+
+                result = subprocess.run(
+                    ["gcloud", "config", "get-value", "project"],
+                    capture_output=True,
+                    text=True,
+                    timeout=5,
+                )
+                gcloud_project = result.stdout.strip()
+                if gcloud_project and not gcloud_project.isdigit():
+                    project_id = gcloud_project
+        except Exception:
+            pass
+        # The console URL format for Vertex AI Pipelines:
+        dashboard_url = (
+            f"https://console.cloud.google.com/vertex-ai/" f"pipelines/runs/{job_short}" f"?project={project_id}"
+        )
+
+        # Update the run dict
+        run["status"] = new_status
+        run["is_remote"] = True
+        run["remote_platform"] = "vertex_ai"
+        run["dashboard_url"] = dashboard_url
+        run["remote_job_id"] = remote_job_id
+        run["cloud_state"] = gcp_state
+        run["cloud_groups"] = cloud_groups
+
+        # ── Merge cloud status into existing steps ──────────────────────
+        # Build a mapping: execution_group → cloud group name
+        # GCP names groups as "flowyml-step-group", "flowyml-step-group-2", etc.
+        # The original steps have execution_group metadata.
+        existing_steps = run.get("steps", {})
+        if existing_steps and cloud_groups:
+            # Build group name → status lookup from cloud_groups
+            # Also build execution_group → cloud_group_name mapping
+            # by matching the group index to the DAG execution order
+            dag = run.get("dag", {})
+            dag_nodes = dag.get("nodes", []) if dag else []
+
+            # Collect all unique execution groups in order
+            seen_groups = []
+            for node in dag_nodes:
+                # Find the step's execution_group
+                step_data = existing_steps.get(node.get("id", ""), {})
+                eg = step_data.get("execution_group", "")
+                if eg and eg not in seen_groups:
+                    seen_groups.append(eg)
+
+            # Map ordered execution groups to GCP group names
+            # GCP uses: flowyml-step-group, flowyml-step-group-2, flowyml-step-group-3, ...
+            group_name_map = {}
+            sorted_cloud_names = sorted(
+                [n for n in cloud_groups if n.startswith("flowyml-step-group")],
+                key=lambda x: int(x.split("-")[-1]) if x.split("-")[-1].isdigit() else 0,
+            )
+            for idx, eg in enumerate(seen_groups):
+                if idx < len(sorted_cloud_names):
+                    group_name_map[eg] = sorted_cloud_names[idx]
+
+            # Now update each step's status and timing from its cloud group
+            for _step_name, step_data in existing_steps.items():
+                if not isinstance(step_data, dict):
+                    continue
+                eg = step_data.get("execution_group", "")
+                cloud_group_name = group_name_map.get(eg)
+                if cloud_group_name and cloud_group_name in cloud_groups:
+                    cg = cloud_groups[cloud_group_name]
+                    step_data["status"] = cg["status"]
+                    step_data["success"] = cg["success"]
+                    step_data["cloud_group"] = cloud_group_name
+                    # Propagate group timing to steps
+                    if cg.get("duration") and not step_data.get("duration"):
+                        step_data["duration"] = cg["duration"]
+                    if cg.get("start_time"):
+                        step_data["start_time"] = cg["start_time"]
+                    if cg.get("end_time"):
+                        step_data["end_time"] = cg["end_time"]
+                    if cg.get("error"):
+                        step_data["error"] = cg["error"]
+
+        # Calculate duration if completed
+        if new_status in ("completed", "failed", "cancelled"):
+            try:
+                create_time = job.create_time
+                update_time = job.update_time
+                if create_time and update_time:
+                    duration = (update_time - create_time).total_seconds()
+                    run["duration"] = duration
+                    run["end_time"] = update_time.isoformat()
+            except Exception:
+                pass
+
+        # Persist updated status to local DB
+        try:
+            run_id = run.get("run_id")
+            if run_id and store:
+                store.update_run_status(run_id, new_status)
+                # Also update metadata with cloud info
+                updated_meta = metadata.copy()
+                updated_meta["cloud_state"] = gcp_state
+                updated_meta["dashboard_url"] = dashboard_url
+                updated_meta["is_remote"] = True
+                if cloud_groups:
+                    updated_meta["cloud_steps"] = cloud_groups
+                store.save_run(run_id, {**run, "metadata": updated_meta})
+
+                # Auto-discover GCS artifacts for completed runs
+                if new_status in ("completed", "failed"):
+                    try:
+                        _discover_gcs_artifacts_for_run(run, store, logger)
+                    except Exception as e:
+                        logger.warning("Artifact discovery failed: %s", e)
+        except Exception as e:
+            logger.warning("Failed to persist cloud status: %s", e)
+
+        logger.info(
+            "Cloud sync for %s: %s → %s (%d tasks)",
+            run.get("run_id", "?"),
+            gcp_state,
+            new_status,
+            len(cloud_groups),
+        )
+
+    except ImportError:
+        pass  # google-cloud-aiplatform not installed
+    except Exception as e:
+        logger.warning("Cloud sync failed for %s: %s", run.get("run_id"), e)
+
+    return run
+
+
+def _discover_gcs_artifacts_for_run(run: dict, store, logger):
+    """Discover and register GCS artifacts for a completed remote run."""
+    import json as json_mod
+
+    try:
+        from google.cloud import storage as gcs_storage
+    except ImportError:
+        return
+
+    run_id = run.get("run_id")
+    if not run_id:
+        return
+
+    # Determine bucket name
+    bucket_name = None
+    try:
+        from flowyml.core.stack import get_active_stack
+
+        stack = get_active_stack()
+        bucket_name = getattr(stack.artifact_store, "bucket_name", None)
+    except Exception:
+        pass
+
+    if not bucket_name:
+        bucket_name = "flowyml-test-artifacts"
+
+    prefix = f"staging/runs/{run_id}/artifacts/"
+
+    try:
+        client = gcs_storage.Client()
+        bucket = client.bucket(bucket_name)
+        blobs = list(bucket.list_blobs(prefix=prefix))
+    except Exception as e:
+        logger.warning("GCS artifact scan failed: %s", e)
+        return
+
+    if not blobs:
+        return
+
+    # Read meta.json sidecars
+    meta_files = {}
+    for blob in blobs:
+        if blob.name.endswith(".meta.json"):
+            try:
+                content = blob.download_as_text()
+                meta = json_mod.loads(content)
+                base = blob.name.rsplit(".meta.json", 1)[0].split("/")[-1]
+                meta_files[base] = meta
+            except Exception:
+                pass
+
+    # Register artifacts
+    count = 0
+    steps = run.get("steps", {})
+    for blob in blobs:
+        if blob.name.endswith(".meta.json"):
+            continue
+
+        file_name = blob.name.split("/")[-1]
+        base_name = file_name.rsplit(".", 1)[0]
+
+        artifact_id = f"{run_id}:{base_name}"
+        existing = store.load_artifact(artifact_id)
+        if existing:
+            continue
+
+        meta = meta_files.get(base_name, {})
+        artifact_type = meta.get("artifact_type", meta.get("type", "Unknown"))
+
+        # Find which step produced this artifact
+        step = "unknown"
+        if isinstance(steps, dict):
+            for step_name, step_data in steps.items():
+                if isinstance(step_data, dict):
+                    if base_name in step_data.get("outputs", []):
+                        step = step_name
+                        break
+
+        gcs_uri = f"gs://{bucket_name}/{blob.name}"
+
+        artifact_data = {
+            "artifact_id": artifact_id,
+            "name": base_name,
+            "type": artifact_type,
+            "run_id": run_id,
+            "step": step,
+            "path": gcs_uri,
+            "size_bytes": blob.size,
+            "materializer": meta.get("materializer", "unknown"),
+            "storage": "gcs",
+            "bucket": bucket_name,
+            "created_at": blob.time_created.isoformat() if blob.time_created else None,
+            "properties": meta.get("properties", {}),
+        }
+
+        store.save_artifact(artifact_id, artifact_data)
+        count += 1
+
+    if count > 0:
+        logger.info("Discovered %d GCS artifacts for run %s", count, run_id)
 
 
 @router.get("/{run_id}/cloud-status")
@@ -451,7 +827,11 @@ async def post_step_logs(run_id: str, step_name: str, log_chunk: LogChunk):
 
 @router.get("/{run_id}/steps/{step_name}/logs")
 async def get_step_logs(run_id: str, step_name: str, offset: int = 0):
-    """Get logs for a specific step."""
+    """Get logs for a specific step.
+
+    For local runs, reads from the local log file.
+    For remote runs (Vertex AI), fetches from GCP Cloud Logging.
+    """
     import anyio
 
     from flowyml.utils.config import get_config
@@ -459,24 +839,170 @@ async def get_step_logs(run_id: str, step_name: str, offset: int = 0):
     runs_dir = get_config().runs_dir
     log_file = runs_dir / run_id / "logs" / f"{step_name}.log"
 
-    if not log_file.exists():
+    # Try local log file first
+    if log_file.exists():
+
+        def read_log():
+            with open(log_file) as f:
+                return f.read()
+
+        content = await anyio.to_thread.run_sync(read_log)
+
+        # Return content from offset
+        if offset > 0 and offset < len(content):
+            content = content[offset:]
+
+        return {
+            "logs": content,
+            "offset": offset + len(content),
+            "has_more": False,
+        }
+
+    # No local log file — check if this is a remote run and fetch from Cloud Logging
+    store = get_store()
+    run = store.load_run(run_id)
+    if not run:
         return {"logs": "", "offset": 0, "has_more": False}
 
-    def read_log():
-        with open(log_file) as f:
-            return f.read()
+    remote_job_id = run.get("remote_job_id") or run.get("metadata", {}).get("remote_job_id")
+    if not remote_job_id:
+        return {"logs": "", "offset": 0, "has_more": False}
 
-    content = await anyio.to_thread.run_sync(read_log)
-
-    # Return content from offset
-    if offset > 0 and offset < len(content):
-        content = content[offset:]
+    # Fetch logs from GCP Cloud Logging
+    cloud_logs = await anyio.to_thread.run_sync(
+        lambda: _fetch_cloud_logs(run, step_name, remote_job_id),
+    )
 
     return {
-        "logs": content,
-        "offset": offset + len(content),
-        "has_more": False,  # For now, always return all available
+        "logs": cloud_logs,
+        "offset": len(cloud_logs),
+        "has_more": False,
+        "source": "cloud_logging",
     }
+
+
+def _fetch_cloud_logs(run: dict, step_name: str, remote_job_id: str) -> str:
+    """Fetch logs from GCP Cloud Logging for a remote pipeline step.
+
+    Maps step_name → execution_group to filter task-level logs from Cloud Logging.
+    The logs use execution_group names (e.g. 'data_group'), not flowyml-step-group names.
+    """
+    import logging
+
+    logger = logging.getLogger("flowyml.ui.cloud_logs")
+
+    try:
+        from google.cloud import logging as gcp_logging
+    except ImportError:
+        return "[Cloud Logging SDK not installed. Run: pip install google-cloud-logging]"
+
+    # Get step's execution group — Cloud Logging uses these as task names
+    steps = run.get("steps", {})
+    step_data = steps.get(step_name, {})
+    execution_group = step_data.get("execution_group", "")
+
+    # Extract job_short from remote_job_id
+    # Format: projects/{project}/locations/{loc}/pipelineJobs/{job_id}
+    parts = remote_job_id.split("/")
+    project_number = parts[1] if len(parts) > 1 else ""
+    job_short = parts[-1] if parts else ""
+
+    # Resolve project ID
+    project_id = project_number
+    try:
+        if project_number.isdigit():
+            import subprocess
+
+            result = subprocess.run(
+                ["gcloud", "config", "get-value", "project"],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            gcloud_project = result.stdout.strip()
+            if gcloud_project and not gcloud_project.isdigit():
+                project_id = gcloud_project
+    except Exception:
+        pass
+
+    try:
+        client = gcp_logging.Client(project=project_id)
+
+        # Cloud Logging filter — uses resource.labels.pipeline_job_id (not labels.)
+        filter_str = f'resource.labels.pipeline_job_id="{job_short}"'
+        logger.info("Cloud Logging filter: %s (execution_group=%s)", filter_str, execution_group)
+
+        entries = list(
+            client.list_entries(
+                filter_=filter_str,
+                order_by="timestamp asc",
+                max_results=500,
+            ),
+        )
+
+        if not entries:
+            return f"[No Cloud Logging entries found for pipeline: {job_short}]"
+
+        # Format entries, filtering by execution_group if available
+        lines = []
+        for entry in entries:
+            ts = entry.timestamp.strftime("%H:%M:%S") if entry.timestamp else ""
+            payload = entry.payload
+
+            if not isinstance(payload, dict):
+                if payload:
+                    lines.append(f"[{ts}] {payload}")
+                continue
+
+            task_name = payload.get("taskName", "")
+            inner_payload = payload.get("payload", {})
+            inner_task = inner_payload.get("taskName", "") if isinstance(inner_payload, dict) else ""
+            effective_task = task_name or inner_task
+
+            # If we have an execution_group filter, skip entries from other groups
+            if execution_group and effective_task and effective_task != execution_group:
+                # Allow pipeline-level entries (no task name) to pass through
+                if effective_task and effective_task != job_short:
+                    continue
+
+            # Build human-readable log line
+            state = ""
+            if isinstance(inner_payload, dict):
+                state = inner_payload.get("state", "")
+            if not state:
+                state = payload.get("state", "")
+
+            message = payload.get("message", "")
+
+            # Extract machine type from cache key metadata
+            container_info = ""
+            if isinstance(inner_payload, dict):
+                container = inner_payload.get("container", {})
+                if isinstance(container, dict):
+                    resources = container.get("resources", {})
+                    machine = resources.get("resolvedMachineType", "")
+                    if machine:
+                        container_info = f" [machine: {machine}]"
+
+            # Format the line
+            if message and state:
+                lines.append(f"[{ts}] [{effective_task}] {state} — {message}{container_info}")
+            elif state:
+                lines.append(f"[{ts}] [{effective_task}] {state}{container_info}")
+            elif message:
+                lines.append(f"[{ts}] [{effective_task}] {message}{container_info}")
+
+        if not lines:
+            if execution_group:
+                return f"[No log entries for execution group: {execution_group}]"
+            return f"[No parseable log entries for pipeline: {job_short}]"
+
+        header = f"☁️ Cloud Logging — {execution_group or 'all groups'} ({len(lines)} entries)\n{'─' * 60}\n"
+        return header + "\n".join(lines)
+
+    except Exception as e:
+        logger.warning("Cloud Logging query failed: %s", e)
+        return f"[Cloud Logging error: {e}]"
 
 
 @router.get("/{run_id}/logs")

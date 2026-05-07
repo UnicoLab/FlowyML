@@ -572,3 +572,143 @@ def _find_asset_with_store(artifact_id: str):
                 asset["project"] = project_name
             return asset, store
     return None, None
+
+
+@router.post("/discover-gcs")
+async def discover_gcs_artifacts(run_id: str):
+    """Discover artifacts from GCS for a remote run and register them locally.
+
+    Scans the remote artifact bucket for .meta.json sidecars, reads metadata,
+    and registers each artifact in the local metadata store so they appear
+    in the GUI.
+    """
+    import json as json_mod
+    import logging
+
+    logger = logging.getLogger("flowyml.ui.artifact_discovery")
+
+    try:
+        from google.cloud import storage
+    except ImportError:
+        raise HTTPException(
+            status_code=501,
+            detail="google-cloud-storage not installed",
+        )
+
+    store = get_store()
+
+    # Get run metadata to find the artifact bucket
+    run = store.load_run(run_id)
+    if not run:
+        raise HTTPException(status_code=404, detail="Run not found")
+
+    # Determine GCS path — convention: staging/runs/{run_id}/artifacts/
+    # The bucket name comes from the stack config or defaults
+    try:
+        from flowyml.core.stack import get_active_stack
+
+        stack = get_active_stack()
+        bucket_name = getattr(stack.artifact_store, "bucket_name", None)
+    except Exception:
+        bucket_name = None
+
+    if not bucket_name:
+        # Try to infer from run metadata
+        metadata = run.get("metadata", {})
+        if isinstance(metadata, str):
+            try:
+                metadata = json_mod.loads(metadata)
+            except Exception:
+                metadata = {}
+        bucket_name = metadata.get("artifact_bucket", "flowyml-test-artifacts")
+
+    prefix = f"staging/runs/{run_id}/artifacts/"
+
+    try:
+        client = storage.Client()
+        bucket = client.bucket(bucket_name)
+        blobs = list(bucket.list_blobs(prefix=prefix))
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to list GCS artifacts: {e}",
+        )
+
+    # Process meta.json files first to get metadata
+    meta_files = {}
+    for blob in blobs:
+        if blob.name.endswith(".meta.json"):
+            try:
+                content = blob.download_as_text()
+                meta = json_mod.loads(content)
+                # Key by artifact base name
+                base = blob.name.rsplit(".meta.json", 1)[0].split("/")[-1]
+                meta_files[base] = meta
+            except Exception as e:
+                logger.warning("Failed to read meta sidecar %s: %s", blob.name, e)
+
+    # Now process actual artifact files
+    discovered = []
+    for blob in blobs:
+        if blob.name.endswith(".meta.json"):
+            continue
+
+        file_name = blob.name.split("/")[-1]
+        base_name = file_name.rsplit(".", 1)[0]
+
+        # Check if already registered
+        artifact_id = f"{run_id}:{base_name}"
+        existing = store.load_artifact(artifact_id)
+        if existing:
+            continue
+
+        # Get metadata from sidecar
+        meta = meta_files.get(base_name, {})
+        artifact_type = meta.get("artifact_type", meta.get("type", "Unknown"))
+        materializer = meta.get("materializer", "unknown")
+
+        # Determine which step produced this artifact
+        step = _find_step_for_artifact(run, base_name)
+
+        gcs_uri = f"gs://{bucket_name}/{blob.name}"
+
+        artifact_data = {
+            "artifact_id": artifact_id,
+            "name": base_name,
+            "type": artifact_type,
+            "run_id": run_id,
+            "step": step,
+            "path": gcs_uri,
+            "size_bytes": blob.size,
+            "materializer": materializer,
+            "storage": "gcs",
+            "bucket": bucket_name,
+            "gcs_key": blob.name,
+            "created_at": blob.time_created.isoformat() if blob.time_created else None,
+            "properties": meta.get("properties", {}),
+        }
+
+        store.save_artifact(artifact_id, artifact_data)
+        discovered.append(artifact_data)
+        logger.info("Discovered GCS artifact: %s (%s, %d bytes)", base_name, artifact_type, blob.size)
+
+    return {
+        "discovered": len(discovered),
+        "total_blobs": len(blobs),
+        "bucket": bucket_name,
+        "prefix": prefix,
+        "artifacts": discovered,
+    }
+
+
+def _find_step_for_artifact(run: dict, artifact_name: str) -> str:
+    """Find which step produced a given artifact by matching output names."""
+    steps = run.get("steps", {})
+    if isinstance(steps, dict):
+        for step_name, step_data in steps.items():
+            if not isinstance(step_data, dict):
+                continue
+            outputs = step_data.get("outputs", [])
+            if artifact_name in outputs:
+                return step_name
+    return "unknown"

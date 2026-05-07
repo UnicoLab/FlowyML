@@ -905,9 +905,9 @@ class FlowyMLApp(App):
 
             # Stack info
             try:
-                from flowyml.utils.stack_config import StackManager
+                from flowyml.plugins.stack_config import get_stack_manager
 
-                sm = StackManager()
+                sm = get_stack_manager()
                 active = sm.active_stack_name
                 stacks = sm.list_stacks()
                 lines.append("\n[bold cyan]🏗  Stack Configuration[/]\n")

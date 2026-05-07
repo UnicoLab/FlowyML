@@ -62,6 +62,10 @@ from flowyml.storage import (
     SQLiteMetadataStore,
     materializer_registry,
 )
+from flowyml.core.materializers import (
+    Materializer,
+    materializer_registry as core_materializer_registry,
+)
 
 # Monitoring & Integrations
 from flowyml.monitoring.llm import trace_llm, tracer
@@ -233,6 +237,8 @@ __all__ = [
     "MetadataStore",
     "SQLiteMetadataStore",
     "materializer_registry",
+    "Materializer",
+    "core_materializer_registry",
     # Monitoring & Integrations
     "trace_llm",
     "tracer",

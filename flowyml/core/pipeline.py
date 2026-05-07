@@ -719,7 +719,63 @@ class Pipeline:
             **kwargs,
         )
 
-        # Show summary (only if result is a PipelineResult, not a string)
+        # Show summary (only if result is a PipelineResult, not a string or SubmissionResult)
+        from flowyml.core.submission_result import SubmissionResult
+
+        if isinstance(result, SubmissionResult):
+            # Remote orchestrator returned a SubmissionResult — wrap it
+            wrapper = PipelineResult(run_id, self.name)
+            wrapper.attach_configs(resource_config, docker_cfg)
+            wrapper.mark_submitted(result.job_id)
+            wrapper.submission_result = result
+            if display:
+                meta = result.metadata or {}
+                mode = meta.get("mode", "single_job")
+
+                if mode == "group_orchestration":
+                    groups = meta.get("groups", [])
+                    total = meta.get("total_groups", len(groups))
+                    failed = meta.get("failed_group") or meta.get("failed_step")
+
+                    display.console.print(
+                        "\n  [bold green]☁️  Group orchestration complete[/bold green]"
+                        if not failed
+                        else "\n  [bold red]☁️  Group orchestration failed[/bold red]",
+                    )
+                    display.console.print(
+                        f"  Platform: [cyan]{meta.get('platform', 'vertex_ai')}[/cyan]"
+                        f"  Project: [cyan]{meta.get('project', '')}[/cyan]"
+                        f"  Region: [cyan]{meta.get('region', '')}[/cyan]",
+                    )
+                    display.console.print(f"  Execution units: [bold]{total}[/bold]\n")
+
+                    for g in groups:
+                        status = g.get("status", "UNKNOWN")
+                        icon = "✅" if status == "SUCCEEDED" else "❌"
+                        steps_str = ", ".join(g.get("steps", []))
+                        machine = g.get("machine_type", "auto")
+                        display.console.print(
+                            f"  {icon} [bold]{g['group_name']}[/bold]" f"  ({machine})" f"  → {steps_str}",
+                        )
+                    if failed:
+                        display.console.print(
+                            f"\n  [red]Failed at: {failed}[/red]",
+                        )
+                        if meta.get("error"):
+                            display.console.print(f"  [red]{meta['error']}[/red]")
+                else:
+                    display.console.print(
+                        "\n  [bold green]☁️  Job submitted to remote orchestrator[/bold green]",
+                    )
+                    display.console.print(f"  Job ID: {result.job_id}")
+                    if meta:
+                        for k, v in meta.items():
+                            if k != "groups":
+                                display.console.print(f"  {k}: {v}")
+            self._save_run(wrapper)
+            self._save_pipeline_definition()
+            return wrapper
+
         if display and not isinstance(result, str):
             display.show_summary(result, ui_url=ui_url, run_url=run_url)
 

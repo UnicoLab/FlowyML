@@ -218,6 +218,7 @@ class StackConfig:
     model_registry: dict[str, Any] | None = None
     model_deployer: dict[str, Any] | None = None
     container_registry: dict[str, Any] | None = None
+    metadata_store: dict[str, Any] | None = None
     feature_store: dict[str, Any] | None = None
     data_validator: dict[str, Any] | None = None
     alerter: dict[str, Any] | None = None
@@ -242,6 +243,7 @@ class StackConfig:
             model_registry=data.get("model_registry"),
             model_deployer=data.get("model_deployer"),
             container_registry=data.get("container_registry"),
+            metadata_store=data.get("metadata_store"),
             feature_store=data.get("feature_store"),
             data_validator=data.get("data_validator"),
             alerter=data.get("alerter"),
@@ -303,10 +305,15 @@ class StackConfig:
             path = (self.artifact_store or {}).get("path", ".flowyml/artifacts")
             artifact_store = LocalArtifactStore(path)
 
-        # --- Metadata store (always local for now) ---
+        # --- Metadata store ---
         from flowyml.storage.metadata import SQLiteMetadataStore
 
-        metadata_store = SQLiteMetadataStore()
+        metadata_store_config = getattr(self, "metadata_store", None)
+        if metadata_store_config and isinstance(metadata_store_config, dict):
+            db_path = metadata_store_config.get("path", ".flowyml/metadata.db")
+            metadata_store = SQLiteMetadataStore(db_path)
+        else:
+            metadata_store = SQLiteMetadataStore()
 
         # --- Container registry (optional) ---
         container_registry = self._instantiate_component(self.container_registry)
@@ -315,9 +322,21 @@ class StackConfig:
         model_deployer = self._instantiate_component(self.model_deployer)
 
         # --- Build the live stack ---
+        # Determine executor: local stacks need a LocalExecutor,
+        # cloud stacks delegate execution to the orchestrator itself
+        from flowyml.core.orchestrator import LocalOrchestrator
+
+        if isinstance(orchestrator, LocalOrchestrator):
+            from flowyml.core.executor import LocalExecutor
+
+            executor = LocalExecutor()
+        else:
+            # Cloud orchestrators (Vertex AI, etc.) handle execution internally
+            executor = None
+
         live_stack = Stack(
             name=self.name,
-            executor=None,  # orchestrator handles execution
+            executor=executor,
             artifact_store=artifact_store,
             metadata_store=metadata_store,
             container_registry=container_registry,
@@ -358,6 +377,10 @@ class StackConfig:
 
         comp_type = config.get("type", fallback_type)
         if comp_type is None:
+            return None
+
+        # Local component types are handled by explicit fallbacks in to_stack()
+        if comp_type in ("local", "sqlite"):
             return None
 
         # Import the provider modules so @register_component decorators fire

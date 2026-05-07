@@ -57,6 +57,8 @@ class DockerConfig:
     base_image: str = "python:3.11-slim"
     env_vars: dict[str, str] = field(default_factory=dict)
     build_args: dict[str, str] = field(default_factory=dict)
+    command: list[str] | None = None  # Container entrypoint command
+    args: list[str] | None = None  # Container arguments
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
@@ -68,6 +70,8 @@ class DockerConfig:
             "base_image": self.base_image,
             "env_vars": self.env_vars,
             "build_args": self.build_args,
+            "command": self.command,
+            "args": self.args,
         }
 
 
