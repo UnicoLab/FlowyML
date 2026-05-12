@@ -466,12 +466,13 @@ class If:
 
         Returns:
             Step function to execute, or None if no step should execute
+
+        Raises:
+            Exception: If condition evaluation fails (e.g., referenced step
+                not yet executed). The caller should catch this and skip
+                evaluation rather than falling back to else_step.
         """
-        try:
-            if self.condition(context):
-                return self.then_step
-            else:
-                return self.else_step
-        except Exception:
-            # If condition evaluation fails, return else_step as fallback
+        if self.condition(context):
+            return self.then_step
+        else:
             return self.else_step

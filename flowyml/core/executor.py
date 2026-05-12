@@ -337,7 +337,7 @@ class LocalExecutor(Executor):
 
         # Check cache
         if cache_store and step.cache:
-            cache_key = step.get_cache_key(inputs)
+            cache_key = step.get_cache_key(inputs, context_params=context_params)
             cached_result = cache_store.get(cache_key)
 
             if cached_result is not None:
@@ -487,7 +487,7 @@ class LocalExecutor(Executor):
 
                 # Cache result
                 if cache_store and step.cache:
-                    cache_key = step.get_cache_key(inputs)
+                    cache_key = step.get_cache_key(inputs, context_params=context_params)
                     cache_store.set_value(
                         cache_key,
                         result,

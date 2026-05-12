@@ -233,19 +233,33 @@ class Step:
         input_str = json.dumps(inputs, sort_keys=True, default=str)
         return hashlib.sha256(input_str.encode()).hexdigest()[:16]
 
-    def get_cache_key(self, inputs: dict[str, Any] | None = None) -> str:
+    def get_cache_key(
+        self,
+        inputs: dict[str, Any] | None = None,
+        context_params: dict[str, Any] | None = None,
+    ) -> str:
         """Generate cache key based on caching strategy.
 
         Args:
             inputs: Input data for the step
+            context_params: Context parameters injected into the step.
+                Included in the cache key to prevent stale cache hits
+                when the same step runs with different context values.
 
         Returns:
             Cache key string
         """
+        # Compute context suffix so that different context values produce
+        # different cache keys for the same step name + code.
+        ctx_suffix = ""
+        if context_params:
+            ctx_str = json.dumps(context_params, sort_keys=True, default=str)
+            ctx_suffix = ":" + hashlib.sha256(ctx_str.encode()).hexdigest()[:12]
+
         if self.cache == "code_hash":
-            return f"{self.name}:{self.get_code_hash()}"
+            return f"{self.name}:{self.get_code_hash()}{ctx_suffix}"
         elif self.cache == "input_hash" and inputs:
-            return f"{self.name}:{self.get_input_hash(inputs)}"
+            return f"{self.name}:{self.get_input_hash(inputs)}{ctx_suffix}"
         elif callable(self.cache) and inputs:
             return self.cache(inputs, {})
         else:

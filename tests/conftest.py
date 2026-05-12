@@ -17,6 +17,7 @@ def _clear_global_registries():
     - 'Step X is already registered' errors across tests
     - Stale active-stack state leaking executor=None into unrelated tests
     - Filesystem-based stack/flowyml.yaml config leaking between xdist workers
+    - Cached step outputs from previous tests contaminating current tests
     """
     _reset_all()
     yield
@@ -51,5 +52,18 @@ def _reset_all():
         import flowyml.plugins.config as plugin_cfg
 
         plugin_cfg._config = None
+    except Exception:
+        pass
+
+    # 5. Clear the cache store to prevent stale cached step outputs
+    # from leaking between tests (e.g., evaluate_model returning 0.95
+    # in one test being served from cache in another test expecting 0.85)
+    try:
+        from flowyml.utils.config import get_config
+        import shutil
+
+        cache_dir = get_config().cache_dir
+        if cache_dir.exists():
+            shutil.rmtree(cache_dir, ignore_errors=True)
     except Exception:
         pass

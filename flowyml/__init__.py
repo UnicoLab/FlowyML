@@ -5,7 +5,7 @@ the simplicity of Metaflow with the power of ZenML and the elegance of
 asset-centric design.
 """
 
-__version__ = "0.1.0"
+__version__ = "1.9.2"
 __author__ = "flowyml Team"
 
 # Core imports

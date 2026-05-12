@@ -692,18 +692,11 @@ class LocalOrchestrator(Orchestrator):
             if isinstance(control_flow, If):
                 try:
                     selected_step = control_flow.evaluate(context)
-                except Exception as e:
-                    # If condition evaluation fails, log the error with full traceback for debugging
-                    import warnings
-                    import traceback
-
-                    warnings.warn(
-                        f"Failed to evaluate control flow condition: {e}\n{traceback.format_exc()}",
-                        stacklevel=2,
-                    )
-                    # If condition evaluation fails, try to execute else_step as fallback
-                    # This ensures we don't silently skip execution
-                    selected_step = control_flow.else_step
+                except Exception:
+                    # Condition evaluation failed (e.g., referenced step not yet executed).
+                    # SKIP this control flow — do NOT fall back to else_step.
+                    # The control flow will be re-evaluated after the next step completes.
+                    continue
 
                 # Execute selected_step if it exists (could be then_step, else_step, or None)
                 if selected_step:

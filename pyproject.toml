@@ -171,9 +171,8 @@ disallow_untyped_defs = false
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_functions = ["test_*"]
-# Enable parallel execution with pytest-xdist (auto-detects CPU count)
-# Use -n auto to use all available CPUs, or -n 4 for fixed number
-addopts = "-v --cov=flowyml --cov-report=term-missing -n auto --dist=worksteal"
+# Sequential by default; CI/local can add `-n auto --dist=worksteal` for parallelism
+addopts = "-v --cov=flowyml --cov-report=term-missing"
 asyncio_mode = "auto"
 # Markers for test organization
 markers = [
@@ -184,6 +183,7 @@ markers = [
 
 [tool.semantic_release]
 version_toml = ["pyproject.toml:tool.poetry.version"]
+version_variables = ["flowyml/__init__.py:__version__"]
 branch = "main"
 upload_to_pypi = false
 upload_to_release = true
