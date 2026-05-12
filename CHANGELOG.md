@@ -2,6 +2,36 @@
 
 <!-- version list -->
 
+## v1.10.0 (2026-05-12)
+
+### Bug Fixes
+
+- DataFrame serialization crash, sub-pipeline output_mapping, project config auto-discovery
+  ([`9d01141`](https://github.com/UnicoLab/FlowyML/commit/9d01141ae21ae1784850a41959f4de81ed8503de))
+
+- Mark MonitorThread as daemon + widen fastapi version pin
+  ([`39bfef9`](https://github.com/UnicoLab/FlowyML/commit/39bfef97aca50164eff509b776104895e163bc8b))
+
+- Resolve 20 test failures, harden cache isolation, and stabilize CI pipeline
+  ([`a4212ab`](https://github.com/UnicoLab/FlowyML/commit/a4212ab35b6331d31083e922bfea641c56a11da8))
+
+- Update sidebar version to v1.9.2, rebuild frontend dist
+  ([`d292c2e`](https://github.com/UnicoLab/FlowyML/commit/d292c2e85bdc78033ba7492ad15c8b530f4aba09))
+
+### Chores
+
+- Save last release version for recovery [skip ci]
+  ([`d27eae5`](https://github.com/UnicoLab/FlowyML/commit/d27eae5e1fb135b919755ef3895a8f5f75000fd5))
+
+### Features
+
+- Multi-cloud observability providers (GCP, AWS, Azure)
+  ([`927ae54`](https://github.com/UnicoLab/FlowyML/commit/927ae549e6cbc7b866c8f5033706271d7aa6ea8d))
+
+- Production-grade remote pipeline observability
+  ([`1dea74a`](https://github.com/UnicoLab/FlowyML/commit/1dea74a1c3e9833de110f222612061ead946d9d8))
+
+
 ## v1.9.2 (2026-03-28)
 
 ### Bug Fixes
