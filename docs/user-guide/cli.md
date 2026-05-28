@@ -1,132 +1,157 @@
-# CLI Reference 💻
+---
+title: CLI Quick Start — FlowyML
+description: "5-minute guided tutorial to get started with the FlowyML CLI: init, run, visualize, and iterate."
+---
 
-The flowyml Command Line Interface (CLI) is your primary tool for managing projects, running pipelines, and controlling the UI.
+<div class="hero-section" markdown>
 
-## Installation
+## 🛠️ CLI Quick Start
 
-The CLI is installed automatically with the package:
+Go from zero to a running pipeline in 5 minutes using the FlowyML command line.
+
+<span class="feature-badge">⚡ 5 Minutes</span>
+<span class="feature-badge">🌱 Init</span>
+<span class="feature-badge">▶️ Run</span>
+<span class="feature-badge">🖥️ Visualize</span>
+
+</div>
+
+!!! info "Full Reference"
+    This page is a quick-start tutorial. For the complete list of every command, flag, and environment variable, see the **[CLI Reference](../reference/cli.md)**.
+
+## Step 1 — Install FlowyML
 
 ```bash
 pip install flowyml
 ```
 
-Verify installation:
+Verify it worked:
 
 ```bash
 flowyml --version
 ```
 
-## Command Structure
+## Step 2 — Create a Project
 
 ```bash
-flowyml [COMMAND] [SUBCOMMAND] [OPTIONS]
+flowyml init my-project
+cd my-project
 ```
 
-## Commands
+This scaffolds everything you need:
 
-### `init` 🌱
+```
+my-project/
+├── flowyml.yaml         # Stack & resource config
+├── requirements.txt     # Python dependencies
+└── src/
+    └── pipeline.py      # Your first pipeline
+```
 
-Initialize a new flowyml project.
+!!! tip "Templates"
+    Use `--template ml` or `--template cv` for pre-built ML or Computer Vision project structures.
+
+## Step 3 — Run Your Pipeline
 
 ```bash
-flowyml init [PROJECT_NAME]
+flowyml run src/pipeline.py
 ```
 
-**Options:**
-- `--template [NAME]`: Use a specific template (default: `basic`). Available templates: `basic`, `ml`, `cv`.
-- `--force`: Overwrite existing directory.
+You should see:
 
-**Example:**
-```bash
-flowyml init my-ml-project --template ml
+```
+Fetching data...
+Processing 5 items...
+✓ Pipeline finished successfully!
 ```
 
-### `ui` 🖥️
+!!! success "That's it!"
+    Your pipeline ran locally with caching enabled by default. Run it again — cached steps are skipped automatically.
 
-Manage the flowyml UI server.
-
-#### `ui start`
-Start the UI server.
+## Step 4 — Launch the UI
 
 ```bash
 flowyml ui start
 ```
 
-**Options:**
-- `--port [PORT]`: Port for the frontend (default: 8080).
-- `--backend-port [PORT]`: Port for the backend API (default: 8000).
-- `--host [HOST]`: Host to bind to (default: 127.0.0.1).
-- `--daemon`: Run in background (daemon mode).
+Open [http://localhost:8080](http://localhost:8080) to see the DAG visualization, run history, and artifact inspector.
 
-#### `ui stop`
-Stop the running UI server.
+Stop it when you're done:
 
 ```bash
 flowyml ui stop
 ```
 
-#### `ui status`
-Check if the UI server is running.
+## Step 5 — Pass Parameters
+
+Override context values from the command line without changing code:
 
 ```bash
-flowyml ui status
+flowyml run src/pipeline.py \
+  --context dataset_size=100 \
+  --context multiplier=5
 ```
 
-### `run` ▶️
+## Step 6 — Try a Dry Run
 
-Execute a pipeline or script.
+See what *would* happen without actually executing:
 
 ```bash
-flowyml run [SCRIPT_PATH]
+flowyml run src/pipeline.py --stack production --dry-run
 ```
 
-**Options:**
-- `--pipeline [NAME]`: Name of the pipeline to run (if script contains multiple).
-- `--param [KEY=VALUE]`: Override context parameters.
+## Environment Variables
 
-**Example:**
-```bash
-flowyml run src/pipelines/training.py --param epochs=50
-```
+All FlowyML environment variables use the uppercase `FLOWYML_` prefix:
 
-### `cache` 🧹
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `FLOWYML_HOME` | `~/.flowyml` | FlowyML home directory |
+| `FLOWYML_ENV` | `dev` | Environment name (`dev`, `staging`, `prod`) |
+| `FLOWYML_UI_PORT` | `8080` | Default UI port |
+| `FLOWYML_LOG_LEVEL` | `INFO` | Logging level |
 
-Manage the execution cache.
+## Handy Aliases
 
-#### `cache clear`
-Clear the cache.
-
-```bash
-flowyml cache clear
-```
-
-**Options:**
-- `--pipeline [NAME]`: Clear cache only for a specific pipeline.
-- `--days [N]`: Clear cache entries older than N days.
-
-### `config` ⚙️
-
-View or modify configuration.
+Add to your `~/.zshrc` or `~/.bashrc`:
 
 ```bash
-flowyml config
+alias fml='flowyml'
+alias fml-run='flowyml run'
+alias fml-ui='flowyml ui start'
 ```
 
-#### `config list`
-List all current configuration values.
+---
 
-#### `config set`
-Set a configuration value.
+## 🚀 What's Next?
 
-```bash
-flowyml config set ui.port 3000
-```
+<div class="header-grid" markdown>
 
-## Environment Variables 🌐
+<div class="header-card" markdown>
 
-You can also configure flowyml using environment variables. All variables are prefixed with `flowyml_`.
+### 📖 Full CLI Reference
+Every command, flag, and environment variable in one place.
 
-- `flowyml_HOME`: Path to the flowyml home directory (default: `~/.flowyml`).
-- `flowyml_ENV`: Environment name (e.g., `dev`, `prod`).
-- `flowyml_UI_PORT`: Port for the UI.
-- `flowyml_LOG_LEVEL`: Logging level (DEBUG, INFO, WARNING, ERROR).
+[CLI Reference →](../reference/cli.md)
+
+</div>
+
+<div class="header-card" markdown>
+
+### ⚙️ Configuration
+Deep dive into flowyml.yaml, stacks, and resource presets.
+
+[Configuration →](configuration.md)
+
+</div>
+
+<div class="header-card" markdown>
+
+### 🎢 Core Concepts
+Learn Pipelines, Steps, Context, and Assets in depth.
+
+[Core Concepts →](../core/pipelines.md)
+
+</div>
+
+</div>

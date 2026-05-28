@@ -1,3 +1,20 @@
+---
+title: HuggingFace Integration — FlowyML
+description: "Use HuggingFace Transformers models and datasets in FlowyML pipelines with full tokenizer and model artifact support."
+---
+
+<div class="hero-section" markdown>
+
+## 🤗 HuggingFace Integration
+
+Use HuggingFace Transformers models and datasets in FlowyML pipelines with full tokenizer and model artifact support.
+
+<span class="feature-badge">🤖 Transformers</span>
+<span class="feature-badge">📦 Datasets</span>
+<span class="feature-badge">🏷️ Model Hub</span>
+
+</div>
+
 # 🤗 Hugging Face Integration
 
 !!! info "What you'll learn"
@@ -119,3 +136,38 @@ def predict(texts: list[str]):
 
 !!! warning "Large model storage"
     Transformer models can be several GB. Use FlowyML's artifact catalog to avoid downloading the same model repeatedly.
+
+---
+
+## 🚀 What's Next?
+
+<div class="header-grid" markdown>
+
+<div class="header-card" markdown>
+
+### 🔥 PyTorch Integration
+Integrate PyTorch models with automatic state dict handling and metadata extraction.
+
+[Explore →](pytorch.md)
+
+</div>
+
+<div class="header-card" markdown>
+
+### 📈 TensorFlow Integration
+Use TensorFlow and tf.keras models with SavedModel support and auto-properties.
+
+[Learn more →](tensorflow.md)
+
+</div>
+
+<div class="header-card" markdown>
+
+### 🔗 GenAI Observability
+Monitor LLM calls, tokens, latency, and costs with built-in tracing.
+
+[View Guide →](genai-observability.md)
+
+</div>
+
+</div>

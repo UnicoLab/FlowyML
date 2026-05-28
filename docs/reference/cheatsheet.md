@@ -1,3 +1,8 @@
+---
+title: Cheatsheet — FlowyML
+description: "Quick reference guide for common FlowyML commands, patterns, and recipes."
+---
+
 <div class="hero-section" markdown>
 
 ## 📝 Cheatsheet
@@ -39,7 +44,7 @@ flowyml ui status
 python my_pipeline.py
 
 # Run with specific configuration
-flowyml_ENV=production python my_pipeline.py
+FLOWYML_ENV=production python my_pipeline.py
 ```
 
 ### Cache Management
@@ -57,7 +62,7 @@ flowyml cache clear --pipeline my_pipeline
 ```python
 from flowyml import Pipeline, step
 
-@step
+@step(outputs=["data"])
 def step_one():
     return "data"
 
@@ -65,13 +70,11 @@ def step_one():
 def step_two(data):
     return f"processed {data}"
 
-# Declarative style
-@pipeline
-def my_pipeline():
-    d = step_one()
-    return step_two(d)
-
-run = my_pipeline()
+# Create and run pipeline
+pipeline = Pipeline("my_pipeline")
+pipeline.add_step(step_one)
+pipeline.add_step(step_two)
+result = pipeline.run()
 ```
 
 ### Explicit Pipeline Construction
@@ -170,7 +173,7 @@ def evaluate_model(model, test_data):
 
 ## Scheduling ⏰
 
-```python
+```bash
 # Schedule from CLI
 flowyml schedule add --pipeline my_pipeline \
     --cron "0 6 * * *" \

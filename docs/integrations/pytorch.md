@@ -1,3 +1,20 @@
+---
+title: PyTorch Integration — FlowyML
+description: "Integrate PyTorch models with automatic state dict handling, property extraction, and seamless artifact management."
+---
+
+<div class="hero-section" markdown>
+
+## 🔥 PyTorch Integration
+
+Integrate PyTorch models with automatic state dict handling, property extraction, and seamless artifact management.
+
+<span class="feature-badge">🔄 Auto-Properties</span>
+<span class="feature-badge">💾 State Dict</span>
+<span class="feature-badge">🏷️ Model Registry</span>
+
+</div>
+
 # PyTorch Integration 🔥
 
 Dynamic neural networks, orchestrated by flowyml.
@@ -112,3 +129,38 @@ The following properties are automatically extracted from PyTorch models:
 | `training_mode` | True if `model.training` |
 | `device` | Device (cpu, cuda:0, etc.) |
 | `dtype` | Data type (torch.float32, etc.) |
+
+---
+
+## 🚀 What's Next?
+
+<div class="header-grid" markdown>
+
+<div class="header-card" markdown>
+
+### 🔬 Scikit-learn Integration
+Bring classic ML models into production pipelines with 16+ auto-detected attributes.
+
+[Explore →](sklearn.md)
+
+</div>
+
+<div class="header-card" markdown>
+
+### 🧠 Keras Integration
+Seamlessly integrate Keras models with automatic training history visualization.
+
+[Learn more →](keras.md)
+
+</div>
+
+<div class="header-card" markdown>
+
+### 🏆 Model Leaderboard
+Compare and rank models across experiments with the model leaderboard.
+
+[View Guide →](../advanced/model-leaderboard.md)
+
+</div>
+
+</div>

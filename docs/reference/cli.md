@@ -1,8 +1,24 @@
-# CLI Reference
+---
+title: CLI Reference — FlowyML
+description: "Complete command-line reference for FlowyML: init, run, stack, component, ui, cache, config, schedule, and plugin commands."
+---
+
+<div class="hero-section" markdown>
+
+## 💻 CLI Reference
+
+Complete reference for every FlowyML command, option, and environment variable.
+
+<span class="feature-badge">▶️ Run</span>
+<span class="feature-badge">🏗️ Stacks</span>
+<span class="feature-badge">🖥️ UI</span>
+<span class="feature-badge">🔌 Plugins</span>
+
+</div>
 
 ## Overview
 
-flowyml provides a powerful CLI for managing stacks, components, and running pipelines without modifying code.
+FlowyML provides a powerful CLI for managing stacks, components, and running pipelines without modifying code.
 
 ## Installation
 
@@ -16,19 +32,27 @@ The `flowyml` command will be available globally.
 
 ### `flowyml init`
 
-Initialize a new flowyml project.
+Initialize a new FlowyML project.
 
 ```bash
-flowyml init [OPTIONS]
+flowyml init [PROJECT_NAME] [OPTIONS]
 ```
 
 **Options:**
-- `--output, -o TEXT`: Output file path (default: `flowyml.yaml`)
+
+| Flag | Short | Default | Description |
+|------|-------|---------|-------------|
+| `--output` | `-o` | `flowyml.yaml` | Output file path |
+| `--template` | | `basic` | Project template (`basic`, `ml`, `cv`) |
+| `--force` | | `false` | Overwrite existing directory |
 
 **Examples:**
 ```bash
-# Create flowyml.yaml
+# Create flowyml.yaml with defaults
 flowyml init
+
+# Named project with ML template
+flowyml init my-ml-project --template ml
 
 # Custom output path
 flowyml init --output config/flowyml.yaml
@@ -36,6 +60,7 @@ flowyml init --output config/flowyml.yaml
 
 **Output:**
 Creates a `flowyml.yaml` file with default configuration including:
+
 - Local stack
 - Basic resource presets
 - Docker configuration
@@ -51,14 +76,20 @@ flowyml run PIPELINE_FILE [OPTIONS]
 ```
 
 **Arguments:**
+
 - `PIPELINE_FILE`: Path to pipeline Python file
 
 **Options:**
-- `--stack, -s TEXT`: Stack to use (from flowyml.yaml)
-- `--resources, -r TEXT`: Resource configuration to use
-- `--config, -c TEXT`: Path to flowyml.yaml
-- `--context, -ctx TEXT`: Context variables (key=value), can be specified multiple times
-- `--dry-run`: Show what would be executed without running
+
+| Flag | Short | Default | Description |
+|------|-------|---------|-------------|
+| `--stack` | `-s` | default stack | Stack to use (from flowyml.yaml) |
+| `--resources` | `-r` | `None` | Resource configuration to use |
+| `--config` | `-c` | `flowyml.yaml` | Path to flowyml.yaml |
+| `--context` | `-ctx` | — | Context variables (`key=value`), repeatable |
+| `--dry-run` | | `false` | Show what would be executed without running |
+| `--pipeline` | | — | Pipeline name (if script contains multiple) |
+| `--param` | | — | Override context parameters (`KEY=VALUE`) |
 
 **Examples:**
 ```bash
@@ -103,6 +134,7 @@ flowyml stack list [OPTIONS]
 ```
 
 **Options:**
+
 - `--config, -c TEXT`: Path to flowyml.yaml
 
 **Examples:**
@@ -131,9 +163,11 @@ flowyml stack show STACK_NAME [OPTIONS]
 ```
 
 **Arguments:**
+
 - `STACK_NAME`: Name of stack to show
 
 **Options:**
+
 - `--config, -c TEXT`: Path to flowyml.yaml
 
 **Examples:**
@@ -165,9 +199,11 @@ flowyml stack set-default STACK_NAME [OPTIONS]
 ```
 
 **Arguments:**
+
 - `STACK_NAME`: Name of stack to set as default
 
 **Options:**
+
 - `--config, -c TEXT`: Path to flowyml.yaml
 
 **Examples:**
@@ -194,6 +230,7 @@ flowyml component list [OPTIONS]
 ```
 
 **Options:**
+
 - `--type, -t TEXT`: Filter by component type (orchestrators, artifact_stores, container_registries)
 
 **Examples:**
@@ -231,9 +268,11 @@ flowyml component load SOURCE [OPTIONS]
 ```
 
 **Arguments:**
+
 - `SOURCE`: Component source (see examples)
 
 **Options:**
+
 - `--name, -n TEXT`: Custom name for component
 
 **Examples:**
@@ -252,23 +291,269 @@ flowyml component load my_components --name custom
 ```
 
 **Source Formats:**
-- `module.path` - Load from Python module
-- `/path/to/file.py:ClassName` - Load from file
-- `zenml:zenml.path.Class` - Load from ZenML
+
+- `module.path` — Load from Python module
+- `/path/to/file.py:ClassName` — Load from file
+- `zenml:zenml.path.Class` — Load from ZenML
+
+---
+
+### `flowyml ui`
+
+Manage the FlowyML UI server.
+
+#### `flowyml ui start`
+
+Start the UI dashboard server.
+
+```bash
+flowyml ui start [OPTIONS]
+```
+
+**Options:**
+
+| Flag | Short | Default | Description |
+|------|-------|---------|-------------|
+| `--port` | `-p` | `8080` | Port for the frontend |
+| `--backend-port` | | `8000` | Port for the backend API |
+| `--host` | | `127.0.0.1` | Host to bind to |
+| `--daemon` | `-d` | `false` | Run in background (daemon mode) |
+
+**Examples:**
+```bash
+# Start with defaults
+flowyml ui start
+
+# Custom port, daemon mode
+flowyml ui start --port 3000 --daemon
+
+# Bind to all interfaces (for remote access)
+flowyml ui start --host 0.0.0.0
+```
+
+#### `flowyml ui stop`
+
+Stop the running UI server.
+
+```bash
+flowyml ui stop
+```
+
+#### `flowyml ui status`
+
+Check if the UI server is running.
+
+```bash
+flowyml ui status
+```
+
+**Output:**
+```
+🌊 FlowyML UI is running
+   Frontend: http://localhost:8080
+   Backend:  http://localhost:8000
+   PID:      12345
+   Uptime:   2h 15m
+```
+
+---
+
+### `flowyml cache`
+
+Manage the execution cache.
+
+#### `flowyml cache clear`
+
+Clear cached step results.
+
+```bash
+flowyml cache clear [OPTIONS]
+```
+
+**Options:**
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--pipeline` | — | Clear cache only for a specific pipeline |
+| `--days` | — | Clear cache entries older than N days |
+| `--all` | `false` | Clear entire cache without confirmation |
+
+**Examples:**
+```bash
+# Clear all cache (with confirmation prompt)
+flowyml cache clear
+
+# Clear cache for a specific pipeline
+flowyml cache clear --pipeline training_pipeline
+
+# Clear entries older than 7 days
+flowyml cache clear --days 7
+```
+
+---
+
+### `flowyml config`
+
+View or modify FlowyML configuration.
+
+#### `flowyml config list`
+
+List all current configuration values.
+
+```bash
+flowyml config list
+```
+
+**Output:**
+```
+ui.port          = 8080
+ui.host          = 127.0.0.1
+cache.enabled    = true
+cache.backend    = local
+log.level        = INFO
+```
+
+#### `flowyml config set`
+
+Set a configuration value.
+
+```bash
+flowyml config set KEY VALUE
+```
+
+**Examples:**
+```bash
+# Change UI port
+flowyml config set ui.port 3000
+
+# Set log level
+flowyml config set log.level DEBUG
+
+# Disable caching globally
+flowyml config set cache.enabled false
+```
+
+---
+
+### `flowyml schedule`
+
+Manage scheduled pipeline runs.
+
+#### `flowyml schedule list`
+
+List all active schedules.
+
+```bash
+flowyml schedule list
+```
+
+**Output:**
+```
+Active Schedules:
+  • nightly_retrain    0 2 * * *     next: 2025-01-15 02:00 UTC
+  • weekly_report      0 9 * * 1     next: 2025-01-20 09:00 UTC
+```
+
+#### `flowyml schedule add`
+
+Register a new schedule.
+
+```bash
+flowyml schedule add PIPELINE_FILE --cron EXPRESSION [OPTIONS]
+```
+
+**Options:**
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--cron` | **required** | Cron expression (5-field) |
+| `--stack` | default stack | Stack to use |
+| `--name` | — | Human-readable schedule name |
+| `--context` | — | Context variables, repeatable |
+
+**Examples:**
+```bash
+# Retrain nightly at 2 AM
+flowyml schedule add train.py --cron "0 2 * * *" --name nightly_retrain
+
+# Weekly report on Mondays at 9 AM on production
+flowyml schedule add report.py --cron "0 9 * * 1" --stack production
+```
+
+#### `flowyml schedule remove`
+
+Remove an active schedule.
+
+```bash
+flowyml schedule remove SCHEDULE_NAME
+```
+
+---
+
+### `flowyml plugin`
+
+Manage FlowyML plugins.
+
+#### `flowyml plugin list`
+
+List installed plugins.
+
+```bash
+flowyml plugin list
+```
+
+**Output:**
+```
+Installed Plugins:
+  • flowyml-gcp       v1.2.0   (artifact_store, orchestrator)
+  • flowyml-mlflow    v0.5.1   (metadata_store)
+  • flowyml-slack     v0.3.0   (notifier)
+```
+
+#### `flowyml plugin install`
+
+Install a plugin from PyPI or a local path.
+
+```bash
+flowyml plugin install PLUGIN_NAME [OPTIONS]
+```
+
+**Examples:**
+```bash
+# From PyPI
+flowyml plugin install flowyml-gcp
+
+# From local path
+flowyml plugin install ./my-custom-plugin
+
+# Specific version
+flowyml plugin install flowyml-mlflow==0.5.1
+```
+
+#### `flowyml plugin remove`
+
+Uninstall a plugin.
+
+```bash
+flowyml plugin remove PLUGIN_NAME
+```
 
 ---
 
 ## Global Options
 
 All commands support:
+
 - `--help`: Show help message
-- `--version`: Show flowyml version
+- `--version`: Show FlowyML version
+- `--verbose, -v`: Increase output verbosity
 
 ## Configuration Files
 
 ### Search Order
 
-flowyml searches for configuration in this order:
+FlowyML searches for configuration in this order:
+
 1. `--config` flag value
 2. `flowyml.yaml` (current directory)
 3. `flowyml.yml`
@@ -277,12 +562,24 @@ flowyml searches for configuration in this order:
 
 ### Environment Variables
 
-flowyml automatically expands environment variables in configuration:
-- `${VAR_NAME}` - Required variable (fails if not set)
-- `$VAR_NAME` - Required variable
-- `${VAR_NAME:-default}` - With default value (future)
+FlowyML automatically expands environment variables in configuration:
 
-##  Examples
+- `${VAR_NAME}` — Required variable (fails if not set)
+- `$VAR_NAME` — Required variable
+- `${VAR_NAME:-default}` — With default value
+
+All FlowyML-specific environment variables use the `FLOWYML_` prefix:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `FLOWYML_HOME` | `~/.flowyml` | Path to the FlowyML home directory |
+| `FLOWYML_ENV` | `dev` | Environment name (`dev`, `staging`, `prod`) |
+| `FLOWYML_UI_PORT` | `8080` | Default port for the UI |
+| `FLOWYML_LOG_LEVEL` | `INFO` | Logging level (`DEBUG`, `INFO`, `WARNING`, `ERROR`) |
+| `FLOWYML_CACHE_DIR` | `~/.flowyml/cache` | Cache storage directory |
+| `FLOWYML_CONFIG` | `flowyml.yaml` | Default config file path |
+
+## Examples
 
 ### Development Workflow
 
@@ -367,30 +664,32 @@ python -c "from flowyml.utils.stack_config import load_config; load_config().loa
 
 ## Exit Codes
 
-- `0`: Success
-- `1`: General error
-- `2`: Configuration error
-- `3`: Pipeline execution error
+| Code | Meaning |
+|------|---------|
+| `0` | Success |
+| `1` | General error |
+| `2` | Configuration error |
+| `3` | Pipeline execution error |
 
 ## Shell Completion
 
-### Bash
+=== "Bash"
 
-```bash
-echo 'eval "$(_flowyml_COMPLETE=bash_source flowyml)"' >> ~/.bashrc
-```
+    ```bash
+    echo 'eval "$(_FLOWYML_COMPLETE=bash_source flowyml)"' >> ~/.bashrc
+    ```
 
-### Zsh
+=== "Zsh"
 
-```bash
-echo 'eval "$(_flowyml_COMPLETE=zsh_source flowyml)"' >> ~/.zshrc
-```
+    ```bash
+    echo 'eval "$(_FLOWYML_COMPLETE=zsh_source flowyml)"' >> ~/.zshrc
+    ```
 
-### Fish
+=== "Fish"
 
-```bash
-echo '_flowyml_COMPLETE=fish_source flowyml | source' >> ~/.config/fish/completions/flowyml.fish
-```
+    ```bash
+    echo '_FLOWYML_COMPLETE=fish_source flowyml | source' >> ~/.config/fish/completions/flowyml.fish
+    ```
 
 ## Tips & Tricks
 
@@ -398,15 +697,15 @@ echo '_flowyml_COMPLETE=fish_source flowyml | source' >> ~/.config/fish/completi
 
 ```bash
 # .bashrc or .zshrc
-alias uf='flowyml'
-alias ufr='flowyml run'
-alias ufs='flowyml stack'
-alias ufc='flowyml component'
+alias fml='flowyml'
+alias fml-run='flowyml run'
+alias fml-stack='flowyml stack'
+alias fml-ui='flowyml ui'
 
 # Usage
-ufr pipeline.py -s production
-ufs list
-ufc list
+fml-run pipeline.py -s production
+fml-stack list
+fml-ui start
 ```
 
 ### Default Stack
@@ -426,18 +725,18 @@ flowyml run pipeline.py
 
 ```bash
 # Development
-alias uf-dev='flowyml run --config dev.yaml'
+alias fml-dev='flowyml run --config dev.yaml'
 
 # Staging
-alias uf-stage='flowyml run --config staging.yaml --stack staging'
+alias fml-stage='flowyml run --config staging.yaml --stack staging'
 
 # Production
-alias uf-prod='flowyml run --config prod.yaml --stack production'
+alias fml-prod='flowyml run --config prod.yaml --stack production'
 
 # Usage
-uf-dev pipeline.py
-uf-stage pipeline.py
-uf-prod pipeline.py --resources gpu_large
+fml-dev pipeline.py
+fml-stage pipeline.py
+fml-prod pipeline.py --resources gpu_large
 ```
 
 ### CI/CD Integration
@@ -525,7 +824,42 @@ flowyml run pipeline.py --stack STACK_NAME --dry-run
 
 ## See Also
 
+- [CLI Quick Start](../user-guide/cli.md)
 - [Configuration Guide](../user-guide/configuration.md)
 - [Components Guide](../user-guide/components.md)
-- [Quick Reference](../QUICK_REFERENCE.md)
 - [Stack Architecture](../architecture/stacks.md)
+
+---
+
+## 🚀 What's Next?
+
+<div class="header-grid" markdown>
+
+<div class="header-card" markdown>
+
+### 🛠️ CLI Quick Start
+5-minute guided tutorial from init to running your first pipeline.
+
+[Quick Start →](../user-guide/cli.md)
+
+</div>
+
+<div class="header-card" markdown>
+
+### ⚙️ Configuration Guide
+Deep dive into flowyml.yaml, stacks, and resource presets.
+
+[Configuration →](../user-guide/configuration.md)
+
+</div>
+
+<div class="header-card" markdown>
+
+### 🔌 Components Guide
+Build and register custom orchestrators, artifact stores, and plugins.
+
+[Components →](../user-guide/components.md)
+
+</div>
+
+</div>

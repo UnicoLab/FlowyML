@@ -1,3 +1,8 @@
+---
+title: Evaluations Guide — FlowyML
+description: "Production-grade ML evaluation with 29+ built-in scorers for classification, regression, and GenAI. Includes LLM-as-a-Judge, CI/CD quality gates, and third-party adapters."
+---
+
 <div class="hero-section" markdown>
 
 ## 🎯 FlowyML Evaluations

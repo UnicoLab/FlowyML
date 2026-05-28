@@ -1,3 +1,20 @@
+---
+title: Weights & Biases Integration — FlowyML
+description: "Log experiments, visualize training runs, and collaborate with your team using W&B integrated into FlowyML."
+---
+
+<div class="hero-section" markdown>
+
+## 📉 Weights & Biases Integration
+
+Log experiments, visualize training runs, and collaborate with your team using W&B integrated into FlowyML.
+
+<span class="feature-badge">📊 Run Logging</span>
+<span class="feature-badge">🎨 Visualizations</span>
+<span class="feature-badge">👥 Collaboration</span>
+
+</div>
+
 # 🐝 Weights & Biases Integration
 
 !!! info "What you'll learn"
@@ -106,3 +123,38 @@ def save_model(model):
 
 !!! tip "Use groups for experiments"
     Group related runs with `group="hyperparameter_search"` to compare them in a single view.
+
+---
+
+## 🚀 What's Next?
+
+<div class="header-grid" markdown>
+
+<div class="header-card" markdown>
+
+### 📊 MLflow Integration
+Track experiments and manage model lifecycles with the industry-standard MLflow platform.
+
+[Explore →](mlflow.md)
+
+</div>
+
+<div class="header-card" markdown>
+
+### 📈 Evaluations
+Evaluate your models with built-in metrics, custom scorers, and comparison tools.
+
+[Learn more →](../evaluations.md)
+
+</div>
+
+<div class="header-card" markdown>
+
+### 🔌 Plugin System
+Extend FlowyML with custom plugins for logging, tracking, and notifications.
+
+[View Guide →](../plugins/overview.md)
+
+</div>
+
+</div>

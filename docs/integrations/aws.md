@@ -1,3 +1,20 @@
+---
+title: Amazon Web Services Integration — FlowyML
+description: "Run FlowyML pipelines on AWS with SageMaker orchestration, S3 artifact storage, and ECR container registry."
+---
+
+<div class="hero-section" markdown>
+
+## ☁️ Amazon Web Services Integration
+
+Run FlowyML pipelines on AWS with SageMaker orchestration, S3 artifact storage, and ECR container registry.
+
+<span class="feature-badge">🤖 SageMaker</span>
+<span class="feature-badge">📦 S3</span>
+<span class="feature-badge">🐳 ECR</span>
+
+</div>
+
 # ☁️ Amazon Web Services (AWS)
 
 !!! info "What you'll learn"
@@ -97,3 +114,38 @@ aws configure --profile flowyml
 
 !!! tip "S3 lifecycle policies"
     Set up S3 lifecycle policies to automatically archive or delete old artifacts and reduce storage costs.
+
+---
+
+## 🚀 What's Next?
+
+<div class="header-grid" markdown>
+
+<div class="header-card" markdown>
+
+### ☁️ GCP Integration
+Deploy FlowyML pipelines on Google Cloud with Vertex AI and GCS storage.
+
+[Explore →](gcp.md)
+
+</div>
+
+<div class="header-card" markdown>
+
+### ☁️ Azure Integration
+Deploy on Azure with Azure ML, Blob Storage, and AKS orchestration.
+
+[Learn more →](azure.md)
+
+</div>
+
+<div class="header-card" markdown>
+
+### 🚀 Deployment
+Learn about production deployment strategies and best practices.
+
+[View Guide →](../deployment.md)
+
+</div>
+
+</div>

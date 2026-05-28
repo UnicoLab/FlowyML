@@ -1,3 +1,8 @@
+---
+title: Assets & Lineage — FlowyML Core Concepts
+description: "Master FlowyML Assets — first-class data objects with automatic lineage tracking. Learn about Models, Datasets, Metrics, artifact storage, and type-based routing."
+---
+
 <div class="hero-section" markdown>
 
 ## 📦 Assets & Lineage

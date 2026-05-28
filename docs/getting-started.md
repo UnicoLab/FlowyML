@@ -14,7 +14,7 @@ A complete ML pipeline with data loading, processing, context injection, and rea
 
 ## 📦 Installation
 
-FlowyML requires Python 3.9 or higher.
+FlowyML requires Python 3.10 or higher.
 
 ### 🔧 Basic Installation
 

@@ -210,96 +210,7 @@ if __name__ == "__main__":
 
 ## Common Workflows
 
-### Development → Production
 
-```bash
-# 1. Develop locally
-flowyml run train.py
-
-# 2. Test on staging
-flowyml run train.py --stack staging
-
-# 3. Deploy to production
-flowyml run train.py --stack production --resources gpu_training
-```
-
-### Different Regions
-
-```yaml
-# flowyml.yaml
-stacks:
-  us-prod:
-    type: gcp
-    region: us-central1
-
-  eu-prod:
-    type: gcp
-    region: europe-west1
-```
-
-```bash
-# Deploy to US
-flowyml run pipeline.py --stack us-prod
-
-# Deploy to EU
-flowyml run pipeline.py --stack eu-prod
-```
-
-### GPU vs CPU Workloads
-
-```yaml
-# flowyml.yaml
-resources:
-  cpu_only:
-    cpu: "4"
-    memory: "16Gi"
-
-  gpu_large:
-    cpu: "16"
-    memory: "64Gi"
-    gpu: "nvidia-tesla-v100"
-    gpu_count: 4
-```
-
-```bash
-# CPU workload
-flowyml run preprocess.py --resources cpu_only
-
-# GPU training
-flowyml run train.py --resources gpu_large
-```
-
-## Docker Patterns
-
-### Use Existing Dockerfile
-```yaml
-docker:
-  dockerfile: ./Dockerfile
-  build_context: .
-```
-
-### Use Poetry
-```yaml
-docker:
-  use_poetry: true
-```
-
-### Use Requirements.txt
-```yaml
-docker:
-  requirements_file: requirements.txt
-```
-
-### Dynamic Build
-```yaml
-docker:
-  base_image: python:3.11-slim
-  requirements:
-    - tensorflow>=2.12.0
-    - pandas>=2.0.0
-  env_vars:
-    PYTHONUNBUFFERED: "1"
-```
 
 ## Installation
 
@@ -316,23 +227,6 @@ pip install flowyml[pytorch]
 
 # Everything
 pip install flowyml[all]
-```
-
-## Troubleshooting
-
-### "Stack not found"
-```bash
-# Check available stacks
-flowyml stack list
-
-# Verify config file
-cat flowyml.yaml
-```
-
-### "Missing dependencies"
-```bash
-# Install required extras
-pip install flowyml[gcp]
 ```
 
 ---

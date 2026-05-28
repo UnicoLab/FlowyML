@@ -27,7 +27,7 @@ Start the FlowyML GUI with a single command:
 flowyml ui
 ```
 
-This starts the local web server (default: `http://localhost:8501`). The dashboard is also available via the centralized **FlowyML Server** deployment for team collaboration.
+This starts the local web server (default: `http://localhost:8080`). The dashboard is also available via the centralized **FlowyML Server** deployment for team collaboration.
 
 !!! tip "Pro Tip"
     Use `flowyml ui --port 9000` to run on a custom port, or `flowyml ui --host 0.0.0.0` to expose the dashboard on your network.

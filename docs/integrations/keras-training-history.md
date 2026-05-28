@@ -1,3 +1,20 @@
+---
+title: Keras Training History — FlowyML
+description: "Automatically capture and visualize Keras training metrics with interactive charts in the FlowyML dashboard."
+---
+
+<div class="hero-section" markdown>
+
+## 📊 Keras Training History
+
+Automatically capture and visualize Keras training metrics with interactive charts in the FlowyML dashboard.
+
+<span class="feature-badge">📈 Live Charts</span>
+<span class="feature-badge">🔍 Metric Comparison</span>
+<span class="feature-badge">💾 Auto-Capture</span>
+
+</div>
+
 # Keras Training History - Example
 
 This notebook demonstrates how to use FlowyML's enhanced Keras callback to automatically track and visualize training history.
@@ -141,9 +158,37 @@ The training_history field in the artifact metadata looks like:
 
 This format is automatically recognized by the FlowyML UI and rendered as interactive charts.
 
-## Next Steps
+---
 
-- Try with your own datasets and models
-- Compare multiple runs in the experiments view
-- Use different optimizers and see the impact on training curves
-- Share your training history visualizations with your team!
+## 🚀 What's Next?
+
+<div class="header-grid" markdown>
+
+<div class="header-card" markdown>
+
+### 🧠 Keras Integration
+Learn about the full Keras integration with auto-extracted properties and model registry.
+
+[Explore →](keras.md)
+
+</div>
+
+<div class="header-card" markdown>
+
+### 🖥️ GUI Overview
+Explore the FlowyML dashboard and all its interactive visualization features.
+
+[Learn more →](../gui-overview.md)
+
+</div>
+
+<div class="header-card" markdown>
+
+### 📈 Evaluations
+Evaluate model performance with built-in and custom metrics.
+
+[View Guide →](../evaluations.md)
+
+</div>
+
+</div>

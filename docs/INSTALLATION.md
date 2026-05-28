@@ -104,7 +104,7 @@ pip install "flowyml[azure]"
 pip install "flowyml[ui]"
 ```
 
-**What you get**: The visualization dashboard, REST API,real-time monitoring.
+**What you get**: The visualization dashboard, REST API, real-time monitoring.
 
 **Use this when**: You need the visual interface for debugging or monitoring, or building tools that integrate with FlowyML's API.
 
@@ -271,7 +271,7 @@ pip install "flowyml[all]"
 
 **Problem**: Installation fails with Python version errors.
 
-**Solution**: Upgrade Python to 3.8 or higher:
+**Solution**: Upgrade Python to 3.10 or higher:
 
 ```bash
 # Check current version

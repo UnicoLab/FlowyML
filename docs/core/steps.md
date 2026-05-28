@@ -1,3 +1,8 @@
+---
+title: Steps — FlowyML Core Concepts
+description: "Learn how to define, configure, and compose Steps — the building blocks of FlowyML pipelines. Covers the @step decorator, inputs/outputs, caching, error handling, and testing."
+---
+
 <div class="hero-section" markdown>
 
 ## ☞ Steps
@@ -160,7 +165,7 @@ pipeline.add_step(process)  # Runs after load()
 ### How Wiring Works
 
 1. **Step Outputs**: When a step completes, its output is stored with the name specified in `outputs`
-2. **Step Inputs**: When aFor the next step, flowyml matches `inputs` names to stored outputs
+2. **Step Inputs**: For the next step, flowyml matches `inputs` names to stored outputs
 3. **Auto-Injection**: The values are automatically passed as function arguments
 
 ```python

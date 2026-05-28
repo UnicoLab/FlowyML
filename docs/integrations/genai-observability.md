@@ -1,3 +1,20 @@
+---
+title: GenAI Observability — FlowyML
+description: "Built-in LLM tracing for LangChain, LangGraph, OpenAI SDK, and any framework. Monitor tokens, latency, and costs without external tools."
+---
+
+<div class="hero-section" markdown>
+
+## 🔗 GenAI Observability
+
+Built-in LLM tracing for LangChain, LangGraph, OpenAI SDK, and any framework. Monitor tokens, latency, and costs without external tools.
+
+<span class="feature-badge">🔍 LLM Tracing</span>
+<span class="feature-badge">💰 Cost Tracking</span>
+<span class="feature-badge">⚡ Latency Monitoring</span>
+
+</div>
+
 # 🔗 GenAI Observability — Full-Stack Tracing for Any AI Framework
 
 FlowyML provides **zero-config GenAI observability** — just import, decorate, and get
@@ -813,3 +830,38 @@ from flowyml.integrations.openai_integration import trace_openai_session
 # ─── Evaluations ───────────────────────────────────
 from flowyml.integrations.eval_bridge import SessionEvaluator
 ```
+
+---
+
+## 🚀 What's Next?
+
+<div class="header-grid" markdown>
+
+<div class="header-card" markdown>
+
+### 📈 Evaluations
+Evaluate your LLM outputs with built-in scorers for relevance, toxicity, and custom metrics.
+
+[Explore →](../evaluations.md)
+
+</div>
+
+<div class="header-card" markdown>
+
+### 🔍 LLM Tracing
+Dive deeper into advanced LLM tracing patterns and distributed trace analysis.
+
+[Learn more →](../advanced/llm-tracing.md)
+
+</div>
+
+<div class="header-card" markdown>
+
+### 🔌 Eval Adapters
+Connect evaluation frameworks and custom scorers to your GenAI sessions.
+
+[View Guide →](../advanced/eval-adapters.md)
+
+</div>
+
+</div>

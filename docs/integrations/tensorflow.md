@@ -1,3 +1,20 @@
+---
+title: TensorFlow Integration — FlowyML
+description: "Integrate TensorFlow and tf.keras models with SavedModel support, auto-properties, and production-ready serving."
+---
+
+<div class="hero-section" markdown>
+
+## 📈 TensorFlow Integration
+
+Integrate TensorFlow and tf.keras models with SavedModel support, auto-properties, and production-ready serving.
+
+<span class="feature-badge">💾 SavedModel</span>
+<span class="feature-badge">🔄 Auto-Properties</span>
+<span class="feature-badge">🚀 TF Serving</span>
+
+</div>
+
 # 🤖 TensorFlow Integration
 
 !!! info "What you'll learn"
@@ -111,3 +128,38 @@ def export_for_serving(model, version: int = 1):
 
 !!! warning "Memory management"
     Use `tf.config.experimental.set_memory_growth(gpu, True)` to avoid TF allocating all GPU memory upfront.
+
+---
+
+## 🚀 What's Next?
+
+<div class="header-grid" markdown>
+
+<div class="header-card" markdown>
+
+### 🧠 Keras Integration
+Use the FlowyML Keras callback for automatic training history tracking and visualization.
+
+[Explore →](keras.md)
+
+</div>
+
+<div class="header-card" markdown>
+
+### 🔥 PyTorch Integration
+Integrate PyTorch models with auto-extracted metadata and state dict handling.
+
+[Learn more →](pytorch.md)
+
+</div>
+
+<div class="header-card" markdown>
+
+### 🚀 Deployment
+Deploy your TensorFlow models to production with FlowyML's deployment tools.
+
+[View Guide →](../deployment.md)
+
+</div>
+
+</div>

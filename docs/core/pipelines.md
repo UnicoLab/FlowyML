@@ -1,3 +1,8 @@
+---
+title: Pipelines — FlowyML Core Concepts
+description: "Complete guide to FlowyML Pipelines — the orchestration layer that auto-builds DAGs from artifact dependencies. Covers lifecycle, configuration, sub-pipelines, and production patterns."
+---
+
 <div class="hero-section" markdown>
 
 ## 🎢 Pipelines
@@ -345,7 +350,7 @@ pipeline = Pipeline("my_pipeline", stack=stack)
 result = pipeline.run(stack=stack)
 ```
 
-See the [Stack Architecture](../architecture/stacks.md) guide for more details on stacks.
+
 
 ## Advanced Features ⚡
 

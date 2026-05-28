@@ -14,7 +14,7 @@ We welcome contributions of all kinds — from bug reports and documentation imp
 ## Development Setup 🛠️
 
 ### Prerequisites
-- Python 3.8+
+- Python 3.10+
 - Node.js 16+ (for UI development)
 - Poetry (recommended) or pip
 

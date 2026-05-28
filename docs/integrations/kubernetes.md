@@ -1,3 +1,20 @@
+---
+title: Kubernetes Integration — FlowyML
+description: "Orchestrate FlowyML pipelines on Kubernetes with auto-scaling, GPU scheduling, and distributed execution."
+---
+
+<div class="hero-section" markdown>
+
+## ☸️ Kubernetes Integration
+
+Orchestrate FlowyML pipelines on Kubernetes with auto-scaling, GPU scheduling, and distributed execution.
+
+<span class="feature-badge">📈 Auto-Scaling</span>
+<span class="feature-badge">🎮 GPU Scheduling</span>
+<span class="feature-badge">🔀 Distributed</span>
+
+</div>
+
 # ☸️ Kubernetes Integration
 
 !!! info "What you'll learn"
@@ -102,3 +119,38 @@ orchestrator = KubernetesOrchestrator(
 
 !!! warning "Image pull secrets"
     If using a private registry, configure `imagePullSecrets` in your namespace.
+
+---
+
+## 🚀 What's Next?
+
+<div class="header-grid" markdown>
+
+<div class="header-card" markdown>
+
+### 🐳 Docker Integration
+Containerize your pipelines with optimized Docker images and multi-stage builds.
+
+[Explore →](docker.md)
+
+</div>
+
+<div class="header-card" markdown>
+
+### ☁️ GCP Integration
+Deploy on Google Cloud with Vertex AI, GCS storage, and Cloud Run serving.
+
+[Learn more →](gcp.md)
+
+</div>
+
+<div class="header-card" markdown>
+
+### 🚀 Deployment
+Learn about production deployment strategies and best practices.
+
+[View Guide →](../deployment.md)
+
+</div>
+
+</div>

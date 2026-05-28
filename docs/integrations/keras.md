@@ -1,3 +1,20 @@
+---
+title: Keras Integration — FlowyML
+description: "Seamlessly integrate Keras models into FlowyML pipelines with automatic property extraction and training history visualization."
+---
+
+<div class="hero-section" markdown>
+
+## 🧠 Keras Integration
+
+Seamlessly integrate Keras models into FlowyML pipelines with automatic property extraction and training history visualization.
+
+<span class="feature-badge">🔄 Auto-Properties</span>
+<span class="feature-badge">📊 Training History</span>
+<span class="feature-badge">🏷️ Model Registry</span>
+
+</div>
+
 # Keras Integration 🧠
 
 Deep learning for humans, orchestrated by flowyml.
@@ -140,3 +157,38 @@ The following properties are automatically extracted from Keras models:
 | `metrics` | List of compiled metrics |
 | `is_compiled` | Whether model is compiled |
 | `is_built` | Whether model is built |
+
+---
+
+## 🚀 What's Next?
+
+<div class="header-grid" markdown>
+
+<div class="header-card" markdown>
+
+### 📊 Keras Training History
+Visualize training metrics with interactive charts and per-epoch tracking.
+
+[Explore →](keras-training-history.md)
+
+</div>
+
+<div class="header-card" markdown>
+
+### 🔥 PyTorch Integration
+Integrate PyTorch models with auto-extracted metadata and state dict handling.
+
+[Learn more →](pytorch.md)
+
+</div>
+
+<div class="header-card" markdown>
+
+### 📈 Evaluations
+Evaluate your Keras models with built-in metrics and custom scorers.
+
+[View Guide →](../evaluations.md)
+
+</div>
+
+</div>

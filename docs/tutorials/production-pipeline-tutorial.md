@@ -16,7 +16,7 @@ A complete ML pipeline with Docker containerization, GPU resources, cloud storag
 
 Before you start, make sure you have:
 
-- ✅ Python 3.9+ installed
+- ✅ Python 3.10+ installed
 - ✅ Docker installed and running
 - ✅ A cloud account (GCP or AWS) — we'll use **GCP** in this tutorial
 - ✅ `gcloud` CLI configured (or `aws` CLI for AWS)

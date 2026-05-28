@@ -1,3 +1,20 @@
+---
+title: Scikit-learn Integration — FlowyML
+description: "Bring scikit-learn models into production pipelines with automatic property extraction and 16+ auto-detected attributes."
+---
+
+<div class="hero-section" markdown>
+
+## 🔬 Scikit-learn Integration
+
+Bring scikit-learn models into production pipelines with automatic property extraction and 16+ auto-detected attributes.
+
+<span class="feature-badge">🔄 Auto-Properties</span>
+<span class="feature-badge">📋 16+ Attributes</span>
+<span class="feature-badge">🏷️ Model Registry</span>
+
+</div>
+
 # Scikit-Learn Integration 🧠
 
 Classic ML pipelines made robust and reproducible.
@@ -103,3 +120,38 @@ Full auto-extraction works for all sklearn estimators:
 - **Transformers**: StandardScaler, PCA, etc.
 - **Ensembles**: VotingClassifier, StackingClassifier, etc.
 - **Pipelines**: sklearn.pipeline.Pipeline
+
+---
+
+## 🚀 What's Next?
+
+<div class="header-grid" markdown>
+
+<div class="header-card" markdown>
+
+### 🔥 PyTorch Integration
+Integrate deep learning models with automatic state dict handling and metadata.
+
+[Explore →](pytorch.md)
+
+</div>
+
+<div class="header-card" markdown>
+
+### 🤗 HuggingFace Integration
+Use Transformers models and datasets with full tokenizer and model artifact support.
+
+[Learn more →](huggingface.md)
+
+</div>
+
+<div class="header-card" markdown>
+
+### 📈 Evaluations
+Evaluate your sklearn models with built-in metrics and comparison tools.
+
+[View Guide →](../evaluations.md)
+
+</div>
+
+</div>

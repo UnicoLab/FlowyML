@@ -1428,3 +1428,296 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ================================================================
+   PHASE 2 — Enhanced UX Components v6.0
+   ================================================================ */
+
+/* ===== Reading Progress Bar ===== */
+/* Thin gradient bar at top of viewport */
+#reading-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6, #a78bfa);
+  z-index: 9999;
+  transition: width 0.1s ease-out;
+  opacity: 0;
+  transition: width 0.1s ease-out, opacity 0.3s ease;
+}
+
+#reading-progress.visible {
+  opacity: 1;
+}
+
+/* ===== Heading Anchor Links ===== */
+.heading-anchor {
+  opacity: 0;
+  color: var(--fm-accent) !important;
+  text-decoration: none !important;
+  font-size: 0.8em;
+  margin-left: 0.3em;
+  transition: opacity 0.2s ease;
+  border: none !important;
+}
+
+.md-typeset h2:hover .heading-anchor,
+.md-typeset h3:hover .heading-anchor {
+  opacity: 0.6;
+}
+
+.heading-anchor:hover {
+  opacity: 1 !important;
+}
+
+/* ===== Copy Toast Notification ===== */
+.copy-toast {
+  position: absolute;
+  top: -30px;
+  right: 0;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  pointer-events: none;
+  animation: toastFade 1.5s ease-out forwards;
+  z-index: 100;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+@keyframes toastFade {
+  0%   { opacity: 0; transform: translateY(4px); }
+  15%  { opacity: 1; transform: translateY(0); }
+  70%  { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-6px); }
+}
+
+/* ===== Code Block Language Labels ===== */
+.md-typeset .highlight > pre::before {
+  content: attr(data-lang);
+  position: absolute;
+  top: 6px;
+  right: 48px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(199, 210, 254, 0.5);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* ===== Enhanced Smooth Scroll ===== */
+html {
+  scroll-behavior: smooth;
+}
+
+/* ===== Version Badge ===== */
+.version-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1em 0.5em;
+  border-radius: 8px;
+  font-size: 0.62rem;
+  font-weight: 600;
+  background: rgba(99, 102, 241, 0.08);
+  color: var(--fm-accent);
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  margin-left: 0.3em;
+  vertical-align: middle;
+}
+
+[data-md-color-scheme="slate"] .version-badge {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.25);
+  color: #c7d2fe;
+}
+
+/* ===== Integration Page Header ===== */
+.integration-hero {
+  background: linear-gradient(135deg, #0f0f23 0%, #1e1b4b 40%, #312e81 100%);
+  border-radius: var(--fm-radius-lg);
+  padding: 2rem 2rem 1.5rem;
+  margin: -0.5rem -0.5rem 2rem -0.5rem;
+  color: white;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.integration-hero::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 50%;
+  height: 200%;
+  background: radial-gradient(ellipse, rgba(99,102,241,0.12) 0%, transparent 70%);
+  animation: heroGlow 6s ease-in-out infinite alternate;
+}
+
+.integration-hero .integration-icon {
+  font-size: 3rem;
+  position: relative;
+  z-index: 2;
+  filter: drop-shadow(0 4px 12px rgba(99, 102, 241, 0.3));
+}
+
+.integration-hero .integration-info {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+}
+
+.integration-hero h1,
+.integration-hero h2 {
+  color: white !important;
+  -webkit-text-fill-color: white !important;
+  background: none !important;
+  border: none !important;
+  margin: 0 0 0.4rem 0 !important;
+  padding: 0 !important;
+  font-size: 1.6rem !important;
+}
+
+.integration-hero p {
+  color: rgba(199, 210, 254, 0.85);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin: 0 0 0.8rem 0;
+}
+
+.integration-hero .feature-badge {
+  background: rgba(255,255,255,0.1) !important;
+  color: #e0e7ff !important;
+  border-color: rgba(255,255,255,0.2) !important;
+  backdrop-filter: blur(4px);
+}
+
+.integration-hero .install-hint {
+  margin-top: 0.8rem;
+  padding: 0.5rem 0.8rem;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+  color: #c7d2fe;
+  display: inline-block;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.integration-hero .install-hint code {
+  background: none !important;
+  color: #e0e7ff !important;
+  padding: 0 !important;
+  font-size: inherit;
+}
+
+[data-md-color-scheme="slate"] .integration-hero {
+  background: linear-gradient(135deg, #0a0a1a 0%, #151530 40%, #1e1b4b 100%);
+  border: 1px solid rgba(99, 102, 241, 0.15);
+}
+
+@media screen and (max-width: 44.9375em) {
+  .integration-hero {
+    flex-direction: column;
+    text-align: center;
+    padding: 1.5rem 1.2rem;
+    gap: 1rem;
+  }
+  .integration-hero h1,
+  .integration-hero h2 {
+    font-size: 1.3rem !important;
+  }
+}
+
+/* ===== API Reference Page Styling ===== */
+.api-overview-table {
+  margin: 1.5rem 0;
+}
+
+.api-overview-table td:first-child {
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+  color: var(--fm-accent);
+}
+
+.api-overview-table td:first-child code {
+  background: rgba(99, 102, 241, 0.06);
+  padding: 0.2em 0.5em;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+/* ===== Enhanced Admonition Titles with Pulse on Danger/Warning ===== */
+.md-typeset .admonition.danger .admonition-title::before,
+.md-typeset .admonition.warning .admonition-title::before {
+  animation: iconPulse 2s ease-in-out infinite;
+}
+
+@keyframes iconPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+/* ===== FAQ Page Styling ===== */
+.faq-section .md-typeset details {
+  margin: 0.8rem 0;
+  border-radius: var(--fm-radius);
+}
+
+.faq-section .md-typeset details summary {
+  font-weight: 600;
+  font-size: 1rem;
+  padding: 0.8rem 1rem;
+}
+
+.faq-section .md-typeset details[open] {
+  box-shadow: var(--fm-shadow-md);
+  border-color: rgba(99, 102, 241, 0.2);
+}
+
+/* ===== Glossary Alphabetical Jump Links ===== */
+.glossary-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 1rem 0 2rem 0;
+  padding: 0.8rem 1rem;
+  background: var(--fm-gradient-surface);
+  border-radius: var(--fm-radius);
+  border: 1px solid rgba(99, 102, 241, 0.1);
+}
+
+.glossary-nav a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.78rem;
+  color: var(--fm-accent) !important;
+  background: rgba(99, 102, 241, 0.05);
+  transition: all 0.2s ease;
+  text-decoration: none !important;
+  border: none !important;
+}
+
+.glossary-nav a:hover {
+  background: rgba(99, 102, 241, 0.15);
+  transform: translateY(-2px);
+}
+
+[data-md-color-scheme="slate"] .glossary-nav {
+  background: var(--fm-gradient-surface);
+  border-color: rgba(99, 102, 241, 0.18);
+}

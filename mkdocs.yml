@@ -75,6 +75,9 @@ markdown_extensions:
       alternate_style: true
   - pymdownx.mark
   - pymdownx.keys
+  - pymdownx.smartsymbols
+  - pymdownx.caret
+  - pymdownx.tilde
   - def_list
   - tables
   - footnotes
@@ -193,6 +196,7 @@ nav:
     - 🔧 Extensible Pipeline: tutorials/extensible-pipeline.md
   - 📚 Reference:
     - 📖 Glossary: glossary.md
+    - ❓ FAQ: faq.md
     - 📚 Cheatsheet: reference/cheatsheet.md
     - 🛠️ CLI Reference: reference/cli.md
     - 🏛️ Stack Architecture: architecture/stacks.md
@@ -224,6 +228,9 @@ nav:
 
 extra_css:
   - stylesheets/extra.css
+
+extra_javascript:
+  - javascripts/extra.js
 
 extra:
   social:

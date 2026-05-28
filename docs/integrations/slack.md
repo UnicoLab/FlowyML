@@ -1,3 +1,20 @@
+---
+title: Slack Integration — FlowyML
+description: "Get real-time pipeline notifications, drift alerts, and team collaboration messages delivered directly to your Slack channels."
+---
+
+<div class="hero-section" markdown>
+
+## 💬 Slack Integration
+
+Get real-time pipeline notifications, drift alerts, and team collaboration messages delivered directly to your Slack channels.
+
+<span class="feature-badge">🔔 Pipeline Alerts</span>
+<span class="feature-badge">📊 Drift Notifications</span>
+<span class="feature-badge">👥 Team Updates</span>
+
+</div>
+
 # 💬 Slack Integration
 
 !!! info "What you'll learn"
@@ -99,3 +116,38 @@ def critical_step():
 
 !!! warning "Webhook security"
     Store webhook URLs in environment variables or secrets — never hardcode them in source code.
+
+---
+
+## 🚀 What's Next?
+
+<div class="header-grid" markdown>
+
+<div class="header-card" markdown>
+
+### 🔔 Notifications
+Configure advanced notification rules, schedules, and multi-channel delivery.
+
+[Explore →](../advanced/notifications.md)
+
+</div>
+
+<div class="header-card" markdown>
+
+### 📊 Data Drift Detection
+Detect and alert on data drift with automatic monitoring and Slack notifications.
+
+[Learn more →](../advanced/data-drift.md)
+
+</div>
+
+<div class="header-card" markdown>
+
+### 🔌 Plugin System
+Extend FlowyML with custom notification plugins and integrations.
+
+[View Guide →](../plugins/overview.md)
+
+</div>
+
+</div>

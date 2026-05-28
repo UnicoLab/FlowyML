@@ -48,7 +48,7 @@ result = generate_summary("Long text here...")
 
 ---
 
-### 1️⃣.5 🔗 **GenAI Observability** ⚡ NEW
+### 2️⃣ 🔗 **GenAI Observability** ⚡ NEW
 
 Full-stack GenAI observability for **any AI framework** — LangGraph, LangChain, OpenAI SDK, CrewAI, AutoGen, or custom code. Track every LLM call, tool invocation, chain execution, RAG pipeline, tokens, costs, artifacts, and errors with a single import.
 
@@ -92,7 +92,7 @@ log_llm_call(model="gpt-4o", prompt="Hello", response="Hi!", prompt_tokens=5, co
 
 ---
 
-### 2️⃣ **Keras Integration**
+### 3️⃣ **Keras Integration**
 
 Automatic experiment tracking for Keras models:
 
@@ -121,7 +121,7 @@ model.fit(
 
 ---
 
-### 3️⃣ **Data Drift Detection**
+### 4️⃣ **Data Drift Detection**
 
 Monitor data distribution shifts:
 
@@ -145,7 +145,7 @@ print(f"Mean: {stats['mean']}, Std: {stats['std']}")
 
 ---
 
-### 3️⃣.5 **ZenML Auto-Integration** ⚡NEW
+### 5️⃣ **ZenML Auto-Integration** ⚡NEW
 
 Import the entire ZenML ecosystem with one line:
 
@@ -180,7 +180,7 @@ flowyml zenml import-all
 
 ---
 
-### 4️⃣ **Pipeline Scheduling**
+### 6️⃣ **Pipeline Scheduling**
 
 Run pipelines automatically on a schedule:
 
@@ -210,7 +210,7 @@ scheduler.start()  # Non-blocking
 
 ---
 
-### 5️⃣ **Notifications**
+### 7️⃣ **Notifications**
 
 Get notified about pipeline events:
 
@@ -246,7 +246,7 @@ notifier.on_drift_detected(feature_name, psi_value)
 
 ---
 
-### 6️⃣ **Model Leaderboard**
+### 8️⃣ **Model Leaderboard**
 
 Compare and rank models:
 
@@ -282,7 +282,7 @@ comparison = compare_runs(
 
 ---
 
-### 7️⃣ **Pipeline Templates**
+### 9️⃣ **Pipeline Templates**
 
 Create pipelines from pre-built templates:
 
@@ -314,7 +314,7 @@ result = pipeline.run()
 
 ---
 
-### 8️⃣ **Checkpointing**
+### 🔟 **Checkpointing**
 
 Resume failed pipelines:
 
@@ -338,7 +338,7 @@ if checkpoint.exists():
 
 ---
 
-### 9️⃣ **Human-in-the-Loop**
+### 1️⃣1️⃣ **Human-in-the-Loop**
 
 Add approval gates to pipelines:
 
@@ -360,9 +360,9 @@ pipeline.add_step(approval_step)
 
 ---
 
-### 🔟 **Evaluations Framework** ⚡NEW
+### 1️⃣2️⃣ **Evaluations Framework** ⚡NEW
 
-Evaluate ML models and LLM outputs with 17 built-in scorers:
+Evaluate ML models and LLM outputs with 29+ built-in scorers:
 
 ```python
 from flowyml.evals import evaluate, EvalDataset, Accuracy, F1Score, EvalSuite
@@ -385,7 +385,7 @@ result = evaluate(data=genai_data, scorers=[Relevance(), judge])
 ```
 
 **Features:**
-- 17 built-in scorers (classification, regression, GenAI)
+- 29+ built-in scorers (classification, regression, GenAI)
 - Custom scorers via `make_judge()` and `make_scorer()`
 - Automatic regression detection
 - CI/CD quality gates (`EvalAssert`)
@@ -468,16 +468,16 @@ scheduler.start()
 
 ## 📚 Additional Resources
 
-- Full documentation: `/docs`
+- Full documentation: [Getting Started](getting-started.md)
 - API Reference: `/api/docs` (when server is running)
-- Examples: `/examples`
-- Roadmap: `ROADMAP.md`
+- Examples: [Examples](examples.md)
+- Roadmap: Check the [GitHub repository](https://github.com/UnicoLab/FlowyML) for the latest roadmap
 
 ---
 
 ## 🆕 Pipeline Engineering Features
 
-### 1️⃣1️⃣ **Build-Time Type Validation** ⚡NEW
+### 1️⃣3️⃣ **Build-Time Type Validation** ⚡NEW
 
 Catch type mismatches between connected steps at `Pipeline.build()` time:
 
@@ -496,7 +496,7 @@ pipeline.build()  # Raises: Pipeline type validation failed
 
 ---
 
-### 1️⃣2️⃣ **Map Tasks** ⚡NEW
+### 1️⃣4️⃣ **Map Tasks** ⚡NEW
 
 Distribute work over collections with configurable concurrency and per-item retries:
 
@@ -515,7 +515,7 @@ See full guide: [`docs/advanced/map-tasks.md`](advanced/map-tasks.md)
 
 ---
 
-### 1️⃣3️⃣ **Dynamic Workflows** ⚡NEW
+### 1️⃣5️⃣ **Dynamic Workflows** ⚡NEW
 
 Generate sub-pipelines at runtime based on intermediate results:
 
@@ -537,7 +537,7 @@ See full guide: [`docs/advanced/dynamic-workflows.md`](advanced/dynamic-workflow
 
 ---
 
-### 1️⃣4️⃣ **Sub-Pipeline Composition** ⚡NEW
+### 1️⃣6️⃣ **Sub-Pipeline Composition** ⚡NEW
 
 Nest entire pipelines as steps in other pipelines:
 
@@ -554,7 +554,7 @@ See full guide: [`docs/advanced/subpipelines.md`](advanced/subpipelines.md)
 
 ---
 
-### 1️⃣5️⃣ **Artifact Catalog with Lineage** ⚡NEW
+### 1️⃣7️⃣ **Artifact Catalog with Lineage** ⚡NEW
 
 Centralized artifact discovery, tagging, and lineage tracking:
 
@@ -579,7 +579,7 @@ See full guide: [`docs/advanced/artifact-catalog.md`](advanced/artifact-catalog.
 
 ---
 
-### 1️⃣6️⃣ **Immutable Pipeline Snapshots** ⚡NEW
+### 1️⃣8️⃣ **Immutable Pipeline Snapshots** ⚡NEW
 
 Capture exact pipeline definitions at execution time for reproducibility:
 
@@ -594,7 +594,7 @@ assert snapshot.verify()        # Verify integrity
 
 ---
 
-### 1️⃣7️⃣ **Enhanced DAG Validation** ⚡NEW
+### 1️⃣9️⃣ **Enhanced DAG Validation** ⚡NEW
 
 `Pipeline.build()` now detects:
 - **Dead outputs**: assets produced but never consumed
@@ -603,7 +603,7 @@ assert snapshot.verify()        # Verify integrity
 
 ---
 
-### 1️⃣8️⃣ **Prompt Asset** ⚡NEW
+### 2️⃣0️⃣ **Prompt Asset** ⚡NEW
 
 First-class prompt management for LLM/GenAI workflows — versioned, templated, and lineage-tracked:
 
@@ -646,7 +646,7 @@ v2 = Prompt(name="summarize_v2", template="...", parent=prompt)
 
 ---
 
-### 1️⃣9️⃣ **Checkpoint Asset** ⚡NEW
+### 2️⃣1️⃣ **Checkpoint Asset** ⚡NEW
 
 Training checkpoint management with epoch/step tracking and framework-agnostic persistence:
 
@@ -686,7 +686,7 @@ ckpt = Checkpoint.create(data=state, parent=model_asset)
 
 ---
 
-### 2️⃣0️⃣ **Stack Hydration from YAML** ⚡NEW
+### 2️⃣2️⃣ **Stack Hydration from YAML** ⚡NEW
 
 Define stacks in `flowyml.yaml` and hydrate them into live, fully-wired Stack objects:
 

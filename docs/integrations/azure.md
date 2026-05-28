@@ -1,3 +1,20 @@
+---
+title: Microsoft Azure Integration — FlowyML
+description: "Deploy FlowyML pipelines on Azure with Azure ML, Blob Storage, and AKS orchestration."
+---
+
+<div class="hero-section" markdown>
+
+## ☁️ Microsoft Azure Integration
+
+Deploy FlowyML pipelines on Azure with Azure ML, Blob Storage, and AKS orchestration.
+
+<span class="feature-badge">🤖 Azure ML</span>
+<span class="feature-badge">📦 Blob Storage</span>
+<span class="feature-badge">☸️ AKS</span>
+
+</div>
+
 # ☁️ Microsoft Azure
 
 !!! info "What you'll learn"
@@ -98,3 +115,38 @@ az login
 
 !!! tip "Blob storage tiers"
     Use Hot tier for active artifacts, Cool tier for infrequent access, and Archive for long-term storage.
+
+---
+
+## 🚀 What's Next?
+
+<div class="header-grid" markdown>
+
+<div class="header-card" markdown>
+
+### ☁️ GCP Integration
+Deploy FlowyML pipelines on Google Cloud with Vertex AI and GCS storage.
+
+[Explore →](gcp.md)
+
+</div>
+
+<div class="header-card" markdown>
+
+### ☁️ AWS Integration
+Run FlowyML pipelines on AWS with SageMaker orchestration and S3 storage.
+
+[Learn more →](aws.md)
+
+</div>
+
+<div class="header-card" markdown>
+
+### 🚀 Deployment
+Learn about production deployment strategies and best practices.
+
+[View Guide →](../deployment.md)
+
+</div>
+
+</div>

@@ -1,3 +1,20 @@
+---
+title: Google Cloud Platform Integration — FlowyML
+description: "Deploy FlowyML pipelines on GCP with Vertex AI, GCS artifact storage, and Cloud Run serving."
+---
+
+<div class="hero-section" markdown>
+
+## ☁️ Google Cloud Platform Integration
+
+Deploy FlowyML pipelines on GCP with Vertex AI, GCS artifact storage, and Cloud Run serving.
+
+<span class="feature-badge">🤖 Vertex AI</span>
+<span class="feature-badge">☁️ GCS</span>
+<span class="feature-badge">🚀 Cloud Run</span>
+
+</div>
+
 # Google Cloud Platform (GCP) ☁️
 
 Scale your pipelines from local prototypes to production workloads on Google Cloud.
@@ -100,3 +117,38 @@ pipeline.run(
 
 !!! tip "Cost Control"
     Vertex AI charges by the second. flowyml ensures resources are only provisioned while your steps are running.
+
+---
+
+## 🚀 What's Next?
+
+<div class="header-grid" markdown>
+
+<div class="header-card" markdown>
+
+### ☁️ AWS Integration
+Run FlowyML pipelines on AWS with SageMaker orchestration and S3 artifact storage.
+
+[Explore →](aws.md)
+
+</div>
+
+<div class="header-card" markdown>
+
+### ☁️ Azure Integration
+Deploy on Azure with Azure ML, Blob Storage, and AKS orchestration.
+
+[Learn more →](azure.md)
+
+</div>
+
+<div class="header-card" markdown>
+
+### 🚀 Deployment
+Learn about production deployment strategies and best practices.
+
+[View Guide →](../deployment.md)
+
+</div>
+
+</div>

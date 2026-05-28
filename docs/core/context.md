@@ -1,3 +1,8 @@
+---
+title: Context — FlowyML Core Concepts
+description: "Understand FlowyML Context — the parameter injection system that configures pipeline behavior. Covers context creation, parameter passing, environment-specific configuration, and best practices."
+---
+
 <div class="hero-section" markdown>
 
 ## 📜 Context & Parameters

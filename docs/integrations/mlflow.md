@@ -1,3 +1,20 @@
+---
+title: MLflow Integration — FlowyML
+description: "Track experiments, log metrics, and manage models with MLflow's ecosystem integrated directly into FlowyML pipelines."
+---
+
+<div class="hero-section" markdown>
+
+## 📊 MLflow Integration
+
+Track experiments, log metrics, and manage models with MLflow's ecosystem integrated directly into FlowyML pipelines.
+
+<span class="feature-badge">📈 Experiment Tracking</span>
+<span class="feature-badge">🏷️ Model Registry</span>
+<span class="feature-badge">📊 Metric Logging</span>
+
+</div>
+
 # 🧪 MLflow Integration
 
 !!! info "What you'll learn"
@@ -109,3 +126,38 @@ def register_best_model(model, metrics):
 
 !!! tip "Remote tracking server"
     In production, point `tracking_uri` to a shared MLflow server so your whole team can see experiment results.
+
+---
+
+## 🚀 What's Next?
+
+<div class="header-grid" markdown>
+
+<div class="header-card" markdown>
+
+### 📉 Weights & Biases
+Visualize training runs with interactive dashboards and team collaboration.
+
+[Explore →](wandb.md)
+
+</div>
+
+<div class="header-card" markdown>
+
+### 📈 Evaluations
+Evaluate your models with built-in metrics, custom scorers, and comparison tools.
+
+[Learn more →](../evaluations.md)
+
+</div>
+
+<div class="header-card" markdown>
+
+### 🔌 Plugin System
+Extend FlowyML with custom plugins for logging, tracking, and notifications.
+
+[View Guide →](../plugins/overview.md)
+
+</div>
+
+</div>

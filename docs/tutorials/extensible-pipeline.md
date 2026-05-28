@@ -11,7 +11,7 @@ This step-by-step tutorial shows you how to build a production-ready ML pipeline
 
 ## Prerequisites
 
-- Python 3.8+
+- Python 3.10+
 - Docker installed
 - (Optional) GCP account for cloud deployment
 - (Optional) MinIO server for custom storage
