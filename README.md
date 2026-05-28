@@ -136,13 +136,40 @@ pip install flowyml
 pip install "flowyml[all]"
 ```
 
+---
+
+## 📓 FlowyML Notebook — Design Pipelines Visually
+
+**[FlowyML Notebook](https://github.com/UnicoLab/flowyml-notebook)** is the companion reactive notebook environment for FlowyML. It replaces Jupyter with a **DAG-powered, production-ready** notebook that ships directly to FlowyML pipelines.
+
+| Feature | Description |
+|---------|-------------|
+| 🔄 **Reactive DAG** | Cells form a dependency graph — change a variable, only dependent cells re-execute |
+| 📝 **Pure .py Storage** | Git-friendly, lintable, importable — no `.ipynb` JSON |
+| 🚀 **Pipeline Promotion** | Promote notebooks to production FlowyML pipelines with one click |
+| 🧾 **43 Recipes** | Reusable code templates across Core, Assets, ML, Evals, and more |
+| 🤖 **AI Assistant** | Context-aware code generation (OpenAI, Google AI, Ollama, Anthropic) |
+| 📊 **Rich Data Explorer** | Automatic DataFrame profiling with statistics, charts, and correlations |
+| 🌐 **Publish as App** | Turn any notebook into a web app with 5 layout options |
+
+```bash
+pip install flowyml-notebook
+fml-notebook dev  # 🔥 Launch with hot-reload
+```
+
+> 📖 **[FlowyML Notebook Documentation](https://unicolab.github.io/flowyml-notebook/latest/)** · **[GitHub](https://github.com/UnicoLab/flowyml-notebook)** · **[PyPI](https://pypi.org/project/flowyml-notebook/)**
+
+---
+
 ## 📚 Documentation
 
-Visit [FlowyML Docs](https://unicolab.github.io/FlowyML/latest/) for:
-- **[Getting Started](https://unicolab.github.io/FlowyML/latest/getting-started)**
-- **[Core Concepts](https://unicolab.github.io/FlowyML/latest/core/pipelines)**
-- **[Type-Based Routing](https://unicolab.github.io/FlowyML/latest/plugins/type_routing)**
-- **[API Reference](https://unicolab.github.io/FlowyML/latest/api/core)**
+Visit **[FlowyML Docs](https://unicolab.github.io/FlowyML/latest/)** for the full guide:
+
+- **[Getting Started](https://unicolab.github.io/FlowyML/latest/getting-started)** — Build your first pipeline in 5 minutes
+- **[Core Concepts](https://unicolab.github.io/FlowyML/latest/core/pipelines)** — Pipelines, Steps, Context, and Assets
+- **[Features Explorer](https://unicolab.github.io/FlowyML/latest/FEATURES)** — 20+ features deep dive
+- **[Ecosystem](https://unicolab.github.io/FlowyML/latest/ecosystem)** — FlowyML Notebook, Keras tools, and integrations
+- **[API Reference](https://unicolab.github.io/FlowyML/latest/api/core)** — Full API documentation
 
 ---
 <p align="center">

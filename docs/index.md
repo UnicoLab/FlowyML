@@ -1,3 +1,12 @@
+---
+title: FlowyML — The ML Pipeline Framework for Humans
+description: "Enterprise-grade ML pipeline orchestration: artifact-centric DAGs, multi-cloud deployment, GenAI observability, and a beautiful dashboard — all in pure Python."
+---
+
+<!-- ============================================================
+     HERO — Immersive landing with logo, tagline & CTAs
+     ============================================================ -->
+
 <div class="landing-hero">
 
 <img src="logo.png" alt="flowyml Logo">
@@ -5,7 +14,8 @@
 <h1>FlowyML 🌊</h1>
 
 <div class="tagline">
-The <strong>Artifact-Centric</strong> ML Pipeline Framework that lets you focus on Machine Learning, not infrastructure plumbing. Define your data — we build the DAG.
+The <strong>Artifact-Centric</strong> ML Pipeline Framework that lets you focus on Machine Learning, not infrastructure plumbing.<br>
+<em>Define your data — we build the DAG.</em>
 </div>
 
 <div class="badge-row">
@@ -18,274 +28,354 @@ The <strong>Artifact-Centric</strong> ML Pipeline Framework that lets you focus 
 </div>
 
 <div class="stats-strip">
-<div class="stat-item"><span class="stat-number">17+</span><span class="stat-label">Eval Scorers</span></div>
-<div class="stat-item"><span class="stat-number">∞</span><span class="stat-label">Plugin Ecosystem</span></div>
+<div class="stat-item"><span class="stat-number">29+</span><span class="stat-label">Eval Scorers</span></div>
+<div class="stat-item"><span class="stat-number">3</span><span class="stat-label">Cloud Providers</span></div>
 <div class="stat-item"><span class="stat-number">0</span><span class="stat-label">Arrows to Write</span></div>
-<div class="stat-item"><span class="stat-number">3</span><span class="stat-label">Clouds Supported</span></div>
+<div class="stat-item"><span class="stat-number">∞</span><span class="stat-label">Plugin Ecosystem</span></div>
+</div>
+
+<div class="hero-cta-row">
+<a href="getting-started/" class="cta-button cta-primary">🚀 Get Started</a>
+<a href="FEATURES/" class="cta-button cta-secondary">✨ Explore Features</a>
 </div>
 
 </div>
 
 ---
 
-## 📦 Why Artifact-Centric Changes Everything
+## 💡 What is FlowyML?
 
-Typical orchestrators (Airflow, ZenML, Prefect) are **task-based** — you wire arrows between steps manually. FlowyML is **artifact-centric** — steps declare what data they **produce** and **consume**, and the DAG is built automatically.
+**FlowyML** is an open-source Python framework that turns ML experiments into production-ready pipelines with **zero infrastructure code**. Unlike traditional orchestrators that force you to wire steps manually, FlowyML uses an **artifact-centric** approach: declare what data your steps produce and consume, and the execution graph builds itself.
 
-<div class="pitch-grid" markdown>
-
-<div class="pitch-card" markdown>
-### 🧪 Beyond Tasks
-Stop thinking about *what to run*. Think about *what you produce*. FlowyML builds the DAG from your **`inputs`** and **`outputs`** — no `>>` arrows, no `.set_downstream()`.
-</div>
-
-<div class="pitch-card" markdown>
-### 🏗️ Unified Stacks
-Same code runs locally, on **Kubernetes**, **Vertex AI**, or **SageMaker**. Swap infrastructure with a single YAML change — zero code rewrites.
-</div>
-
-<div class="pitch-card" markdown>
-### 🛡️ Production First
-Built-in **lineage tracking**, **intelligent caching**, **human-in-the-loop**, **distributed execution**, and **model leaderboards** as first-class citizens.
-</div>
-
-</div>
-
-### 🔍 The Technical Paradigm Shift
-
-```mermaid
-graph LR
-    A[Raw Data] -->|Step A| B(Processed Dataset)
-    B -->|Step B| C(Trained Model)
-    C -->|Step C| D{Evaluation}
-
-    style B fill:#e1f5fe,stroke:#01579b
-    style C fill:#e1f5fe,stroke:#01579b
-```
-
-| Concept | Task-Based (Traditional) | Artifact-Centric (FlowyML) |
-|---------|-------------------------|----------------------------|
-| **Core focus** | The order of operations ("The Verb") | The state of the data ("The Noun") |
-| **DAG Construction** | Manual arrows (`step1 >> step2`) | **Auto-Inferred** from input/output signatures |
-| **Data Handoff** | Manual paths (`s3://bucket/run_1/X.csv`) | **Global Catalog** resolution by name & version |
-| **Validation** | Runtime failure ("File not found") | **Compile-time** type and lineage check |
-| **Reproducibility** | Hope the script hasn't changed | **Immutable Lineage** (Parents → Child chain) |
+!!! success "The Bottom Line"
+    Write a Python function → Add the `@step` decorator → Get a production pipeline with caching, lineage tracking, cloud deployment, and a monitoring dashboard. **No arrows. No DSLs. No YAML hell.**
 
 ---
 
-## ⚡ The "Zen" Developer Experience
-
-A complete, production-ready pipeline. Notice: **no arrows** (`>>`). The dependency between `load_data` and `train_model` is **auto-inferred** from the `dataset` artifact.
+## ⚡ See It in Action — 30 Seconds to a Pipeline
 
 ```python linenums="1"
 from flowyml import Pipeline, step, context, Model
-from typing import List
 
 @step(outputs=["dataset"])
-def load_data() -> List[int]:
-    """Produces a list of integers as an Artifact."""
+def load_data() -> list:
+    """Produces a dataset artifact."""
     return [1, 2, 3, 4, 5]
 
 @step(inputs=["dataset"], outputs=["model"])
-def train_model(dataset: List[int], learning_rate: float) -> Model:
-    """Consumes 'dataset' and 'learning_rate' (from context)."""
-    # 'learning_rate' is automatically injected from the execution context!
+def train_model(dataset: list, learning_rate: float) -> Model:
+    """Consumes 'dataset', receives 'learning_rate' from context."""
     print(f"Training on {len(dataset)} items with lr={learning_rate}")
-    return Model(data="weights", name="mnist_model", version="1.0.0")
+    return Model(data="weights", name="my_model", version="1.0.0")
 
-# 1. Define Execution Context (Hyperparameters, etc.)
+# Configure, build, and run
 ctx = context(learning_rate=0.05)
-
-# 2. Build Pipeline
 pipeline = Pipeline("quickstart", context=ctx)
 pipeline.add_step(load_data).add_step(train_model)
-
-# 3. Run (Auto-Discovered dependencies)
 pipeline.run()
 ```
+
+!!! tip "💡 What just happened?"
+    FlowyML **auto-discovered** that `train_model` depends on `load_data` through the `dataset` artifact. The `learning_rate` was **automatically injected** from context. No `>>` arrows, no `.set_downstream()`. Just Python.
+
+---
+
+## 🏗️ How FlowyML Works
+
+<div class="how-it-works-grid" markdown>
+
+<div class="how-step" markdown>
+<div class="how-step-number">1</div>
+
+### Define Steps
+Decorate Python functions with `@step`. Declare `inputs` and `outputs` — that's it. FlowyML figures out the rest.
+
+```python
+@step(outputs=["model"])
+def train(dataset, lr: float) -> Model:
+    return Model(train_classifier(dataset))
+```
+</div>
+
+<div class="how-step" markdown>
+<div class="how-step-number">2</div>
+
+### Configure Infrastructure
+One YAML file controls where everything runs. Switch from local to cloud with a single environment variable.
+
+```bash
+export FLOWYML_STACK=production
+python pipeline.py  # Now on Vertex AI
+```
+</div>
+
+<div class="how-step" markdown>
+<div class="how-step-number">3</div>
+
+### Monitor & Ship
+Beautiful dark-mode dashboard shows pipeline DAGs, metrics, artifacts, and GenAI traces in real-time.
+
+```bash
+flowyml ui start
+# → http://localhost:8080
+```
+</div>
+
+</div>
+
+---
+
+## 🎯 Feature Highlights
+
+<div class="feature-showcase" markdown>
+
+<div class="feature-card" markdown>
+<div class="feature-icon">📦</div>
+
+### Artifact-Centric Pipelines
+Steps declare data dependencies. The DAG builds itself — no manual wiring. Models, Datasets, and Metrics are **first-class citizens** with automatic lineage tracking.
+
+[Learn more →](core/assets.md)
+</div>
+
+<div class="feature-card" markdown>
+<div class="feature-icon">☁️</div>
+
+### Multi-Cloud, Zero Rewrites
+Same code runs on **GCP Vertex AI**, **AWS SageMaker**, or **Azure ML**. Switch infrastructure with one YAML change — your pipeline code stays identical.
+
+[Learn more →](plugins/stack-configuration.md)
+</div>
+
+<div class="feature-card" markdown>
+<div class="feature-icon">🤖</div>
+
+### GenAI Observability
+Built-in LLM tracing for **LangGraph**, **LangChain**, **OpenAI SDK**, or any framework. Track every token, cost, and latency. No LangSmith needed.
+
+[Learn more →](integrations/genai-observability.md)
+</div>
+
+<div class="feature-card" markdown>
+<div class="feature-icon">🎯</div>
+
+### 29+ Evaluation Scorers
+Production-grade evaluation: classification, regression, and GenAI (LLM-as-a-Judge). Adapters for **DeepEval**, **RAGAS**, and **Phoenix**. CI/CD quality gates built in.
+
+[Learn more →](evaluations.md)
+</div>
+
+<div class="feature-card" markdown>
+<div class="feature-icon">🖥️</div>
+
+### Beautiful Dashboard
+Dark-mode web UI with pipeline DAG visualization, experiment comparison, artifact inspection, GenAI traces, and model training curves — all in real-time.
+
+[Learn more →](gui-overview.md)
+</div>
+
+<div class="feature-card" markdown>
+<div class="feature-icon">⚡</div>
+
+### Smart Caching & Performance
+Content-based hashing skips unchanged steps. Parallel execution, map tasks, step grouping, and lazy evaluation keep your pipelines fast.
+
+[Learn more →](advanced/caching.md)
+</div>
+
+<div class="feature-card" markdown>
+<div class="feature-icon">🔀</div>
+
+### Dynamic Workflows
+Generate sub-pipelines at runtime with `@dynamic`. Run hyperparameter sweeps, conditional branches, and human-in-the-loop approvals.
+
+[Learn more →](advanced/dynamic-workflows.md)
+</div>
+
+<div class="feature-card" markdown>
+<div class="feature-icon">🔌</div>
+
+### Plugin Ecosystem
+Extensible architecture with plugins for MLflow, W&B, Slack, Docker, Kubernetes, and more. Import 50+ ZenML integrations with one line.
+
+[Learn more →](plugins/overview.md)
+</div>
+
+</div>
+
+---
+
+## 📊 FlowyML vs. Traditional Orchestrators
+
+| Concept | Traditional Orchestrators | **FlowyML** |
+|---------|:-------------------------:|:-----------:|
+| **Core Paradigm** | Task-based ("The Verb") | **Artifact-centric** ("The Noun") |
+| **DAG Construction** | Manual arrows (`step1 >> step2`) | **Auto-Inferred** from inputs/outputs |
+| **Data Handoff** | Manual paths (`s3://bucket/file.csv`) | **Catalog** resolution by name & version |
+| **Type Safety** | Runtime failures | **Build-time** validation |
+| **Cloud Deployment** | Vendor lock-in or rewrites | **One env var** to switch clouds |
+| **GenAI Observability** | Requires external tools | **Built-in** tracing & evaluation |
+| **Developer Experience** | Complex YAML or rigid DSLs | **Pure Python** — no DSLs |
+| **Caching** | Basic file-timestamp checks | **Content-hash** based (code + inputs) |
+| **Model Management** | Generic file paths | **First-class** Model, Dataset, Metrics |
+| **Evaluation** | Manual scripting | **29+ built-in** scorers with CI/CD gates |
+
+---
+
+## 🖥️ The Dashboard
+
+FlowyML ships with a **full-featured web dashboard** for monitoring, debugging, and managing your entire ML lifecycle.
+
+<div class="screenshot-gallery" markdown>
+
+<div class="screenshot-card" markdown>
+![FlowyML Dashboard](screenshots/dashboard.png)
+
+**Command Center** — Overview of pipeline health, recent runs, and workspace activity
+</div>
+
+<div class="screenshot-card" markdown>
+![FlowyML Pipeline Runs](screenshots/run.png)
+
+**Pipeline DAG** — Interactive visualization with real-time step status
+</div>
+
+<div class="screenshot-card" markdown>
+![FlowyML Model Curves](screenshots/model_curve.png)
+
+**Training Curves** — Interactive charts with zoom, log scale, and metric comparison
+</div>
+
+<div class="screenshot-card" markdown>
+![FlowyML GenAI Traces](screenshots/genai-traces.png)
+
+**GenAI Traces** — LLM call monitoring with token counts, latency, and cost
+</div>
+
+</div>
+
+<div style="text-align: center; margin-top: 1rem;">
+<a href="gui-overview/" class="cta-button cta-secondary" style="display: inline-flex;">📸 Full GUI Tour →</a>
+</div>
 
 ---
 
 ## 🔄 How Artifacts Flow Through Infrastructure
 
-FlowyML **automatically routes artifacts** to your configured infrastructure. Here's exactly how the YAML config connects to your code:
+FlowyML **automatically routes artifacts** to your configured infrastructure based on their **type**:
 
 ```mermaid
 graph TB
     subgraph "Your Code"
-        S1["@step(outputs=['dataset'])"] --> A1["Dataset Artifact"]
-        S2["@step(outputs=['model'])"] --> A2["Model Artifact"]
-        S3["@step(outputs=['metrics'])"] --> A3["Metrics Dict"]
+        S1["@step → Model"] --> A1["🤖 Model Artifact"]
+        S2["@step → Metrics"] --> A2["📊 Metrics Dict"]
+        S3["@step → Dataset"] --> A3["📋 Dataset"]
     end
 
-    subgraph "flowyml.yaml routing"
-        A1 -->|"artifact_store: gcs"| GCS["☁️ GCS Bucket"]
-        A2 -->|"model_registry: vertex"| REG["🏷️ Model Registry"]
-        A2 -->|"artifact_store: gcs"| GCS
-        A3 -->|"experiment_tracker: mlflow"| MLF["🔬 MLflow"]
+    subgraph "flowyml.yaml Routing"
+        A1 -->|"model_registry"| REG["🏷️ Model Registry"]
+        A1 -->|"artifact_store"| GCS["☁️ Cloud Storage"]
+        A2 -->|"experiment_tracker"| MLF["🔬 MLflow / W&B"]
+        A3 -->|"artifact_store"| GCS
     end
 ```
 
-!!! info "📌 The Golden Rule"
-    **Without a stack configured** → artifacts are stored locally in `.flowyml/artifacts/`.
-    **With a stack configured** → artifacts are automatically uploaded to the configured stores based on their **type** (`Model`, `Dataset`, `Metrics`).
-
-### ⚙️ How YAML Maps to Code
-
-```yaml linenums="1"
-# flowyml.yaml — this is what controls WHERE artifacts go
-plugins:
-  experiment_tracker:           # ← Metrics & Parameters go here
-    type: mlflow
-    tracking_uri: http://localhost:5000
-
-  artifact_store:               # ← Datasets & general artifacts go here
-    type: gcs
-    bucket: my-ml-artifacts
-    prefix: experiments/
-
-  model_registry:               # ← Models get registered here (if enabled)
-    type: vertex_model_registry
-
-  orchestrator:                 # ← WHERE steps execute (local, cloud, K8s)
-    type: vertex_ai
-    project: my-gcp-project
-```
-
-```python linenums="1"
-from flowyml import step
-from flowyml.core import Model, Metrics
-
-@step(outputs=["model"])
-def train() -> Model:
-    """FlowyML sees the return type is `Model`:
-    → Saves to artifact_store (GCS bucket)
-    → Registers in model_registry (Vertex AI)
-    → All automatic — zero extra code!
-    """
-    clf = train_classifier(data)
-    return Model(data=clf, name="fraud_detector", version="1.0.0")
-
-@step(outputs=["metrics"])
-def evaluate() -> Metrics:
-    """FlowyML sees the return type is `Metrics`:
-    → Logs to experiment_tracker (MLflow)
-    → Automatic — no mlflow.log_metrics() call needed!
-    """
-    return Metrics({"accuracy": 0.95, "f1": 0.92})
-
-@step(outputs=["dataset"])
-def preprocess() -> list:
-    """Return type is `list` (not a typed artifact):
-    → Saved to artifact_store (GCS bucket) as serialized data
-    → FlowyML uses materializers to serialize/deserialize
-    """
-    return [1, 2, 3, 4, 5]
-```
-
-!!! tip "💡 What triggers an upload?"
-    | Scenario | What Happens |
-    |----------|-------------|
-    | **No stack / local stack** | Artifacts saved to `./artifacts/` on disk — no upload |
-    | **Stack with `artifact_store: gcs`** | All step outputs uploaded to GCS bucket |
-    | **Step returns `Model` type** | Saved to artifact store **+ registered** in model registry (if configured) |
-    | **Step returns `Metrics` type** | Logged to experiment tracker (MLflow/W&B) **+ saved** to artifact store |
-    | **`artifact_routing` rules defined** | Fine-grained control: deploy models, set paths, conditional deploy |
-    | **No `model_registry` configured** | Models saved to artifact store only — no registration |
+!!! info "The Golden Rule"
+    **No stack configured?** → Artifacts saved locally. **Stack configured?** → Artifacts auto-routed to cloud based on type. Zero code changes.
 
 ---
 
-## 🤖 GenAI & LLM Evaluation
+## 📓 Design Pipelines Visually — FlowyML Notebook
 
-FlowyML natively supports **LLM observability** and **evaluation**:
+<div class="notebook-callout" markdown>
 
-- **🕵️ LLM Tracing** — Capture every LLM call, token count, latency, and cost with `@trace_llm`
-- **🎯 17+ Built-in Scorers** — Relevance, Faithfulness, Toxicity, and LLM-as-a-Judge evaluators
-- **🏟️ Judge Arena** — A/B test evaluators against human labels in real-time
-- **🛡️ CI/CD Gates** — Block bad models with quality assertions in your test suite
+<div class="notebook-callout-content" markdown>
 
-```python linenums="1"
-from flowyml.evals import evaluate, EvalDataset, Relevance, Faithfulness
+### 🌊 FlowyML Notebook — The Reactive Notebook That Ships to Production
 
-# 1. Capture traces or use a static dataset
-data = EvalDataset.create_genai("rag_quality", examples=[...])
+**FlowyML Notebook** is a companion reactive notebook environment that replaces Jupyter for ML workflows. Write Python cells with **automatic dependency tracking**, then promote directly to FlowyML pipelines with one click.
 
-# 2. Run multi-scorer evaluation
-result = evaluate(data=data, scorers=[Relevance(), Faithfulness()])
+<div class="badge-row" style="margin: 1rem 0;">
+<span class="feature-badge">🔄 Reactive DAG</span>
+<span class="feature-badge">📝 Pure .py Files</span>
+<span class="feature-badge">🚀 One-Click Deploy</span>
+<span class="feature-badge">🤖 AI Assistant</span>
+<span class="feature-badge">🧾 43 Recipes</span>
+</div>
 
-# 3. Quality Gate
-assert result.pass_rate >= 0.9
+**Key features:** SmartPrep Advisor · Algorithm Matchmaker · GitHub Integration · SQL First-Class · App Mode · Rich Data Exploration
+
+```bash
+pip install flowyml-notebook
+fml-notebook dev  # 🔥 Launch with hot-reload
 ```
 
----
+[:octicons-arrow-right-24: Learn more about FlowyML Notebook](flowyml-notebook.md){ .md-button } [:octicons-mark-github-16: GitHub](https://github.com/UnicoLab/flowyml-notebook){ .md-button .md-button--primary }
 
-## 🎯 Why Teams Choose FlowyML
-
-<div class="pitch-grid" markdown>
-
-<div class="pitch-card" markdown>
-### 💡 Zero Arrow Wiring
-Define `inputs` and `outputs` on your steps. FlowyML **auto-discovers** the DAG — no `.set_downstream()` or `>>` plumbing.
-</div>
-
-<div class="pitch-card" markdown>
-### 🔄 Same Code, Everywhere
-Write once, deploy anywhere. Swap from local SQLite → GCS + Vertex AI → S3 + SageMaker with a single **Stack** config change.
-</div>
-
-<div class="pitch-card" markdown>
-### 📊 Built-In Observability
-Real-time UI dashboard, lineage graphs, Gantt-chart timelines, and LLM token tracking — no extra plugins needed.
 </div>
 
 </div>
 
 ---
 
-## 🗺️ Master the Platform
+## 🗺️ Explore the Documentation
 
 <div class="grid cards" markdown>
 
 -   :rocket: **[Getting Started](getting-started.md)**
     ---
-    Build your first pipeline in 5 minutes. Learn the basics of Steps and Pipelines.
+    Build your first pipeline in 5 minutes. Install, create, run, and monitor.
 
--   :book: **[Core Concepts](core/pipelines.md)**
+-   :package: **[Core Concepts](core/pipelines.md)**
     ---
-    Deep dive into the heart of FlowyML: Pipelines, Steps, Context, and Asset Lineage.
+    Master Pipelines, Steps, Context, and Artifact Lineage — the heart of FlowyML.
 
--   :package: **[Artifact-Centric Philosophy](artifact-centric.md)**
+-   :sparkles: **[Features Explorer](FEATURES.md)**
     ---
-    Understand *why* focusing on Artifacts instead of Tasks changes everything for ML stability.
+    Deep dive into 20+ features: evaluations, caching, drift detection, templates, and more.
 
--   :zap: **[Advanced Features](advanced_features.md)**
+-   :art: **[GUI Dashboard](gui-overview.md)**
     ---
-    Master Caching, Parallelism, Conditional Execution, Step Grouping, and more.
+    Visual tour of the web dashboard: DAGs, metrics, traces, and deployments.
 
--   :chart_with_upwards_trend: **[User Guide](user-guide/projects.md)**
+-   :electric_plug: **[Plugins & Stacks](plugins/overview.md)**
     ---
-    Manage projects, deployments, versioning, scheduling, and observability dashboards.
+    Multi-cloud deployment, artifact routing, and the extensible plugin architecture.
 
--   :plug: **[Plugins & Stacks](plugins/overview.md)**
+-   :globe_with_meridians: **[Ecosystem](ecosystem.md)**
     ---
-    Cloud integrations, model registries, type-based routing, and stack management.
+    FlowyML Notebook, UnicoLab Keras tools, and the full integration landscape.
 
 </div>
 
 ---
 
-## 🏗️ Practical Examples {#practical-examples}
+## 📦 Installation
 
-Explore real-world implementations in the [examples/](https://github.com/UnicoLab/FlowyML/tree/main/examples) directory:
+=== "Quick Install"
 
--   **[Complete Demo](https://github.com/UnicoLab/FlowyML/blob/main/examples/complete_demo.py)**: A massive tour of versioning, projects, notifications, and drift detection.
--   **[Pipeline Showcase](https://github.com/UnicoLab/FlowyML/blob/main/examples/pipeline_showcase.py)**: Complex branching, caching, and multi-asset management.
--   **[UI Integration](https://github.com/UnicoLab/FlowyML/blob/main/examples/ui_integration_example.py)**: Real-time monitoring with the web dashboard.
--   **[Simple Pipeline](https://github.com/UnicoLab/FlowyML/blob/main/examples/simple_pipeline.py)**: The absolute basics.
+    ```bash
+    pip install flowyml
+    ```
+
+=== "Full Install (Recommended)"
+
+    ```bash
+    pip install "flowyml[all]"
+    ```
+
+=== "Cloud Extras"
+
+    ```bash
+    pip install "flowyml[gcp]"    # Google Cloud
+    pip install "flowyml[aws]"    # Amazon Web Services
+    pip install "flowyml[azure]"  # Microsoft Azure
+    ```
 
 ---
 
-<p align="center">
-  <b>FlowyML is for those who are tired of plumbing.</b><br>
-  <i>Focus on the ML. We'll handle the flow.</i>
+<p align="center" class="closing-tagline">
+  <strong>FlowyML is for teams who are tired of plumbing.</strong><br>
+  <em>Focus on the ML. We'll handle the flow.</em><br><br>
+  <a href="getting-started/" class="cta-button cta-primary">🚀 Start Building</a>
 </p>

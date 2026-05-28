@@ -293,6 +293,19 @@ Congratulations! You've built a complete pipeline with monitoring. Here's where 
 
 ---
 
+!!! tip "📓 Prefer a Visual Environment? Try FlowyML Notebook"
+    **[FlowyML Notebook](flowyml-notebook.md)** is a reactive notebook that replaces Jupyter. Write Python cells with automatic dependency tracking, then promote directly to FlowyML pipelines with one click.
+
+    ```bash
+    pip install flowyml-notebook && fml-notebook dev
+    ```
+
+    [Learn more about FlowyML Notebook →](flowyml-notebook.md)
+
+---
+
 **Questions or stuck?** Check out the [Resources](resources.md) page for community links, tutorials, and support channels.
 
 **Ready to dive deeper?** The [User Guide](user-guide/projects.md) is your next stop for production-grade patterns.
+
+**Explore the ecosystem →** See the full [FlowyML Universe](ecosystem.md) including Notebook, Keras tools, and cloud integrations.

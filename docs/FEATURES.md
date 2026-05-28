@@ -1,4 +1,22 @@
-# 🌊 flowyml - Quick Reference Guide
+---
+title: Features Explorer — Everything FlowyML Can Do
+description: A comprehensive guide to all FlowyML features including GenAI observability, evaluations, scheduling, drift detection, templates, and more.
+---
+
+<div class="hero-section" markdown>
+
+## 🌊 FlowyML Features Explorer
+
+Discover everything FlowyML can do — from GenAI observability and LLM evaluation to pipeline scheduling, data drift detection, and beyond. Each feature is production-ready and batteries-included.
+
+<span class="feature-badge">🤖 GenAI</span>
+<span class="feature-badge">📊 Evaluations</span>
+<span class="feature-badge">⏰ Scheduling</span>
+<span class="feature-badge">📉 Drift Detection</span>
+<span class="feature-badge">🔀 Dynamic Workflows</span>
+<span class="feature-badge">📦 Artifact Catalog</span>
+
+</div>
 
 ## New Features Overview
 
@@ -719,6 +737,51 @@ with manager.use_stack("gcp-prod"):
 - Artifact routing rules attached to hydrated stack
 - `use_stack()` context manager for temporary stack switching
 - `FLOWYML_STACK` environment variable override
+
+---
+
+## 📓 Design Pipelines Visually with FlowyML Notebook
+
+!!! tip "🌊 FlowyML Notebook — The Reactive Notebook That Ships to Production"
+    **[FlowyML Notebook](flowyml-notebook.md)** is a companion reactive notebook environment that replaces Jupyter for ML workflows. Write Python cells with automatic dependency tracking, then promote directly to FlowyML pipelines with one click.
+
+    ```bash
+    pip install flowyml-notebook
+    fml-notebook dev  # 🔥 Launch with hot-reload
+    ```
+
+    **Key features:** Reactive DAG · Pure .py Storage · SmartPrep Advisor · Algorithm Matchmaker · 43 Recipes · GitHub Integration · AI Assistant · Publish as App
+
+    [:octicons-arrow-right-24: Learn more](flowyml-notebook.md) · [:octicons-mark-github-16: GitHub](https://github.com/UnicoLab/flowyml-notebook) · [:octicons-globe-24: Docs](https://unicolab.github.io/flowyml-notebook/latest/)
+
+---
+
+## 🌐 Explore the Full Ecosystem
+
+<div class="header-grid" markdown>
+
+<div class="header-card" markdown>
+### 📓 FlowyML Notebook
+Reactive notebook for designing and shipping pipelines visually.
+
+[Explore →](flowyml-notebook.md)
+</div>
+
+<div class="header-card" markdown>
+### 🔌 Integrations
+Keras, PyTorch, MLflow, W&B, GCP, AWS, Azure, and more.
+
+[Browse →](integrations/keras.md)
+</div>
+
+<div class="header-card" markdown>
+### 🌊 Ecosystem
+The complete FlowyML Universe and how it all fits together.
+
+[Discover →](ecosystem.md)
+</div>
+
+</div>
 
 ---
 

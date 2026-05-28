@@ -98,123 +98,127 @@ plugins:
 
 nav:
   - 🏠 Home: index.md
-  - 🌊 Features Explorer: FEATURES.md
-  - 📥 Installation: INSTALLATION.md
-  - 🚀 Getting Started: getting-started.md
-  - 📚 Quick Reference: QUICK_REFERENCE.md
-  - 🖥️ GUI Overview: gui-overview.md
-  - 🚂 Migration & Upgrades: migration_guide.md
-  - 📚 Core Concepts:
+  - 🚀 Getting Started:
+    - 📥 Installation: INSTALLATION.md
+    - 🚀 Quick Start: getting-started.md
+    - 📚 Quick Reference: QUICK_REFERENCE.md
+    - 🖥️ GUI Dashboard Tour: gui-overview.md
+  - 🎯 Core Concepts:
     - 🎢 Pipelines: core/pipelines.md
     - ☊ Steps: core/steps.md
     - 📜 Context: core/context.md
-    - 📦 Assets: core/assets.md
-  - 🔌 Plugins & Stacks:
-    - 📚 Overview: plugins/overview.md
-    - 📥 Type-Based Routing: plugins/type_routing.md
-    - 🌍 Stack Configuration: plugins/stack-configuration.md
-    - 🎯 Native Plugins: plugins/native-plugins.md
-    - 🔄 External Frameworks: plugins/external-frameworks.md
-    - 🔧 Creating Plugins: plugins/creating-plugins.md
-    - 🎯 Practical Examples: plugins/practical-examples.md
-    - 🏭 Production Tutorial: tutorials/production-pipeline-tutorial.md
-  - 🤖 GenAI & Evaluations:
-    - 🎯 Evaluations Guide: evaluations.md
-    - 🕵️ LLM Tracing: advanced/llm-tracing.md
-    - 🔗 GenAI Observability: integrations/genai-observability.md
-    - 🔌 Eval Adapters: advanced/eval-adapters.md
-    - 🏟️ Judge Arena: advanced/eval-arena.md
-    - 🛡️ CI/CD & Scheduling: advanced/eval-ci-cd.md
-  - ⚡ Advanced Features:
-    - 📋 Overview: advanced_features.md
-    - 🏪 Caching: advanced/caching.md
-    - 💾 Checkpointing & Recovery: advanced/checkpointing.md
-    - ⚡ Non-Blocking Execution: async_execution.md
-    - 🗺️ Map Tasks: advanced/map-tasks.md
-    - ⚡ Dynamic Workflows: advanced/dynamic-workflows.md
-    - 🧩 Sub-Pipelines: advanced/subpipelines.md
-    - 🗃️ Artifact Catalog: advanced/artifact-catalog.md
-    - ✋ Human-in-the-Loop: advanced/human-in-the-loop.md
-    - 🔀 Step Grouping: advanced/step-grouping.md
-    - 🚀 Parallel Execution: advanced/parallel.md
-    - 🔀 Conditional Execution: advanced/conditional.md
-    - 🛡️ Error Handling: advanced/error-handling.md
+    - 📦 Assets & Lineage: core/assets.md
+    - 💎 Artifact-Centric Philosophy: artifact-centric.md
+    - 🏗️ Architecture: architecture.md
+  - ✨ Features:
+    - 🌊 Features Explorer: FEATURES.md
+    - 🤖 GenAI & Evaluations:
+      - 🎯 Evaluations Guide: evaluations.md
+      - 🕵️ LLM Tracing: advanced/llm-tracing.md
+      - 🔗 GenAI Observability: integrations/genai-observability.md
+      - 🔌 Eval Adapters: advanced/eval-adapters.md
+      - 🏟️ Judge Arena: advanced/eval-arena.md
+      - 🛡️ CI/CD & Scheduling: advanced/eval-ci-cd.md
+    - ⚡ Advanced Workflows:
+      - 📋 Overview: advanced_features.md
+      - 🏪 Caching: advanced/caching.md
+      - 💾 Checkpointing & Recovery: advanced/checkpointing.md
+      - ⚡ Non-Blocking Execution: async_execution.md
+      - 🗺️ Map Tasks: advanced/map-tasks.md
+      - ⚡ Dynamic Workflows: advanced/dynamic-workflows.md
+      - 🧩 Sub-Pipelines: advanced/subpipelines.md
+      - 🗃️ Artifact Catalog: advanced/artifact-catalog.md
+      - ✋ Human-in-the-Loop: advanced/human-in-the-loop.md
+      - 🔀 Step Grouping: advanced/step-grouping.md
+      - 🚀 Parallel Execution: advanced/parallel.md
+      - 🔀 Conditional Execution: advanced/conditional.md
+      - 🛡️ Error Handling: advanced/error-handling.md
+      - 📦 Materializers: advanced/materializers.md
+    - 🔌 Plugins & Stacks:
+      - 📚 Overview: plugins/overview.md
+      - 📥 Type-Based Routing: plugins/type_routing.md
+      - 🌍 Stack Configuration: plugins/stack-configuration.md
+      - 🎯 Native Plugins: plugins/native-plugins.md
+      - 🔄 External Frameworks: plugins/external-frameworks.md
+      - 🔧 Creating Plugins: plugins/creating-plugins.md
+      - 🎯 Practical Examples: plugins/practical-examples.md
     - 🔔 Notifications: advanced/notifications.md
     - ⏰ Scheduling: user-guide/scheduling.md
     - 🏆 Model Leaderboard: advanced/model-leaderboard.md
     - 📉 Data Drift: advanced/data-drift.md
     - 📋 Templates: advanced/templates.md
     - 🐛 Debugging: advanced/debugging.md
-    - 📦 Materializers: advanced/materializers.md
   - 📖 User Guide:
     - 📁 Projects: user-guide/projects.md
     - 📑 Versioning Logic: user-guide/versioning.md
     - ⚙️ Pipeline Configuration: user-guide/configuration.md
     - 🖥️ System Resources: resources.md
     - 🧱 UI Components: user-guide/components.md
-    - 💎 Artifact-Centric Philosophy: artifact-centric.md
     - 🔼 Asset Materialization: artifact-upload.md
     - 📦 Model Registry: user-guide/model-registry.md
     - ⚡ Performance: user-guide/performance.md
     - 🚀 API Execution: user-guide/api-execution.md
     - 🚨 Health Monitoring: user-guide/monitoring.md
     - 📊 Observability Dashboard: user-guide/observability-dashboard.md
-    - 🚀 Deployment Lab: user-guide/deployments.md
     - 💻 Local Stack Setup: local-stack-setup.md
     - 🔬 Model Explorer: user-guide/model-explorer-guide.md
     - 💻 UI Guide: user-guide/ui.md
-    - 🛠 CLI: user-guide/cli.md
-  - 🔌 Integrations:
-    - 🧠 Keras: integrations/keras.md
-    - 📊 Keras Training History: integrations/keras-training-history.md
-    - 🔥 PyTorch: integrations/pytorch.md
-    - 🔬 Scikit-learn: integrations/sklearn.md
-    - 🤗 HuggingFace: integrations/huggingface.md
-    - 📈 TensorFlow: integrations/tensorflow.md
-    - 📊 MLflow: integrations/mlflow.md
-    - 📉 Weights & Biases: integrations/wandb.md
-    - 💬 Slack: integrations/slack.md
-    - ☁️ GCP: integrations/gcp.md
-    - ☁️ AWS: integrations/aws.md
-    - ☁️ Azure: integrations/azure.md
-    - 🐳 Docker: integrations/docker.md
-    - ☸️ Kubernetes: integrations/kubernetes.md
-  - 🚀 Deployment:
-    - 📋 Overview: deployment.md
-    - ☁️ GCP Deployment: DEPLOYMENT_GCP.md
-    - 🔐 Secrets Management: deployment/secrets.md
-    - 🏭 Production Guide: production_deployment.md
-  - 🎓 Tutorials:
+    - 🛠 CLI Reference: user-guide/cli.md
+    - 🚀 Deployment:
+      - 📋 Overview: deployment.md
+      - ☁️ GCP Deployment: DEPLOYMENT_GCP.md
+      - 🔐 Secrets Management: deployment/secrets.md
+      - 🏭 Production Guide: production_deployment.md
+      - 🚀 Deployment Lab: user-guide/deployments.md
+  - 🌐 Ecosystem:
+    - 🌊 FlowyML Universe: ecosystem.md
+    - 📓 FlowyML Notebook: flowyml-notebook.md
+    - 🔌 Integrations:
+      - 🧠 Keras: integrations/keras.md
+      - 📊 Keras Training History: integrations/keras-training-history.md
+      - 🔥 PyTorch: integrations/pytorch.md
+      - 🔬 Scikit-learn: integrations/sklearn.md
+      - 🤗 HuggingFace: integrations/huggingface.md
+      - 📈 TensorFlow: integrations/tensorflow.md
+      - 📊 MLflow: integrations/mlflow.md
+      - 📉 Weights & Biases: integrations/wandb.md
+      - 💬 Slack: integrations/slack.md
+      - ☁️ GCP: integrations/gcp.md
+      - ☁️ AWS: integrations/aws.md
+      - ☁️ Azure: integrations/azure.md
+      - 🐳 Docker: integrations/docker.md
+      - ☸️ Kubernetes: integrations/kubernetes.md
+    - 🏭 Production Tutorial: tutorials/production-pipeline-tutorial.md
     - 🔧 Extensible Pipeline: tutorials/extensible-pipeline.md
-  - 📐 Guides:
-    - 🛠️ Custom Components: guides/custom-components.md
-    - ✨ Improved UX: guides/improved-ux.md
-    - 🧱 Pipeline Dependencies: guides/pipeline-dependencies.md
-  - 📚 API Reference:
-    - 📋 Overview: api/core.md
-    - 🎢 Pipeline: api/pipeline.md
-    - ☊ Step: api/step.md
-    - 📜 Context: api/context.md
-    - 📦 Assets: api/assets.md
-    - 🗄️ Artifact Stores: api/artifact_stores.md
-    - 📊 Metadata Stores: api/metadata_stores.md
-    - 🗂️ Storage: api/storage.md
-    - 🤖 Orchestrators: api/orchestrators.md
-    - 🤩 Decorators: api/decorators.md
-    - 🏷️ Types: api/types.md
-    - ⚙️ Config: api/config.md
-    - 🚨 Exceptions: api/exceptions.md
-    - 🛠 CLI: api/cli.md
-    - 📊 Visualization: api/visualization.md
-    - 🔌 Plugins: api/plugins.md
-    - 🔧 Utils: api/utils.md
   - 📚 Reference:
     - 📚 Cheatsheet: reference/cheatsheet.md
     - 🛠️ CLI Reference: reference/cli.md
-    - 🏗️ Architecture: architecture.md
     - 🏛️ Stack Architecture: architecture/stacks.md
+    - 🚂 Migration Guide: migration_guide.md
+    - 📚 Examples: examples.md
+    - 🛠️ Custom Components: guides/custom-components.md
+    - ✨ Improved UX: guides/improved-ux.md
+    - 🧱 Pipeline Dependencies: guides/pipeline-dependencies.md
     - 🤝 Contributing: contributing.md
-  - 📚 Examples: examples.md
+    - 📚 API Reference:
+      - 📋 Overview: api/core.md
+      - 🎢 Pipeline: api/pipeline.md
+      - ☊ Step: api/step.md
+      - 📜 Context: api/context.md
+      - 📦 Assets: api/assets.md
+      - 🗄️ Artifact Stores: api/artifact_stores.md
+      - 📊 Metadata Stores: api/metadata_stores.md
+      - 🗂️ Storage: api/storage.md
+      - 🤖 Orchestrators: api/orchestrators.md
+      - 🤩 Decorators: api/decorators.md
+      - 🏷️ Types: api/types.md
+      - ⚙️ Config: api/config.md
+      - 🚨 Exceptions: api/exceptions.md
+      - 🛠 CLI: api/cli.md
+      - 📊 Visualization: api/visualization.md
+      - 🔌 Plugins: api/plugins.md
+      - 🔧 Utils: api/utils.md
+
 
 extra_css:
   - stylesheets/extra.css
