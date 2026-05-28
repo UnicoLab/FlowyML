@@ -1,8 +1,15 @@
-# Artifact-Centric Architecture 📦
+<div class="hero-section" markdown>
 
-At its core, **FlowyML is an Artifact-Centric framework**. While traditional orchestrators (like Airflow, Jenkins, or Prefect) focus on the *Verbs* (Tasks), FlowyML focuses on the *Nouns* (Data Assets).
+## 💎 Artifact-Centric Architecture
 
-This isn't just a naming choice; it's a fundamental shift in how pipelines are built, validated, and scaled.
+The philosophical core of FlowyML. While traditional orchestrators focus on **Verbs** (tasks), FlowyML focuses on **Nouns** (data assets). This isn't just a naming choice — it's a paradigm shift that makes pipelines self-documenting, self-wiring, and production-ready from day one.
+
+<span class="feature-badge">📦 Nouns > Verbs</span>
+<span class="feature-badge">🔗 Auto-Lineage</span>
+<span class="feature-badge">🎯 Type-Safe DAG</span>
+<span class="feature-badge">☁️ Auto-Routing</span>
+
+</div>
 
 ---
 
@@ -79,3 +86,32 @@ Because FlowyML understands the *data* and not just the *steps*, it can optimize
 > "Artifact-Centricity means your pipeline is a **database of transformations**, rather than a script of events."
 
 By focusing on the **Artifact**, FlowyML treats data as a first-class citizen. Every result is mathematically linked to its origin, enabling truly reproducible machine learning.
+
+---
+
+## 📍 What's Next?
+
+<div class="header-grid" markdown>
+
+<div class="header-card" markdown>
+### 🎢 Pipelines
+See the artifact-centric approach in action.
+
+[Pipelines →](core/pipelines.md)
+</div>
+
+<div class="header-card" markdown>
+### 📦 Assets & Lineage
+Deep dive into Model, Dataset, Metrics types.
+
+[Assets →](core/assets.md)
+</div>
+
+<div class="header-card" markdown>
+### 📎 Type-Based Routing
+How artifacts flow to cloud storage automatically.
+
+[Routing →](plugins/type_routing.md)
+</div>
+
+</div>

@@ -1,6 +1,16 @@
-# 🚀 Production Deployment Guide
+<div class="hero-section" markdown>
 
-Deploy FlowyML as a centralized ML orchestration hub for your team or organization. This guide covers everything from local deployment to enterprise-scale production setups.
+## 🚀 Production Deployment Guide
+
+Deploy FlowyML as a centralized ML orchestration hub — from Docker Compose on a single server to enterprise-scale deployments on AWS, GCP, and Azure. Complete with PostgreSQL, monitoring, security, and backup strategies.
+
+<span class="feature-badge">🐳 Docker Ready</span>
+<span class="feature-badge">☁️ Multi-Cloud</span>
+<span class="feature-badge">🔐 Secure</span>
+<span class="feature-badge">📊 Monitoring</span>
+<span class="feature-badge">💾 Backup & Recovery</span>
+
+</div>
 
 ---
 
@@ -23,7 +33,7 @@ The fastest way to get FlowyML running in production with PostgreSQL:
 
 ```bash
 # Clone and navigate to the repository
-git clone https://github.com/your-org/flowyml.git
+git clone https://github.com/UnicoLab/FlowyML.git
 cd flowyml
 
 # Configure environment (copy and edit .env)
@@ -387,7 +397,7 @@ sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-
 sudo chmod +x /usr/local/bin/docker-compose
 
 # 3. Clone FlowyML
-git clone https://github.com/your-org/flowyml.git
+git clone https://github.com/UnicoLab/FlowyML.git
 cd flowyml
 
 # 4. Configure environment
@@ -642,7 +652,36 @@ docker-compose restart
 
 ## 🆘 Getting Help
 
-- **GitHub Issues**: [Report bugs and request features](https://github.com/your-org/flowyml/issues)
-- **Documentation**: [Browse full documentation](https://flowyml.readthedocs.io)
-- **Community**: [Join our Slack community](https://flowyml-community.slack.com)
-- **Enterprise Support**: [Contact us](mailto:support@flowyml.com)
+- **GitHub Issues**: [Report bugs and request features](https://github.com/UnicoLab/FlowyML/issues)
+- **Documentation**: [FlowyML Documentation](https://unicolab.github.io/FlowyML/latest/)
+- **Community**: [Join our GitHub Discussions](https://github.com/UnicoLab/FlowyML/discussions)
+- **Enterprise Support**: [Contact us](mailto:support@unicolab.ai)
+
+---
+
+## 📍 What's Next?
+
+<div class="header-grid" markdown>
+
+<div class="header-card" markdown>
+### ☁️ GCP Deployment
+Terraform-based deployment to Google Cloud Run.
+
+[GCP Guide →](DEPLOYMENT_GCP.md)
+</div>
+
+<div class="header-card" markdown>
+### 🔐 Secrets Management
+Manage API keys, tokens, and credentials securely.
+
+[Secrets →](deployment/secrets.md)
+</div>
+
+<div class="header-card" markdown>
+### 🔌 Plugins & Stacks
+Configure multi-cloud infrastructure abstraction.
+
+[Stacks →](plugins/stack-configuration.md)
+</div>
+
+</div>

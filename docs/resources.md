@@ -1,4 +1,20 @@
-# Step-Level Resource Specification
+---
+title: Step-Level Resource Specification
+description: Declare CPU, GPU, memory, and storage requirements per pipeline step. FlowyML translates them to Kubernetes, Vertex AI, SageMaker, and more.
+---
+
+<div class="hero-section" markdown>
+
+## ⚙️ Step-Level Resource Specification
+
+Declare exactly the compute your steps need — CPU cores, memory, GPUs, and storage — and let FlowyML translate them automatically to Kubernetes pods, Vertex AI jobs, SageMaker instances, and more.
+
+<span class="feature-badge">🖥️ GPU</span>
+<span class="feature-badge">⚡ CPU</span>
+<span class="feature-badge">🧠 Memory</span>
+<span class="feature-badge">☸️ Kubernetes</span>
+
+</div>
 
 FlowyML provides comprehensive step-level resource specification that allows you to declare CPU, GPU, memory, and other compute requirements for individual pipeline steps. These specifications are automatically translated to orchestrator-specific formats (Kubernetes, Google Vertex AI, AWS SageMaker, etc.).
 
@@ -470,3 +486,51 @@ For complete API documentation, see:
 - [`flowyml.core.resources.ResourceRequirements`](api/types.md#flowyml.core.resources.ResourceRequirements)
 - [`flowyml.core.resources.GPUConfig`](api/types.md#flowyml.core.resources.GPUConfig)
 - [`flowyml.core.resources.NodeAffinity`](api/types.md#flowyml.core.resources.NodeAffinity)
+
+---
+
+## What's Next?
+
+<div class="header-grid" markdown>
+
+<div class="header-card" markdown>
+
+### ☁️ Cloud Deployment
+
+Deploy resource-intensive pipelines on GCP, AWS, or Azure with managed GPU clusters.
+
+[Deployment Guide →](deployment.md)
+
+</div>
+
+<div class="header-card" markdown>
+
+### ☸️ Kubernetes
+
+Run FlowyML pipelines on Kubernetes with auto-scaling, node pools, and GPU scheduling.
+
+[Kubernetes Guide →](integrations/kubernetes.md)
+
+</div>
+
+<div class="header-card" markdown>
+
+### ⚡ Performance Tuning
+
+Optimize pipeline execution with caching, parallelism, and resource right-sizing.
+
+[Performance Guide →](user-guide/performance.md)
+
+</div>
+
+<div class="header-card" markdown>
+
+### 🔌 Orchestrators
+
+Configure orchestrators that translate your resource specs to cloud-native formats.
+
+[Orchestrators Guide →](api/orchestrators.md)
+
+</div>
+
+</div>

@@ -1,4 +1,15 @@
-# 🏗️ Architecture
+<div class="hero-section" markdown>
+
+## 🏗️ Architecture
+
+Understand how FlowyML is structured internally — from pipeline definition through DAG construction, step execution, artifact routing, and dashboard visualization. Essential knowledge for power users and contributors.
+
+<span class="feature-badge">🎢 Pipeline Engine</span>
+<span class="feature-badge">📦 Artifact Store</span>
+<span class="feature-badge">🗄️ Metadata Store</span>
+<span class="feature-badge">🖥️ Dashboard</span>
+
+</div>
 
 !!! info "What you'll learn"
     How FlowyML is structured internally — from pipeline definition to execution, storage, and visualization. Understanding the architecture helps you make better design decisions and troubleshoot issues.
@@ -138,3 +149,32 @@ flowyml/
 ├── stacks/             # Stack management (local, cloud, hybrid)
 └── ui/                 # FastAPI backend + React frontend
 ```
+
+---
+
+## 📍 What's Next?
+
+<div class="header-grid" markdown>
+
+<div class="header-card" markdown>
+### 💎 Artifact-Centric Philosophy
+The design principles behind FlowyML.
+
+[Philosophy →](artifact-centric.md)
+</div>
+
+<div class="header-card" markdown>
+### 🔌 Plugin System
+How the extensible plugin architecture works.
+
+[Plugins →](plugins/overview.md)
+</div>
+
+<div class="header-card" markdown>
+### 🏛️ Stack Architecture
+Multi-cloud infrastructure abstraction layer.
+
+[Stacks →](architecture/stacks.md)
+</div>
+
+</div>

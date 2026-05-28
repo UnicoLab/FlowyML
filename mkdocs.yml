@@ -98,6 +98,7 @@ plugins:
 
 nav:
   - 🏠 Home: index.md
+  - 🤔 Why FlowyML?: why-flowyml.md
   - 🚀 Getting Started:
     - 📥 Installation: INSTALLATION.md
     - 🚀 Quick Start: getting-started.md
@@ -191,6 +192,7 @@ nav:
     - 🏭 Production Tutorial: tutorials/production-pipeline-tutorial.md
     - 🔧 Extensible Pipeline: tutorials/extensible-pipeline.md
   - 📚 Reference:
+    - 📖 Glossary: glossary.md
     - 📚 Cheatsheet: reference/cheatsheet.md
     - 🛠️ CLI Reference: reference/cli.md
     - 🏛️ Stack Architecture: architecture/stacks.md

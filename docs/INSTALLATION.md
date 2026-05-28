@@ -1,4 +1,15 @@
-# Installation Guide 📦
+<div class="hero-section" markdown>
+
+## 📦 Installation Guide
+
+Get FlowyML running in seconds. Choose from a lightweight core install, a batteries-included full install, or cloud-specific extras for GCP, AWS, and Azure.
+
+<span class="feature-badge">🐍 Python 3.10+</span>
+<span class="feature-badge">📦 pip install</span>
+<span class="feature-badge">☁️ Cloud Extras</span>
+<span class="feature-badge">🐳 Docker Ready</span>
+
+</div>
 
 !!! tip "Quick start"
     If you're just exploring FlowyML, run `pip install "flowyml[all]"` and you're ready to go. Come back to this page when you need production-grade deployment. To add support for interactive GUI: `pip install "flowyml[ui]"`.
@@ -316,3 +327,32 @@ Once installed:
 3. **Explore examples**: Check out the [Examples](examples.md) page for real-world patterns
 
 **Need help?** Visit the [Resources](resources.md) page for community support and troubleshooting guides.
+
+---
+
+## 📍 What's Next?
+
+<div class="header-grid" markdown>
+
+<div class="header-card" markdown>
+### 🚀 Getting Started
+Build your first pipeline in 5 minutes.
+
+[Quick Start →](getting-started.md)
+</div>
+
+<div class="header-card" markdown>
+### 🎢 Core Concepts
+Learn Pipelines, Steps, Context, and Assets.
+
+[Core Concepts →](core/pipelines.md)
+</div>
+
+<div class="header-card" markdown>
+### 📓 FlowyML Notebook
+Try the reactive notebook companion.
+
+[Notebook →](flowyml-notebook.md)
+</div>
+
+</div>

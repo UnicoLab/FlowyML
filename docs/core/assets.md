@@ -1,6 +1,15 @@
-# Assets & Artifacts 💎
+<div class="hero-section" markdown>
 
-In flowyml, data lineage and artifact tracking are first-class features. Every piece of data flowing through your pipeline is tracked, versioned, and queryable.
+## 📦 Assets & Lineage
+
+In FlowyML, every piece of data flowing through your pipeline is a **first-class citizen**. Models, Datasets, Metrics, and Feature Sets are typed, versioned, and automatically tracked — giving you full lineage from raw data to deployed model.
+
+<span class="feature-badge">📊 Typed Artifacts</span>
+<span class="feature-badge">🔗 Lineage Tracking</span>
+<span class="feature-badge">📂 Auto-Versioned</span>
+<span class="feature-badge">☁️ Cloud-Routed</span>
+
+</div>
 
 !!! info "What you'll learn"
     How to work with typed assets (Datasets, Models, Metrics) and track complete data lineage. **Reproducibility requires lineage** — flowyml tracks not just what models you trained, but what data created them.
@@ -29,7 +38,7 @@ flowyml provides specialized classes for different ML artifact types:
 - **Asset**: The base class for all versioned objects.
 - **Dataset**: Represents data (DataFrames, file paths, tensors).
 - **Model**: Represents trained ML models.
-- **[UI Guide](../user-guide/ui.md)**: Learn how to visualize assets in the FlowyML dashboard.
+- **[UI Guide](../gui-overview.md)**: Learn how to visualize assets in the FlowyML dashboard.
 - **FeatureSet**: Represents engineered features.
 - **Report**: Represents generated reports and documentation.
 - **Artifact**: Generic artifact for configs, checkpoints, files, etc.
@@ -279,7 +288,7 @@ def train(clean_data):
 ```
 
 !!! success "Visualize It"
-    You can visualize this lineage graph in the [flowyml UI](ui.md).
+    You can visualize this lineage graph in the [flowyml UI](../gui-overview.md).
 
 ## Storage 💾
 
@@ -295,3 +304,32 @@ The artifacts are stored in a structured path:
 `{project_name}/{date}/{run_id}/data/{step_name}/{artifact_name}`
 
 This ensures that every run is reproducible and all intermediate data is persisted. flowyml uses **Materializers** to handle serialization for different data types (Pandas, NumPy, Keras, PyTorch, etc.).
+
+---
+
+## 📍 What's Next?
+
+<div class="header-grid" markdown>
+
+<div class="header-card" markdown>
+### 📎 Type-Based Routing
+Learn how FlowyML auto-routes artifacts to cloud storage.
+
+[Type Routing →](../plugins/type_routing.md)
+</div>
+
+<div class="header-card" markdown>
+### 🗃️ Artifact Catalog
+Discover, tag, and trace artifact lineage across pipelines.
+
+[Catalog →](../advanced/artifact-catalog.md)
+</div>
+
+<div class="header-card" markdown>
+### 🌐 Ecosystem
+See how assets integrate with FlowyML Notebook and cloud providers.
+
+[Ecosystem →](../ecosystem.md)
+</div>
+
+</div>

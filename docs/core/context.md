@@ -1,6 +1,14 @@
-# Context & Parameters 🧠
+<div class="hero-section" markdown>
 
-flowyml's context system eliminates configuration hell by providing automatic parameter injection across pipeline steps.
+## 📜 Context & Parameters
+
+FlowyML's context system eliminates configuration hell by automatically injecting parameters into your pipeline steps. No globals, no boilerplate, no manual wiring — just clean Python functions.
+
+<span class="feature-badge">🔧 Auto-Injection</span>
+<span class="feature-badge">📝 Type-Safe</span>
+<span class="feature-badge">🔀 Overrideable</span>
+
+</div>
 
 !!! info "What you'll learn"
     How to manage configuration without hardcoding, enabling the same pipeline to run in dev/staging/prod. Context separates **what** your pipeline does from **how** it's configured.
@@ -448,3 +456,32 @@ pipeline.run()  # Error: Missing required parameters: ['required_param']
 - **[Steps](steps.md)**: Master step configuration
 - **[Configuration](../user-guide/configuration.md)**: Pipeline-level configuration and environment variables.
 - **[Caching](../advanced/caching.md)**: How context parameters affect step caching.
+
+---
+
+## 📍 What's Next?
+
+<div class="header-grid" markdown>
+
+<div class="header-card" markdown>
+### 📦 Assets & Lineage
+Learn about Models, Datasets, and artifact tracking.
+
+[Assets Guide →](assets.md)
+</div>
+
+<div class="header-card" markdown>
+### 🔌 Plugins & Stacks
+Configure multi-cloud deployment with stacks.
+
+[Plugins →](../plugins/overview.md)
+</div>
+
+<div class="header-card" markdown>
+### 🚀 Getting Started
+Build your first pipeline in 5 minutes.
+
+[Quick Start →](../getting-started.md)
+</div>
+
+</div>

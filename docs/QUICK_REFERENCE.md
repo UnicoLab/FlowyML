@@ -1,4 +1,15 @@
-# 🚀 FlowyML Quick Reference
+<div class="hero-section" markdown>
+
+## 🚀 Quick Reference
+
+The essential cheat sheet for FlowyML. Find the syntax you need in seconds — CLI commands, Python API patterns, YAML configuration, and common recipes.
+
+<span class="feature-badge">💻 CLI</span>
+<span class="feature-badge">🐍 Python API</span>
+<span class="feature-badge">📄 YAML Config</span>
+<span class="feature-badge">📋 Recipes</span>
+
+</div>
 
 !!! note "What this page is"
     A cheat sheet for common FlowyML commands and patterns. You know what you want to do, you just need the syntax.
@@ -765,3 +776,32 @@ with manager.use_stack("gcp-prod"):  # Temporary switch
 
 !!! tip
     **Bookmark this page!** Use it as your go-to reference when you need quick command syntax.
+
+---
+
+## 📍 What's Next?
+
+<div class="header-grid" markdown>
+
+<div class="header-card" markdown>
+### ✨ Features Explorer
+Deep dive into all FlowyML capabilities.
+
+[Features →](FEATURES.md)
+</div>
+
+<div class="header-card" markdown>
+### 📚 Cheatsheet
+Detailed API cheatsheet with more examples.
+
+[Cheatsheet →](reference/cheatsheet.md)
+</div>
+
+<div class="header-card" markdown>
+### 📚 Examples
+Full working code examples.
+
+[Examples →](examples.md)
+</div>
+
+</div>

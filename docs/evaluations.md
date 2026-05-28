@@ -1,6 +1,16 @@
-# 🎯 FlowyML Evaluations — Comprehensive Guide
+<div class="hero-section" markdown>
 
-FlowyML's evaluation framework treats evaluations as **first-class pipeline citizens** — not afterthoughts. It provides a unified interface for classical ML and GenAI evaluations, with built-in regression detection, CI/CD gates, and production monitoring.
+## 🎯 FlowyML Evaluations
+
+Production-grade evaluation for classical ML and GenAI. 29+ built-in scorers, LLM-as-a-Judge, adapter ecosystem, CI/CD quality gates, and continuous monitoring — all as first-class pipeline citizens.
+
+<span class="feature-badge">🎯 29+ Scorers</span>
+<span class="feature-badge">🤖 LLM-as-Judge</span>
+<span class="feature-badge">🛡️ CI/CD Gates</span>
+<span class="feature-badge">🔌 DeepEval + RAGAS</span>
+<span class="feature-badge">🏟️ Judge Arena</span>
+
+</div>
 
 ```mermaid
 flowchart LR
@@ -12,6 +22,8 @@ flowchart LR
     R --> UI[Dashboard]
     R --> T[TraceBridge]
 ```
+
+![FlowyML Evaluation Details](screenshots/eval-details.png)
 
 ## Quick Start
 
@@ -382,3 +394,32 @@ flowyml/evals/
     ├── genai.py          # 4 LLM-as-a-judge scorers
     └── custom.py         # make_judge(), make_scorer()
 ```
+
+---
+
+## 📍 What's Next?
+
+<div class="header-grid" markdown>
+
+<div class="header-card" markdown>
+### 🔌 Eval Adapters
+Integrate DeepEval, RAGAS, and Phoenix scorers.
+
+[Adapters →](advanced/eval-adapters.md)
+</div>
+
+<div class="header-card" markdown>
+### 🏟️ Judge Arena
+A/B test evaluators against human labels.
+
+[Arena →](advanced/eval-arena.md)
+</div>
+
+<div class="header-card" markdown>
+### 🛡️ CI/CD Quality Gates
+Automate evaluation in your deployment pipeline.
+
+[CI/CD →](advanced/eval-ci-cd.md)
+</div>
+
+</div>

@@ -1,6 +1,15 @@
-# Contributing to flowyml 🤝
+<div class="hero-section" markdown>
 
-We welcome contributions to flowyml! Whether it's reporting a bug, improving documentation, or adding a new feature, your help is appreciated.
+## 🤝 Contributing to FlowyML
+
+We welcome contributions of all kinds — from bug reports and documentation improvements to new features and integrations. FlowyML is built by the community, for the community.
+
+<span class="feature-badge">🐛 Bug Reports</span>
+<span class="feature-badge">📝 Documentation</span>
+<span class="feature-badge">✨ Features</span>
+<span class="feature-badge">🧪 Testing</span>
+
+</div>
 
 ## Development Setup 🛠️
 
@@ -13,7 +22,7 @@ We welcome contributions to flowyml! Whether it's reporting a bug, improving doc
 
 1.  **Clone the repository**:
     ```bash
-    git clone https://github.com/flowyml-ai/flowyml.git
+    git clone https://github.com/UnicoLab/FlowyML.git
     cd flowyml
     ```
 
@@ -118,3 +127,50 @@ mkdocs serve
 ```
 
 Update documentation in the `docs/` directory for any API changes.
+
+## Commit Messages 💬
+
+We follow [Conventional Commits](https://www.conventionalcommits.org/):
+
+```
+feat: add new evaluation scorer for toxicity
+fix: resolve cache invalidation on context change
+docs: update getting-started guide with new API
+refactor: simplify step execution engine
+test: add integration tests for GCP stack
+chore: update dependencies
+```
+
+!!! tip "Good Commit Messages"
+    - Use the imperative mood: "add feature" not "added feature"
+    - Keep the subject line under 72 characters
+    - Reference issues: `fix: resolve #123 cache invalidation bug`
+
+---
+
+## 📍 What's Next?
+
+<div class="header-grid" markdown>
+
+<div class="header-card" markdown>
+### 🏗️ Architecture
+Understand how FlowyML is structured internally.
+
+[Architecture →](architecture.md)
+</div>
+
+<div class="header-card" markdown>
+### 🔌 Creating Plugins
+Build custom plugins and components.
+
+[Plugin Guide →](plugins/creating-plugins.md)
+</div>
+
+<div class="header-card" markdown>
+### 📚 API Reference
+Full API documentation for all modules.
+
+[API Docs →](api/core.md)
+</div>
+
+</div>

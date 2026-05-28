@@ -1,6 +1,15 @@
-# Steps 👣
+<div class="hero-section" markdown>
 
-Steps are the atomic units of work in flowyml pipelines. They transform regular Python functions into tracked, cacheable, retriable building blocks.
+## ☞ Steps
+
+Steps are the atomic units of work in FlowyML pipelines. Decorate any Python function with `@step`, declare its inputs and outputs, and FlowyML handles the rest — caching, retries, parallel execution, and artifact tracking.
+
+<span class="feature-badge">🎯 Type-Safe</span>
+<span class="feature-badge">💾 Cacheable</span>
+<span class="feature-badge">🔄 Retriable</span>
+<span class="feature-badge">🧩 Composable</span>
+
+</div>
 
 !!! info "What you'll learn"
     How to design reusable, testable steps that compose into production pipelines. Well-designed steps are **pure, focused, and composable**.
@@ -282,7 +291,7 @@ def fetch_latest_data():
     return api.fetch()
 ```
 
-See [Caching](caching.md) for more details.
+See [Caching](../advanced/caching.md) for more details.
 
 ## Error Handling and Retries 🔄
 
@@ -327,7 +336,7 @@ def fetch_data():
     return external_api.get_data()
 ```
 
-See [Error Handling](../user-guide/debugging.md) for comprehensive guide.
+See [Error Handling](../advanced/debugging.md) for comprehensive guide.
 
 ## Resource Requirements 💪
 
@@ -578,3 +587,32 @@ for model_type in ["xgboost", "random_forest", "neural_net"]:
 - **[Context](context.md)**: Master parameter injection
 - **[Caching](../advanced/caching.md)**: Learn how to skip expensive steps with intelligent caching.
 - **[Debugging](../advanced/debugging.md)**: Use the interactive debugger with `debug=True`.
+
+---
+
+## 📍 What's Next?
+
+<div class="header-grid" markdown>
+
+<div class="header-card" markdown>
+### 📜 Context
+Learn how FlowyML auto-injects parameters into your steps.
+
+[Context Guide →](context.md)
+</div>
+
+<div class="header-card" markdown>
+### 🎢 Pipelines
+See how steps are assembled into full ML workflows.
+
+[Pipelines Guide →](pipelines.md)
+</div>
+
+<div class="header-card" markdown>
+### ⚡ Advanced Workflows
+Explore map tasks, dynamic workflows, and sub-pipelines.
+
+[Advanced →](../advanced_features.md)
+</div>
+
+</div>

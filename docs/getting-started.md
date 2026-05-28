@@ -306,6 +306,31 @@ Congratulations! You've built a complete pipeline with monitoring. Here's where 
 
 **Questions or stuck?** Check out the [Resources](resources.md) page for community links, tutorials, and support channels.
 
-**Ready to dive deeper?** The [User Guide](user-guide/projects.md) is your next stop for production-grade patterns.
+---
 
-**Explore the ecosystem →** See the full [FlowyML Universe](ecosystem.md) including Notebook, Keras tools, and cloud integrations.
+## 📍 What's Next?
+
+<div class="header-grid" markdown>
+
+<div class="header-card" markdown>
+### 🎢 Core Concepts
+Master Pipelines, Steps, Context, and Assets.
+
+[Core Concepts →](core/pipelines.md)
+</div>
+
+<div class="header-card" markdown>
+### ✨ Features Explorer
+Deep dive into evaluations, caching, scheduling, and GenAI.
+
+[Explore Features →](FEATURES.md)
+</div>
+
+<div class="header-card" markdown>
+### 🌐 Ecosystem
+Discover FlowyML Notebook, Keras tools, and integrations.
+
+[Ecosystem →](ecosystem.md)
+</div>
+
+</div>

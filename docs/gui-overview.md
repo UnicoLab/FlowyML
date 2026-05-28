@@ -11,6 +11,9 @@ FlowyML ships with a **full-featured web dashboard** that lets you manage every 
 
 <span class="feature-badge">🌐 Web Dashboard</span>
 <span class="feature-badge">📊 Real-Time Metrics</span>
+<span class="feature-badge">🔗 DAG Visualization</span>
+<span class="feature-badge">🧪 Experiment Tracking</span>
+<span class="feature-badge">🤖 GenAI Traces</span>
 <span class="feature-badge">🔌 Plugin Marketplace</span>
 <span class="feature-badge">🚀 One-Click Deploy</span>
 
@@ -35,7 +38,13 @@ This starts the local web server (default: `http://localhost:8501`). The dashboa
 
 The **Dashboard** is your landing page — a high-level command center showing the health and activity across your entire ML workspace.
 
+<div class="screenshot-gallery" markdown>
+<div class="screenshot-card" markdown>
+
 ![FlowyML Dashboard](screenshots/dashboard.png)
+
+</div>
+</div>
 
 **Key elements:**
 
@@ -55,7 +64,13 @@ The **Dashboard** is your landing page — a high-level command center showing t
 
 The **Projects** page provides a structured view of all your ML projects with metadata, pipeline associations, and quick-access links.
 
+<div class="screenshot-gallery" markdown>
+<div class="screenshot-card" markdown>
+
 ![FlowyML Projects](screenshots/projects.png)
+
+</div>
+</div>
 
 **What you can do:**
 
@@ -73,7 +88,13 @@ The **Projects** page provides a structured view of all your ML projects with me
 
 The **Pipeline Runs** page is the operational hub for monitoring all pipeline executions. It features a dual-pane layout with a run explorer on the left and detailed run inspection on the right.
 
+<div class="screenshot-gallery" markdown>
+<div class="screenshot-card" markdown>
+
 ![FlowyML Pipeline Runs](screenshots/pipelines-runs.png)
+
+</div>
+</div>
 
 ### Run Explorer (Left Panel)
 
@@ -100,7 +121,13 @@ The **Pipeline Runs** page is the operational hub for monitoring all pipeline ex
 
 Clicking on any specific run opens the full **Run Detail** view with comprehensive execution information.
 
+<div class="screenshot-gallery" markdown>
+<div class="screenshot-card" markdown>
+
 ![FlowyML Run Detail](screenshots/run.png)
+
+</div>
+</div>
 
 **Features available:**
 
@@ -116,7 +143,13 @@ Clicking on any specific run opens the full **Run Detail** view with comprehensi
 
 The **Assets** page provides a centralized view of all artifacts produced across your pipeline runs, organized by type.
 
+<div class="screenshot-gallery" markdown>
+<div class="screenshot-card" markdown>
+
 ![FlowyML Assets](screenshots/assets.png)
+
+</div>
+</div>
 
 **Asset types include:**
 
@@ -141,7 +174,13 @@ The **Assets** page provides a centralized view of all artifacts produced across
 
 Clicking on a data artifact opens a **rich detail panel** with multi-tab inspection.
 
+<div class="screenshot-gallery" markdown>
+<div class="screenshot-card" markdown>
+
 ![FlowyML Data Details](screenshots/data-details.png)
+
+</div>
+</div>
 
 **Tabs available:**
 
@@ -158,7 +197,13 @@ Clicking on a data artifact opens a **rich detail panel** with multi-tab inspect
 
 The **Evaluation Details** panel provides a focused view of model performance metrics produced by evaluation steps.
 
+<div class="screenshot-gallery" markdown>
+<div class="screenshot-card" markdown>
+
 ![FlowyML Evaluation Details](screenshots/eval-details.png)
+
+</div>
+</div>
 
 **Highlights:**
 
@@ -177,7 +222,13 @@ The **Evaluation Details** panel provides a focused view of model performance me
 
 The **Model Visualization** panel provides deep insight into your trained models, including interactive training history charts.
 
+<div class="screenshot-gallery" markdown>
+<div class="screenshot-card" markdown>
+
 ![FlowyML Model Training Curves](screenshots/model_curve.png)
+
+</div>
+</div>
 
 **What you get:**
 
@@ -199,7 +250,13 @@ The **Model Visualization** panel provides deep insight into your trained models
 
 The **Traces** page provides enterprise-grade observability for all GenAI and LLM operations in your pipelines.
 
+<div class="screenshot-gallery" markdown>
+<div class="screenshot-card" markdown>
+
 ![FlowyML GenAI Traces](screenshots/genai-traces.png)
+
+</div>
+</div>
 
 ### Summary Bar (Top)
 
@@ -234,7 +291,13 @@ The **Traces** page provides enterprise-grade observability for all GenAI and LL
 
 The **Plugins** page is your marketplace for extending FlowyML with cloud providers, orchestrators, and third-party ML platforms.
 
+<div class="screenshot-gallery" markdown>
+<div class="screenshot-card" markdown>
+
 ![FlowyML Plugins & Integrations](screenshots/plugins.png)
+
+</div>
+</div>
 
 ### Plugin Browser
 
@@ -268,7 +331,13 @@ Browse the available plugins organized in a card-grid layout:
 
 The **Deployment Lab** lets you deploy trained models as API endpoints with a few clicks.
 
+<div class="screenshot-gallery" markdown>
+<div class="screenshot-card" markdown>
+
 ![FlowyML Deployment Lab](screenshots/deployment.png)
+
+</div>
+</div>
 
 **Deployment features:**
 
@@ -291,7 +360,13 @@ The **Deployment Lab** lets you deploy trained models as API endpoints with a fe
 
 The **Scheduler** dialog allows you to set up automated, recurring pipeline executions.
 
+<div class="screenshot-gallery" markdown>
+<div class="screenshot-card" markdown>
+
 ![FlowyML Scheduler](screenshots/scheduler.png)
+
+</div>
+</div>
 
 **Configuration options:**
 

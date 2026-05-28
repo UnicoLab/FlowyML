@@ -1,6 +1,15 @@
-# Pipelines 🚀
+<div class="hero-section" markdown>
 
-Pipelines are the core abstraction in flowyml — they represent workflows that orchestrate your ML operations from data to deployment.
+## 🎢 Pipelines
+
+Pipelines are the heart of FlowyML — they orchestrate your ML workflows from data ingestion to model deployment, with automatic DAG construction and full artifact lineage.
+
+<span class="feature-badge">🔄 Auto-DAG</span>
+<span class="feature-badge">📦 Artifact Tracking</span>
+<span class="feature-badge">⚡ Parallel Execution</span>
+<span class="feature-badge">💾 Checkpointing</span>
+
+</div>
 
 !!! info "What you'll learn"
     How to design, build, and run production-grade pipelines. A well-designed pipeline is infrastructure-agnostic — write it once, run it anywhere.
@@ -718,3 +727,32 @@ print(f"Model accuracy: {result.outputs['accuracy']:.2%}")
 - **[Stack Architecture](../architecture/stacks.md)**: Understand local vs. cloud execution and YAML-driven stack hydration
 - **[Projects](../user-guide/projects.md)**: Organize multi-tenant deployments
 - **[Scheduling](../user-guide/scheduling.md)**: Automate recurring pipelines
+
+---
+
+## 📍 What's Next?
+
+<div class="header-grid" markdown>
+
+<div class="header-card" markdown>
+### ☞ Steps
+Learn how to define atomic units of work with `@step` decorators.
+
+[Steps Guide →](steps.md)
+</div>
+
+<div class="header-card" markdown>
+### 📦 Assets & Lineage
+Understand Models, Datasets, Metrics — and how FlowyML tracks them.
+
+[Assets Guide →](assets.md)
+</div>
+
+<div class="header-card" markdown>
+### ✨ Features Explorer
+Discover evaluations, caching, scheduling, and more.
+
+[Features →](../FEATURES.md)
+</div>
+
+</div>

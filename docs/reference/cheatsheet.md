@@ -1,6 +1,14 @@
-# flowyml Cheatsheet 📝
+<div class="hero-section" markdown>
 
-A quick reference guide for common flowyml commands and patterns.
+## 📝 Cheatsheet
+
+A quick reference guide for common FlowyML commands, patterns, and recipes. Bookmark this page for instant access to the syntax you need.
+
+<span class="feature-badge">💻 CLI</span>
+<span class="feature-badge">🐍 Python API</span>
+<span class="feature-badge">🎯 Patterns</span>
+
+</div>
 
 ## CLI Commands 💻
 
@@ -142,3 +150,77 @@ my-project/
 │   └── pipelines/       # Pipeline definitions
 └── notebooks/           # Jupyter notebooks
 ```
+
+## Evaluations 🎯
+
+```python
+from flowyml import step, evaluate
+from flowyml.evaluations import accuracy, precision, f1_score
+
+@step(inputs=["model", "test_data"], outputs=["eval_results"])
+def evaluate_model(model, test_data):
+    results = evaluate(
+        model=model,
+        data=test_data,
+        scorers=[accuracy, precision, f1_score],
+        quality_gate={"accuracy": 0.9}  # Fail if below
+    )
+    return results
+```
+
+## Scheduling ⏰
+
+```python
+# Schedule from CLI
+flowyml schedule add --pipeline my_pipeline \
+    --cron "0 6 * * *" \
+    --name "Daily Training"
+
+# List schedules
+flowyml schedule list
+
+# Remove schedule
+flowyml schedule remove --name "Daily Training"
+```
+
+## Stack Switching ☁️
+
+```bash
+# Development (local)
+export FLOWYML_STACK=local
+
+# Production (cloud)
+export FLOWYML_STACK=production
+
+# Same code, different infrastructure
+python my_pipeline.py
+```
+
+---
+
+## 📍 What's Next?
+
+<div class="header-grid" markdown>
+
+<div class="header-card" markdown>
+### ✨ Features Explorer
+Full deep dive into all FlowyML capabilities.
+
+[Features →](../FEATURES.md)
+</div>
+
+<div class="header-card" markdown>
+### 🚀 Quick Reference
+Concise reference with even more patterns.
+
+[Quick Ref →](../QUICK_REFERENCE.md)
+</div>
+
+<div class="header-card" markdown>
+### 📚 Examples
+Full working code examples.
+
+[Examples →](../examples.md)
+</div>
+
+</div>

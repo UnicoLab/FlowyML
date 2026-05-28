@@ -36,6 +36,7 @@ The <strong>Artifact-Centric</strong> ML Pipeline Framework that lets you focus 
 
 <div class="hero-cta-row">
 <a href="getting-started/" class="cta-button cta-primary">🚀 Get Started</a>
+<a href="why-flowyml/" class="cta-button cta-secondary">🤔 Why FlowyML?</a>
 <a href="FEATURES/" class="cta-button cta-secondary">✨ Explore Features</a>
 </div>
 

@@ -1,6 +1,69 @@
-# Examples 📚
+---
+title: Examples — Learn FlowyML by Doing
+description: Comprehensive working examples showcasing FlowyML's pipelines, caching, ML training, cloud stacks, and production patterns.
+---
 
-This page provides comprehensive working examples showcasing flowyml's features. All examples are available in the [`examples/`](https://github.com/flowyml/flowyml/tree/main/examples) directory.
+<div class="hero-section" markdown>
+
+## 📚 Examples & Cookbooks
+
+Learn FlowyML by running real code. From 5-line quick starts to production-grade ML pipelines — every example is copy-pasteable and available in the [`examples/`](https://github.com/flowyml/flowyml/tree/main/examples) directory.
+
+<span class="feature-badge">🚀 Quick Start</span>
+<span class="feature-badge">🤖 Machine Learning</span>
+<span class="feature-badge">⚡ Caching</span>
+<span class="feature-badge">☁️ Cloud Stacks</span>
+<span class="feature-badge">🏭 Production</span>
+
+</div>
+
+## Example Categories
+
+<div class="header-grid" markdown>
+
+<div class="header-card" markdown>
+
+### 🚀 Quick Start
+
+Minimal pipelines to get you up and running in minutes. Perfect for first-time users.
+
+[Jump to Quick Start ↓](#quick-start-examples)
+
+</div>
+
+<div class="header-card" markdown>
+
+### 🤖 Machine Learning
+
+Training pipelines with context, feature engineering, model evaluation, and experiment tracking.
+
+[Jump to ML Examples ↓](#machine-learning-examples)
+
+</div>
+
+<div class="header-card" markdown>
+
+### ⚡ Advanced Features
+
+Caching strategies, conditional execution, custom executors, and more.
+
+[Jump to Advanced ↓](#advanced-features)
+
+</div>
+
+<div class="header-card" markdown>
+
+### ☁️ Stacks & Cloud
+
+Local and GCP stack configurations for artifact storage and cloud orchestration.
+
+[Jump to Stacks ↓](#working-with-stacks)
+
+</div>
+
+</div>
+
+---
 
 ## Quick Start Examples
 
@@ -65,6 +128,8 @@ result = pipeline.run()
 
 📄 **Full example**: [`examples/clean_pipeline.py`](https://github.com/flowyml/flowyml/blob/main/examples/clean_pipeline.py)
 
+---
+
 ## Machine Learning Examples
 
 ### Training Pipeline with Context
@@ -116,6 +181,18 @@ result = pipeline.run()
 print(f"Model accuracy: {result.outputs['metrics']['accuracy']:.2%}")
 ```
 
+Here's what a completed pipeline run looks like in the FlowyML GUI — every step, artifact, and metric is tracked automatically:
+
+<div class="screenshot-gallery" markdown>
+<div class="screenshot-card" markdown>
+
+![FlowyML Pipeline Run](screenshots/run.png)
+
+</div>
+</div>
+
+---
+
 ## Advanced Features
 
 ### Caching Pipeline
@@ -156,6 +233,11 @@ result2 = pipeline.run()
 
 📄 **Full example**: [`examples/caching_pipeline.py`](https://github.com/flowyml/flowyml/blob/main/examples/caching_pipeline.py)
 
+!!! tip "Caching Best Practices"
+    - Use `cache="code_hash"` for steps with no external dependencies (pure functions)
+    - Use `cache="input_hash"` for steps whose output depends on input data
+    - Use `cache=False` for steps that must always run (real-time data, API calls)
+
 ### Conditional Pipeline
 
 Use conditional execution based on runtime data:
@@ -188,6 +270,8 @@ result = pipeline.run()
 ```
 
 📄 **Full example**: [`examples/conditional_pipeline.py`](https://github.com/flowyml/flowyml/blob/main/examples/conditional_pipeline.py)
+
+---
 
 ## Working with Stacks
 
@@ -244,6 +328,8 @@ result = pipeline.run()
 
 📂 **Full example**: [`examples/gcp_stack/`](https://github.com/flowyml/flowyml/tree/main/examples/gcp_stack)
 
+---
+
 ## UI Integration
 
 ### Real-time Monitoring
@@ -279,6 +365,8 @@ Full-featured example with metrics, artifacts, and visualization:
 
 📄 **Full example**: [`examples/ui_integration_example.py`](https://github.com/flowyml/flowyml/blob/main/examples/ui_integration_example.py)
 
+---
+
 ## Custom Components
 
 ### Custom Executor
@@ -304,6 +392,8 @@ pipeline = Pipeline("custom", executor=BatchExecutor())
 ```
 
 📂 **Full example**: [`examples/custom_components/`](https://github.com/flowyml/flowyml/tree/main/examples/custom_components)
+
+---
 
 ## Production Patterns
 
@@ -379,6 +469,8 @@ if result.success:
 
 📄 **Full example**: [`examples/demo_pipeline.py`](https://github.com/flowyml/flowyml/blob/main/examples/demo_pipeline.py)
 
+---
+
 ## Running Examples
 
 ### Clone and Setup
@@ -415,6 +507,8 @@ All examples are designed to be modified and extended. Try:
 - Experimenting with different caching strategies
 - Integrating your own data sources
 
+---
+
 ## Example Index
 
 | Example | Features | Complexity |
@@ -429,10 +523,50 @@ All examples are designed to be modified and extended. Try:
 | `gcp_stack/` | Cloud deployment | ⭐⭐⭐⭐ |
 | `custom_components/` | Extensibility | ⭐⭐⭐⭐ |
 
-## Next Steps
+---
 
-- **[User Guide](core/pipelines.md)**: Learn concepts in depth
-- **[API Reference](api/core.md)**: Explore all available APIs
-- **[Contributing](contributing.md)**: Add your own examples!
+## What's Next?
 
-Have questions? [Open an issue](https://github.com/flowyml/flowyml/issues) or join our community!
+<div class="header-grid" markdown>
+
+<div class="header-card" markdown>
+
+### 📖 User Guide
+
+Understand the core concepts behind pipelines, steps, and contexts in depth.
+
+[Pipelines Guide →](core/pipelines.md)
+
+</div>
+
+<div class="header-card" markdown>
+
+### 📡 API Reference
+
+Explore every class, method, and parameter in the complete API docs.
+
+[API Reference →](api/core.md)
+
+</div>
+
+<div class="header-card" markdown>
+
+### 🖥️ GUI Tour
+
+See how your pipeline runs, metrics, and artifacts appear in the web dashboard.
+
+[GUI Overview →](gui-overview.md)
+
+</div>
+
+<div class="header-card" markdown>
+
+### 🤝 Contributing
+
+Have a great example? Contribute it to the community!
+
+[Contributing Guide →](contributing.md)
+
+</div>
+
+</div>
