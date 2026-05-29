@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Write ML code once, run it anywhere. The artifact-centric pipeline framework that decouples code from infrastructure.">
+        <meta name="description" content="API reference for FlowyML exception classes and error types.">
       
       
       
@@ -24,7 +24,7 @@
     
     
       
-        <title>🚨 Exceptions - FlowyML</title>
+        <title>Exceptions — FlowyML - FlowyML</title>
       
     
     
@@ -147,7 +147,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              🚨 Exceptions
+              Exceptions — FlowyML
             
           </span>
         </div>
@@ -4359,6 +4359,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      See Also
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4993,6 +5002,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      See Also
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -5013,6 +5031,7 @@
 
 
 <h1 id="exceptions-api">Exceptions API 🚨</h1>
+<p>FlowyML defines a structured exception hierarchy so you can catch errors at the right level of granularity. All custom exceptions inherit from a common base class, making it easy to write broad <code>except</code> clauses for framework errors while still allowing fine-grained handling of specific failure modes such as missing artifacts, invalid configurations, or orchestrator timeouts.</p>
 <p>Custom exceptions thrown by flowyml.</p>
 <h2 id="error-handling-module">Error Handling Module</h2>
 
@@ -7253,13 +7272,20 @@
 
     </div>
 
-</div>
+</div><hr />
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="../../advanced/error-handling/">Error Handling Guide</a> — best practices for catching and recovering from errors in pipelines</li>
+</ul>
 
 
 
 
 
 
+
+  
+  
 
 
 

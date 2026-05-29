@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Write ML code once, run it anywhere. The artifact-centric pipeline framework that decouples code from infrastructure.">
+        <meta name="description" content="API reference for FlowyML's storage backends: local filesystem, GCS, S3, and Azure Blob Storage.">
       
       
       
@@ -24,7 +24,7 @@
     
     
       
-        <title>🗂️ Storage - FlowyML</title>
+        <title>Storage API — FlowyML - FlowyML</title>
       
     
     
@@ -147,7 +147,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              🗂️ Storage
+              Storage API — FlowyML
             
           </span>
         </div>
@@ -3712,6 +3712,19 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    🗂️ Storage
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -3723,6 +3736,34 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      See Also
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -3971,6 +4012,23 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      See Also
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -3989,10 +4047,17 @@
 
 
 <h1 id="storage-api-reference">Storage API Reference</h1>
+<p>FlowyML uses a pluggable storage layer that separates <strong>artifact storage</strong> (binary outputs of each step) from <strong>metadata storage</strong> (run history, step status, and lineage graphs). Every backend implements a common interface, so you can swap providers — local disk during development, cloud object stores in production — without changing pipeline code.</p>
 <p>Storage backends for flowyml:</p>
 <ul>
 <li><a href="../artifact_stores/">Artifact Stores</a>: Storage for step outputs (GCS, Local, etc.)</li>
 <li><a href="../metadata_stores/">Metadata Stores</a>: Storage for run metadata and lineage (SQLite, etc.)</li>
+</ul>
+<hr />
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="../artifact_stores/">Artifact Stores API</a> — detailed reference for every artifact-store backend</li>
+<li><a href="../../plugins/overview/">Plugins Overview</a> — how storage backends are registered as plugins</li>
 </ul>
 
 
@@ -4000,6 +4065,9 @@
 
 
 
+
+  
+  
 
 
 

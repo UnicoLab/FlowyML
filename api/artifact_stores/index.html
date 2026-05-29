@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Write ML code once, run it anywhere. The artifact-centric pipeline framework that decouples code from infrastructure.">
+        <meta name="description" content="API reference for FlowyML artifact store backends: local filesystem, GCS, S3, and Azure Blob Storage.">
       
       
       
@@ -24,7 +24,7 @@
     
     
       
-        <title>🗄️ Artifact Stores - FlowyML</title>
+        <title>Artifact Stores — FlowyML - FlowyML</title>
       
     
     
@@ -147,7 +147,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              🗄️ Artifact Stores
+              Artifact Stores — FlowyML
             
           </span>
         </div>
@@ -4000,6 +4000,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      See Also
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4597,6 +4606,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      See Also
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4617,6 +4635,7 @@
 
 
 <h1 id="artifact-stores-api">Artifact Stores API 📦</h1>
+<p>Artifact stores handle the <strong>persistence and retrieval</strong> of step outputs — serialized DataFrames, trained models, evaluation reports, and any other binary or structured data produced during a pipeline run. FlowyML provides a local-filesystem backend for development and cloud backends (GCS, S3, Azure Blob Storage) for production. All implementations share the <code>ArtifactStore</code> base interface documented below, so you can swap providers with a single configuration change.</p>
 <p>Artifact Stores manage the storage and retrieval of step outputs.</p>
 <h2 id="base-artifact-store">Base Artifact Store</h2>
 
@@ -6630,13 +6649,22 @@
 
     </div>
 
-</div>
+</div><hr />
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="../storage/">Storage API</a> — high-level overview of FlowyML's storage layer</li>
+<li><a href="../../plugins/overview/">Plugins Overview</a> — how artifact-store backends are registered as plugins</li>
+<li><a href="../../plugins/stack-configuration/">Stack Configuration</a> — configuring storage backends in your stack</li>
+</ul>
 
 
 
 
 
 
+
+  
+  
 
 
 
