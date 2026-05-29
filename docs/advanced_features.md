@@ -18,7 +18,7 @@ From intelligent caching to GenAI observability — these are the features that 
 
 <div class="header-card" markdown>
 ### ⚡ Execution & Performance
-- **[Step Grouping](#-step-grouping)** — Co-locate steps in one container
+- **[Step Grouping](#step-grouping)** — Co-locate steps in one container
 - **[Caching](advanced/caching.md)** — Skip redundant compute
 - **[Parallel Execution](advanced/parallel.md)** — Run steps concurrently
 - **[Map Tasks](advanced/map-tasks.md)** — Fan-out processing
@@ -26,18 +26,18 @@ From intelligent caching to GenAI observability — these are the features that 
 
 <div class="header-card" markdown>
 ### 🧠 Intelligence & AI
-- **[GenAI Observability](#-genai--llm-observability)** — LLM tracing & costing
-- **[Evaluations](evaluations.md)** — 17+ built-in scorers
+- **[GenAI Observability](#genai-llm-observability)** — LLM tracing & costing
+- **[Evaluations](evaluations.md)** — 29+ built-in scorers
 - **[Judge Arena](advanced/eval-arena.md)** — A/B test evaluators
-- **[Dynamic Workflows](#-dynamic-sub-pipelines)** — Runtime DAG generation
+- **[Dynamic Workflows](#dynamic-sub-pipelines)** — Runtime DAG generation
 </div>
 
 <div class="header-card" markdown>
 ### 🛡️ Reliability & Ops
-- **[Checkpointing](#-checkpointing)** — Resume from failures
+- **[Checkpointing](#checkpointing)** — Resume from failures
 - **[Error Handling](advanced/error-handling.md)** — Retries & circuit breakers
-- **[Notifications](#-notification-hub)** — Slack, Email, Custom
-- **[Drift Detection](#-data-drift-monitoring)** — Statistical monitors
+- **[Notifications](#notification-hub)** — Slack, Email, Custom
+- **[Drift Detection](#data-drift-monitoring)** — Statistical monitors
 </div>
 
 </div>

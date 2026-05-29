@@ -1,3 +1,8 @@
+---
+title: "Contributing — FlowyML"
+description: "How to contribute to FlowyML: development setup, coding standards, testing, and pull request guidelines."
+---
+
 <div class="hero-section" markdown>
 
 ## 🤝 Contributing to FlowyML

@@ -1,3 +1,8 @@
+---
+title: "Non-Blocking Execution — FlowyML"
+description: "Run FlowyML pipelines asynchronously with non-blocking execution, background tasks, and status polling."
+---
+
 # Async Execution & Cloud Orchestration
 
 FlowyML supports asynchronous execution for cloud orchestrators, allowing you to submit jobs to remote infrastructure without blocking your local process.

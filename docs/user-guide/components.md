@@ -576,7 +576,7 @@ pip install flowyml-airflow
 
 ### README Template
 
-```markdown
+````markdown
 # flowyml Airflow Orchestrator
 
 Apache Airflow orchestrator plugin for flowyml.
@@ -594,7 +594,7 @@ pip install flowyml-airflow
 stacks:
   airflow_stack:
     orchestrator:
-      type: air flow
+      type: airflow
       dag_folder: ~/airflow/dags
 ```
 
@@ -610,9 +610,9 @@ flowyml run pipeline.py --stack airflow_stack
 ## License
 
 Apache-2.0
-```
+````
 
-## API Reference {#api-reference}
+## API Reference
 
 ### ComponentRegistry
 

@@ -1,3 +1,8 @@
+---
+title: "GCP Deployment Guide — FlowyML"
+description: "Deploy FlowyML pipelines on Google Cloud Platform with Vertex AI, GCS artifact storage, and Cloud Run serving."
+---
+
 # 🚀 Deploying FlowyML Central Instance to GCP
 
 This guide provides a step-by-step tutorial on how to deploy a centralized FlowyML instance to Google Cloud Platform (GCP) using **Terraform** for infrastructure and **Make** for automation.

@@ -1,3 +1,8 @@
+---
+title: "Asset Materialization — FlowyML"
+description: "Upload and materialize FlowyML artifacts to cloud storage: models, datasets, and metrics with automatic type-based routing."
+---
+
 # Artifact Upload Control
 
 FlowyML provides fine-grained control over which artifacts are uploaded to remote storage. By default, **artifacts are NOT uploaded** to conserve bandwidth and storage. You can opt-in to upload specific artifacts.
