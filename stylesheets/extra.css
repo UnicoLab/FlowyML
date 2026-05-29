@@ -1242,8 +1242,27 @@
 }
 
 .how-step pre {
-  font-size: 0.78rem !important;
+  font-size: 0.75rem !important;
   margin-top: 0.6rem !important;
+  overflow-x: auto !important;
+}
+
+.how-step .highlight code {
+  white-space: pre;
+  word-break: normal;
+  overflow-wrap: normal;
+}
+
+/* Hide line numbers inside card-style code blocks */
+.how-step .linenums,
+.how-step .linenodiv,
+.pitch-card .linenums,
+.pitch-card .linenodiv,
+.usecase-card .linenums,
+.usecase-card .linenodiv,
+.feature-card .linenums,
+.feature-card .linenodiv {
+  display: none !important;
 }
 
 [data-md-color-scheme="slate"] .how-step {
@@ -2498,4 +2517,131 @@ html {
   .impact-strip {
     grid-template-columns: 1fr 1fr;
   }
+}
+
+/* ================================================================
+   FIXES v7.2 — Theme Polish & Code Rendering
+   ================================================================ */
+
+/* ===== Override Material primary color to match design system ===== */
+:root {
+  --md-primary-fg-color: #6366f1;
+  --md-primary-fg-color--light: #818cf8;
+  --md-primary-fg-color--dark: #4f46e5;
+  --md-accent-fg-color: #8b5cf6;
+  --md-accent-fg-color--transparent: rgba(139, 92, 246, 0.1);
+}
+
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color: #818cf8;
+  --md-primary-fg-color--light: #a5b4fc;
+  --md-primary-fg-color--dark: #6366f1;
+  --md-accent-fg-color: #a78bfa;
+  --md-accent-fg-color--transparent: rgba(167, 139, 250, 0.15);
+}
+
+/* ===== Tabs bar polish ===== */
+.md-tabs {
+  background: var(--md-primary-fg-color);
+}
+
+.md-tabs__link {
+  font-weight: 600;
+  font-size: 0.82rem;
+}
+
+/* ===== Header / top-bar ===== */
+.md-header {
+  background: var(--md-primary-fg-color);
+}
+
+/* ===== Announcement bar style ===== */
+.md-banner {
+  background: linear-gradient(135deg, #312e81 0%, #4338ca 50%, #6366f1 100%);
+  color: white;
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+.md-banner a {
+  color: #e0e7ff !important;
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+.md-banner a:hover {
+  color: white !important;
+}
+
+/* ===== Breadcrumbs (navigation.path) ===== */
+.md-path {
+  font-size: 0.72rem;
+  opacity: 0.7;
+}
+
+/* ===== Section header — ensure proper heading rendering ===== */
+.section-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.section-header h2 {
+  font-size: 1.8rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+}
+
+.section-header p {
+  font-size: 1rem;
+  opacity: 0.75;
+  max-width: 640px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+/* ===== Comparison panel code blocks — better overflow ===== */
+.comparison-panel .highlight {
+  overflow-x: auto;
+}
+
+.comparison-panel pre {
+  font-size: 0.78rem !important;
+  overflow-x: auto !important;
+}
+
+.comparison-panel .linenodiv {
+  display: none !important;
+}
+
+/* ===== Better feature-card code rendering ===== */
+.feature-card pre {
+  overflow-x: auto !important;
+  font-size: 0.75rem !important;
+}
+
+/* ===== Notebook callout polish ===== */
+.notebook-callout .highlight pre {
+  font-size: 0.82rem !important;
+}
+
+/* ===== Navigation sidebar icons ===== */
+.md-nav__item .md-nav__link {
+  font-weight: 500;
+}
+
+/* ===== Active nav link ===== */
+.md-nav__item--active > .md-nav__link {
+  font-weight: 700;
+  color: var(--md-accent-fg-color);
+}
+
+/* ===== Footer polish ===== */
+.md-footer {
+  background: #1e1b4b;
+}
+
+.md-footer-meta {
+  background: #0f0e2a;
 }

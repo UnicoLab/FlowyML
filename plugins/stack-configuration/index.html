@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="The Enterprise-Grade ML Pipeline Framework for Humans.">
+        <meta name="description" content="Configure FlowyML stacks to decouple code from infrastructure. Switch between local, Docker, GCP, AWS, and Azure with one environment variable.">
       
       
       
@@ -24,7 +24,7 @@
     
     
       
-        <title>🌍 Stack Configuration - flowyml</title>
+        <title>Stack Configuration — FlowyML - FlowyML</title>
       
     
     
@@ -91,7 +91,7 @@
     
     
     
-    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="indigo">
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="deep-purple">
   
     
     <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
@@ -100,7 +100,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#flowyml-stack-configuration" class="md-skip">
+        <a href="#same-code-any-infrastructure" class="md-skip">
           Skip to content
         </a>
       
@@ -128,7 +128,7 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="flowyml" class="md-header__button md-logo" aria-label="flowyml" data-md-component="logo">
+    <a href="../.." title="FlowyML" class="md-header__button md-logo" aria-label="FlowyML" data-md-component="logo">
       
   <img src="../../logo.png" alt="logo">
 
@@ -141,13 +141,13 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            flowyml
+            FlowyML
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              🌍 Stack Configuration
+              Stack Configuration — FlowyML
             
           </span>
         </div>
@@ -160,7 +160,7 @@
     
     
     
-    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="deep-purple"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
     
       <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
@@ -170,7 +170,7 @@
     
     
     
-    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="deep-purple"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
     
       <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
@@ -453,12 +453,12 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="flowyml" class="md-nav__button md-logo" aria-label="flowyml" data-md-component="logo">
+    <a href="../.." title="FlowyML" class="md-nav__button md-logo" aria-label="FlowyML" data-md-component="logo">
       
   <img src="../../logo.png" alt="logo">
 
     </a>
-    flowyml
+    FlowyML
   </label>
   
     <div class="md-nav__source">
@@ -1709,8 +1709,6 @@
       <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
       
       
-        
-      
       
         <label class="md-nav__link md-nav__link--active" for="__toc">
           
@@ -1742,8 +1740,6 @@
 <nav class="md-nav md-nav--secondary" aria-label="Table of contents">
   
   
-  
-    
   
   
     <label class="md-nav__title" for="__toc">
@@ -4354,8 +4350,6 @@
   
   
   
-    
-  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -4730,7 +4724,8 @@
   
 
 
-<h1 id="flowyml-stack-configuration">⚙️ FlowyML Stack Configuration</h1>
+  <h1>🌍 Stack Configuration</h1>
+
 <p>FlowyML provides <strong>clean separation of concerns</strong> between your ML code and infrastructure configuration. Your code uses abstract functions, and the configuration determines where things actually go.</p>
 <div class="hero-section">
 <h2 id="same-code-any-infrastructure">🔄 Same Code, Any Infrastructure</h2>
@@ -4738,52 +4733,33 @@
 </div>
 <hr />
 <h2 id="the-principle">🏗️ The Principle</h2>
-<div class="language-text highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1"> 1</a></span>
-<span class="normal"><a href="#__codelineno-0-2"> 2</a></span>
-<span class="normal"><a href="#__codelineno-0-3"> 3</a></span>
-<span class="normal"><a href="#__codelineno-0-4"> 4</a></span>
-<span class="normal"><a href="#__codelineno-0-5"> 5</a></span>
-<span class="normal"><a href="#__codelineno-0-6"> 6</a></span>
-<span class="normal"><a href="#__codelineno-0-7"> 7</a></span>
-<span class="normal"><a href="#__codelineno-0-8"> 8</a></span>
-<span class="normal"><a href="#__codelineno-0-9"> 9</a></span>
-<span class="normal"><a href="#__codelineno-0-10">10</a></span>
-<span class="normal"><a href="#__codelineno-0-11">11</a></span>
-<span class="normal"><a href="#__codelineno-0-12">12</a></span>
-<span class="normal"><a href="#__codelineno-0-13">13</a></span>
-<span class="normal"><a href="#__codelineno-0-14">14</a></span>
-<span class="normal"><a href="#__codelineno-0-15">15</a></span>
-<span class="normal"><a href="#__codelineno-0-16">16</a></span>
-<span class="normal"><a href="#__codelineno-0-17">17</a></span>
-<span class="normal"><a href="#__codelineno-0-18">18</a></span>
-<span class="normal"><a href="#__codelineno-0-19">19</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a>┌─────────────────────────────────┐
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a>│         Your ML Code            │
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a>│  (uses abstract functions)      │
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a>│                                 │
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a>│  save_model(model, &quot;classifier&quot;)│
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a>│  log_metrics({&quot;accuracy&quot;: 0.95})│
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7"></a>│  save_artifact(data, &quot;data.pkl&quot;)│
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8"></a>└───────────────┬─────────────────┘
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9"></a>                │
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10"></a>                ▼
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11"></a>┌─────────────────────────────────┐
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12"></a>│       flowyml.yaml              │
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13"></a>│  (configuration determines      │
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14"></a>│   where data actually goes)     │
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15"></a>│                                 │
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16"></a>│  artifact_store: gcs/s3/azure   │
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17"></a>│  experiment_tracker: mlflow     │
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18"></a>│  orchestrator: vertex_ai/k8s    │
-</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19"></a>└─────────────────────────────────┘
-</span></code></pre></div></td></tr></table></div>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>┌─────────────────────────────────┐
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>│         Your ML Code            │
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>│  (uses abstract functions)      │
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>│                                 │
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>│  save_model(model, &quot;classifier&quot;)│
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>│  log_metrics({&quot;accuracy&quot;: 0.95})│
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>│  save_artifact(data, &quot;data.pkl&quot;)│
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>└───────────────┬─────────────────┘
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>                │
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>                ▼
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>┌─────────────────────────────────┐
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>│       flowyml.yaml              │
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>│  (configuration determines      │
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>│   where data actually goes)     │
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>│                                 │
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>│  artifact_store: gcs/s3/azure   │
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>│  experiment_tracker: mlflow     │
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>│  orchestrator: vertex_ai/k8s    │
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>└─────────────────────────────────┘
+</span></code></pre></div>
 <p><strong>Switching from GCS to S3?</strong> Just edit <code>flowyml.yaml</code>. No code changes needed.</p>
 <hr />
 <h2 id="quick-start">🚀 Quick Start</h2>
 <h3 id="1-initialize-your-stack">1️⃣ Initialize Your Stack</h3>
-<div class="language-bash highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1">1</a></span>
-<span class="normal"><a href="#__codelineno-1-2">2</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="c1"># Create flowyml.yaml with your plugins</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2"></a>flowyml<span class="w"> </span>stack<span class="w"> </span>init<span class="w"> </span>--tracker<span class="w"> </span>mlflow<span class="w"> </span>--store<span class="w"> </span>gcs<span class="w"> </span>--orchestrator<span class="w"> </span>vertex_ai
-</span></code></pre></div></td></tr></table></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Create flowyml.yaml with your plugins</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>flowyml<span class="w"> </span>stack<span class="w"> </span>init<span class="w"> </span>--tracker<span class="w"> </span>mlflow<span class="w"> </span>--store<span class="w"> </span>gcs<span class="w"> </span>--orchestrator<span class="w"> </span>vertex_ai
+</span></code></pre></div>
 <p>This creates:</p>
 <div class="language-yaml highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-2-1"> 1</a></span>
 <span class="normal"><a href="#__codelineno-2-2"> 2</a></span>
@@ -4822,20 +4798,14 @@
 </span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18"></a><span class="w">    </span><span class="nt">staging_bucket</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gs://my-staging-bucket</span>
 </span></code></pre></div></td></tr></table></div>
 <h3 id="2-install-the-plugins">2️⃣ Install the Plugins</h3>
-<div class="language-bash highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-3-1">1</a></span>
-<span class="normal"><a href="#__codelineno-3-2">2</a></span>
-<span class="normal"><a href="#__codelineno-3-3">3</a></span>
-<span class="normal"><a href="#__codelineno-3-4">4</a></span>
-<span class="normal"><a href="#__codelineno-3-5">5</a></span>
-<span class="normal"><a href="#__codelineno-3-6">6</a></span>
-<span class="normal"><a href="#__codelineno-3-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="c1"># Install all plugins in your stack</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2"></a>flowyml<span class="w"> </span>stack<span class="w"> </span>install
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3"></a>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4"></a><span class="c1"># Or install individually</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5"></a>flowyml<span class="w"> </span>plugin<span class="w"> </span>install<span class="w"> </span>mlflow
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6"></a>flowyml<span class="w"> </span>plugin<span class="w"> </span>install<span class="w"> </span>gcs
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7"></a>flowyml<span class="w"> </span>plugin<span class="w"> </span>install<span class="w"> </span>vertex_ai
-</span></code></pre></div></td></tr></table></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Install all plugins in your stack</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>flowyml<span class="w"> </span>stack<span class="w"> </span>install
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># Or install individually</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>flowyml<span class="w"> </span>plugin<span class="w"> </span>install<span class="w"> </span>mlflow
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>flowyml<span class="w"> </span>plugin<span class="w"> </span>install<span class="w"> </span>gcs
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>flowyml<span class="w"> </span>plugin<span class="w"> </span>install<span class="w"> </span>vertex_ai
+</span></code></pre></div>
 <h3 id="3-write-clean-ml-code">3️⃣ Write Clean ML Code</h3>
 <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1"> 1</a></span>
 <span class="normal"><a href="#__codelineno-4-2"> 2</a></span>
@@ -5165,16 +5135,12 @@
 </span><span id="__span-11-17"><a id="__codelineno-11-17" name="__codelineno-11-17"></a><span class="k">WORKDIR</span><span class="w"> </span><span class="s">/app</span>
 </span></code></pre></div></td></tr></table></div>
 <p>Build and push:</p>
-<div class="language-bash highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-12-1">1</a></span>
-<span class="normal"><a href="#__codelineno-12-2">2</a></span>
-<span class="normal"><a href="#__codelineno-12-3">3</a></span>
-<span class="normal"><a href="#__codelineno-12-4">4</a></span>
-<span class="normal"><a href="#__codelineno-12-5">5</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1"></a><span class="c1"># Build</span>
-</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2"></a>docker<span class="w"> </span>build<span class="w"> </span>-t<span class="w"> </span>us-central1-docker.pkg.dev/my-project/ml-pipelines/training:v1<span class="w"> </span>.
-</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3"></a>
-</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4"></a><span class="c1"># Push</span>
-</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5"></a>docker<span class="w"> </span>push<span class="w"> </span>us-central1-docker.pkg.dev/my-project/ml-pipelines/training:v1
-</span></code></pre></div></td></tr></table></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="c1"># Build</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>docker<span class="w"> </span>build<span class="w"> </span>-t<span class="w"> </span>us-central1-docker.pkg.dev/my-project/ml-pipelines/training:v1<span class="w"> </span>.
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="c1"># Push</span>
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>docker<span class="w"> </span>push<span class="w"> </span>us-central1-docker.pkg.dev/my-project/ml-pipelines/training:v1
+</span></code></pre></div>
 <p>Reference the pre-built image in your config:</p>
 <div class="language-yaml highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-13-1">1</a></span>
 <span class="normal"><a href="#__codelineno-13-2">2</a></span>
@@ -5256,18 +5222,13 @@
 <p>FlowyML supports both <code>requirements.txt</code> and <code>pyproject.toml</code> (Poetry/PDM) for managing Python dependencies in containerized environments.</p>
 <h3 id="using-requirementstxt">📄 Using <code>requirements.txt</code></h3>
 <p>The simplest approach — works everywhere:</p>
-<div class="language-text highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-16-1">1</a></span>
-<span class="normal"><a href="#__codelineno-16-2">2</a></span>
-<span class="normal"><a href="#__codelineno-16-3">3</a></span>
-<span class="normal"><a href="#__codelineno-16-4">4</a></span>
-<span class="normal"><a href="#__codelineno-16-5">5</a></span>
-<span class="normal"><a href="#__codelineno-16-6">6</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1"></a># requirements.txt
-</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2"></a>flowyml[all]&gt;=1.9.0
-</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3"></a>scikit-learn&gt;=1.3.0
-</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4"></a>pandas&gt;=2.0.0
-</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5"></a>mlflow&gt;=2.8.0
-</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6"></a>google-cloud-aiplatform&gt;=1.38.0
-</span></code></pre></div></td></tr></table></div>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a># requirements.txt
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>flowyml[all]&gt;=1.9.0
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>scikit-learn&gt;=1.3.0
+</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>pandas&gt;=2.0.0
+</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>mlflow&gt;=2.8.0
+</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>google-cloud-aiplatform&gt;=1.38.0
+</span></code></pre></div>
 <div class="language-yaml highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-17-1">1</a></span>
 <span class="normal"><a href="#__codelineno-17-2">2</a></span>
 <span class="normal"><a href="#__codelineno-17-3">3</a></span>
@@ -5311,10 +5272,9 @@
 <div class="admonition warning">
 <p class="admonition-title">⚠️ Poetry in Docker</p>
 <p>When using Poetry, FlowyML generates a <code>poetry.lock</code> export step in the Dockerfile. For manual builds, add:
-<div class="language-dockerfile highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-20-1">1</a></span>
-<span class="normal"><a href="#__codelineno-20-2">2</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1"></a><span class="k">RUN</span><span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>poetry<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>poetry<span class="w"> </span><span class="nb">export</span><span class="w"> </span>-f<span class="w"> </span>requirements.txt<span class="w"> </span>-o<span class="w"> </span>/tmp/reqs.txt
-</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2"></a><span class="k">RUN</span><span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>/tmp/reqs.txt
-</span></code></pre></div></td></tr></table></div></p>
+<div class="language-dockerfile highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="k">RUN</span><span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>poetry<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>poetry<span class="w"> </span><span class="nb">export</span><span class="w"> </span>-f<span class="w"> </span>requirements.txt<span class="w"> </span>-o<span class="w"> </span>/tmp/reqs.txt
+</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="k">RUN</span><span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>/tmp/reqs.txt
+</span></code></pre></div></p>
 </div>
 <hr />
 <h2 id="step-resources-gpu-allocation">💪 Step Resources &amp; GPU Allocation</h2>
@@ -5486,34 +5446,21 @@
 </span></code></pre></div></td></tr></table></div>
 <hr />
 <h2 id="stack-management-commands">🖥️ Stack Management Commands</h2>
-<div class="language-bash highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-24-1"> 1</a></span>
-<span class="normal"><a href="#__codelineno-24-2"> 2</a></span>
-<span class="normal"><a href="#__codelineno-24-3"> 3</a></span>
-<span class="normal"><a href="#__codelineno-24-4"> 4</a></span>
-<span class="normal"><a href="#__codelineno-24-5"> 5</a></span>
-<span class="normal"><a href="#__codelineno-24-6"> 6</a></span>
-<span class="normal"><a href="#__codelineno-24-7"> 7</a></span>
-<span class="normal"><a href="#__codelineno-24-8"> 8</a></span>
-<span class="normal"><a href="#__codelineno-24-9"> 9</a></span>
-<span class="normal"><a href="#__codelineno-24-10">10</a></span>
-<span class="normal"><a href="#__codelineno-24-11">11</a></span>
-<span class="normal"><a href="#__codelineno-24-12">12</a></span>
-<span class="normal"><a href="#__codelineno-24-13">13</a></span>
-<span class="normal"><a href="#__codelineno-24-14">14</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1"></a><span class="c1"># Create initial configuration</span>
-</span><span id="__span-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2"></a>flowyml<span class="w"> </span>stack<span class="w"> </span>init<span class="w"> </span>--tracker<span class="w"> </span>mlflow<span class="w"> </span>--store<span class="w"> </span>gcs
-</span><span id="__span-24-3"><a id="__codelineno-24-3" name="__codelineno-24-3"></a>
-</span><span id="__span-24-4"><a id="__codelineno-24-4" name="__codelineno-24-4"></a><span class="c1"># Show current stack</span>
-</span><span id="__span-24-5"><a id="__codelineno-24-5" name="__codelineno-24-5"></a>flowyml<span class="w"> </span>stack<span class="w"> </span>show
-</span><span id="__span-24-6"><a id="__codelineno-24-6" name="__codelineno-24-6"></a>
-</span><span id="__span-24-7"><a id="__codelineno-24-7" name="__codelineno-24-7"></a><span class="c1"># Validate configuration</span>
-</span><span id="__span-24-8"><a id="__codelineno-24-8" name="__codelineno-24-8"></a>flowyml<span class="w"> </span>stack<span class="w"> </span>validate
-</span><span id="__span-24-9"><a id="__codelineno-24-9" name="__codelineno-24-9"></a>
-</span><span id="__span-24-10"><a id="__codelineno-24-10" name="__codelineno-24-10"></a><span class="c1"># Install all plugins in stack</span>
-</span><span id="__span-24-11"><a id="__codelineno-24-11" name="__codelineno-24-11"></a>flowyml<span class="w"> </span>stack<span class="w"> </span>install
-</span><span id="__span-24-12"><a id="__codelineno-24-12" name="__codelineno-24-12"></a>
-</span><span id="__span-24-13"><a id="__codelineno-24-13" name="__codelineno-24-13"></a><span class="c1"># List all stacks</span>
-</span><span id="__span-24-14"><a id="__codelineno-24-14" name="__codelineno-24-14"></a>flowyml<span class="w"> </span>stack<span class="w"> </span>list
-</span></code></pre></div></td></tr></table></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="c1"># Create initial configuration</span>
+</span><span id="__span-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>flowyml<span class="w"> </span>stack<span class="w"> </span>init<span class="w"> </span>--tracker<span class="w"> </span>mlflow<span class="w"> </span>--store<span class="w"> </span>gcs
+</span><span id="__span-24-3"><a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a>
+</span><span id="__span-24-4"><a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a><span class="c1"># Show current stack</span>
+</span><span id="__span-24-5"><a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a>flowyml<span class="w"> </span>stack<span class="w"> </span>show
+</span><span id="__span-24-6"><a id="__codelineno-24-6" name="__codelineno-24-6" href="#__codelineno-24-6"></a>
+</span><span id="__span-24-7"><a id="__codelineno-24-7" name="__codelineno-24-7" href="#__codelineno-24-7"></a><span class="c1"># Validate configuration</span>
+</span><span id="__span-24-8"><a id="__codelineno-24-8" name="__codelineno-24-8" href="#__codelineno-24-8"></a>flowyml<span class="w"> </span>stack<span class="w"> </span>validate
+</span><span id="__span-24-9"><a id="__codelineno-24-9" name="__codelineno-24-9" href="#__codelineno-24-9"></a>
+</span><span id="__span-24-10"><a id="__codelineno-24-10" name="__codelineno-24-10" href="#__codelineno-24-10"></a><span class="c1"># Install all plugins in stack</span>
+</span><span id="__span-24-11"><a id="__codelineno-24-11" name="__codelineno-24-11" href="#__codelineno-24-11"></a>flowyml<span class="w"> </span>stack<span class="w"> </span>install
+</span><span id="__span-24-12"><a id="__codelineno-24-12" name="__codelineno-24-12" href="#__codelineno-24-12"></a>
+</span><span id="__span-24-13"><a id="__codelineno-24-13" name="__codelineno-24-13" href="#__codelineno-24-13"></a><span class="c1"># List all stacks</span>
+</span><span id="__span-24-14"><a id="__codelineno-24-14" name="__codelineno-24-14" href="#__codelineno-24-14"></a>flowyml<span class="w"> </span>stack<span class="w"> </span>list
+</span></code></pre></div>
 <hr />
 <h2 id="named-multi-stack-support">🔀 Named Multi-Stack Support</h2>
 <p>FlowyML supports <strong>named stacks</strong> for managing development, staging, and production environments in a single config file:</p>
@@ -5570,20 +5517,14 @@
 </span><span id="__span-25-26"><a id="__codelineno-25-26" name="__codelineno-25-26"></a><span class="nt">active_stack</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">local</span>
 </span></code></pre></div></td></tr></table></div>
 <h3 id="switching-stacks">🔄 Switching Stacks</h3>
-<div class="language-bash highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-26-1">1</a></span>
-<span class="normal"><a href="#__codelineno-26-2">2</a></span>
-<span class="normal"><a href="#__codelineno-26-3">3</a></span>
-<span class="normal"><a href="#__codelineno-26-4">4</a></span>
-<span class="normal"><a href="#__codelineno-26-5">5</a></span>
-<span class="normal"><a href="#__codelineno-26-6">6</a></span>
-<span class="normal"><a href="#__codelineno-26-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1"></a><span class="c1"># Via environment variable</span>
-</span><span id="__span-26-2"><a id="__codelineno-26-2" name="__codelineno-26-2"></a><span class="nv">FLOWYML_STACK</span><span class="o">=</span>gcp-prod<span class="w"> </span>flowyml<span class="w"> </span>run<span class="w"> </span>my_pipeline
-</span><span id="__span-26-3"><a id="__codelineno-26-3" name="__codelineno-26-3"></a>
-</span><span id="__span-26-4"><a id="__codelineno-26-4" name="__codelineno-26-4"></a><span class="c1"># Via CLI</span>
-</span><span id="__span-26-5"><a id="__codelineno-26-5" name="__codelineno-26-5"></a>flowyml<span class="w"> </span>stack<span class="w"> </span><span class="nb">set</span><span class="w"> </span>gcp-prod
-</span><span id="__span-26-6"><a id="__codelineno-26-6" name="__codelineno-26-6"></a>flowyml<span class="w"> </span>stack<span class="w"> </span>list
-</span><span id="__span-26-7"><a id="__codelineno-26-7" name="__codelineno-26-7"></a>flowyml<span class="w"> </span>stack<span class="w"> </span>show<span class="w"> </span>gcp-prod
-</span></code></pre></div></td></tr></table></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="c1"># Via environment variable</span>
+</span><span id="__span-26-2"><a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a><span class="nv">FLOWYML_STACK</span><span class="o">=</span>gcp-prod<span class="w"> </span>flowyml<span class="w"> </span>run<span class="w"> </span>my_pipeline
+</span><span id="__span-26-3"><a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a>
+</span><span id="__span-26-4"><a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a><span class="c1"># Via CLI</span>
+</span><span id="__span-26-5"><a id="__codelineno-26-5" name="__codelineno-26-5" href="#__codelineno-26-5"></a>flowyml<span class="w"> </span>stack<span class="w"> </span><span class="nb">set</span><span class="w"> </span>gcp-prod
+</span><span id="__span-26-6"><a id="__codelineno-26-6" name="__codelineno-26-6" href="#__codelineno-26-6"></a>flowyml<span class="w"> </span>stack<span class="w"> </span>list
+</span><span id="__span-26-7"><a id="__codelineno-26-7" name="__codelineno-26-7" href="#__codelineno-26-7"></a>flowyml<span class="w"> </span>stack<span class="w"> </span>show<span class="w"> </span>gcp-prod
+</span></code></pre></div>
 <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-27-1"> 1</a></span>
 <span class="normal"><a href="#__codelineno-27-2"> 2</a></span>
 <span class="normal"><a href="#__codelineno-27-3"> 3</a></span>
@@ -5785,6 +5726,9 @@
 
 
 
+  
+  
+
 
 
 
@@ -5903,7 +5847,7 @@
     
     
       
-      <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.sections", "navigation.expand", "navigation.top", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.progress", "navigation.indexes", "navigation.footer", "content.code.copy", "content.code.annotate", "content.tabs.link", "content.tooltips", "search.suggest", "search.highlight", "search.share", "toc.follow"], "search": "../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.sections", "navigation.expand", "navigation.top", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.progress", "navigation.indexes", "navigation.footer", "navigation.path", "content.code.copy", "content.code.annotate", "content.tabs.link", "content.tooltips", "search.suggest", "search.highlight", "search.share", "toc.follow"], "search": "../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
       <script src="../../assets/javascripts/bundle.f55a23d4.min.js"></script>
