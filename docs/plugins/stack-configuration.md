@@ -1,4 +1,7 @@
-# ⚙️ FlowyML Stack Configuration
+---
+title: "Stack Configuration — FlowyML"
+description: "Configure FlowyML stacks to decouple code from infrastructure. Switch between local, Docker, GCP, AWS, and Azure with one environment variable."
+---
 
 FlowyML provides **clean separation of concerns** between your ML code and infrastructure configuration. Your code uses abstract functions, and the configuration determines where things actually go.
 

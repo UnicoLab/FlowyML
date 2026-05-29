@@ -59,7 +59,7 @@ Write ML code once. Run it <strong>anywhere</strong> — local, Docker, GCP, AWS
 
 <div class="landing-section" markdown>
 
-<div class="section-header">
+<div class="section-header" markdown>
 
 ## 💡 What is FlowyML?
 
@@ -116,7 +116,7 @@ Every pipeline gets smart caching, parallel execution, drift monitoring, 29+ eva
 
 <div class="landing-section landing-section--alt" markdown>
 
-<div class="section-header">
+<div class="section-header" markdown>
 
 ## ⚡ See the Difference
 
@@ -188,7 +188,7 @@ pipeline.run()  # 🎉 Done!
 
 <div class="landing-section" markdown>
 
-<div class="section-header">
+<div class="section-header" markdown>
 
 ## 🏗️ How FlowyML Works
 
@@ -243,7 +243,7 @@ flowyml ui start
 
 <div class="landing-section landing-section--alt" markdown>
 
-<div class="section-header">
+<div class="section-header" markdown>
 
 ## 🔌 Works With the Tools You Already Use
 
@@ -299,7 +299,7 @@ flowyml ui start
 
 <div class="landing-section" markdown>
 
-<div class="section-header">
+<div class="section-header" markdown>
 
 ## 🔓 How Infrastructure Decoupling Works
 
@@ -354,7 +354,7 @@ Your code, FlowyML's orchestration layer, and your infrastructure are **three in
 
 <div class="landing-section landing-section--alt" markdown>
 
-<div class="section-header">
+<div class="section-header" markdown>
 
 ## 🚀 Built For Every ML Workflow
 
@@ -408,7 +408,7 @@ Scheduled re-training with drift detection, data validation, and automatic model
 
 <div class="landing-section" markdown>
 
-<div class="section-header">
+<div class="section-header" markdown>
 
 ## 🎯 Feature Highlights
 
@@ -498,7 +498,7 @@ Extensible architecture with plugins for MLflow, W&B, Slack, Docker, Kubernetes,
 
 <div class="landing-section" markdown>
 
-<div class="section-header">
+<div class="section-header" markdown>
 
 ## 🖥️ The Dashboard
 
@@ -548,7 +548,7 @@ FlowyML ships with a **full-featured web dashboard** for monitoring, debugging, 
 
 <div class="landing-section landing-section--alt" markdown>
 
-<div class="section-header">
+<div class="section-header" markdown>
 
 ## 📊 FlowyML vs. The Rest
 
@@ -597,7 +597,7 @@ Most ML frameworks force you to choose between simplicity and power. FlowyML giv
 
 <div class="landing-section" markdown>
 
-<div class="section-header">
+<div class="section-header" markdown>
 
 ## 🔄 How Artifacts Flow Through Infrastructure
 
@@ -665,7 +665,7 @@ fml-notebook dev  # 🔥 Launch with hot-reload
 
 <div class="landing-section landing-section--alt" markdown>
 
-<div class="section-header">
+<div class="section-header" markdown>
 
 ## 🗺️ Explore the Documentation
 
@@ -707,7 +707,7 @@ fml-notebook dev  # 🔥 Launch with hot-reload
 
 <div class="landing-section" markdown>
 
-<div class="section-header">
+<div class="section-header" markdown>
 
 ## 📦 Installation
 

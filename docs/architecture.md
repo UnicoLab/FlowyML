@@ -1,3 +1,8 @@
+---
+title: "Architecture — FlowyML"
+description: "Deep dive into FlowyML's architecture: the plugin system, artifact routing, DAG construction engine, and how the orchestration layer decouples code from infrastructure."
+---
+
 <div class="hero-section" markdown>
 
 ## 🏗️ Architecture

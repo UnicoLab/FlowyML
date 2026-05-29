@@ -1,3 +1,8 @@
+---
+title: "Artifact-Centric Philosophy — FlowyML"
+description: "Understand FlowyML's artifact-centric approach: how data dependencies replace manual DAG wiring, enabling automatic lineage tracking and type-safe pipelines."
+---
+
 <div class="hero-section" markdown>
 
 ## 💎 Artifact-Centric Architecture

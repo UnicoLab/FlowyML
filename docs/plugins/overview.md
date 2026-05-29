@@ -1,4 +1,7 @@
-# 🔌 FlowyML Plugin System
+---
+title: "Plugin System — FlowyML"
+description: "FlowyML's plugin architecture: artifact stores, metadata stores, orchestrators, and experiment trackers. Build custom plugins or use built-in ones for GCP, AWS, Azure."
+---
 
 FlowyML features a **powerful native plugin system** that allows you to integrate with ANY ML tool — MLflow, Kubernetes, AWS S3, and more — **without external framework dependencies**.
 
