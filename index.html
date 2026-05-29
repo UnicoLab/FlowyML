@@ -442,7 +442,7 @@
               
                 
               
-              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" hidden>
                 <div class="md-sidebar__scrollwrap">
                   <div class="md-sidebar__inner">
                     
@@ -598,9 +598,9 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#configure-infrastructure" class="md-nav__link">
+  <a href="#configure-infra" class="md-nav__link">
     <span class="md-ellipsis">
-      Configure Infrastructure
+      Configure Infra
     </span>
   </a>
   
@@ -786,11 +786,26 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#flowyml-vs-the-rest" class="md-nav__link">
+  <a href="#how-flowyml-compares" class="md-nav__link">
     <span class="md-ellipsis">
-      📊 FlowyML vs. The Rest
+      📊 How FlowyML Compares
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="📊 How FlowyML Compares">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#feature-matrix-whats-included-vs-what-youd-pay-for-elsewhere" class="md-nav__link">
+    <span class="md-ellipsis">
+      Feature Matrix — What's Included vs. What You'd Pay For Elsewhere
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -4379,9 +4394,9 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#configure-infrastructure" class="md-nav__link">
+  <a href="#configure-infra" class="md-nav__link">
     <span class="md-ellipsis">
-      Configure Infrastructure
+      Configure Infra
     </span>
   </a>
   
@@ -4567,11 +4582,26 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#flowyml-vs-the-rest" class="md-nav__link">
+  <a href="#how-flowyml-compares" class="md-nav__link">
     <span class="md-ellipsis">
-      📊 FlowyML vs. The Rest
+      📊 How FlowyML Compares
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="📊 How FlowyML Compares">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#feature-matrix-whats-included-vs-what-youd-pay-for-elsewhere" class="md-nav__link">
+    <span class="md-ellipsis">
+      Feature Matrix — What's Included vs. What You'd Pay For Elsewhere
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -4751,22 +4781,21 @@ Write ML code once. Run it <strong>anywhere</strong> — local, Docker, GCP, AWS
 </div>
 <div class="comparison-panel comparison-panel--after">
 <div class="comparison-label comparison-label--after">✅ FlowyML</div>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">flowyml</span><span class="w"> </span><span class="kn">import</span> <span class="n">Pipeline</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">context</span><span class="p">,</span> <span class="n">Model</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">flowyml</span><span class="w"> </span><span class="kn">import</span> <span class="n">Pipeline</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">Model</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="nd">@step</span><span class="p">(</span><span class="n">outputs</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;dataset&quot;</span><span class="p">])</span>
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="k">def</span><span class="w"> </span><span class="nf">load_data</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Produces a dataset artifact.&quot;&quot;&quot;</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="k">return</span> <span class="n">fetch_dataset</span><span class="p">()</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="nd">@step</span><span class="p">(</span><span class="n">inputs</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;dataset&quot;</span><span class="p">],</span> <span class="n">outputs</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;model&quot;</span><span class="p">])</span>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="k">def</span><span class="w"> </span><span class="nf">train</span><span class="p">(</span><span class="n">dataset</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Model</span><span class="p">:</span>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Auto-wired via &#39;dataset&#39; artifact.&quot;&quot;&quot;</span>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    <span class="k">return</span> <span class="n">Model</span><span class="p">(</span><span class="n">fit</span><span class="p">(</span><span class="n">dataset</span><span class="p">))</span>
-</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>
-</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="c1"># Zero arrows — DAG builds itself!</span>
-</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="n">pipeline</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">(</span><span class="s2">&quot;my_pipeline&quot;</span><span class="p">)</span>
-</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="n">pipeline</span><span class="o">.</span><span class="n">add_step</span><span class="p">(</span><span class="n">load_data</span><span class="p">)</span><span class="o">.</span><span class="n">add_step</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
-</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="n">pipeline</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>  <span class="c1"># 🎉 Done!</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="k">return</span> <span class="n">fetch_dataset</span><span class="p">()</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="nd">@step</span><span class="p">(</span><span class="n">inputs</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;dataset&quot;</span><span class="p">],</span> <span class="n">outputs</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;model&quot;</span><span class="p">])</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="k">def</span><span class="w"> </span><span class="nf">train</span><span class="p">(</span><span class="n">dataset</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Model</span><span class="p">:</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    <span class="k">return</span> <span class="n">Model</span><span class="p">(</span><span class="n">fit</span><span class="p">(</span><span class="n">dataset</span><span class="p">))</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="c1"># Zero arrows — DAG builds itself!</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="n">pipeline</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="o">.</span><span class="n">from_steps</span><span class="p">(</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>    <span class="n">load_data</span><span class="p">,</span> <span class="n">train</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my_pipeline&quot;</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="p">)</span>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="n">pipeline</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>  <span class="c1"># 🎉 Done!</span>
 </span></code></pre></div>
 </div>
 </div>
@@ -4787,26 +4816,25 @@ Write ML code once. Run it <strong>anywhere</strong> — local, Docker, GCP, AWS
 <div class="how-step">
 <div class="how-step-number">1</div>
 <h3 id="define-steps">Define Steps</h3>
-<p>Decorate Python functions with <code>@step</code>. Declare <code>inputs</code> and <code>outputs</code> — that's it.</p>
+<p>Decorate functions with <code>@step</code>.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nd">@step</span><span class="p">(</span><span class="n">outputs</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;model&quot;</span><span class="p">])</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">train</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">lr</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Model</span><span class="p">:</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="k">return</span> <span class="n">Model</span><span class="p">(</span><span class="n">train_classifier</span><span class="p">(</span><span class="n">dataset</span><span class="p">))</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">train</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Model</span><span class="p">:</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="k">return</span> <span class="n">fit</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 </span></code></pre></div>
 </div>
 <div class="how-step">
 <div class="how-step-number">2</div>
-<h3 id="configure-infrastructure">Configure Infrastructure</h3>
-<p>One YAML file controls where everything runs. Switch clouds with a single env var.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">FLOWYML_STACK</span><span class="o">=</span>production
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>python<span class="w"> </span>pipeline.py<span class="w">  </span><span class="c1"># Now on Vertex AI</span>
+<h3 id="configure-infra">Configure Infra</h3>
+<p>Switch clouds with one env var.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">FLOWYML_STACK</span><span class="o">=</span>prod
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>python<span class="w"> </span>pipeline.py
 </span></code></pre></div>
 </div>
 <div class="how-step">
 <div class="how-step-number">3</div>
 <h3 id="monitor-ship">Monitor &amp; Ship</h3>
-<p>Beautiful dark-mode dashboard with DAGs, metrics, artifacts, and GenAI traces.</p>
+<p>Dashboard with DAGs, metrics, and traces.</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>flowyml<span class="w"> </span>ui<span class="w"> </span>start
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="c1"># → http://localhost:8080</span>
 </span></code></pre></div>
 </div>
 </div>
@@ -5037,17 +5065,17 @@ Write ML code once. Run it <strong>anywhere</strong> — local, Docker, GCP, AWS
 
 <div class="landing-section landing-section--alt">
 <div class="section-header">
-<h2 id="flowyml-vs-the-rest">📊 FlowyML vs. The Rest</h2>
-<p>Most ML frameworks force you to choose between simplicity and power. FlowyML gives you both.</p>
+<h2 id="how-flowyml-compares">📊 How FlowyML Compares</h2>
+<p>Many ML platforms offer powerful features — but lock them behind <strong>paid tiers</strong> or <strong>enterprise-only editions</strong>. FlowyML's mission is to deliver enterprise-grade capabilities as <strong>100% open-source</strong>, community-driven software. No feature walls. No upgrade prompts.</p>
 </div>
 <div class="impact-strip">
 <div class="impact-item">
-<span class="impact-number">0</span>
-<span class="impact-label">Infrastructure rewrites when switching clouds</span>
+<span class="impact-number">$0</span>
+<span class="impact-label">All features. No "Pro" or "Enterprise" tiers.</span>
 </div>
 <div class="impact-item">
 <span class="impact-number">10x</span>
-<span class="impact-label">Less boilerplate vs. Airflow / Prefect</span>
+<span class="impact-label">Less boilerplate vs. traditional orchestrators</span>
 </div>
 <div class="impact-item">
 <span class="impact-number">29+</span>
@@ -5058,72 +5086,136 @@ Write ML code once. Run it <strong>anywhere</strong> — local, Docker, GCP, AWS
 <span class="impact-label">From install to first pipeline running</span>
 </div>
 </div>
+<h3 id="feature-matrix-whats-included-vs-what-youd-pay-for-elsewhere">Feature Matrix — What's Included vs. What You'd Pay For Elsewhere</h3>
 <table>
 <thead>
 <tr>
-<th>Concept</th>
-<th style="text-align: center;">Airflow / Prefect / ZenML</th>
-<th style="text-align: center;"><strong>FlowyML</strong></th>
+<th>Capability</th>
+<th style="text-align: center;">General Orchestrators</th>
+<th style="text-align: center;">ML Platforms (Free Tier)</th>
+<th style="text-align: center;">ML Platforms (Pro / Enterprise)</th>
+<th style="text-align: center;"><strong>FlowyML</strong> (Free, Always)</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>Infrastructure Coupling</strong></td>
-<td style="text-align: center;">Code references cloud paths</td>
-<td style="text-align: center;"><strong>Code never touches infrastructure</strong></td>
+<td><strong>Pipeline Orchestration</strong></td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
 </tr>
 <tr>
 <td><strong>DAG Construction</strong></td>
-<td style="text-align: center;">Manual arrows or task wiring</td>
-<td style="text-align: center;"><strong>Auto-Inferred</strong> from artifact names</td>
+<td style="text-align: center;">Manual wiring (<code>&gt;&gt;</code>, <code>.after()</code>)</td>
+<td style="text-align: center;">Manual wiring</td>
+<td style="text-align: center;">Manual wiring</td>
+<td style="text-align: center;">✅ <strong>Auto-inferred</strong> from artifacts</td>
 </tr>
 <tr>
-<td><strong>Data Handoff</strong></td>
-<td style="text-align: center;"><code>s3://bucket/file.csv</code> in code</td>
-<td style="text-align: center;"><strong>Catalog</strong> resolution by name &amp; version</td>
+<td><strong>Code ↔ Infrastructure Decoupling</strong></td>
+<td style="text-align: center;">❌ Tightly coupled</td>
+<td style="text-align: center;">⚠️ Partial (code still references cloud)</td>
+<td style="text-align: center;">⚠️ Partial</td>
+<td style="text-align: center;">✅ <strong>Complete</strong> — one env var to switch clouds</td>
 </tr>
 <tr>
-<td><strong>Type Safety</strong></td>
-<td style="text-align: center;">Runtime failures</td>
-<td style="text-align: center;"><strong>Build-time</strong> validation</td>
+<td><strong>Multi-Cloud Deploy</strong></td>
+<td style="text-align: center;">❌ Vendor-locked</td>
+<td style="text-align: center;">⚠️ Limited (1–2 clouds)</td>
+<td style="text-align: center;">✅ Paid add-on</td>
+<td style="text-align: center;">✅ <strong>GCP + AWS + Azure</strong> included</td>
 </tr>
 <tr>
-<td><strong>Cloud Deployment</strong></td>
-<td style="text-align: center;">Vendor lock-in or complex adapters</td>
-<td style="text-align: center;"><strong>One env var</strong> — <code>FLOWYML_STACK=prod</code></td>
+<td><strong>Artifact Catalog &amp; Lineage</strong></td>
+<td style="text-align: center;">❌ External tools</td>
+<td style="text-align: center;">⚠️ Basic</td>
+<td style="text-align: center;">✅ Paid tier</td>
+<td style="text-align: center;">✅ <strong>Built-in</strong> with versioning &amp; lineage</td>
 </tr>
 <tr>
-<td><strong>GenAI Observability</strong></td>
-<td style="text-align: center;">Requires LangSmith or external tools</td>
-<td style="text-align: center;"><strong>Built-in</strong> tracing &amp; evaluation</td>
+<td><strong>Model Registry</strong></td>
+<td style="text-align: center;">❌ Separate product</td>
+<td style="text-align: center;">⚠️ Basic</td>
+<td style="text-align: center;">✅ Paid tier</td>
+<td style="text-align: center;">✅ <strong>Built-in</strong> with promotion &amp; tagging</td>
 </tr>
 <tr>
 <td><strong>Evaluation Scorers</strong></td>
-<td style="text-align: center;">Bring your own (manual scripting)</td>
-<td style="text-align: center;"><strong>29+ built-in</strong> with CI/CD quality gates</td>
+<td style="text-align: center;">❌ None</td>
+<td style="text-align: center;">⚠️ 1–3 basic</td>
+<td style="text-align: center;">⚠️ Limited</td>
+<td style="text-align: center;">✅ <strong>29+</strong> (classification, regression, LLM-as-Judge)</td>
 </tr>
 <tr>
-<td><strong>Dashboard</strong></td>
-<td style="text-align: center;">Separate tool (MLflow, etc.)</td>
-<td style="text-align: center;"><strong>Included</strong> — dark mode, DAGs, traces</td>
+<td><strong>GenAI / LLM Observability</strong></td>
+<td style="text-align: center;">❌ None</td>
+<td style="text-align: center;">❌ None</td>
+<td style="text-align: center;">⚠️ Add-on or separate product</td>
+<td style="text-align: center;">✅ <strong>Built-in</strong> tracing, token counts, cost tracking</td>
 </tr>
 <tr>
-<td><strong>Developer Experience</strong></td>
-<td style="text-align: center;">YAML configs or rigid DSLs</td>
-<td style="text-align: center;"><strong>Pure Python</strong> decorators — no DSLs</td>
+<td><strong>Dashboard &amp; UI</strong></td>
+<td style="text-align: center;">⚠️ Separate tool (Airflow UI)</td>
+<td style="text-align: center;">⚠️ Basic</td>
+<td style="text-align: center;">✅ Full (paid)</td>
+<td style="text-align: center;">✅ <strong>Included</strong> — dark mode, DAGs, metrics, traces</td>
 </tr>
 <tr>
-<td><strong>Caching</strong></td>
-<td style="text-align: center;">File-timestamp or none</td>
-<td style="text-align: center;"><strong>Content-hash</strong> (code + data inputs)</td>
+<td><strong>Smart Caching</strong></td>
+<td style="text-align: center;">⚠️ File-timestamp only</td>
+<td style="text-align: center;">⚠️ Basic</td>
+<td style="text-align: center;">✅ Content-hash</td>
+<td style="text-align: center;">✅ <strong>Content-hash</strong> (code + data + config)</td>
+</tr>
+<tr>
+<td><strong>Quality Gates / CI-CD</strong></td>
+<td style="text-align: center;">❌ Build-your-own</td>
+<td style="text-align: center;">❌ Manual</td>
+<td style="text-align: center;">✅ Paid tier</td>
+<td style="text-align: center;">✅ <strong>Built-in</strong> eval-based gates</td>
+</tr>
+<tr>
+<td><strong>Data Drift Monitoring</strong></td>
+<td style="text-align: center;">❌ Separate product</td>
+<td style="text-align: center;">❌ None</td>
+<td style="text-align: center;">⚠️ Add-on</td>
+<td style="text-align: center;">✅ <strong>Built-in</strong> statistical monitors</td>
+</tr>
+<tr>
+<td><strong>Notifications (Slack, Email)</strong></td>
+<td style="text-align: center;">⚠️ Plugin</td>
+<td style="text-align: center;">⚠️ Plugin</td>
+<td style="text-align: center;">✅ Included</td>
+<td style="text-align: center;">✅ <strong>Built-in</strong> multi-channel</td>
 </tr>
 <tr>
 <td><strong>Notebook → Pipeline</strong></td>
-<td style="text-align: center;">Manual conversion</td>
-<td style="text-align: center;"><strong>One-click</strong> via FlowyML Notebook</td>
+<td style="text-align: center;">❌ Manual</td>
+<td style="text-align: center;">❌ Manual conversion</td>
+<td style="text-align: center;">⚠️ Limited</td>
+<td style="text-align: center;">✅ <strong>One-click</strong> via FlowyML Notebook</td>
+</tr>
+<tr>
+<td><strong>Type Safety</strong></td>
+<td style="text-align: center;">❌ Runtime failures</td>
+<td style="text-align: center;">⚠️ Partial</td>
+<td style="text-align: center;">⚠️ Partial</td>
+<td style="text-align: center;">✅ <strong>Build-time</strong> validation</td>
+</tr>
+<tr>
+<td><strong>Developer Experience</strong></td>
+<td style="text-align: center;">YAML configs, rigid DSLs</td>
+<td style="text-align: center;">Python SDK</td>
+<td style="text-align: center;">Python SDK</td>
+<td style="text-align: center;">✅ <strong>Pure Python</strong> decorators — no DSLs</td>
 </tr>
 </tbody>
 </table>
+<div class="admonition tip">
+<p class="admonition-title">💡 Our Philosophy</p>
+<p>We believe ML infrastructure should be <strong>democratized</strong>. Every data scientist — whether at a startup or in a research lab — deserves enterprise-grade tooling without enterprise-grade pricing. That's why every feature above ships in <strong>one <code>pip install</code></strong>, with no upsell, no license keys, and no feature gates.</p>
+</div>
 </div>
 <!-- ============================================================
      ARTIFACT FLOW DIAGRAM

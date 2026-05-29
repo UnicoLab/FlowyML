@@ -1193,9 +1193,15 @@
 /* ===== How It Works — Numbered Steps ===== */
 .how-it-works-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 1.5rem;
   margin: 2rem 0;
+}
+
+@media screen and (max-width: 59.9375em) {
+  .how-it-works-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .how-step {
@@ -1242,15 +1248,17 @@
 }
 
 .how-step pre {
-  font-size: 0.75rem !important;
+  font-size: 0.78rem !important;
   margin-top: 0.6rem !important;
   overflow-x: auto !important;
+  max-width: 100%;
 }
 
 .how-step .highlight code {
-  white-space: pre;
-  word-break: normal;
-  overflow-wrap: normal;
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  font-size: 0.78rem;
 }
 
 /* Hide line numbers inside card-style code blocks */
@@ -2644,4 +2652,164 @@ html {
 
 .md-footer-meta {
   background: #0f0e2a;
+}
+
+/* ================================================================
+   LAYOUT v8.0 — Wide Content & Improved Card Layout
+   ================================================================ */
+
+/* ===== Widen the content area on the homepage ===== */
+/* The homepage hides the ToC, so we can use the full width */
+.md-main__inner {
+  max-width: 100%;
+}
+
+.md-content {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Even wider for pages that hide ToC (like the landing page) */
+.md-sidebar--secondary:not([hidden]) ~ .md-content {
+  max-width: none;
+}
+
+/* ===== Landing page uses full available width ===== */
+.landing-hero--v2 {
+  margin-left: -1.2rem;
+  margin-right: -1.2rem;
+}
+
+.landing-section {
+  padding: 3.5rem 0;
+}
+
+.landing-section--alt {
+  margin-left: -1.2rem;
+  margin-right: -1.2rem;
+  padding: 3.5rem 2rem;
+}
+
+/* ===== Wider comparison grid ===== */
+.comparison-grid {
+  gap: 2rem;
+}
+
+.comparison-panel pre {
+  font-size: 0.8rem !important;
+}
+
+.comparison-panel .highlight code {
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-size: 0.8rem;
+}
+
+/* ===== Wider pitch grid ===== */
+.pitch-grid {
+  gap: 1.8rem;
+}
+
+/* ===== Wider feature grid ===== */
+.feature-grid {
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+/* ===== Code blocks in cards — wrap instead of scroll ===== */
+.pitch-card pre,
+.usecase-card pre,
+.feature-card pre {
+  overflow-x: auto !important;
+  font-size: 0.78rem !important;
+  max-width: 100%;
+}
+
+.pitch-card .highlight code,
+.usecase-card .highlight code,
+.feature-card .highlight code {
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+}
+
+/* ===== Better how-step cards ===== */
+.how-step {
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* ===== Tablet breakpoint — stack comparison side-by-side still ===== */
+@media screen and (min-width: 76.25em) {
+  .md-content {
+    max-width: 1400px;
+  }
+}
+
+@media screen and (max-width: 76.1875em) {
+  .md-content {
+    max-width: 100%;
+  }
+}
+
+@media screen and (max-width: 59.9375em) {
+  .comparison-grid {
+    grid-template-columns: 1fr;
+  }
+  .pitch-grid {
+    grid-template-columns: 1fr;
+  }
+  .landing-section--alt {
+    margin-left: -0.5rem;
+    margin-right: -0.5rem;
+    padding: 2rem 1rem;
+  }
+}
+
+/* ===== Wide comparison table — responsive ===== */
+.landing-section--alt .md-typeset__scrollwrap,
+.landing-section--alt .md-typeset table {
+  width: 100%;
+}
+
+.landing-section--alt table {
+  font-size: 0.82rem;
+  border-collapse: collapse;
+}
+
+.landing-section--alt table th {
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+  background: rgba(99, 102, 241, 0.06);
+  border-bottom: 2px solid rgba(99, 102, 241, 0.2);
+}
+
+.landing-section--alt table td {
+  padding: 0.5rem 0.6rem;
+  vertical-align: middle;
+  line-height: 1.4;
+}
+
+.landing-section--alt table td:first-child {
+  font-weight: 600;
+  white-space: nowrap;
+  min-width: 180px;
+}
+
+/* Last column (FlowyML) highlighted */
+.landing-section--alt table td:last-child,
+.landing-section--alt table th:last-child {
+  background: rgba(99, 102, 241, 0.04);
+  border-left: 2px solid rgba(99, 102, 241, 0.12);
+}
+
+[data-md-color-scheme="slate"] .landing-section--alt table th {
+  background: rgba(99, 102, 241, 0.1);
+  border-bottom-color: rgba(99, 102, 241, 0.3);
+}
+
+[data-md-color-scheme="slate"] .landing-section--alt table td:last-child,
+[data-md-color-scheme="slate"] .landing-section--alt table th:last-child {
+  background: rgba(99, 102, 241, 0.08);
+  border-left-color: rgba(99, 102, 241, 0.2);
 }
