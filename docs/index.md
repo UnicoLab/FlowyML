@@ -576,27 +576,53 @@ Many ML platforms offer powerful features — but lock them behind **paid tiers*
 
 ### Feature Matrix — What's Included vs. What You'd Pay For Elsewhere
 
-| Capability | General Orchestrators | ML Platforms (Free Tier) | ML Platforms (Pro / Enterprise) | **FlowyML** (Free, Always) |
+#### 🏗️ Core Pipeline & Orchestration
+
+| Capability | General Orchestrators | ML Platforms (Free) | ML Platforms (Pro / Enterprise) | **FlowyML** (Free, Always) |
 |---|:---:|:---:|:---:|:---:|
 | **Pipeline Orchestration** | ✅ | ✅ | ✅ | ✅ |
 | **DAG Construction** | Manual wiring (`>>`, `.after()`) | Manual wiring | Manual wiring | ✅ **Auto-inferred** from artifacts |
-| **Code ↔ Infrastructure Decoupling** | ❌ Tightly coupled | ⚠️ Partial (code still references cloud) | ⚠️ Partial | ✅ **Complete** — one env var to switch clouds |
-| **Multi-Cloud Deploy** | ❌ Vendor-locked | ⚠️ Limited (1–2 clouds) | ✅ Paid add-on | ✅ **GCP + AWS + Azure** included |
-| **Artifact Catalog & Lineage** | ❌ External tools | ⚠️ Basic | ✅ Paid tier | ✅ **Built-in** with versioning & lineage |
-| **Model Registry** | ❌ Separate product | ⚠️ Basic | ✅ Paid tier | ✅ **Built-in** with promotion & tagging |
+| **Code ↔ Infra Decoupling** | ❌ Tightly coupled | ⚠️ Partial | ⚠️ Partial | ✅ **Complete** — one env var to switch |
+| **Multi-Cloud Deploy** | ❌ Vendor-locked | ⚠️ 1–2 clouds | ✅ Paid add-on | ✅ **GCP + AWS + Azure** out of the box |
+| **Smart Caching** | ⚠️ File-timestamp | ⚠️ Basic | ✅ Content-hash | ✅ **Content-hash** (code + data + config) |
+| **Type Safety** | ❌ Runtime failures | ⚠️ Partial | ⚠️ Partial | ✅ **Build-time** validation |
+
+#### 📦 Artifacts, Models & Evaluation
+
+| Capability | General Orchestrators | ML Platforms (Free) | ML Platforms (Pro / Enterprise) | **FlowyML** (Free, Always) |
+|---|:---:|:---:|:---:|:---:|
+| **Artifact Catalog & Lineage** | ❌ External tools | ⚠️ Basic | ✅ Paid tier | ✅ **Built-in** versioning & lineage |
+| **Model Registry** | ❌ Separate product | ⚠️ Basic | ✅ Paid tier | ✅ **Built-in** promotion & tagging |
 | **Evaluation Scorers** | ❌ None | ⚠️ 1–3 basic | ⚠️ Limited | ✅ **29+** (classification, regression, LLM-as-Judge) |
-| **GenAI / LLM Observability** | ❌ None | ❌ None | ⚠️ Add-on or separate product | ✅ **Built-in** tracing, token counts, cost tracking |
-| **Dashboard & UI** | ⚠️ Separate tool (Airflow UI) | ⚠️ Basic | ✅ Full (paid) | ✅ **Included** — dark mode, DAGs, metrics, traces |
-| **Smart Caching** | ⚠️ File-timestamp only | ⚠️ Basic | ✅ Content-hash | ✅ **Content-hash** (code + data + config) |
 | **Quality Gates / CI-CD** | ❌ Build-your-own | ❌ Manual | ✅ Paid tier | ✅ **Built-in** eval-based gates |
 | **Data Drift Monitoring** | ❌ Separate product | ❌ None | ⚠️ Add-on | ✅ **Built-in** statistical monitors |
+| **Model Leaderboard** | ❌ None | ❌ None | ⚠️ Add-on | ✅ **Built-in** with metric ranking |
+
+#### 🤖 GenAI & Observability
+
+| Capability | General Orchestrators | ML Platforms (Free) | ML Platforms (Pro / Enterprise) | **FlowyML** (Free, Always) |
+|---|:---:|:---:|:---:|:---:|
+| **GenAI / LLM Tracing** | ❌ None | ❌ None | ⚠️ Add-on or separate product | ✅ **Built-in** tracing, token counts, cost |
+| **LLM-as-a-Judge Evaluation** | ❌ None | ❌ None | ⚠️ Limited | ✅ **Built-in** with arena A/B testing |
+| **Dashboard & UI** | ⚠️ Basic (Airflow UI) | ⚠️ Basic | ✅ Full (paid) | ✅ **Included** — dark mode, DAGs, traces |
+| **Notebook → Pipeline** | ❌ Manual | ❌ Manual | ⚠️ Limited | ✅ **One-click** via FlowyML Notebook |
+
+#### 🏢 Enterprise & Production
+
+| Capability | General Orchestrators | ML Platforms (Free) | ML Platforms (Pro / Enterprise) | **FlowyML** (Free, Always) |
+|---|:---:|:---:|:---:|:---:|
+| **REST API (Pipeline Triggers)** | ⚠️ Limited | ❌ None | ✅ Paid tier | ✅ **121 endpoints** — execute, query, manage |
+| **API Token Authentication** | ❌ None | ❌ None | ✅ Paid tier | ✅ **Built-in** with per-token permissions |
+| **Project Separation** | ❌ None | ❌ None | ✅ Paid tier | ✅ **Built-in** — isolate teams & experiments |
+| **On-Premises Deployment** | ⚠️ Self-host | ⚠️ Limited | ✅ Enterprise license | ✅ **Full self-hosted** — no license needed |
+| **Model Serving & Inference** | ❌ Separate product | ❌ None | ✅ Paid add-on | ✅ **Built-in** one-click model deployment |
+| **Pipeline Scheduling (Cron)** | ✅ | ⚠️ Basic | ✅ Full | ✅ **Built-in** daily, hourly, cron, interval |
+| **WebSocket Live Streaming** | ❌ None | ❌ None | ⚠️ Limited | ✅ **Built-in** real-time run updates |
 | **Notifications (Slack, Email)** | ⚠️ Plugin | ⚠️ Plugin | ✅ Included | ✅ **Built-in** multi-channel |
-| **Notebook → Pipeline** | ❌ Manual | ❌ Manual conversion | ⚠️ Limited | ✅ **One-click** via FlowyML Notebook |
-| **Type Safety** | ❌ Runtime failures | ⚠️ Partial | ⚠️ Partial | ✅ **Build-time** validation |
-| **Developer Experience** | YAML configs, rigid DSLs | Python SDK | Python SDK | ✅ **Pure Python** decorators — no DSLs |
+| **Developer Experience** | YAML configs, rigid DSLs | Python SDK | Python SDK | ✅ **Pure Python** — no DSLs, no YAML |
 
 !!! tip "💡 Our Philosophy"
-    We believe ML infrastructure should be **democratized**. Every data scientist — whether at a startup or in a research lab — deserves enterprise-grade tooling without enterprise-grade pricing. That's why every feature above ships in **one `pip install`**, with no upsell, no license keys, and no feature gates.
+    We believe ML infrastructure should be **democratized**. Every data scientist — whether at a startup or in a research lab — deserves enterprise-grade tooling without enterprise-grade pricing. FlowyML ships **121 API endpoints**, project isolation, token-based auth, model serving, and full on-premises deployment in **one `pip install`** — with no upsell, no license keys, and no feature gates. Ever.
 
 </div>
 
