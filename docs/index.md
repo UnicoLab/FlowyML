@@ -2,6 +2,7 @@
 title: FlowyML — Write ML Code Once, Run It Anywhere
 description: "The artifact-centric ML pipeline framework that decouples your code from infrastructure. Write pure Python, deploy to any cloud — GCP, AWS, Azure — without rewrites. GenAI observability, 29+ eval scorers, and a beautiful dashboard included."
 hide:
+  - navigation
   - toc
 ---
 
@@ -155,21 +156,20 @@ load_task >> train_task  # 😩 Arrows everywhere
 <div class="comparison-label comparison-label--after">✅ FlowyML</div>
 
 ```python
-from flowyml import Pipeline, step, context, Model
+from flowyml import Pipeline, step, Model
 
 @step(outputs=["dataset"])
 def load_data() -> list:
-    """Produces a dataset artifact."""
     return fetch_dataset()
 
 @step(inputs=["dataset"], outputs=["model"])
 def train(dataset: list) -> Model:
-    """Auto-wired via 'dataset' artifact."""
     return Model(fit(dataset))
 
 # Zero arrows — DAG builds itself!
-pipeline = Pipeline("my_pipeline")
-pipeline.add_step(load_data).add_step(train)
+pipeline = Pipeline.from_steps(
+    load_data, train, name="my_pipeline"
+)
 pipeline.run()  # 🎉 Done!
 ```
 
@@ -200,24 +200,24 @@ pipeline.run()  # 🎉 Done!
 <div class="how-step-number">1</div>
 
 ### Define Steps
-Decorate Python functions with `@step`. Declare `inputs` and `outputs` — that's it.
+Decorate functions with `@step`.
 
 ```python
 @step(outputs=["model"])
-def train(dataset, lr: float) -> Model:
-    return Model(train_classifier(dataset))
+def train(data) -> Model:
+    return fit(data)
 ```
 </div>
 
 <div class="how-step" markdown>
 <div class="how-step-number">2</div>
 
-### Configure Infrastructure
-One YAML file controls where everything runs. Switch clouds with a single env var.
+### Configure Infra
+Switch clouds with one env var.
 
 ```bash
-export FLOWYML_STACK=production
-python pipeline.py  # Now on Vertex AI
+export FLOWYML_STACK=prod
+python pipeline.py
 ```
 </div>
 
@@ -225,11 +225,10 @@ python pipeline.py  # Now on Vertex AI
 <div class="how-step-number">3</div>
 
 ### Monitor & Ship
-Beautiful dark-mode dashboard with DAGs, metrics, artifacts, and GenAI traces.
+Dashboard with DAGs, metrics, and traces.
 
 ```bash
 flowyml ui start
-# → http://localhost:8080
 ```
 </div>
 
@@ -550,20 +549,20 @@ FlowyML ships with a **full-featured web dashboard** for monitoring, debugging, 
 
 <div class="section-header" markdown>
 
-## 📊 FlowyML vs. The Rest
+## 📊 How FlowyML Compares
 
-Most ML frameworks force you to choose between simplicity and power. FlowyML gives you both.
+Many ML platforms offer powerful features — but lock them behind **paid tiers** or **enterprise-only editions**. FlowyML's mission is to deliver enterprise-grade capabilities as **100% open-source**, community-driven software. No feature walls. No upgrade prompts.
 
 </div>
 
 <div class="impact-strip">
 <div class="impact-item">
-<span class="impact-number">0</span>
-<span class="impact-label">Infrastructure rewrites when switching clouds</span>
+<span class="impact-number">$0</span>
+<span class="impact-label">All features. No "Pro" or "Enterprise" tiers.</span>
 </div>
 <div class="impact-item">
 <span class="impact-number">10x</span>
-<span class="impact-label">Less boilerplate vs. Airflow / Prefect</span>
+<span class="impact-label">Less boilerplate vs. traditional orchestrators</span>
 </div>
 <div class="impact-item">
 <span class="impact-number">29+</span>
@@ -575,19 +574,29 @@ Most ML frameworks force you to choose between simplicity and power. FlowyML giv
 </div>
 </div>
 
-| Concept | Airflow / Prefect / ZenML | **FlowyML** |
-|---------|:-------------------------:|:-----------:|
-| **Infrastructure Coupling** | Code references cloud paths | **Code never touches infrastructure** |
-| **DAG Construction** | Manual arrows or task wiring | **Auto-Inferred** from artifact names |
-| **Data Handoff** | `s3://bucket/file.csv` in code | **Catalog** resolution by name & version |
-| **Type Safety** | Runtime failures | **Build-time** validation |
-| **Cloud Deployment** | Vendor lock-in or complex adapters | **One env var** — `FLOWYML_STACK=prod` |
-| **GenAI Observability** | Requires LangSmith or external tools | **Built-in** tracing & evaluation |
-| **Evaluation Scorers** | Bring your own (manual scripting) | **29+ built-in** with CI/CD quality gates |
-| **Dashboard** | Separate tool (MLflow, etc.) | **Included** — dark mode, DAGs, traces |
-| **Developer Experience** | YAML configs or rigid DSLs | **Pure Python** decorators — no DSLs |
-| **Caching** | File-timestamp or none | **Content-hash** (code + data inputs) |
-| **Notebook → Pipeline** | Manual conversion | **One-click** via FlowyML Notebook |
+### Feature Matrix — What's Included vs. What You'd Pay For Elsewhere
+
+| Capability | General Orchestrators | ML Platforms (Free Tier) | ML Platforms (Pro / Enterprise) | **FlowyML** (Free, Always) |
+|---|:---:|:---:|:---:|:---:|
+| **Pipeline Orchestration** | ✅ | ✅ | ✅ | ✅ |
+| **DAG Construction** | Manual wiring (`>>`, `.after()`) | Manual wiring | Manual wiring | ✅ **Auto-inferred** from artifacts |
+| **Code ↔ Infrastructure Decoupling** | ❌ Tightly coupled | ⚠️ Partial (code still references cloud) | ⚠️ Partial | ✅ **Complete** — one env var to switch clouds |
+| **Multi-Cloud Deploy** | ❌ Vendor-locked | ⚠️ Limited (1–2 clouds) | ✅ Paid add-on | ✅ **GCP + AWS + Azure** included |
+| **Artifact Catalog & Lineage** | ❌ External tools | ⚠️ Basic | ✅ Paid tier | ✅ **Built-in** with versioning & lineage |
+| **Model Registry** | ❌ Separate product | ⚠️ Basic | ✅ Paid tier | ✅ **Built-in** with promotion & tagging |
+| **Evaluation Scorers** | ❌ None | ⚠️ 1–3 basic | ⚠️ Limited | ✅ **29+** (classification, regression, LLM-as-Judge) |
+| **GenAI / LLM Observability** | ❌ None | ❌ None | ⚠️ Add-on or separate product | ✅ **Built-in** tracing, token counts, cost tracking |
+| **Dashboard & UI** | ⚠️ Separate tool (Airflow UI) | ⚠️ Basic | ✅ Full (paid) | ✅ **Included** — dark mode, DAGs, metrics, traces |
+| **Smart Caching** | ⚠️ File-timestamp only | ⚠️ Basic | ✅ Content-hash | ✅ **Content-hash** (code + data + config) |
+| **Quality Gates / CI-CD** | ❌ Build-your-own | ❌ Manual | ✅ Paid tier | ✅ **Built-in** eval-based gates |
+| **Data Drift Monitoring** | ❌ Separate product | ❌ None | ⚠️ Add-on | ✅ **Built-in** statistical monitors |
+| **Notifications (Slack, Email)** | ⚠️ Plugin | ⚠️ Plugin | ✅ Included | ✅ **Built-in** multi-channel |
+| **Notebook → Pipeline** | ❌ Manual | ❌ Manual conversion | ⚠️ Limited | ✅ **One-click** via FlowyML Notebook |
+| **Type Safety** | ❌ Runtime failures | ⚠️ Partial | ⚠️ Partial | ✅ **Build-time** validation |
+| **Developer Experience** | YAML configs, rigid DSLs | Python SDK | Python SDK | ✅ **Pure Python** decorators — no DSLs |
+
+!!! tip "💡 Our Philosophy"
+    We believe ML infrastructure should be **democratized**. Every data scientist — whether at a startup or in a research lab — deserves enterprise-grade tooling without enterprise-grade pricing. That's why every feature above ships in **one `pip install`**, with no upsell, no license keys, and no feature gates.
 
 </div>
 
