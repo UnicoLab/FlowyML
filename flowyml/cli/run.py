@@ -8,22 +8,26 @@ from typing import Any
 
 def run_pipeline(
     pipeline_name: str,
-    stack: str,
-    context_params: dict[str, Any],
-    debug: bool,
+    stack: str | None = None,
+    env: str | None = None,
+    dry_run: bool = False,
+    context_params: dict[str, Any] | None = None,
+    debug: bool = False,
     **kwargs,
 ) -> dict[str, Any]:
     """Run a pipeline by name.
 
     Args:
-        pipeline_name: Name of the pipeline to run
-        stack: Stack to use for execution
-        context_params: Context parameters to override
-        debug: Enable debug mode
-        **kwargs: Additional arguments passed to pipeline.run
+        pipeline_name: Name of the pipeline to run.
+        stack: Stack name, URI, or ``None`` for default.
+        env: Environment name from ``flowyml.yaml``.
+        dry_run: If ``True``, validate without executing.
+        context_params: Context parameters to override.
+        debug: Enable debug mode.
+        **kwargs: Additional arguments passed to ``pipeline.run``.
 
     Returns:
-        Dictionary with run results
+        Dictionary with run results.
     """
     # Try to find pipeline file
     pipeline_paths = [
@@ -67,16 +71,19 @@ def run_pipeline(
         for key, value in context_params.items():
             setattr(pipeline.context, key, value)
 
-    # Set stack if not default
-    if stack != "local":
-        pipeline.set_stack(stack)
-
-    # Run pipeline
-    result = pipeline.run(debug=debug, **kwargs)
+    # Run pipeline — pass stack, env, and dry_run through the unified API.
+    # The Pipeline.run() method handles resolution internally.
+    result = pipeline.run(
+        stack=stack,
+        env=env,
+        dry_run=dry_run,
+        debug=debug,
+        **kwargs,
+    )
 
     return {
         "run_id": result.run_id,
-        "status": result.status,
-        "duration": result.duration,
-        "outputs": result.outputs,
+        "status": result.state,
+        "duration": getattr(result, "duration_seconds", None),
+        "outputs": getattr(result, "outputs", None),
     }

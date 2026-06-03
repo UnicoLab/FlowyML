@@ -46,6 +46,24 @@ from flowyml.assets.registry import AssetRegistry
 from flowyml.stacks.base import Stack
 from flowyml.stacks.local import LocalStack
 from flowyml.stacks.components import ResourceConfig, DockerConfig
+from flowyml.stacks import use_stack
+
+# Enterprise Stack imports (optional — gracefully degrade if deps missing)
+import contextlib
+
+with contextlib.suppress(ImportError):
+    from flowyml.stacks.enterprise import (
+        StackDefinition,
+        EnterpriseStackRegistry,
+        PolicyEngine,
+        StackResolver,
+    )
+
+with contextlib.suppress(ImportError):
+    from flowyml.core.image_builder import DockerImageBuilder
+
+with contextlib.suppress(ImportError):
+    from flowyml.core.image_policy import ImagePolicy, ImagePolicyValidator
 
 # Tracking imports
 from flowyml.tracking.experiment import Experiment
@@ -224,6 +242,16 @@ __all__ = [
     "LocalStack",
     "ResourceConfig",
     "DockerConfig",
+    "use_stack",
+    # Enterprise Stacks (when available)
+    "StackDefinition",
+    "EnterpriseStackRegistry",
+    "PolicyEngine",
+    "StackResolver",
+    # Docker Image Builder (when available)
+    "DockerImageBuilder",
+    "ImagePolicy",
+    "ImagePolicyValidator",
     # Tracking
     "Experiment",
     "Run",

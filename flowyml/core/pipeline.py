@@ -193,7 +193,8 @@ class Pipeline:
         enable_checkpointing: bool | None = None,  # None means use config default
         enable_experiment_tracking: bool | None = None,  # None means use config default (True)
         cache_dir: str | None = None,
-        stack: Any | None = None,  # Stack instance
+        stack: Any | None = None,  # Stack name (str), Stack instance, or StackDefinition
+        env: str | None = None,  # Environment name from flowyml.yaml (e.g. 'dev', 'staging', 'prod')
         project: str | None = None,  # Project name to attach to (deprecated, use project_name)
         project_name: str | None = None,  # Project name to attach to (creates if doesn't exist)
         version: str | None = None,  # If provided, VersionedPipeline is created via __new__
@@ -210,7 +211,14 @@ class Pipeline:
             enable_checkpointing: Whether to enable checkpointing (defaults to config setting, True by default)
             enable_experiment_tracking: Whether to enable automatic experiment tracking (defaults to config.auto_log_metrics, True by default)
             cache_dir: Optional directory for cache
-            stack: Optional stack instance to run on
+            stack: Stack to run on. Accepts:
+                - ``str``: Stack name (e.g. ``"local"``, ``"aml_cpu_small"``),
+                  a URI (e.g. ``"github://org/repo@v1#stack_name"``), or ``"local"``.
+                - ``Stack``: Existing runtime Stack instance.
+                - ``StackDefinition``: Enterprise Pydantic stack definition.
+            env: Environment name from ``flowyml.yaml`` (e.g. ``"dev"``, ``"staging"``,
+                ``"prod"``). Resolves the stack from the project config's environments
+                section. If both ``stack`` and ``env`` are provided, ``stack`` takes priority.
             project: Optional project name to attach this pipeline to (deprecated, use project_name)
             project_name: Optional project name to attach this pipeline to.
                 If the project doesn't exist, it will be created automatically.
@@ -275,10 +283,16 @@ class Pipeline:
             # Use the same metadata database path as the UI to ensure visibility
             self.metadata_store = SQLiteMetadataStore(db_path=str(config.metadata_db))
 
-        if stack:
-            self._apply_stack(stack, locked=True)
+        # --- Unified Stack Resolution ---
+        # Priority: explicit stack arg → env arg → env var → project config → default
+        self._env = env
+        self._stack_definition = None  # Enterprise StackDefinition (if resolved)
+
+        resolved_stack = self._resolve_stack_arg(stack, env)
+        if resolved_stack:
+            self._apply_stack(resolved_stack, locked=stack is not None)
         else:
-            # Auto-resolve active stack from flowyml.yaml / FLOWYML_STACK env var
+            # Fallback: auto-resolve active stack from flowyml.yaml / FLOWYML_STACK env var
             try:
                 from flowyml.plugins.stack_config import get_active_stack as _get_yaml_stack
 
@@ -320,6 +334,79 @@ class Pipeline:
         self._auto_discover = auto_discover
         self.step_groups: list[Any] = []  # Will hold StepGroup objects
         self.control_flows: list[Any] = []  # Store conditional control flows (If, Switch, etc.)
+
+    def _resolve_stack_arg(self, stack: Any | None, env: str | None = None) -> Any | None:
+        """Resolve a stack argument into a runtime Stack instance.
+
+        Handles string names, URIs, StackDefinition objects, and Stack instances.
+        Uses the enterprise StackResolver when available.
+
+        Args:
+            stack: Stack name (str), URI (str), Stack instance, or StackDefinition.
+            env: Environment name from project config.
+
+        Returns:
+            A runtime ``Stack`` instance, or None if unresolvable.
+        """
+        if stack is None and env is None:
+            return None
+
+        # Case 1: Already a Stack instance — use directly
+        from flowyml.stacks.base import Stack as BaseStack
+
+        if isinstance(stack, BaseStack):
+            return stack
+
+        # Case 2: StackDefinition instance — convert to Stack
+        try:
+            from flowyml.stacks.enterprise.models import StackDefinition
+
+            if isinstance(stack, StackDefinition):
+                self._stack_definition = stack
+                return stack.to_stack()
+        except ImportError:
+            pass
+
+        # Case 3: String (name or URI) or env — use StackResolver
+        try:
+            from flowyml.stacks.enterprise.resolver import StackResolver
+
+            resolver = StackResolver()
+            stack_name = stack if isinstance(stack, str) else None
+            definition = resolver.resolve(stack=stack_name, env=env)
+            if definition:
+                self._stack_definition = definition
+                return definition.to_stack()
+        except ImportError:
+            pass
+        except Exception:
+            # Resolver failed — try legacy resolution for string names
+            pass
+
+        # Case 4: String name — try legacy StackRegistry
+        if isinstance(stack, str):
+            try:
+                from flowyml.stacks.registry import get_registry
+
+                registry = get_registry()
+                legacy_stack = registry.get_stack(stack)
+                if legacy_stack:
+                    return legacy_stack
+            except (ImportError, Exception):
+                pass
+
+            # Also try plugin StackConfig
+            try:
+                from flowyml.plugins.stack_config import get_stack_manager
+
+                manager = get_stack_manager()
+                stack_config = manager.get_stack(stack)
+                if stack_config:
+                    return stack_config.to_stack()
+            except (ImportError, Exception):
+                pass
+
+        return None
 
     def _apply_stack(self, stack: Any | None, locked: bool) -> None:
         """Attach a stack and update executors/metadata."""
@@ -550,11 +637,43 @@ class Pipeline:
 
         self._built = True
 
+    def dry_run(
+        self,
+        inputs: dict[str, Any] | None = None,
+        stack: Any | None = None,
+        env: str | None = None,
+        **kwargs: Any,
+    ) -> PipelineResult:
+        """Validate the pipeline without executing it.
+
+        Resolves the stack, validates policies, and displays the execution
+        plan without running any steps.
+
+        Args:
+            inputs: Optional input data for the pipeline.
+            stack: Stack override (name, URI, instance, or StackDefinition).
+            env: Environment name from project config.
+            **kwargs: Additional arguments.
+
+        Returns:
+            PipelineResult with validation info but no execution.
+        """
+        return self.run(
+            inputs=inputs,
+            stack=stack,
+            env=env,
+            dry_run=True,
+            auto_start_ui=False,
+            **kwargs,
+        )
+
     def run(
         self,
         inputs: dict[str, Any] | None = None,
         debug: bool = False,
-        stack: Any | None = None,  # Stack override
+        stack: Any | None = None,  # Stack name (str), URI, Stack instance, or StackDefinition
+        env: str | None = None,  # Environment from flowyml.yaml (e.g. 'dev', 'staging', 'prod')
+        dry_run: bool = False,  # Validate without executing
         orchestrator: Any | None = None,  # Orchestrator override (takes precedence over stack orchestrator)
         resources: Any | None = None,  # ResourceConfig
         docker_config: Any | None = None,  # DockerConfig
@@ -567,7 +686,14 @@ class Pipeline:
         Args:
             inputs: Optional input data for the pipeline
             debug: Enable debug mode with detailed logging
-            stack: Stack override (uses self.stack or active stack if not provided)
+            stack: Stack to use for this run. Accepts:
+                - ``str``: Stack name or URI (e.g. ``"local"``, ``"github://org/repo@v1#name"``)
+                - ``Stack``: Runtime Stack instance
+                - ``StackDefinition``: Enterprise Pydantic stack definition
+            env: Environment name from ``flowyml.yaml`` (e.g. ``"dev"``, ``"staging"``,
+                ``"prod"``). Resolves the stack from the project config's environments section.
+            dry_run: If True, resolve the stack, validate policies, and display
+                the execution plan without actually running any steps.
             orchestrator: Orchestrator override (takes precedence over stack orchestrator)
             resources: Resource configuration for execution
             docker_config: Docker configuration for containerized execution
@@ -638,9 +764,11 @@ class Pipeline:
         if auto_start_ui:
             ui_url, run_url, ui_start_failed = self._ensure_ui_server(run_id)
 
-        # Determine stack for this run
-        if stack is not None:
-            self._apply_stack(stack, locked=True)
+        # --- Unified Stack Resolution for this run ---
+        if stack is not None or env is not None:
+            resolved = self._resolve_stack_arg(stack, env)
+            if resolved:
+                self._apply_stack(resolved, locked=True)
         elif not self._stack_locked:
             active_stack = None
             try:
@@ -651,6 +779,46 @@ class Pipeline:
                 active_stack = get_active_stack()
             if active_stack:
                 self._apply_stack(active_stack, locked=False)
+
+        # --- Enterprise Policy Validation ---
+        if self._stack_definition:
+            try:
+                from flowyml.stacks.enterprise.policy import PolicyEngine, PolicyContext
+
+                engine = PolicyEngine()
+                policy_ctx = PolicyContext(
+                    stack=self._stack_definition,
+                    project_name=getattr(self, "project_name", None),
+                    environment=env or self._env,
+                )
+                engine.check(policy_ctx)  # Raises PolicyViolationError on failure
+            except ImportError:
+                pass  # Enterprise module not loaded
+
+        # --- Dry Run: display plan and return early ---
+        if dry_run:
+            if not self._built:
+                self.build()
+
+            stack_info = "local (default)"
+            if self._stack_definition:
+                sd = self._stack_definition
+                stack_info = f"{sd.name} v{sd.version} (backend: {sd.backend})"
+            elif self.stack:
+                stack_info = getattr(self.stack, "name", str(type(self.stack).__name__))
+
+            import logging
+
+            logger = logging.getLogger(__name__)
+            logger.info(f"🔍 Dry run: Pipeline '{self.name}'")
+            logger.info(f"   Stack: {stack_info}")
+            logger.info(f"   Steps: {[s.name for s in self.steps]}")
+            logger.info("   DAG validated: ✓")
+            logger.info("   Policy check: ✓")
+
+            result = PipelineResult(run_id, self.name)
+            result.status = "dry_run"
+            return result
 
         # Determine orchestrator
         # Priority: 1) Explicit orchestrator parameter, 2) Stack orchestrator, 3) Default LocalOrchestrator

@@ -1,0 +1,67 @@
+# =============================================================================
+# FlowyML Project Configuration — Churn Modeling
+# =============================================================================
+# This file maps logical environments (dev, staging, prod) to concrete
+# stack definitions managed by the platform team.  Data scientists never
+# need to touch infrastructure — they just pick an environment.
+# =============================================================================
+
+project:
+  name: churn-modeling
+  owner: ml-team
+  description: Customer churn prediction pipeline with governed stack execution
+  version: 0.1.0
+
+# ---------------------------------------------------------------------------
+# Default settings applied when no explicit environment is specified.
+# ---------------------------------------------------------------------------
+defaults:
+  stack: local_dev
+  environment: dev
+
+# ---------------------------------------------------------------------------
+# Stack search paths — where FlowyML looks for stack YAML definitions.
+# Relative paths are resolved from this file's directory.
+# ---------------------------------------------------------------------------
+stackSources:
+  - ./stacks
+
+# ---------------------------------------------------------------------------
+# Environment → Stack mapping
+# ---------------------------------------------------------------------------
+environments:
+  # --- Development --------------------------------------------------------
+  dev:
+    stack: local_dev
+    description: Local development for rapid iteration and debugging
+
+  # --- Staging ------------------------------------------------------------
+  staging:
+    stack: aml_cpu_small
+    description: Pre-production validation on AzureML CPU cluster
+    requireLock: true              # Stack definition must be locked before use
+    variables:
+      LOG_LEVEL: INFO
+      DATA_SOURCE: staging-blob
+
+  # --- Production ---------------------------------------------------------
+  prod:
+    stack: aml_cpu_small
+    description: Production inference and batch scoring
+    requireLock: true              # Stack definition must be locked
+    requirePolicyValidation: true  # All policies must pass before execution
+    variables:
+      LOG_LEVEL: WARNING
+      DATA_SOURCE: prod-blob
+      ENABLE_MONITORING: "true"
+
+  # --- Training (GPU) -----------------------------------------------------
+  training:
+    stack: aml_gpu_large
+    description: GPU-accelerated model training on AzureML
+    requireLock: true
+    requirePolicyValidation: true
+    variables:
+      LOG_LEVEL: INFO
+      DATA_SOURCE: prod-blob
+      MIXED_PRECISION: "true"

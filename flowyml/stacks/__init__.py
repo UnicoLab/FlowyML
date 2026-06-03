@@ -1,4 +1,27 @@
-"""Stack management for flowyml."""
+"""Stack management for flowyml.
+
+This module provides both the runtime ``Stack`` classes (local, GCP, AWS, Azure)
+and the enterprise governance layer (``StackDefinition``, ``EnterpriseStackRegistry``,
+``PolicyEngine``).
+
+Quick start::
+
+    # By name (resolved via enterprise registry or legacy config)
+    Pipeline("training", stack="aml_cpu_small")
+
+    # By environment
+    Pipeline("training", env="prod")
+
+    # By definition
+    from flowyml.stacks.enterprise import StackDefinition
+    stack = StackDefinition.from_yaml("stacks/my_stack.yaml")
+    Pipeline("training", stack=stack)
+
+    # Context manager
+    from flowyml.stacks import use_stack
+    with use_stack("staging"):
+        pipeline.run()
+"""
 
 from flowyml.stacks.base import Stack, StackConfig
 from flowyml.stacks.local import LocalStack
@@ -28,6 +51,117 @@ from flowyml.stacks.plugins import (
     register_component,
     load_component,
 )
+
+# --- Enterprise Stack Registry ---
+# These imports are lazy-safe: if any dependency is missing, they silently
+# degrade to None and the rest of the stacks module still works.
+import contextlib
+
+with contextlib.suppress(ImportError):
+    from flowyml.stacks.enterprise import (
+        StackDefinition,
+        StackMetadata,
+        StackSpec,
+        EnterpriseStackRegistry,
+        PolicyEngine,
+        PolicyResult,
+        PolicyContext,
+        StackLockManager,
+        ProjectConfig,
+        EnvironmentConfig,
+        ExecutionContext,
+        BackendAdapter,
+        AuditRecord,
+        AuditStore,
+    )
+
+
+# --- Unified use_stack() context manager ---
+
+
+def use_stack(name_or_definition):
+    """Context manager for temporarily using a different stack.
+
+    Works with both string names and enterprise StackDefinition objects.
+
+    Args:
+        name_or_definition: Stack name (str), URI (str), or StackDefinition.
+
+    Yields:
+        The resolved stack (StackConfig, StackDefinition, or Stack).
+
+    Examples::
+
+        # By name (from flowyml.yaml or enterprise registry)
+        with use_stack("staging"):
+            pipeline.run()
+
+        # By URI
+        with use_stack("github://org/repo@v1#my_stack"):
+            pipeline.run()
+
+        # By definition
+        stack_def = StackDefinition.from_yaml("stacks/prod.yaml")
+        with use_stack(stack_def):
+            pipeline.run()
+    """
+    from contextlib import contextmanager
+
+    @contextmanager
+    def _use_stack():
+        import os
+
+        # Try enterprise resolver first
+        try:
+            from flowyml.stacks.enterprise.models import StackDefinition as _SD
+
+            if isinstance(name_or_definition, _SD):
+                # Set environment variable so Pipeline resolves it
+                old_val = os.environ.get("FLOWYML_STACK")
+                # Store the definition on a thread-local for the resolver to pick up
+                import threading
+
+                if not hasattr(use_stack, "_local"):
+                    use_stack._local = threading.local()
+                use_stack._local.current_definition = name_or_definition
+                try:
+                    yield name_or_definition
+                finally:
+                    use_stack._local.current_definition = None
+                    if old_val is not None:
+                        os.environ["FLOWYML_STACK"] = old_val
+                    elif "FLOWYML_STACK" in os.environ:
+                        del os.environ["FLOWYML_STACK"]
+                return
+        except ImportError:
+            pass
+
+        if isinstance(name_or_definition, str):
+            # Try plugin StackManager first
+            try:
+                from flowyml.plugins.stack_config import get_stack_manager
+
+                manager = get_stack_manager()
+                with manager.use_stack(name_or_definition) as stack:
+                    yield stack
+                return
+            except (ImportError, ValueError):
+                pass
+
+            # Fallback: set env var
+            old_val = os.environ.get("FLOWYML_STACK")
+            os.environ["FLOWYML_STACK"] = name_or_definition
+            try:
+                yield name_or_definition
+            finally:
+                if old_val is not None:
+                    os.environ["FLOWYML_STACK"] = old_val
+                elif "FLOWYML_STACK" in os.environ:
+                    del os.environ["FLOWYML_STACK"]
+        else:
+            yield name_or_definition
+
+    return _use_stack()
 
 
 # ZenML integration - lazy imports to avoid errors when ZenML is not installed
@@ -78,6 +212,7 @@ def import_all_zenml():
 
 
 __all__ = [
+    # Runtime Stack classes
     "Stack",
     "StackConfig",
     "LocalStack",
@@ -98,6 +233,7 @@ __all__ = [
     "Orchestrator",
     "ArtifactStore",
     "ContainerRegistry",
+    # Legacy Registry
     "StackRegistry",
     "get_registry",
     "get_active_stack",
@@ -106,7 +242,24 @@ __all__ = [
     "get_component_registry",
     "register_component",
     "load_component",
-    # ZenML integration
+    # Unified context manager
+    "use_stack",
+    # Enterprise Stack Registry (when available)
+    "StackDefinition",
+    "StackMetadata",
+    "StackSpec",
+    "EnterpriseStackRegistry",
+    "PolicyEngine",
+    "PolicyResult",
+    "PolicyContext",
+    "StackLockManager",
+    "ProjectConfig",
+    "EnvironmentConfig",
+    "ExecutionContext",
+    "BackendAdapter",
+    "AuditRecord",
+    "AuditStore",
+    # Deprecated
     "get_zenml_bridge",
     "import_all_zenml",
 ]

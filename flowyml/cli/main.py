@@ -118,12 +118,31 @@ def init(name: str, template: str, directory: str) -> None:
 
 @cli.command()
 @click.argument("pipeline_name")
-@click.option("--stack", default="local", help="Stack to use for execution")
+@click.option("--stack", default="local", help="Stack to use (name, URI, or 'local')")
+@click.option("--env", "env_name", default=None, help="Environment from flowyml.yaml (e.g. 'dev', 'staging', 'prod')")
+@click.option("--dry-run", "dry_run", is_flag=True, help="Validate without executing (resolve stack, check policies)")
 @click.option("--context", "-c", multiple=True, help="Context parameters (key=value)")
 @click.option("--debug", is_flag=True, help="Enable debug mode")
 @click.option("--retry", type=int, help="Number of retries for the pipeline")
-def run(pipeline_name: str, stack: str, context: tuple, debug: bool, retry: int | None) -> None:
-    """Run a pipeline."""
+def run(
+    pipeline_name: str,
+    stack: str,
+    env_name: str | None,
+    dry_run: bool,
+    context: tuple,
+    debug: bool,
+    retry: int | None,
+) -> None:
+    """Run a pipeline.
+
+    Examples:
+
+    \b
+        flowyml run my_pipeline                        # Default local stack
+        flowyml run my_pipeline --stack aml_cpu_small   # Named enterprise stack
+        flowyml run my_pipeline --env prod              # From project config
+        flowyml run my_pipeline --dry-run               # Validate only
+    """
     from flowyml.cli.run import run_pipeline
     from flowyml.core.retry_policy import OrchestratorRetryPolicy
 
@@ -133,18 +152,38 @@ def run(pipeline_name: str, stack: str, context: tuple, debug: bool, retry: int 
         key, value = param.split("=", 1)
         ctx_params[key] = value
 
-    recho(f"Running pipeline '{pipeline_name}' on stack '{stack}'...")
+    if dry_run:
+        recho(f"🔍 Dry run: pipeline '{pipeline_name}' on stack '{stack}'...")
+    else:
+        recho(f"Running pipeline '{pipeline_name}' on stack '{stack}'...")
+    if env_name:
+        recho(f"  Environment: {env_name}")
 
     kwargs = {}
     if retry:
         kwargs["retry_policy"] = OrchestratorRetryPolicy(max_attempts=retry)
         recho(f"  Retry policy enabled: max_attempts={retry}")
+    if env_name:
+        kwargs["env"] = env_name
+    if dry_run:
+        kwargs["dry_run"] = True
 
     try:
-        result = run_pipeline(pipeline_name, stack, ctx_params, debug, **kwargs)
-        recho("[green]✓Pipeline completed successfully")
-        recho(f"  Run ID: {result.get('run_id', 'N/A')}")
-        recho(f"  Duration: {result.get('duration', 'N/A')}")
+        result = run_pipeline(
+            pipeline_name,
+            stack=stack if stack != "local" else None,
+            env=env_name,
+            dry_run=dry_run,
+            context_params=ctx_params,
+            debug=debug,
+            **{k: v for k, v in kwargs.items() if k not in ("env", "dry_run")},
+        )
+        if dry_run:
+            recho("[green]✓ Dry run validation passed.")
+        else:
+            recho("[green]✓Pipeline completed successfully")
+            recho(f"  Run ID: {result.get('run_id', 'N/A')}")
+            recho(f"  Duration: {result.get('duration', 'N/A')}")
     except Exception as e:
         recho(f"[red]✗Pipeline failed: {e}", err=True)
         raise click.Abort()
@@ -330,7 +369,7 @@ def create_schedule(pipeline_name: str, schedule_type: str, value: str, stack: s
 
     # Define a wrapper that runs the pipeline via CLI logic
     def job_func():
-        run_pipeline(pipeline_name, stack, {}, False)
+        run_pipeline(pipeline_name, stack=stack if stack != "local" else None)
 
     try:
         if schedule_type == "cron":
@@ -358,7 +397,7 @@ def list_schedules() -> None:
     from flowyml.core.scheduler import PipelineScheduler
 
     scheduler = PipelineScheduler()
-    jobs = scheduler.get_jobs()
+    jobs = scheduler.list_schedules()
 
     if not jobs:
         recho("No active schedules found.")
@@ -366,8 +405,8 @@ def list_schedules() -> None:
 
     recho(f"Found {len(jobs)} schedules:\n")
     for job in jobs:
-        recho(f"  {job.id} - {job.name}")
-        recho(f"    Next run: {job.next_run_time}")
+        recho(f"  {job.pipeline_name} ({job.schedule_type}: {job.schedule_value})")
+        recho(f"    Next run: {job.next_run}")
         recho()
 
 
@@ -375,7 +414,6 @@ def list_schedules() -> None:
 def start_scheduler() -> None:
     """Start the scheduler service (blocking)."""
     from flowyml.core.scheduler import PipelineScheduler
-    import time
 
     recho("[bold cyan]🚀 Starting Scheduler Service...")
     scheduler = PipelineScheduler()
@@ -389,10 +427,9 @@ def start_scheduler() -> None:
         # but we need to re-register jobs on startup.
 
         recho("  Scheduler running. Press Ctrl+C to stop.")
-        while True:
-            scheduler.run_pending()
-            time.sleep(1)
+        scheduler.start(blocking=True)
     except KeyboardInterrupt:
+        scheduler.stop()
         recho("\n🛑 Scheduler stopped.")
 
 
@@ -556,7 +593,7 @@ def stats() -> None:
 
     try:
         cache = CacheStore()
-        cache_stats = cache.get_stats()
+        cache_stats = cache.stats()
         console = get_console()
 
         if RICH_AVAILABLE and console:
@@ -572,7 +609,7 @@ def stats() -> None:
             print_kv_panel(
                 "💾 Cache Statistics",
                 {
-                    "Size": f"{cache_stats.get('size_mb', 0):.2f} MB",
+                    "Size": f"{cache_stats.get('total_size_mb', 0):.2f} MB",
                     "Hits": str(cache_stats.get("hits", 0)),
                     "Misses": str(cache_stats.get("misses", 0)),
                     "Hit Rate": f"{cache_stats.get('hit_rate', 0):.1%}",
@@ -586,7 +623,7 @@ def stats() -> None:
             recho(f"  Misses: {cache_stats['misses']}")
             recho(f"  Hit Rate: {cache_stats.get('hit_rate', 0):.1%}")
             recho(f"  Total Entries: {cache_stats.get('total_entries', 0)}")
-            recho(f"  Size: {cache_stats.get('size_mb', 0):.2f} MB")
+            recho(f"  Size: {cache_stats.get('total_size_mb', 0):.2f} MB")
     except Exception as e:
         recho(f"[red]✗Error getting cache stats: {e}", err=True)
 
@@ -2365,6 +2402,18 @@ def stack_info() -> None:
         recho()
     except Exception as e:
         recho(f"[red]✗Error: {e}", err=True)
+
+
+# ── Enterprise CLI Registration ──────────────────────────────────────────
+# Register enterprise commands if the enterprise module is available.
+# This is silent — if enterprise deps are missing, the base CLI still works.
+
+try:
+    from flowyml.cli.enterprise_cli import register_enterprise_commands
+
+    register_enterprise_commands(cli)
+except ImportError:
+    pass  # Enterprise module not installed
 
 
 if __name__ == "__main__":

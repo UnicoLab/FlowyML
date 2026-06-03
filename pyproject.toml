@@ -143,6 +143,7 @@ all = [
 
 [tool.poetry.scripts]
 flowyml = "flowyml.cli.main:cli"
+flowy = "flowyml.cli.main:cli"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

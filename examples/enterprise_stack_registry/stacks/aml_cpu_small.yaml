@@ -1,0 +1,107 @@
+# =============================================================================
+# Stack Definition: aml_cpu_small
+# =============================================================================
+# An AzureML-backed CPU stack sized for staging validation and production
+# batch scoring.  Includes governance policies that the platform team
+# enforces before any pipeline is allowed to execute.
+#
+# Schema: flowyml.io/v1  |  Kind: Stack
+# =============================================================================
+
+apiVersion: flowyml.io/v1
+kind: Stack
+metadata:
+  name: aml_cpu_small
+  version: 2.1.0
+  description: AzureML CPU cluster for staging and production workloads
+  owner: platform-team
+  tags: [azureml, cpu, staging, production]
+
+spec:
+  # ---------------------------------------------------------------------------
+  # Backend — target execution platform
+  # ---------------------------------------------------------------------------
+  backend: azureml
+
+  # ---------------------------------------------------------------------------
+  # Runtime — pinned Python version and curated base image
+  # The platform team maintains this image with all approved libraries.
+  # Data scientists cannot override it (allowCustomDockerImage: false).
+  # ---------------------------------------------------------------------------
+  runtime:
+    pythonVersion: "3.11"
+    baseImage: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu22.04:latest
+
+  # ---------------------------------------------------------------------------
+  # Compute — cluster sizing
+  # Standard_DS3_v2: 4 vCPUs, 14 GB RAM — sufficient for most batch workloads.
+  # Scale-to-zero (minInstances: 0) keeps costs down between runs.
+  # ---------------------------------------------------------------------------
+  compute:
+    type: cpu
+    size: Standard_DS3_v2
+    minInstances: 0
+    maxInstances: 4
+    region: francecentral
+
+  # ---------------------------------------------------------------------------
+  # Storage — Azure Blob-backed artifact store
+  # ---------------------------------------------------------------------------
+  storage:
+    artifactStore: azure_blob
+    uri: az://ml-artifacts/churn-modeling/
+
+  # ---------------------------------------------------------------------------
+  # Secrets — Key Vault for credential management
+  # ---------------------------------------------------------------------------
+  secrets:
+    provider: azure_key_vault
+    scope: kv-ml-prod
+
+  # ---------------------------------------------------------------------------
+  # Observability — full telemetry for production workloads
+  # ---------------------------------------------------------------------------
+  observability:
+    logs: true
+    metrics: true
+    traces: true
+
+  # ---------------------------------------------------------------------------
+  # Policies — governance rules enforced BEFORE pipeline execution
+  #
+  # These are defined by the platform team and cannot be overridden by
+  # data scientists.  Violations result in a hard failure with a clear
+  # error message pointing to the offending rule.
+  # ---------------------------------------------------------------------------
+  policies:
+    # Custom Docker images not allowed — must use platform-approved base image
+    allowCustomDockerImage: false
+
+    # Packages denied in staging/production
+    deniedPythonPackages:
+      - jupyterlab        # Interactive tools not allowed in prod
+      - notebook           # Interactive tools not allowed in prod
+      - debugpy            # Debug tooling must not ship to production
+      - pip-autoremove     # Maintenance utilities not approved
+
+    # 2-hour hard timeout
+    maxRuntimeMinutes: 120
+
+    # Cost guardrails
+    maxEstimatedCostUsd: 50.00
+
+    # Stack signature not required for staging
+    requireSignedStack: false
+
+  # ---------------------------------------------------------------------------
+  # Permissions — RBAC restrictions
+  # Only members of these groups may trigger runs on this stack.
+  # ---------------------------------------------------------------------------
+  permissions:
+    allowedGroups:
+      - ml-engineers
+      - platform-admins
+    allowedProjects:
+      - churn-modeling
+      - fraud-detection
+      - recommendation-engine

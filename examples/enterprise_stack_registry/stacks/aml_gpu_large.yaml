@@ -1,0 +1,125 @@
+# =============================================================================
+# Stack Definition: aml_gpu_large
+# =============================================================================
+# An AzureML GPU stack configured for heavy-duty model training.
+# Uses NVIDIA A100 GPUs with stricter governance policies.
+#
+# This stack is restricted to senior ML engineers who need GPU resources
+# for training large models (transformers, deep learning, etc.).
+#
+# Schema: flowyml.io/v1  |  Kind: Stack
+# =============================================================================
+
+apiVersion: flowyml.io/v1
+kind: Stack
+metadata:
+  name: aml_gpu_large
+  version: 1.5.0
+  description: AzureML GPU cluster for large-scale model training (A100)
+  owner: platform-team
+  tags: [azureml, gpu, training, a100]
+
+spec:
+  # ---------------------------------------------------------------------------
+  # Backend — target execution platform
+  # ---------------------------------------------------------------------------
+  backend: azureml
+
+  # ---------------------------------------------------------------------------
+  # Runtime — GPU-optimized base image
+  # Includes CUDA 12.x, cuDNN, and PyTorch pre-installed.
+  # ---------------------------------------------------------------------------
+  runtime:
+    pythonVersion: "3.11"
+    baseImage: mcr.microsoft.com/aifx/acpt/stable-ubuntu2204-cu124-py311-torch241:latest
+
+  # ---------------------------------------------------------------------------
+  # Compute — GPU cluster sizing
+  # Standard_NC24ads_A100_v4: 24 vCPUs, 220 GB RAM, 1x A100 80GB GPU
+  # Scale-to-zero between training runs to minimize idle costs.
+  # Up to 8 nodes for distributed training.
+  # ---------------------------------------------------------------------------
+  compute:
+    type: gpu
+    size: Standard_NC24ads_A100_v4
+    minInstances: 0
+    maxInstances: 8
+    region: eastus2
+
+  # ---------------------------------------------------------------------------
+  # Storage — Azure Blob for artifacts and checkpoints
+  # ---------------------------------------------------------------------------
+  storage:
+    artifactStore: azure_blob
+    uri: az://ml-training-artifacts/gpu-workloads/
+
+  # ---------------------------------------------------------------------------
+  # Secrets — Key Vault for credential management
+  # ---------------------------------------------------------------------------
+  secrets:
+    provider: azure_key_vault
+    scope: kv-ml-training
+
+  # ---------------------------------------------------------------------------
+  # Observability — full telemetry including traces for distributed training
+  # ---------------------------------------------------------------------------
+  observability:
+    logs: true
+    metrics: true
+    traces: true
+
+  # ---------------------------------------------------------------------------
+  # Policies — stricter governance for expensive GPU resources
+  #
+  # GPU training is expensive. These policies ensure:
+  # 1. Only approved users can trigger GPU runs
+  # 2. Runtime and cost are capped
+  # 3. Only production-grade packages are used
+  # ---------------------------------------------------------------------------
+  policies:
+    # Custom Docker images not allowed — platform image includes all GPU drivers
+    allowCustomDockerImage: false
+
+    # Deny interactive tools AND tensorflow (this stack is PyTorch-only)
+    deniedPythonPackages:
+      - jupyterlab
+      - notebook
+      - debugpy
+      - tensorflow        # Use torch on this stack
+      - torch-nightly      # Use stable torch releases only
+
+    # Allowed packages (empty = all non-denied allowed, but we can be explicit)
+    allowedPythonPackages: []
+
+    # 8-hour timeout for training runs
+    maxRuntimeMinutes: 480
+
+    # $500 cost cap per run (A100s are ~$3/hr per GPU)
+    maxEstimatedCostUsd: 500.00
+
+    # No external network during training (security best practice)
+    allowExternalNetwork: false
+
+    # Signed stack not required (internal use)
+    requireSignedStack: false
+
+  # ---------------------------------------------------------------------------
+  # Permissions — restricted to senior engineers
+  # GPU resources are expensive — only senior engineers and admins can use them.
+  # ---------------------------------------------------------------------------
+  permissions:
+    allowedGroups:
+      - senior-ml-engineers
+      - platform-admins
+    allowedProjects:
+      - churn-modeling
+      - recommendation-engine
+      - nlp-summarization
+
+  # ---------------------------------------------------------------------------
+  # Security — signature verification disabled for internal stacks
+  # ---------------------------------------------------------------------------
+  security:
+    signature:
+      enabled: false
+      provider: cosign

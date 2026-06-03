@@ -1,0 +1,49 @@
+# =============================================================================
+# Stack Definition: local_dev
+# =============================================================================
+# A lightweight, zero-infrastructure stack for local development.
+# Everything runs on the developer's machine — no cloud credentials needed.
+# =============================================================================
+
+apiVersion: flowyml.io/v1
+kind: Stack
+metadata:
+  name: local_dev
+  version: 1.0.0
+  description: Local development stack for rapid iteration
+  owner: ml-team
+  tags: [local, development]
+
+spec:
+  # ---------------------------------------------------------------------------
+  # Backend — where the pipeline orchestrator runs.
+  # "local" means the current machine; no remote scheduler is involved.
+  # ---------------------------------------------------------------------------
+  backend: local
+
+  # ---------------------------------------------------------------------------
+  # Runtime — language & dependency settings.
+  # ---------------------------------------------------------------------------
+  runtime:
+    pythonVersion: "3.11"
+
+  # ---------------------------------------------------------------------------
+  # Compute — resource limits for local execution.
+  # ---------------------------------------------------------------------------
+  compute:
+    type: cpu
+
+  # ---------------------------------------------------------------------------
+  # Storage — where pipeline artifacts (models, metrics, data) are persisted.
+  # ---------------------------------------------------------------------------
+  storage:
+    artifactStore: local
+    uri: ./artifacts
+
+  # ---------------------------------------------------------------------------
+  # Observability — logging, metrics, and tracing configuration.
+  # ---------------------------------------------------------------------------
+  observability:
+    logs: true
+    metrics: true
+    traces: false
