@@ -161,7 +161,12 @@ class ConfigLoader:
         return self.config.docker or self._get_default_docker_config()
 
     def _get_default_docker_config(self) -> dict[str, Any]:
-        """Get default Docker configuration."""
+        """Get default Docker configuration with auto-detection.
+
+        Scans the working directory for common dependency-management
+        files and sets the corresponding flags so that the generated
+        ``DockerConfig`` uses the right installer.
+        """
         # Auto-detect Dockerfile
         dockerfile = None
         for possible_dockerfile in ["Dockerfile", "docker/Dockerfile", ".docker/Dockerfile"]:
@@ -169,11 +174,33 @@ class ConfigLoader:
                 dockerfile = possible_dockerfile
                 break
 
-        # Check for poetry
+        # Check for poetry (pyproject.toml with [tool.poetry])
         use_poetry = Path("pyproject.toml").exists()
 
         # Check for requirements.txt
         requirements_file = "requirements.txt" if Path("requirements.txt").exists() else None
+
+        # Auto-detect conda environment files
+        use_conda = False
+        conda_file = None
+        for candidate in ["environment.yml", "conda.yaml"]:
+            if Path(candidate).exists():
+                use_conda = True
+                conda_file = candidate
+                break
+
+        # Auto-detect Pipfile (pipenv)
+        use_pipenv = Path("Pipfile").exists()
+
+        # Auto-detect setup.py / setup.cfg
+        setup_file = None
+        for candidate in ["setup.py", "setup.cfg"]:
+            if Path(candidate).exists():
+                setup_file = candidate
+                break
+
+        # Auto-detect uv.lock
+        use_uv = Path("uv.lock").exists()
 
         return {
             "dockerfile": dockerfile,
@@ -181,6 +208,11 @@ class ConfigLoader:
             "use_poetry": use_poetry,
             "requirements_file": requirements_file,
             "base_image": "python:3.11-slim",
+            "use_conda": use_conda,
+            "conda_file": conda_file,
+            "use_pipenv": use_pipenv,
+            "setup_file": setup_file,
+            "use_uv": use_uv,
         }
 
     def list_stacks(self) -> list[str]:
@@ -294,45 +326,25 @@ def create_resource_config_from_dict(config: dict[str, Any]):
     return ResourceConfig(**config)
 
 
-def create_docker_config_from_dict(config: dict[str, Any]):
-    """Create DockerConfig from dictionary."""
+def create_docker_config_from_dict(docker_dict: dict[str, Any]) -> Any:
+    """Create a DockerConfig from a configuration dictionary.
+
+    Delegates to :meth:`DockerConfig.from_dict` which handles all known
+    fields and silently ignores unknown keys.
+
+    The legacy ``gpu`` key is normalised to ``gpu_enabled`` before
+    forwarding so that older YAML configs keep working.
+
+    Args:
+        docker_dict: Raw configuration dictionary (e.g. from YAML).
+
+    Returns:
+        A fully-populated :class:`DockerConfig` instance.
+    """
     from flowyml.stacks.components import DockerConfig
 
-    # Handle poetry configuration
-    if config.get("use_poetry"):
-        # Read dependencies from pyproject.toml
-        import toml
+    # Normalise legacy "gpu" key → "gpu_enabled"
+    if "gpu" in docker_dict and "gpu_enabled" not in docker_dict:
+        docker_dict["gpu_enabled"] = docker_dict.pop("gpu")
 
-        try:
-            with open("pyproject.toml") as f:
-                pyproject = toml.load(f)
-
-            # Extract dependencies
-            deps = pyproject.get("tool", {}).get("poetry", {}).get("dependencies", {})
-            requirements = [
-                f"{name}>={version.replace('^', '')}"
-                for name, version in deps.items()
-                if name != "python" and isinstance(version, str)
-            ]
-            config["requirements"] = requirements
-        except Exception:
-            pass
-
-    # Handle requirements file
-    elif config.get("requirements_file"):
-        try:
-            with open(config["requirements_file"]) as f:
-                requirements = [line.strip() for line in f if line.strip() and not line.startswith("#")]
-            config["requirements"] = requirements
-        except Exception:
-            pass
-
-    return DockerConfig(
-        image=config.get("image"),
-        dockerfile=config.get("dockerfile"),
-        build_context=config.get("build_context", "."),
-        requirements=config.get("requirements"),
-        base_image=config.get("base_image", "python:3.11-slim"),
-        env_vars=config.get("env_vars", {}),
-        build_args=config.get("build_args", {}),
-    )
+    return DockerConfig.from_dict(docker_dict)

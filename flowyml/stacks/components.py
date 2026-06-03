@@ -75,7 +75,10 @@ class DockerConfig:
         use_poetry: Use Poetry for dependency management.
         use_uv: Use *uv* for dependency management (preferred default).
         use_conda: Use Conda/Mamba for dependency management.
+        use_pipenv: Use Pipenv for dependency management.
         conda_file: Path to a ``conda.yaml`` or ``environment.yml`` file.
+        setup_file: Path to ``setup.py`` or ``setup.cfg`` for editable
+            installs (``pip install -e .``).
         multi_stage: Enable multi-stage Docker builds for smaller images.
         cache_pip: Enable BuildKit cache mounts for pip / uv / conda.
         entrypoint: Custom ``ENTRYPOINT`` directive
@@ -85,6 +88,16 @@ class DockerConfig:
         replicate_local_env: Freeze the local Python environment via
             ``pip freeze`` and replicate it inside the container.
         exclude_patterns: Additional glob patterns for ``.dockerignore``.
+        auto_build: Automatically build the image when a remote stack
+            requires it.  Defaults to ``True``.
+        auto_push: Automatically push the image to the stack's container
+            registry after a successful build.  Defaults to ``True``.
+        registry_uri: Explicit container registry URI.  When set, this
+            overrides the stack's container registry for push operations.
+        health_check: Optional ``HEALTHCHECK CMD`` for the container
+            (e.g. ``"python -c 'import flowyml'"``).
+        labels: OCI image labels baked into the image via ``LABEL``
+            directives (e.g. ``{"team": "ml-platform"}``).
     """
 
     # ── Core image settings ───────────────────────────────────────────
@@ -113,7 +126,9 @@ class DockerConfig:
     use_poetry: bool = False
     use_uv: bool = True
     use_conda: bool = False
+    use_pipenv: bool = False
     conda_file: str | None = None
+    setup_file: str | None = None
 
     # ── Build optimisation ────────────────────────────────────────────
     multi_stage: bool = True
@@ -130,6 +145,17 @@ class DockerConfig:
 
     # ── .dockerignore patterns ────────────────────────────────────────
     exclude_patterns: list[str] | None = None
+
+    # ── Auto-build & push (enterprise UX) ─────────────────────────────
+    auto_build: bool = True
+    auto_push: bool = True
+
+    # ── Registry targeting ────────────────────────────────────────────
+    registry_uri: str | None = None
+
+    # ── Production hardening ──────────────────────────────────────────
+    health_check: str | None = None
+    labels: dict[str, str] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         """Convert the configuration to a plain dictionary.
@@ -155,14 +181,40 @@ class DockerConfig:
             "use_poetry": self.use_poetry,
             "use_uv": self.use_uv,
             "use_conda": self.use_conda,
+            "use_pipenv": self.use_pipenv,
             "conda_file": self.conda_file,
+            "setup_file": self.setup_file,
             "multi_stage": self.multi_stage,
             "cache_pip": self.cache_pip,
             "entrypoint": self.entrypoint,
             "tag_strategy": self.tag_strategy,
             "replicate_local_env": self.replicate_local_env,
             "exclude_patterns": self.exclude_patterns or [],
+            "auto_build": self.auto_build,
+            "auto_push": self.auto_push,
+            "registry_uri": self.registry_uri,
+            "health_check": self.health_check,
+            "labels": self.labels,
         }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "DockerConfig":
+        """Create a ``DockerConfig`` from a plain dictionary.
+
+        Unknown keys are silently ignored so that forward-compatible
+        YAML configs do not break older FlowyML versions.
+
+        Args:
+            data: Dictionary of configuration values.
+
+        Returns:
+            A fully-populated :class:`DockerConfig` instance.
+        """
+        import dataclasses
+
+        valid_fields = {f.name for f in dataclasses.fields(cls)}
+        filtered = {k: v for k, v in data.items() if k in valid_fields}
+        return cls(**filtered)
 
 
 class StackComponent(ABC):

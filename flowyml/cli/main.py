@@ -48,7 +48,7 @@ click.rich_click.COMMAND_GROUPS = {
         },
         {
             "name": "🔧 Infrastructure",
-            "commands": ["stack", "config", "cache", "db", "schedule"],
+            "commands": ["stack", "docker", "config", "cache", "db", "schedule"],
         },
         {
             "name": "🌐 Services",
@@ -133,11 +133,10 @@ def run(
     debug: bool,
     retry: int | None,
 ) -> None:
-    """Run a pipeline.
+    r"""Run a pipeline.
 
     Examples:
-
-    \b
+        \b
         flowyml run my_pipeline                        # Default local stack
         flowyml run my_pipeline --stack aml_cpu_small   # Named enterprise stack
         flowyml run my_pipeline --env prod              # From project config
@@ -2402,6 +2401,316 @@ def stack_info() -> None:
         recho()
     except Exception as e:
         recho(f"[red]✗Error: {e}", err=True)
+
+
+# ---------------------------------------------------------------------------
+# Docker Commands
+# ---------------------------------------------------------------------------
+
+
+@cli.group("docker")
+def docker_cli():
+    """Docker image management for FlowyML pipelines.
+
+    Build, push, and manage Docker images used for remote execution.
+    """
+    pass
+
+
+@docker_cli.command("build")
+@click.option("--tag", "-t", default=None, help="Image tag (default: content-hash)")
+@click.option("--stack", "-s", default=None, help="Use Docker config from an enterprise stack")
+@click.option("--push", is_flag=True, help="Push to registry after build")
+@click.option("--registry", default=None, help="Target container registry URI")
+@click.option("--platform", default="linux/amd64", help="Target platform")
+@click.option("--gpu/--no-gpu", default=False, help="Enable GPU/CUDA support")
+@click.option("--cuda", default=None, help="CUDA version (e.g. 12.4)")
+@click.option(
+    "--deps",
+    type=click.Choice(["auto", "pip", "uv", "poetry", "conda", "pipenv"]),
+    default="auto",
+    help="Dependency manager",
+)
+@click.option("--base-image", default=None, help="Base Docker image")
+@click.option("--dry-run", is_flag=True, help="Generate Dockerfile only, don't build")
+@click.option("--no-cache", is_flag=True, help="Disable BuildKit cache")
+@click.option("--context", default=".", help="Build context directory")
+def docker_build(tag, stack, push, registry, platform, gpu, cuda, deps, base_image, dry_run, no_cache, context):
+    """Build a Docker image from the current project.
+
+    Auto-detects dependencies from requirements.txt, pyproject.toml,
+    uv.lock, poetry.lock, Pipfile, environment.yml, or setup.py.
+
+    Examples:
+        flowyml docker build
+        flowyml docker build --gpu --push --registry myregistry.azurecr.io
+        flowyml docker build --stack aml_gpu_large --push
+        flowyml docker build --deps poetry --dry-run
+    """
+    try:
+        from flowyml.stacks.components import DockerConfig
+        from flowyml.core.image_builder import DockerImageBuilder
+
+        # Start from stack's docker config or defaults
+        docker_cfg = None
+        if stack:
+            try:
+                from flowyml.stacks.enterprise.resolver import StackResolver
+
+                resolver = StackResolver()
+                definition = resolver.resolve(stack)
+                docker_cfg = definition.to_docker_config()
+                recho(f"Using Docker config from stack '{stack}'")
+            except Exception as e:
+                recho(f"[yellow]Warning: Could not load stack '{stack}': {e}")
+
+        if docker_cfg is None:
+            docker_cfg = DockerConfig()
+
+        # Apply CLI overrides
+        docker_cfg.build_context = context
+        docker_cfg.platform = platform
+        if gpu:
+            docker_cfg.gpu_enabled = True
+        if cuda:
+            docker_cfg.cuda_version = cuda
+        if base_image:
+            docker_cfg.base_image = base_image
+        if no_cache:
+            docker_cfg.cache_pip = False
+        if registry:
+            docker_cfg.registry_uri = registry
+
+        # Dependency manager override
+        if deps != "auto":
+            docker_cfg.use_uv = deps == "uv"
+            docker_cfg.use_poetry = deps == "poetry"
+            docker_cfg.use_conda = deps == "conda"
+            docker_cfg.use_pipenv = deps == "pipenv"
+
+        builder = DockerImageBuilder()
+
+        if dry_run:
+            dockerfile_content = builder.generate_dockerfile(docker_cfg)
+            recho("[bold]Generated Dockerfile:[/bold]")
+            recho("─" * 60)
+            print(dockerfile_content)
+            recho("─" * 60)
+            return
+
+        # Generate tag
+        image_tag = tag or builder.generate_tag(docker_cfg, base_name="flowyml")
+        recho(f"Building image: [bold]{image_tag}[/bold]")
+
+        built = builder.build_image(docker_cfg, tag=image_tag)
+        recho(f"[green]✓ Built: {built}")
+
+        if push:
+            target_registry = registry or docker_cfg.registry_uri
+            if not target_registry:
+                recho("[red]✗ No registry specified. Use --registry <uri>")
+                return
+            pushed = builder.push_image(built, registry_uri=target_registry)
+            recho(f"[green]✓ Pushed: {pushed}")
+
+    except Exception as e:
+        recho(f"[red]✗ Docker build failed: {e}", err=True)
+
+
+@docker_cli.command("push")
+@click.argument("image_tag")
+@click.option("--registry", "-r", default=None, help="Target registry URI (re-tags if needed)")
+def docker_push(image_tag, registry):
+    """Push a Docker image to a container registry.
+
+    Examples:
+        flowyml docker push my-pipeline:abc123
+        flowyml docker push my-pipeline:abc123 --registry myregistry.azurecr.io
+    """
+    try:
+        from flowyml.core.image_builder import DockerImageBuilder
+
+        builder = DockerImageBuilder()
+        pushed = builder.push_image(image_tag, registry_uri=registry)
+        recho(f"[green]✓ Pushed: {pushed}")
+    except Exception as e:
+        recho(f"[red]✗ Push failed: {e}", err=True)
+
+
+@docker_cli.command("generate")
+@click.option("--context", default=".", help="Build context directory")
+@click.option("--gpu/--no-gpu", default=False, help="Enable GPU/CUDA")
+@click.option("--cuda", default=None, help="CUDA version")
+@click.option("--deps", type=click.Choice(["auto", "pip", "uv", "poetry", "conda", "pipenv"]), default="auto")
+@click.option("--output", "-o", default=None, help="Write Dockerfile to path")
+@click.option("--stack", "-s", default=None, help="Use config from enterprise stack")
+def docker_generate(context, gpu, cuda, deps, output, stack):
+    """Generate a Dockerfile without building.
+
+    Useful for inspecting, customising, or debugging the auto-generated
+    Dockerfile before running a build.
+
+    Examples:
+        flowyml docker generate
+        flowyml docker generate --gpu --deps poetry
+        flowyml docker generate -o Dockerfile.flowyml
+    """
+    try:
+        from flowyml.stacks.components import DockerConfig
+        from flowyml.core.image_builder import DockerImageBuilder
+
+        docker_cfg = None
+        if stack:
+            try:
+                from flowyml.stacks.enterprise.resolver import StackResolver
+
+                resolver = StackResolver()
+                definition = resolver.resolve(stack)
+                docker_cfg = definition.to_docker_config()
+            except Exception:
+                pass
+
+        if docker_cfg is None:
+            docker_cfg = DockerConfig()
+
+        docker_cfg.build_context = context
+        if gpu:
+            docker_cfg.gpu_enabled = True
+        if cuda:
+            docker_cfg.cuda_version = cuda
+        if deps != "auto":
+            docker_cfg.use_uv = deps == "uv"
+            docker_cfg.use_poetry = deps == "poetry"
+            docker_cfg.use_conda = deps == "conda"
+            docker_cfg.use_pipenv = deps == "pipenv"
+
+        builder = DockerImageBuilder()
+        content = builder.generate_dockerfile(docker_cfg)
+
+        if output:
+            from pathlib import Path
+
+            Path(output).write_text(content)
+            recho(f"[green]✓ Dockerfile written to: {output}")
+        else:
+            print(content)
+
+    except Exception as e:
+        recho(f"[red]✗ Generation failed: {e}", err=True)
+
+
+@docker_cli.command("inspect")
+@click.option("--context", default=".", help="Project directory to inspect")
+@click.option("--stack", "-s", default=None, help="Show config from enterprise stack")
+def docker_inspect(context, stack):
+    """Inspect the auto-detected Docker configuration.
+
+    Shows which dependency manager, base image, and build options
+    would be used for the current project.
+
+    Examples:
+        flowyml docker inspect
+        flowyml docker inspect --stack aml_gpu_large
+    """
+    try:
+        from pathlib import Path
+        from flowyml.stacks.components import DockerConfig
+        from flowyml.core.image_builder import DockerImageBuilder
+
+        if stack:
+            try:
+                from flowyml.stacks.enterprise.resolver import StackResolver
+
+                resolver = StackResolver()
+                definition = resolver.resolve(stack)
+                docker_cfg = definition.to_docker_config()
+                recho(f"[bold]Docker config from stack: {stack}[/bold]")
+            except Exception as e:
+                recho(f"[red]✗ Could not load stack: {e}", err=True)
+                return
+        else:
+            docker_cfg = DockerConfig(build_context=context)
+            recho("[bold]Auto-detected Docker config[/bold]")
+
+        builder = DockerImageBuilder()
+        manager = builder._detect_dependency_manager(docker_cfg)
+        tag_preview = builder.generate_tag(docker_cfg, base_name="preview")
+
+        ctx = Path(docker_cfg.build_context).resolve()
+
+        recho("")
+        recho(f"  Build context    : {ctx}")
+        recho(f"  Base image       : {docker_cfg.base_image}")
+        recho(f"  Dep manager      : {manager}")
+        recho(f"  GPU enabled      : {docker_cfg.gpu_enabled}")
+        if docker_cfg.gpu_enabled and docker_cfg.cuda_version:
+            recho(f"  CUDA version     : {docker_cfg.cuda_version}")
+        recho(f"  Multi-stage      : {docker_cfg.multi_stage}")
+        recho(f"  BuildKit cache   : {docker_cfg.cache_pip}")
+        recho(f"  Platform         : {docker_cfg.platform}")
+        recho(f"  Tag strategy     : {docker_cfg.tag_strategy}")
+        recho(f"  Tag preview      : {tag_preview}")
+        recho(f"  Auto-build       : {docker_cfg.auto_build}")
+        recho(f"  Auto-push        : {docker_cfg.auto_push}")
+        if docker_cfg.registry_uri:
+            recho(f"  Registry         : {docker_cfg.registry_uri}")
+        if docker_cfg.health_check:
+            recho(f"  Health check     : {docker_cfg.health_check}")
+        if docker_cfg.labels:
+            recho(f"  Labels           : {docker_cfg.labels}")
+
+        # Show detected project files
+        recho("")
+        recho("[bold]Detected project files:[/bold]")
+        dep_files = [
+            "requirements.txt",
+            "pyproject.toml",
+            "uv.lock",
+            "poetry.lock",
+            "Pipfile",
+            "Pipfile.lock",
+            "environment.yml",
+            "conda.yaml",
+            "setup.py",
+            "setup.cfg",
+            "Dockerfile",
+        ]
+        for f in dep_files:
+            path = ctx / f
+            if path.is_file():
+                size = path.stat().st_size
+                recho(f"  ✓ {f} ({size:,} bytes)")
+
+    except Exception as e:
+        recho(f"[red]✗ Inspect failed: {e}", err=True)
+
+
+@docker_cli.command("login")
+@click.argument("registry")
+@click.option("--username", "-u", default=None, help="Registry username")
+@click.option("--password-stdin", is_flag=True, help="Read password from stdin")
+def docker_login(registry, username, password_stdin):
+    """Login to a container registry.
+
+    Examples:
+        flowyml docker login myregistry.azurecr.io -u admin
+        echo $TOKEN | flowyml docker login docker.io -u myuser --password-stdin
+    """
+    import subprocess as sp
+
+    try:
+        cmd = ["docker", "login", registry]
+        if username:
+            cmd.extend(["--username", username])
+        if password_stdin:
+            cmd.append("--password-stdin")
+
+        sp.run(cmd, check=True, text=True)
+        recho(f"[green]✓ Logged in to {registry}")
+    except sp.CalledProcessError as e:
+        recho(f"[red]✗ Login failed: {e}", err=True)
+    except FileNotFoundError:
+        recho("[red]✗ Docker CLI not found. Install Docker first.", err=True)
 
 
 # ── Enterprise CLI Registration ──────────────────────────────────────────

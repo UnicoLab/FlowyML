@@ -123,6 +123,66 @@ class RuntimeConfig(BaseModel):
         default=None,
         description="Path to dependency lock file (e.g. requirements.lock).",
     )
+    dependency_manager: str | None = Field(
+        alias="dependencyManager",
+        default=None,
+        description="Dependency manager to use: pip, uv, poetry, conda, pipenv. Auto-detected if None.",
+    )
+    dependency_file: str | None = Field(
+        alias="dependencyFile",
+        default=None,
+        description="Explicit dependency file path (e.g. requirements.txt, Pipfile).",
+    )
+    dockerfile: str | None = Field(
+        alias="dockerfile",
+        default=None,
+        description="Path to a custom Dockerfile.",
+    )
+    apt_packages: list[str] = Field(
+        alias="aptPackages",
+        default_factory=list,
+        description="System packages to install via apt-get.",
+    )
+    gpu_enabled: bool = Field(
+        alias="gpuEnabled",
+        default=False,
+        description="Enable GPU/CUDA support in the container image.",
+    )
+    cuda_version: str | None = Field(
+        alias="cudaVersion",
+        default=None,
+        description="CUDA version when GPU is enabled (e.g. '12.4').",
+    )
+    auto_build: bool = Field(
+        alias="autoBuild",
+        default=True,
+        description="Automatically build Docker image for remote execution.",
+    )
+    auto_push: bool = Field(
+        alias="autoPush",
+        default=True,
+        description="Automatically push Docker image after build.",
+    )
+    multi_stage: bool = Field(
+        alias="multiStage",
+        default=True,
+        description="Use multi-stage Docker builds for smaller images.",
+    )
+    health_check: str | None = Field(
+        alias="healthCheck",
+        default=None,
+        description="Docker HEALTHCHECK CMD for the container.",
+    )
+    entrypoint: str | None = Field(
+        alias="entrypoint",
+        default=None,
+        description="Custom container ENTRYPOINT.",
+    )
+    labels: dict[str, str] = Field(
+        alias="labels",
+        default_factory=dict,
+        description="OCI image labels.",
+    )
 
     @field_validator("python_version")
     @classmethod
@@ -139,7 +199,7 @@ class ComputeConfig(BaseModel):
 
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
-    type: str = Field(
+    type: str = Field(  # noqa: A003
         default="cpu",
         description="Compute type: cpu, gpu, or tpu.",
     )
@@ -508,6 +568,64 @@ class StackDefinition(BaseModel):
         digest = hashlib.sha256(normalized.encode("utf-8")).hexdigest()
         return f"sha256:{digest}"
 
+    def to_docker_config(self) -> Any:
+        """Convert the stack definition's runtime config to a DockerConfig.
+
+        This creates a DockerConfig instance that reflects the enterprise
+        stack's runtime settings, enabling seamless Docker image builds
+        from enterprise stack definitions.
+
+        Returns:
+            A DockerConfig instance, or None if no runtime config.
+        """
+        from flowyml.stacks.components import DockerConfig
+
+        runtime = self.spec.runtime
+        if runtime is None:
+            return None
+
+        kwargs: dict[str, Any] = {}
+
+        if runtime.base_image:
+            kwargs["base_image"] = runtime.base_image
+        if runtime.dependency_lock_file:
+            kwargs["requirements_file"] = runtime.dependency_lock_file
+        if runtime.dockerfile:
+            kwargs["dockerfile"] = runtime.dockerfile
+        if runtime.apt_packages:
+            kwargs["apt_packages"] = runtime.apt_packages
+        if runtime.gpu_enabled:
+            kwargs["gpu_enabled"] = True
+        if runtime.cuda_version:
+            kwargs["cuda_version"] = runtime.cuda_version
+        if runtime.health_check:
+            kwargs["health_check"] = runtime.health_check
+        if runtime.entrypoint:
+            kwargs["entrypoint"] = runtime.entrypoint
+        if runtime.labels:
+            kwargs["labels"] = runtime.labels
+        if runtime.dependency_file:
+            kwargs["requirements_file"] = runtime.dependency_file
+
+        # Map dependency manager string to DockerConfig flags
+        mgr = runtime.dependency_manager
+        if mgr == "poetry":
+            kwargs["use_poetry"] = True
+        elif mgr == "conda":
+            kwargs["use_conda"] = True
+        elif mgr == "pipenv":
+            kwargs["use_pipenv"] = True
+        elif mgr == "uv":
+            kwargs["use_uv"] = True
+        elif mgr == "pip":
+            kwargs["use_uv"] = False
+
+        kwargs["auto_build"] = runtime.auto_build
+        kwargs["auto_push"] = runtime.auto_push
+        kwargs["multi_stage"] = runtime.multi_stage
+
+        return DockerConfig(**kwargs)
+
     def to_stack(self) -> Any:
         """Convert this declarative definition to a runtime ``Stack`` instance.
 
@@ -530,7 +648,7 @@ class StackDefinition(BaseModel):
         backend = self.spec.backend
         compute = self.spec.compute
         storage = self.spec.storage
-        _ = self.spec.runtime
+        _runtime = self.spec.runtime  # noqa: F841 — reserved for future base_image propagation
 
         # -----------------------------------------------------------
         # Local backend

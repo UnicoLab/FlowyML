@@ -44,6 +44,7 @@ Example::
 from __future__ import annotations
 
 import logging
+from typing import Any
 from pathlib import Path
 
 import yaml
@@ -58,6 +59,7 @@ __all__ = [
     "DefaultsConfig",
     "ProjectInfo",
     "RegistryConfig",
+    "DockerDefaults",
     "ProjectConfig",
     "load_project_config",
     "resolve_environment",
@@ -151,6 +153,65 @@ class RegistryConfig(BaseModel):
     )
 
 
+class DockerDefaults(BaseModel):
+    """Docker configuration defaults for the project.
+
+    These are applied as defaults when building Docker images,
+    unless overridden by the stack definition or CLI flags.
+    """
+
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+    base_image: str | None = Field(
+        alias="baseImage",
+        default=None,
+        description="Default Docker base image.",
+    )
+    dependency_manager: str | None = Field(
+        alias="dependencyManager",
+        default=None,
+        description="Default dependency manager: auto, pip, uv, poetry, conda, pipenv.",
+    )
+    gpu: bool = Field(
+        default=False,
+        description="Enable GPU support by default.",
+    )
+    multi_stage: bool = Field(
+        alias="multiStage",
+        default=True,
+        description="Use multi-stage Docker builds.",
+    )
+    auto_build: bool = Field(
+        alias="autoBuild",
+        default=True,
+        description="Automatically build images for remote execution.",
+    )
+    auto_push: bool = Field(
+        alias="autoPush",
+        default=True,
+        description="Automatically push images after build.",
+    )
+    registry_uri: str | None = Field(
+        alias="registryUri",
+        default=None,
+        description="Default container registry URI.",
+    )
+    health_check: str | None = Field(
+        alias="healthCheck",
+        default=None,
+        description="Default HEALTHCHECK CMD.",
+    )
+    labels: dict[str, str] = Field(
+        default_factory=dict,
+        description="Default OCI image labels.",
+    )
+    exclude_patterns: list[str] = Field(
+        alias="excludePatterns",
+        default_factory=list,
+        description="Default .dockerignore patterns.",
+    )
+
+
 # ---------------------------------------------------------------------------
 # Top-level project config
 # ---------------------------------------------------------------------------
@@ -195,6 +256,56 @@ class ProjectConfig(BaseModel):
     defaults: DefaultsConfig = Field(default_factory=DefaultsConfig)
     environments: dict[str, EnvironmentConfig] = Field(default_factory=dict)
     registry: RegistryConfig = Field(default_factory=RegistryConfig)
+    docker: DockerDefaults = Field(
+        default_factory=DockerDefaults,
+        description="Docker build defaults for the project.",
+    )
+
+    def to_docker_config(self) -> Any:
+        """Convert project docker defaults to a DockerConfig.
+
+        Maps the high-level :class:`DockerDefaults` into a
+        :class:`~flowyml.stacks.components.DockerConfig` instance,
+        translating ``dependency_manager`` strings into the
+        corresponding boolean flags.
+
+        Returns:
+            A fully populated ``DockerConfig`` ready for use by the
+            Docker build pipeline.
+        """
+        from flowyml.stacks.components import DockerConfig
+
+        kwargs: dict[str, Any] = {}
+        d = self.docker
+
+        if d.base_image:
+            kwargs["base_image"] = d.base_image
+        if d.dependency_manager == "poetry":
+            kwargs["use_poetry"] = True
+        elif d.dependency_manager == "conda":
+            kwargs["use_conda"] = True
+        elif d.dependency_manager == "pipenv":
+            kwargs["use_pipenv"] = True
+        elif d.dependency_manager == "uv":
+            kwargs["use_uv"] = True
+        elif d.dependency_manager == "pip":
+            kwargs["use_uv"] = False
+
+        kwargs["gpu_enabled"] = d.gpu
+        kwargs["multi_stage"] = d.multi_stage
+        kwargs["auto_build"] = d.auto_build
+        kwargs["auto_push"] = d.auto_push
+
+        if d.registry_uri:
+            kwargs["registry_uri"] = d.registry_uri
+        if d.health_check:
+            kwargs["health_check"] = d.health_check
+        if d.labels:
+            kwargs["labels"] = d.labels
+        if d.exclude_patterns:
+            kwargs["exclude_patterns"] = d.exclude_patterns
+
+        return DockerConfig(**kwargs)
 
 
 # ---------------------------------------------------------------------------

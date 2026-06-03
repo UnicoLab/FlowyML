@@ -3,8 +3,8 @@
 This module provides :class:`DockerImageBuilder`, the authoritative entry-point
 for generating optimised Dockerfiles and building container images used by
 FlowyML pipelines.  The builder supports multi-stage builds, GPU-aware base
-image selection, five dependency managers, BuildKit cache mounts, platform
-cross-compilation, and deterministic content-hash tagging.
+image selection, seven dependency managers, BuildKit cache mounts, platform
+cross-compilation, deterministic content-hash tagging, and integrated push.
 
 Example::
 
@@ -74,11 +74,13 @@ class DockerImageBuilder:
 
     * **BuildKit cache mounts** for pip / uv / conda
     * **GPU-aware base image auto-selection** via CUDA version mapping
-    * **Smart dependency manager detection** (conda → uv → poetry → pip)
+    * **Smart dependency manager detection** (conda → uv → poetry → pipenv → pip)
     * **Platform targeting** for cross-compilation (``linux/amd64``, etc.)
     * **Content-hash image tagging** for deterministic builds
+    * **Integrated push** to any container registry
     * **Build log streaming** for real-time feedback
     * **Security hardening** (non-root user, minimal layers)
+    * **HEALTHCHECK** and **LABEL** directives for production images
     """
 
     # ── CUDA base image catalogue ─────────────────────────────────────
@@ -165,6 +167,131 @@ class DockerImageBuilder:
             raise RuntimeError(
                 f"Docker build failed with exit code {exc.returncode}",
             ) from exc
+
+    # ------------------------------------------------------------------
+
+    def push_image(
+        self,
+        tag: str,
+        *,
+        registry_uri: str | None = None,
+        stream_logs: bool = True,
+    ) -> str:
+        """Push a Docker image to a container registry.
+
+        If *registry_uri* is provided, the image is first re-tagged to
+        ``registry_uri/<name>:<ver>`` before pushing.  Otherwise the
+        *tag* is pushed as-is (it must already include the registry
+        prefix).
+
+        Args:
+            tag: The local image tag to push.
+            registry_uri: Optional registry URI prefix.  When set the
+                image is re-tagged to ``{registry_uri}/{basename}``
+                before pushing.
+            stream_logs: Stream ``docker push`` output.
+
+        Returns:
+            The full image URI that was pushed.
+
+        Raises:
+            RuntimeError: If ``docker push`` fails.
+        """
+        push_tag = tag
+
+        # Re-tag if a different registry was specified
+        if registry_uri:
+            # Extract basename:version from the tag
+            parts = tag.rsplit("/", 1)
+            basename = parts[-1] if len(parts) > 1 else tag
+            push_tag = f"{registry_uri.rstrip('/')}/{basename}"
+
+            if push_tag != tag:
+                logger.info("Re-tagging %s → %s", tag, push_tag)
+                subprocess.run(
+                    ["docker", "tag", tag, push_tag],
+                    check=True,
+                    capture_output=True,
+                )
+
+        cmd = ["docker", "push", push_tag]
+        print(f"🚀 Pushing image: {push_tag}")
+        logger.info("Running: %s", " ".join(cmd))
+
+        try:
+            if stream_logs:
+                self._run_streaming(cmd)
+            else:
+                subprocess.run(cmd, check=True, capture_output=True)
+            print("✅ Push successful!")
+            return push_tag
+        except subprocess.CalledProcessError as exc:
+            logger.error("Docker push failed (exit %d)", exc.returncode)
+            raise RuntimeError(
+                f"Docker push failed with exit code {exc.returncode}",
+            ) from exc
+
+    # ------------------------------------------------------------------
+
+    def build_and_push(
+        self,
+        docker_config: DockerConfig,
+        *,
+        pipeline_name: str = "flowyml",
+        project_name: str | None = None,
+        registry_uri: str | None = None,
+        stream_logs: bool = True,
+    ) -> str:
+        """Build a Docker image and push it to a registry in one call.
+
+        This is the recommended high-level API for automated Docker
+        workflows.  It generates a deterministic content-hash tag,
+        builds the image, and pushes it to the specified (or config-
+        level) registry.
+
+        Args:
+            docker_config: Docker configuration.
+            pipeline_name: Pipeline name used in image naming.
+            project_name: Optional project name prefix.
+            registry_uri: Target registry URI.  Falls back to
+                ``docker_config.registry_uri``.
+            stream_logs: Stream build/push output.
+
+        Returns:
+            The full pushed image URI.
+
+        Raises:
+            ValueError: If no registry is configured.
+            RuntimeError: If build or push fails.
+        """
+        target_registry = registry_uri or docker_config.registry_uri
+        if not target_registry:
+            raise ValueError(
+                "No registry URI specified.  Set 'registry_uri' on " "DockerConfig or pass it to build_and_push().",
+            )
+
+        # Build the image name
+        import re
+
+        if project_name:
+            base_name = f"{project_name}-{pipeline_name}"
+        else:
+            base_name = pipeline_name
+        safe_name = re.sub(r"[^a-zA-Z0-9_\-]", "_", base_name).lower()
+
+        # Generate tag with content hash for cache efficiency
+        local_tag = self.generate_tag(docker_config, base_name=safe_name)
+
+        # Build
+        self.build_image(docker_config, tag=local_tag, stream_logs=stream_logs)
+
+        # Push
+        pushed_uri = self.push_image(
+            local_tag,
+            registry_uri=target_registry,
+            stream_logs=stream_logs,
+        )
+        return pushed_uri
 
     # ------------------------------------------------------------------
 
@@ -377,6 +504,9 @@ class DockerImageBuilder:
             "",
         ]
 
+        # OCI Labels
+        lines.extend(self._generate_label_lines(config))
+
         # System packages (builder may need compilers, dev headers)
         if config.apt_packages:
             lines.append(self._generate_apt_install(config.apt_packages))
@@ -461,6 +591,9 @@ class DockerImageBuilder:
         # Command / Entrypoint
         lines.extend(self._generate_entrypoint_lines(config))
 
+        # HEALTHCHECK
+        lines.extend(self._generate_healthcheck_lines(config))
+
         return lines
 
     # ------------------------------------------------------------------
@@ -512,6 +645,21 @@ class DockerImageBuilder:
         # Entrypoint
         lines.extend(self._generate_entrypoint_lines(config))
 
+        # HEALTHCHECK
+        lines.extend(self._generate_healthcheck_lines(config))
+
+        # Non-root user (same as multi-stage for security)
+        lines.extend(
+            [
+                "# Run as non-root for security",
+                "RUN groupadd --gid 1000 appuser \\",
+                "    && useradd --uid 1000 --gid appuser --shell /bin/bash " "--create-home appuser \\",
+                "    && chown -R appuser:appuser /app",
+                "USER appuser",
+                "",
+            ],
+        )
+
         return lines
 
     # ------------------------------------------------------------------
@@ -524,11 +672,16 @@ class DockerImageBuilder:
         1. ``config.use_conda`` → ``"conda"``
         2. ``config.use_uv`` **and** ``uv.lock`` exists → ``"uv-lock"``
         3. ``config.use_poetry`` **and** ``poetry.lock`` exists → ``"poetry"``
-        4. ``config.requirements_file`` set → ``"requirements-file"``
-        5. ``requirements.txt`` exists in context → ``"requirements-txt"``
-        6. ``config.requirements`` list provided → ``"inline"``
-        7. ``config.replicate_local_env`` → ``"freeze"``
-        8. Fallback → ``"none"``
+        4. ``config.use_pipenv`` **and** ``Pipfile.lock`` exists → ``"pipenv"``
+        5. ``config.setup_file`` set → ``"setup-py"``
+        6. ``config.requirements_file`` set → ``"requirements-file"``
+        7. ``requirements.txt`` exists in context → ``"requirements-txt"``
+        8. auto-detect ``environment.yml`` / ``conda.yaml`` → ``"conda"``
+        9. auto-detect ``Pipfile`` → ``"pipenv"``
+        10. auto-detect ``setup.py`` / ``setup.cfg`` → ``"setup-py"``
+        11. ``config.requirements`` list provided → ``"inline"``
+        12. ``config.replicate_local_env`` → ``"freeze"``
+        13. Fallback → ``"none"``
 
         Args:
             config: Docker configuration.
@@ -538,6 +691,7 @@ class DockerImageBuilder:
         """
         context = Path(config.build_context)
 
+        # ── Explicit manager flags ─────────────────────────────────────
         if config.use_conda:
             return "conda"
 
@@ -547,11 +701,27 @@ class DockerImageBuilder:
         if config.use_poetry and (context / "poetry.lock").is_file():
             return "poetry"
 
+        if config.use_pipenv and (context / "Pipfile.lock").is_file():
+            return "pipenv"
+
+        if config.setup_file:
+            return "setup-py"
+
         if config.requirements_file:
             return "requirements-file"
 
         if (context / "requirements.txt").is_file():
             return "requirements-txt"
+
+        # ── Auto-detection of project files ────────────────────────────
+        if (context / "environment.yml").is_file() or (context / "conda.yaml").is_file():
+            return "conda"
+
+        if (context / "Pipfile").is_file():
+            return "pipenv"
+
+        if (context / "setup.py").is_file() or (context / "setup.cfg").is_file():
+            return "setup-py"
 
         if config.requirements:
             return "inline"
@@ -637,9 +807,29 @@ class DockerImageBuilder:
                 f"RUN {cache_pip}pip install --no-cache-dir poetry",
             )
             lines.append("COPY pyproject.toml poetry.lock ./")
-            lines.append("RUN poetry config virtualenvs.create false")
+            lines.append("RUN poetry config virtualenvs.in-project true")
             lines.append(
                 f"RUN {cache_pip}poetry install " f"--no-interaction --no-ansi --no-root --only main",
+            )
+
+        # ── Pipenv ────────────────────────────────────────────────────
+        elif manager == "pipenv":
+            lines.append("# Install dependencies via Pipenv")
+            lines.append(
+                f"RUN {cache_pip}pip install --no-cache-dir pipenv",
+            )
+            lines.append("COPY Pipfile Pipfile.lock ./")
+            lines.append(
+                f"RUN {cache_pip}pipenv install --deploy --system " f"|| pipenv install --deploy",
+            )
+
+        # ── setup.py / setup.cfg ──────────────────────────────────────
+        elif manager == "setup-py":
+            setup = config.setup_file or "setup.py"
+            lines.append(f"# Install from {setup}")
+            lines.append("COPY . .")
+            lines.append(
+                f"RUN {cache_uv}uv pip install -e .",
             )
 
         # ── Explicit requirements file ────────────────────────────────
@@ -842,6 +1032,59 @@ class DockerImageBuilder:
 
         lines.append("")
         return lines
+
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _generate_label_lines(config: DockerConfig) -> list[str]:
+        """Generate ``LABEL`` directives from *config.labels*.
+
+        Always includes a ``flowyml.generated=true`` label for
+        traceability.  User-supplied labels from ``config.labels``
+        are added afterwards.
+
+        Args:
+            config: Docker configuration.
+
+        Returns:
+            A list of Dockerfile lines (may be empty apart from
+            the generated label).
+        """
+        labels = {"flowyml.generated": "true"}
+        labels.update(config.labels or {})
+
+        if not labels:
+            return []
+
+        lines: list[str] = ["# OCI Labels"]
+        for key, value in labels.items():
+            lines.append(f'LABEL {key}="{value}"')
+        lines.append("")
+        return lines
+
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _generate_healthcheck_lines(config: DockerConfig) -> list[str]:
+        """Generate a ``HEALTHCHECK`` directive.
+
+        Only emitted when ``config.health_check`` is set.
+
+        Args:
+            config: Docker configuration.
+
+        Returns:
+            A list of Dockerfile lines.
+        """
+        if not config.health_check:
+            return []
+
+        return [
+            "# Health check",
+            "HEALTHCHECK --interval=30s --timeout=10s --retries=3 \\",
+            f"    CMD {config.health_check}",
+            "",
+        ]
 
     # ------------------------------------------------------------------
 

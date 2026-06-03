@@ -198,6 +198,29 @@ class ImagePolicyValidator:
         if docker_config.image and self._policy.allowed_registries:
             results.append(self._check_registry(docker_config.image))
 
+        # Check required labels
+        if self._policy.require_labels and hasattr(docker_config, "labels"):
+            missing_labels = [
+                label for label in self._policy.require_labels if label not in (docker_config.labels or {})
+            ]
+            if missing_labels:
+                results.append(
+                    ImagePolicyResult(
+                        rule_name="require_labels",
+                        status="failed",
+                        message=f"Missing required labels: {', '.join(missing_labels)}",
+                        suggestion=f"Add these labels to DockerConfig.labels: {missing_labels}",
+                    ),
+                )
+            else:
+                results.append(
+                    ImagePolicyResult(
+                        rule_name="require_labels",
+                        status="passed",
+                        message="All required labels present.",
+                    ),
+                )
+
         return results
 
     def validate_dockerfile(

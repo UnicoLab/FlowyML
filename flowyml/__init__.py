@@ -65,6 +65,9 @@ with contextlib.suppress(ImportError):
 with contextlib.suppress(ImportError):
     from flowyml.core.image_policy import ImagePolicy, ImagePolicyValidator
 
+with contextlib.suppress(ImportError):
+    from flowyml.stacks.dockerhub import DockerHubContainerRegistry
+
 # Tracking imports
 from flowyml.tracking.experiment import Experiment
 from flowyml.tracking.runs import Run
@@ -252,6 +255,7 @@ __all__ = [
     "DockerImageBuilder",
     "ImagePolicy",
     "ImagePolicyValidator",
+    "DockerHubContainerRegistry",
     # Tracking
     "Experiment",
     "Run",

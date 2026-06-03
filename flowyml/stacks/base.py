@@ -81,59 +81,85 @@ class Stack:
     ) -> str:
         """Prepare the Docker image for execution.
 
+        Handles the full build → push lifecycle using
+        :class:`~flowyml.core.image_builder.DockerImageBuilder`.  Uses
+        content-hash tagging for deterministic, cache-friendly builds.
+
+        The method respects ``docker_config.auto_build`` and
+        ``docker_config.auto_push`` flags.  When ``auto_build`` is
+        ``False`` and no pre-built ``image`` is set, a helpful error
+        is raised.
+
         Args:
             docker_config: Docker configuration object.
             pipeline_name: Name of the pipeline being built.
             project_name: Optional name of the project.
 
         Returns:
-            str: The full URI of the docker image to use.
+            The full URI of the docker image to use.
 
         Raises:
-            ValueError: If image cannot be prepared (e.g. no registry configured for build).
+            ValueError: If image cannot be prepared.
+            RuntimeError: If the build or push fails.
         """
-        # 1. If explicit image provided, use it
+        # 1. If explicit image provided, use it directly
         if docker_config.image:
             return docker_config.image
 
-        # 2. If no registry, we cannot build/push for remote execution
-        if not self.container_registry:
+        # 2. If auto_build is disabled, we need an explicit image
+        if not getattr(docker_config, "auto_build", True):
             raise ValueError(
-                "Remote execution requires a specific 'image' in DockerConfiguration "
-                "or a configured 'container_registry' in the Stack for automatic building.",
+                "Docker auto-build is disabled but no pre-built 'image' "
+                "is set in DockerConfig.  Either set 'image' to a "
+                "pre-built URI or enable 'auto_build'.",
             )
 
-        # 3. Trigger build and push
-        # Use safe naming: registry/project/pipeline:latest OR registry/pipeline:latest
-        if project_name:
-            image_name = f"{project_name}-{pipeline_name}"
-        else:
-            image_name = pipeline_name
+        # 3. Determine the target registry
+        registry_uri = getattr(docker_config, "registry_uri", None)
+        if not registry_uri and self.container_registry:
+            registry_uri = getattr(
+                self.container_registry,
+                "registry_uri",
+                None,
+            )
 
-        # Clean image name to be docker compatible (lowercase, alphanumeric)
+        if not registry_uri:
+            raise ValueError(
+                "Remote execution requires a container registry.  "
+                "Set 'registry_uri' on DockerConfig, or configure a "
+                "'container_registry' on the Stack.\n\n"
+                "  Tip: flowyml docker build --registry <uri> --push",
+            )
+
+        # 4. Build and push via DockerImageBuilder
+        from flowyml.core.image_builder import DockerImageBuilder
+
+        builder = DockerImageBuilder()
+
         import re
 
-        safe_name = re.sub(r"[^a-zA-Z0-9_\-]", "_", image_name).lower()
+        if project_name:
+            base_name = f"{project_name}-{pipeline_name}"
+        else:
+            base_name = pipeline_name
+        safe_name = re.sub(r"[^a-zA-Z0-9_\-]", "_", base_name).lower()
 
-        image_tag = f"{self.container_registry.registry_uri}/{safe_name}:latest"
+        # Generate content-hash tag for cache efficiency
+        tag = builder.generate_tag(docker_config, base_name=safe_name)
 
         # Build
-        try:
-            from flowyml.core.image_builder import DockerImageBuilder
+        print(f"🐳 Preparing image for stack '{self.name}'")
+        built_tag = builder.build_image(docker_config, tag=tag)
 
-            builder = DockerImageBuilder()
-            builder.build_image(docker_config, image_tag)
-        except ImportError:
-            # Fallback if file not found (shouldn't happen in prod)
-            print("Warning: DockerImageBuilder not found. Skipping build.")
-
-        # Push
-        print(f"🚀 Pushing image: {image_tag}")
-        try:
-            pushed_uri = self.container_registry.push_image(image_tag)
+        # Push (if auto_push enabled)
+        if getattr(docker_config, "auto_push", True):
+            pushed_uri = builder.push_image(
+                built_tag,
+                registry_uri=registry_uri,
+            )
             return pushed_uri
-        except Exception as e:
-            raise RuntimeError(f"Failed to push image to registry: {e}")
+
+        return built_tag
 
     def validate(self) -> bool:
         """Validate that all stack components are properly configured."""
