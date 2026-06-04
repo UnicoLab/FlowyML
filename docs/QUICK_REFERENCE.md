@@ -27,8 +27,11 @@ The essential cheat sheet for FlowyML. Find the syntax you need in seconds — C
 | List available stacks | `flowyml stack list` |
 | Start the web UI | `flowyml ui start` or `flowyml go` |
 | **Import all ZenML components** | `flowyml zenml import-all` |
-| **Check ZenML status** | `flowyml zenml status` |
-| **Install ZenML integration** | `flowyml zenml install mlflow` |
+| **Build a Docker image** | `flowyml docker build` |
+| **Build + push to registry** | `flowyml docker build --push --registry URI` |
+| **Preview the Dockerfile** | `flowyml docker generate` |
+| **See auto-detected config** | `flowyml docker inspect` |
+| **Login to registry** | `flowyml docker login REGISTRY` |
 
 ---
 
@@ -652,6 +655,26 @@ pipeline = Pipeline("train", stack=live_stack)
 with manager.use_stack("gcp-prod"):  # Temporary switch
     pipeline.run()
 ```
+
+### Docker Build & Push
+```bash
+# Auto-detect deps, build image
+flowyml docker build
+
+# Build with GPU and push to registry
+flowyml docker build --gpu --push --registry myregistry.azurecr.io
+
+# Preview generated Dockerfile
+flowyml docker generate --deps poetry
+
+# Inspect auto-detected config
+flowyml docker inspect
+
+# Login to registry
+flowyml docker login myregistry.azurecr.io -u admin
+```
+
+See full guide: [Docker Image Management](guides/docker.md)
 
 ---
 

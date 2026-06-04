@@ -104,7 +104,23 @@ Because the stack knows its `container_registry`, remote orchestrators such as V
 
 ## 4. Build and Push Runtime Images
 
-flowyml does not own your registry credentials; push images with Docker/Buildx and let stacks reference them:
+FlowyML can manage registry authentication and image builds for you via
+the `flowyml docker` CLI, or you can push images manually with Docker:
+
+**Option A — FlowyML Docker CLI (recommended)**:
+
+```bash
+# Login to your registry
+flowyml docker login gcr.io/${GCP_PROJECT} -u _json_key
+
+# Auto-build and push in one command
+flowyml docker build --push --registry gcr.io/${GCP_PROJECT}
+
+# Or preview the generated Dockerfile first
+flowyml docker generate
+```
+
+**Option B — Manual Docker build**:
 
 ```bash
 docker build -f docker/training.Dockerfile -t fraud-training:latest .
@@ -114,7 +130,9 @@ docker push gcr.io/${GCP_PROJECT}/fraud-training:v3
 # Point stack or DockerConfig to the pushed image URI
 ```
 
-When the registry block is present in `flowyml.yaml`, running `flowyml stack apply prod-gcp` prints the exact image URI that remote jobs must use. If you need multi-arch images, plug Buildx and push once—flowyml only cares about the resulting `image` reference.
+When the registry block is present in `flowyml.yaml`, remote jobs use the
+image URI from the stack.  See [Docker Image Management](docker.md) for
+the full reference.
 
 ## 5. Full Keras Pipeline Example
 

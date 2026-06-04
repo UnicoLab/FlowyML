@@ -573,7 +573,7 @@ class DockerImageBuilder:
         # User-defined environment variables
         if config.env_vars:
             for key, value in config.env_vars.items():
-                lines.append(f"ENV {key}={value}")
+                lines.append(f'ENV {key}="{value}"')
             lines.append("")
 
         # Non-root user for security
@@ -639,7 +639,7 @@ class DockerImageBuilder:
         # Env vars
         if config.env_vars:
             for key, value in config.env_vars.items():
-                lines.append(f"ENV {key}={value}")
+                lines.append(f'ENV {key}="{value}"')
             lines.append("")
 
         # Entrypoint
@@ -1027,9 +1027,6 @@ class DockerImageBuilder:
             cmd_json = json.dumps(config.command)
             lines.append(f"CMD {cmd_json}")
 
-        if not lines:
-            lines.append('ENTRYPOINT ["python"]')
-
         lines.append("")
         return lines
 
@@ -1052,9 +1049,6 @@ class DockerImageBuilder:
         """
         labels = {"flowyml.generated": "true"}
         labels.update(config.labels or {})
-
-        if not labels:
-            return []
 
         lines: list[str] = ["# OCI Labels"]
         for key, value in labels.items():

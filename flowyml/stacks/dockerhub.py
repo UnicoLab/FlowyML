@@ -132,6 +132,7 @@ class DockerHubContainerRegistry(ContainerRegistry):
                 "--username",
                 self.username,
                 "--password-stdin",
+                self._REGISTRY_HOST,
             ],
             input=credential.encode(),
             check=True,

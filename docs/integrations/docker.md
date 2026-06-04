@@ -122,6 +122,98 @@ orchestrator = DockerOrchestrator(
 
 ---
 
+## 🚀 Docker Build & Push CLI
+
+FlowyML provides a full CLI for building and pushing Docker images, with
+**auto-detection** of your dependency manager and **zero-config** defaults.
+
+### Quick Start
+
+```bash
+# Auto-build: detects deps, generates Dockerfile, builds image
+flowyml docker build
+
+# Build with GPU and push to registry
+flowyml docker build --gpu --push --registry myregistry.azurecr.io
+
+# Preview the generated Dockerfile
+flowyml docker generate
+
+# Inspect what FlowyML auto-detected
+flowyml docker inspect
+```
+
+### Dependency Manager Auto-Detection
+
+FlowyML scans your project and selects the right installer automatically:
+
+| Priority | Manager | Detected By |
+|----------|---------|-------------|
+| 1 | **conda** | `environment.yml` or `conda.yaml` |
+| 2 | **uv** | `uv.lock` |
+| 3 | **poetry** | `poetry.lock` + `pyproject.toml` |
+| 4 | **pipenv** | `Pipfile` |
+| 5 | **setup.py** | `setup.py` or `setup.cfg` |
+| 6 | **pip** | `requirements.txt` |
+
+Override with `--deps`:
+
+```bash
+flowyml docker build --deps poetry
+flowyml docker build --deps uv
+```
+
+### Container Registries
+
+FlowyML supports 4 container registries out of the box:
+
+- **Docker Hub** — `DockerHubContainerRegistry`
+- **Azure ACR** — `ACRContainerRegistry`
+- **AWS ECR** — `ECRContainerRegistry`
+- **Google GCR** — `GCRContainerRegistry`
+
+```bash
+# Login
+flowyml docker login myregistry.azurecr.io -u admin
+
+# Build and push
+flowyml docker build --push --registry myregistry.azurecr.io
+```
+
+### GPU/CUDA Support
+
+```bash
+# Build with GPU support (CUDA 12.4 default)
+flowyml docker build --gpu
+
+# Specific CUDA version
+flowyml docker build --gpu --cuda 11.8
+```
+
+### Image Policies
+
+Enforce enterprise standards with `ImagePolicy`:
+
+```python
+from flowyml.core.image_policy import ImagePolicy, ImagePolicyValidator
+
+policy = ImagePolicy(
+    allowed_registries=["myregistry.azurecr.io"],
+    denied_base_images=["python:latest"],
+    require_labels=["team", "environment"],
+)
+
+validator = ImagePolicyValidator(policy=policy)
+results = validator.validate_config(docker_config)
+```
+
+!!! tip "Full Docker Reference"
+    See the [Docker Image Management Guide](../guides/docker.md) for the complete
+    `DockerConfig` field reference, enterprise stack integration, CI/CD examples,
+    and troubleshooting.
+
+---
+
 ## 🚀 What's Next?
 
 <div class="header-grid" markdown>

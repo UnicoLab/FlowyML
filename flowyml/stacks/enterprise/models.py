@@ -588,6 +588,9 @@ class StackDefinition(BaseModel):
 
         if runtime.base_image:
             kwargs["base_image"] = runtime.base_image
+        elif runtime.python_version:
+            # Auto-set base image from python_version if no explicit image
+            kwargs["base_image"] = f"python:{runtime.python_version}-slim"
         if runtime.dependency_lock_file:
             kwargs["requirements_file"] = runtime.dependency_lock_file
         if runtime.dockerfile:
@@ -604,7 +607,7 @@ class StackDefinition(BaseModel):
             kwargs["entrypoint"] = runtime.entrypoint
         if runtime.labels:
             kwargs["labels"] = runtime.labels
-        if runtime.dependency_file:
+        if runtime.dependency_file and "requirements_file" not in kwargs:
             kwargs["requirements_file"] = runtime.dependency_file
 
         # Map dependency manager string to DockerConfig flags
@@ -723,8 +726,8 @@ class StackDefinition(BaseModel):
             }
 
             # Map enterprise spec fields to AzureMLStack constructor params
-            if compute.target:
-                azure_kwargs["compute"] = compute.target
+            if compute.size:
+                azure_kwargs["compute"] = compute.size
 
             return AzureMLStack(**azure_kwargs)
 

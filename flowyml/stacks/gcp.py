@@ -90,7 +90,12 @@ class VertexAIOrchestrator(RemoteOrchestrator):
     ) -> str:
         """Build and push a Docker image for remote execution.
 
-        Automatically builds with ``--platform linux/amd64`` for GCP
+        Delegates to :class:`~flowyml.core.image_builder.DockerImageBuilder`
+        for consistent multi-stage builds, content-hash tagging, and
+        BuildKit cache support.  Falls back to raw ``docker build`` if
+        the builder is unavailable.
+
+        Automatically uses ``--platform linux/amd64`` for GCP
         compatibility (critical on Apple Silicon machines).
 
         Args:
@@ -101,7 +106,6 @@ class VertexAIOrchestrator(RemoteOrchestrator):
             The remote image URI to use in Vertex AI jobs.
         """
         import logging
-        import os
         from pathlib import Path
 
         logger = logging.getLogger("flowyml.orchestrator.vertex_ai")
@@ -116,19 +120,45 @@ class VertexAIOrchestrator(RemoteOrchestrator):
         image_name = docker_config.image if docker_config and docker_config.image else "pipeline"
         remote_uri = f"{registry_base}/{image_name}/{image_name}:latest"
 
-        # Check for Dockerfile
-        dockerfile = "Dockerfile"
-        if docker_config and hasattr(docker_config, "dockerfile") and docker_config.dockerfile:
-            dockerfile = docker_config.dockerfile
-        context_dir = docker_config.context_dir if docker_config and hasattr(docker_config, "context_dir") else "."
-        if not Path(context_dir).is_dir():
+        # Resolve build context (fix: was incorrectly using 'context_dir')
+        build_context = "."
+        if docker_config and hasattr(docker_config, "build_context"):
+            build_context = docker_config.build_context
+        if not Path(build_context).is_dir():
             raise FileNotFoundError(
-                f"Docker context directory not found: {context_dir}",
+                f"Docker build context directory not found: {build_context}",
             )
-        # Ensure artifacts dir exists in context
-        artifacts_path = Path(context_dir) / "artifacts"
-        if not artifacts_path.is_dir():
-            artifacts_path.mkdir(parents=True, exist_ok=True)
+
+        # Try using DockerImageBuilder for consistent builds
+        try:
+            from flowyml.core.image_builder import DockerImageBuilder
+
+            builder = DockerImageBuilder()
+
+            # Ensure platform is linux/amd64 for GCP
+            if docker_config:
+                docker_config.platform = "linux/amd64"
+
+            logger.info("🐳 Building with DockerImageBuilder for linux/amd64...")
+            built_tag = builder.build_image(docker_config, tag=remote_uri)
+
+            # Push
+            logger.info("📤 Pushing to Artifact Registry...")
+            builder.push_image(built_tag)
+
+            logger.info("✅ Image pushed: %s", remote_uri)
+            return remote_uri
+
+        except ImportError:
+            logger.warning("DockerImageBuilder not available, falling back to subprocess")
+
+        # Fallback: raw docker build + push
+        dockerfile = "Dockerfile"
+        if docker_config and docker_config.dockerfile:
+            dockerfile = docker_config.dockerfile
+
+        import os
+
         if not os.path.exists(dockerfile):
             logger.warning(
                 "No Dockerfile found at '%s'. Skipping auto-build. "
@@ -140,28 +170,6 @@ class VertexAIOrchestrator(RemoteOrchestrator):
         logger.info("🐳 Auto-building Docker image for linux/amd64...")
         logger.info("   Image: %s", remote_uri)
 
-        # Stage FlowyML if Dockerfile references it
-        flowyml_src = os.path.join("..", "FlowyML")
-        docker_build_dir = ".docker_build"
-        if Path(flowyml_src).is_dir():
-            import shutil
-
-            if os.path.exists(docker_build_dir):
-                shutil.rmtree(docker_build_dir)
-            Path(docker_build_dir).mkdir(parents=True, exist_ok=True)
-            shutil.copytree(
-                flowyml_src,
-                os.path.join(docker_build_dir, "FlowyML"),
-                ignore=shutil.ignore_patterns(
-                    "site",
-                    ".venv",
-                    "__pycache__",
-                    "*.pyc",
-                    ".git",
-                ),
-            )
-
-        # Build with --platform linux/amd64
         build_cmd = [
             "docker",
             "build",
@@ -169,37 +177,23 @@ class VertexAIOrchestrator(RemoteOrchestrator):
             "linux/amd64",
             "-t",
             remote_uri,
-            ".",
+            "-f",
+            dockerfile,
+            build_context,
         ]
         logger.info("   Build command: %s", " ".join(build_cmd))
 
-        result = subprocess.run(
-            build_cmd,
-            capture_output=True,
-            text=True,
-            timeout=600,
-        )
+        result = subprocess.run(build_cmd, capture_output=True, text=True, timeout=600)
         if result.returncode != 0:
             logger.error("Docker build failed:\n%s", result.stderr[-2000:])
             raise RuntimeError(f"Docker build failed: {result.stderr[-500:]}")
 
         logger.info("✅ Docker image built successfully")
 
-        # Clean up staging
-        if os.path.exists(docker_build_dir):
-            import shutil
-
-            shutil.rmtree(docker_build_dir)
-
         # Push to Artifact Registry
         logger.info("📤 Pushing to Artifact Registry...")
         push_cmd = ["docker", "push", remote_uri]
-        result = subprocess.run(
-            push_cmd,
-            capture_output=True,
-            text=True,
-            timeout=600,
-        )
+        result = subprocess.run(push_cmd, capture_output=True, text=True, timeout=600)
         if result.returncode != 0:
             logger.error("Docker push failed:\n%s", result.stderr[-2000:])
             raise RuntimeError(f"Docker push failed: {result.stderr[-500:]}")

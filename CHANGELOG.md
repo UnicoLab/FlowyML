@@ -2,6 +2,59 @@
 
 <!-- version list -->
 
+## v1.11.0 (2026-06-04)
+
+### Features
+
+- **Enterprise Stack Registry & Governed Execution Layer**: Platform teams can
+  centrally define, approve, version, and govern execution stacks while data
+  scientists consume them without changing pipeline code.
+  - `StackDefinition` (Pydantic): declarative YAML manifests (`apiVersion`,
+    `kind`, `metadata`, `spec`) with 12+ runtime config fields
+  - `StackResolver`: resolve stacks from GitHub, GitLab, local paths, HTTP URLs
+  - `StackRegistry`: centralized registry with version pinning and approval
+  - Enterprise CLI: `flowyml enterprise stack list/show/validate/apply`
+  - `ProjectConfig`: org-level governance YAML with allowed stacks, default
+    Docker settings, and image policies
+  - `ImagePolicy` + `ImagePolicyValidator`: enforce base images, required labels,
+    and registry allowlists
+
+- **Docker Build & Push Lifecycle**: Zero-config Docker image management for
+  remote pipeline execution.
+  - `DockerImageBuilder`: 7 dependency managers auto-detected (conda, uv, poetry,
+    pipenv, setup.py, pip, freeze)
+  - Multi-stage builds with BuildKit cache, non-root user, HEALTHCHECK
+  - GPU/CUDA support with automatic base image selection
+  - Content-hash, git-sha, latest tag strategies
+  - 4 container registries: Docker Hub, ACR, ECR, GCR
+  - CLI: `flowyml docker build/push/generate/inspect/login`
+
+- **DockerHub Container Registry**: New `DockerHubContainerRegistry` component
+  using `--password-stdin` for secure authentication
+
+- **GCP Stack Refactor**: `_auto_build_and_push` now delegates to
+  `DockerImageBuilder` for consistent builds; fixed `context_dir` bug
+
+### Bug Fixes
+
+- Fix `compute.target` → `compute.size` in Azure stack (`to_stack()`)
+- Fix `dependency_lock_file` being silently overwritten by `dependency_file`
+- Fix `python_version` not propagated to Docker base image
+- Fix `pyproject.toml` falsely implying Poetry (now requires `poetry.lock`)
+- Fix `create_docker_config_from_dict` mutating caller's dict
+- Fix `docker login` not specifying registry host explicitly
+- Fix unquoted ENV values in generated Dockerfiles
+- Remove unreachable dead code in entrypoint and label generators
+
+### Documentation
+
+- New: `docs/guides/docker.md` — comprehensive Docker Image Management guide
+- Updated: `docs/reference/cli.md` — Docker CLI commands section
+- Updated: `docs/integrations/docker.md` — Docker Build & Push CLI section
+- Updated: `docs/FEATURES.md` — Feature #23 Docker Build & Push
+- Updated: `docs/QUICK_REFERENCE.md` — Docker decision guide and quick ref
+- Updated: `docs/guides/pipeline-dependencies.md` — corrected outdated claim
+
 ## v1.10.0 (2026-05-12)
 
 ### Bug Fixes

@@ -740,6 +740,39 @@ with manager.use_stack("gcp-prod"):
 
 ---
 
+### 2️⃣3️⃣ **Docker Build & Push** ⚡NEW
+
+Automatic Docker image lifecycle for remote pipeline execution — data scientists
+never touch Docker, platform teams control images via enterprise stacks:
+
+```bash
+# Zero-config build (auto-detects deps)
+flowyml docker build
+
+# GPU build with push to registry
+flowyml docker build --gpu --push --registry myregistry.azurecr.io
+
+# Preview generated Dockerfile
+flowyml docker generate --deps poetry
+
+# Inspect auto-detected configuration
+flowyml docker inspect
+```
+
+**Features:**
+
+- **7 dependency managers** auto-detected: conda, uv, poetry, pipenv, setup.py, pip, freeze
+- **Multi-stage builds** with BuildKit cache and non-root user
+- **GPU/CUDA support** with one flag (`--gpu`)
+- **4 registries**: Docker Hub, ACR, ECR, GCR
+- **Content-hash tagging** for deterministic, cache-friendly builds
+- **Image policies** — enforce base images, required labels, and registry allowlists
+- **Enterprise integration** — `StackDefinition.to_docker_config()` for governed stacks
+- **5 CLI commands**: `docker build`, `push`, `generate`, `inspect`, `login`
+- See full guide: [`docs/guides/docker.md`](guides/docker.md)
+
+---
+
 ## 📓 Design Pipelines Visually with FlowyML Notebook
 
 !!! tip "🌊 FlowyML Notebook — The Reactive Notebook That Ships to Production"

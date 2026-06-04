@@ -174,8 +174,8 @@ class ConfigLoader:
                 dockerfile = possible_dockerfile
                 break
 
-        # Check for poetry (pyproject.toml with [tool.poetry])
-        use_poetry = Path("pyproject.toml").exists()
+        # Check for poetry (requires both pyproject.toml AND poetry.lock)
+        use_poetry = Path("pyproject.toml").exists() and Path("poetry.lock").exists()
 
         # Check for requirements.txt
         requirements_file = "requirements.txt" if Path("requirements.txt").exists() else None
@@ -342,6 +342,9 @@ def create_docker_config_from_dict(docker_dict: dict[str, Any]) -> Any:
         A fully-populated :class:`DockerConfig` instance.
     """
     from flowyml.stacks.components import DockerConfig
+
+    # Work on a copy to avoid mutating the caller's dict
+    docker_dict = dict(docker_dict)
 
     # Normalise legacy "gpu" key → "gpu_enabled"
     if "gpu" in docker_dict and "gpu_enabled" not in docker_dict:

@@ -298,6 +298,187 @@ flowyml component load my_components --name custom
 
 ---
 
+### `flowyml docker`
+
+Manage Docker images for remote pipeline execution.
+
+#### `flowyml docker build`
+
+Build a Docker image from the current project.
+
+```bash
+flowyml docker build [OPTIONS]
+```
+
+**Options:**
+
+| Flag | Short | Default | Description |
+|------|-------|---------|-------------|
+| `--tag` | `-t` | content-hash | Image tag |
+| `--stack` | `-s` | — | Use Docker config from an enterprise stack |
+| `--push` | | `false` | Push to registry after build |
+| `--registry` | | — | Target container registry URI |
+| `--platform` | | `linux/amd64` | Target platform |
+| `--gpu / --no-gpu` | | `false` | Enable GPU/CUDA support |
+| `--cuda` | | — | CUDA version (e.g. `12.4`) |
+| `--deps` | | `auto` | Dependency manager: `auto`, `pip`, `uv`, `poetry`, `conda`, `pipenv` |
+| `--base-image` | | — | Base Docker image |
+| `--dry-run` | | `false` | Generate Dockerfile only, don't build |
+| `--no-cache` | | `false` | Disable BuildKit cache |
+| `--context` | | `.` | Build context directory |
+
+**Examples:**
+```bash
+# Auto-detect deps, build with content-hash tag
+flowyml docker build
+
+# Build with GPU, push to ACR
+flowyml docker build --gpu --push --registry myregistry.azurecr.io
+
+# Build using enterprise stack config
+flowyml docker build --stack aml_gpu_large --push
+
+# Dry-run: show generated Dockerfile
+flowyml docker build --deps poetry --dry-run
+
+# Force uv as dependency manager
+flowyml docker build --deps uv --no-cache
+```
+
+#### `flowyml docker push`
+
+Push a Docker image to a container registry.
+
+```bash
+flowyml docker push IMAGE_TAG [OPTIONS]
+```
+
+**Arguments:**
+
+- `IMAGE_TAG`: The local image tag to push
+
+**Options:**
+
+| Flag | Short | Default | Description |
+|------|-------|---------|-------------|
+| `--registry` | `-r` | — | Target registry URI (re-tags if needed) |
+
+**Examples:**
+```bash
+# Push as-is (tag must include registry prefix)
+flowyml docker push myregistry.azurecr.io/my-pipeline:abc123
+
+# Re-tag and push to a different registry
+flowyml docker push my-pipeline:abc123 --registry myregistry.azurecr.io
+```
+
+#### `flowyml docker generate`
+
+Generate a Dockerfile without building.
+
+```bash
+flowyml docker generate [OPTIONS]
+```
+
+**Options:**
+
+| Flag | Short | Default | Description |
+|------|-------|---------|-------------|
+| `--context` | | `.` | Build context directory |
+| `--gpu / --no-gpu` | | `false` | Enable GPU/CUDA |
+| `--cuda` | | — | CUDA version |
+| `--deps` | | `auto` | Dependency manager |
+| `--output` | `-o` | stdout | Write Dockerfile to a file |
+| `--stack` | `-s` | — | Use config from enterprise stack |
+
+**Examples:**
+```bash
+# Print generated Dockerfile to stdout
+flowyml docker generate
+
+# Generate with GPU and poetry, save to file
+flowyml docker generate --gpu --deps poetry -o Dockerfile.flowyml
+
+# Use enterprise stack config
+flowyml docker generate --stack aml_gpu_large -o Dockerfile
+```
+
+#### `flowyml docker inspect`
+
+Inspect the auto-detected Docker configuration for the current project.
+
+```bash
+flowyml docker inspect [OPTIONS]
+```
+
+**Options:**
+
+| Flag | Short | Default | Description |
+|------|-------|---------|-------------|
+| `--context` | | `.` | Project directory to inspect |
+| `--stack` | `-s` | — | Show config from enterprise stack |
+
+**Examples:**
+```bash
+# Inspect current project
+flowyml docker inspect
+
+# Inspect enterprise stack config
+flowyml docker inspect --stack aml_gpu_large
+```
+
+**Output:**
+```
+Auto-detected Docker config
+
+  Build context    : /Users/user/my-project
+  Base image       : python:3.11-slim
+  Dep manager      : uv-lock
+  GPU enabled      : False
+  Multi-stage      : True
+  BuildKit cache   : True
+  Platform         : linux/amd64
+  Tag strategy     : content-hash
+  Tag preview      : flowyml:ab3f8c21
+  Auto-build       : True
+  Auto-push        : True
+
+Detected project files:
+  ✓ pyproject.toml (1,234 bytes)
+  ✓ uv.lock (45,678 bytes)
+  ✓ requirements.txt (256 bytes)
+```
+
+#### `flowyml docker login`
+
+Login to a container registry.
+
+```bash
+flowyml docker login REGISTRY [OPTIONS]
+```
+
+**Arguments:**
+
+- `REGISTRY`: Registry URL (e.g. `myregistry.azurecr.io`)
+
+**Options:**
+
+| Flag | Short | Default | Description |
+|------|-------|---------|-------------|
+| `--username` | `-u` | — | Registry username |
+| `--password-stdin` | | `false` | Read password from stdin |
+
+**Examples:**
+```bash
+# Interactive login
+flowyml docker login myregistry.azurecr.io -u admin
+
+# Pipe token from env
+echo $TOKEN | flowyml docker login docker.io -u myuser --password-stdin
+```
+
+---
+
 ### `flowyml ui`
 
 Manage the FlowyML UI server.
