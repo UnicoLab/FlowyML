@@ -32,7 +32,7 @@ jobs:
           regexp: '(break|build|ci|docs|feat|fix|perf|refactor|style|test|ops|hotfix)\\([a-z,A-Z,0-9,\\-,\\_,\\/,:]+\\)(:)\\s{1}([\\w\\s]+)' # Regex the title should match.
       - name: Getting changed files list
         id: files
-        uses: jitterbit/get-changed-files@master
+        uses: jitterbit/get-changed-files@v1
       - name: Checking changed files
         shell: bash
         run: |

@@ -2,6 +2,11 @@
 
 from pathlib import Path
 import asyncio
+
+import pytest
+
+pytest.importorskip("fastapi", reason="fastapi not installed")
+
 import httpx
 
 from flowyml.ui.backend.main import app

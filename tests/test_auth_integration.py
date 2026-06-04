@@ -2,6 +2,9 @@
 
 import pytest
 from pathlib import Path
+
+pytest.importorskip("fastapi", reason="fastapi not installed")
+
 from flowyml.ui.backend.auth import TokenManager
 
 

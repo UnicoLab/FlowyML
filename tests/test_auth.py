@@ -4,6 +4,9 @@ import pytest
 import os
 import json
 from pathlib import Path
+
+pytest.importorskip("fastapi", reason="fastapi not installed")
+
 from flowyml.ui.backend.auth import TokenManager, verify_api_token
 from fastapi import HTTPException
 from fastapi.security import HTTPAuthorizationCredentials

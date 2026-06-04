@@ -1,6 +1,9 @@
 """Tests for pipeline execution API."""
 
 import pytest
+
+pytest.importorskip("fastapi", reason="fastapi not installed")
+
 from fastapi.testclient import TestClient
 from flowyml.ui.backend.auth import TokenManager
 from pathlib import Path

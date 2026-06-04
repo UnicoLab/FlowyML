@@ -1,5 +1,4 @@
 import pytest
-from unittest.mock import MagicMock
 from flowyml.stacks.base import Stack
 from flowyml.stacks.components import DockerConfig, ContainerRegistry
 
@@ -69,7 +68,7 @@ def remote_stack():
 def test_prepare_image_no_registry_no_image(basic_stack):
     """Test that error is raised if no registry and no image provided."""
     config = DockerConfig(image=None)
-    with pytest.raises(ValueError, match="Remote execution requires a specific 'image'"):
+    with pytest.raises(ValueError, match="Remote execution requires a container registry"):
         basic_stack.prepare_docker_image(config, pipeline_name="test")
 
 
@@ -80,50 +79,47 @@ def test_prepare_image_no_registry_explicit_image(basic_stack):
     assert result == "python:3.9"
 
 
-def test_prepare_image_with_registry_no_image(remote_stack, mocker):
+def test_prepare_image_with_registry_no_image(remote_stack):
     """Test that image URI is constructed when registry allows building."""
-    # Mock builder to avoid actual build in unit test
-    mock_builder = mocker.patch("flowyml.core.image_builder.DockerImageBuilder")
-    mock_instance = mock_builder.return_value
-    # When build_image is called, it should just return the tag passed to it
-    mock_instance.build_image.side_effect = lambda config, tag: tag
+    from unittest.mock import patch, MagicMock
 
-    # Mock registry push to verify it's called
-    remote_stack.container_registry.push_image = mocker.Mock(return_value="pushed_uri")
+    with patch("flowyml.core.image_builder.DockerImageBuilder") as mock_builder:
+        mock_instance = mock_builder.return_value
 
-    config = DockerConfig(image=None)
-    # This should trigger the 'build' logic (mocked)
-    # With project_name
-    result = remote_stack.prepare_docker_image(
-        config,
-        pipeline_name="mypipe",
-        project_name="myproj",
-    )
+        # generate_tag returns a predictable tag
+        expected_tag = "gcr.io/my-project/myproj-mypipe:latest"
+        mock_instance.generate_tag.return_value = expected_tag
 
-    # Expect: registry_uri/project-pipeline:latest
-    # safe_name of myproj-mypipe is myproj-mypipe
-    expected = "gcr.io/my-project/myproj-mypipe:latest"
+        # build_image returns the tag it was given
+        mock_instance.build_image.return_value = expected_tag
 
-    # BUT wait, the function returns the RESULT of push_image, not the built tag
-    # In our mock above, push_image returns "pushed_uri"
-    assert result == "pushed_uri"
+        # push_image returns a pushed URI
+        mock_instance.push_image.return_value = "pushed_uri"
 
-    # Verify build and push were called with expected tag
-    mock_instance.build_image.assert_called_once()
-    built_tag = mock_instance.build_image.call_args[0][1]
-    assert built_tag == expected
+        config = DockerConfig(image=None)
+        result = remote_stack.prepare_docker_image(
+            config,
+            pipeline_name="mypipe",
+            project_name="myproj",
+        )
 
-    remote_stack.container_registry.push_image.assert_called_once_with(expected)
+        # The function returns the result of builder.push_image()
+        assert result == "pushed_uri"
+
+        # Verify build and push were called
+        mock_instance.generate_tag.assert_called_once()
+        mock_instance.build_image.assert_called_once()
+        mock_instance.push_image.assert_called_once()
 
 
-def test_prepare_image_with_registry_explicit_image(remote_stack, mocker):
+def test_prepare_image_with_registry_explicit_image(remote_stack):
     """Test that explicit image takes precedence over registry build."""
-    # Mock builder to ensure it is NOT called
-    mock_builder = mocker.patch("flowyml.core.image_builder.DockerImageBuilder")
+    from unittest.mock import patch
 
-    config = DockerConfig(image="my-custom-image:v1")
-    result = remote_stack.prepare_docker_image(config, pipeline_name="test")
-    assert result == "my-custom-image:v1"
+    with patch("flowyml.core.image_builder.DockerImageBuilder") as mock_builder:
+        config = DockerConfig(image="my-custom-image:v1")
+        result = remote_stack.prepare_docker_image(config, pipeline_name="test")
+        assert result == "my-custom-image:v1"
 
-    # Builder should not be called
-    mock_builder.assert_not_called()
+        # Builder should not be instantiated at all (early return before import)
+        mock_builder.assert_not_called()

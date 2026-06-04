@@ -41,21 +41,23 @@ class TestEnvironmentUtils(unittest.TestCase):
         self.assertEqual(info["system"], "Test System")
         self.assertIn("hostname", info)
 
-    @patch("pkg_resources.working_set")
-    def test_get_installed_packages(self, mock_working_set):
+    @patch("importlib.metadata.distributions")
+    def test_get_installed_packages(self, mock_distributions):
         """Test getting installed packages."""
-        # Mock pkg_resources
+        # Mock importlib.metadata distributions
         dist1 = MagicMock()
-        dist1.project_name = "package1"
+        dist1.name = "package1"
         dist1.version = "1.0.0"
 
         dist2 = MagicMock()
-        dist2.project_name = "package2"
+        dist2.name = "package2"
         dist2.version = "2.0.0"
 
-        mock_working_set.__iter__.return_value = [dist1, dist2]
+        mock_distributions.return_value = [dist1, dist2]
 
-        packages = get_installed_packages()
+        # Ensure pkg_resources fallback is not used by patching it to fail
+        with patch.dict("sys.modules", {"pkg_resources": None}):
+            packages = get_installed_packages()
         self.assertEqual(packages["package1"], "1.0.0")
         self.assertEqual(packages["package2"], "2.0.0")
 

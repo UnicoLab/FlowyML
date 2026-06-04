@@ -329,8 +329,9 @@ class TestAutoDetection(unittest.TestCase):
 
     def test_auto_detect_poetry(self):
         """Test auto-detection of Poetry."""
-        # Create pyproject.toml
+        # Create pyproject.toml AND poetry.lock (both required for auto-detection)
         Path("pyproject.toml").write_text("[tool.poetry]\nname = 'test'")
+        Path("poetry.lock").write_text("")
 
         loader = ConfigLoader()
         docker_config = loader._get_default_docker_config()

@@ -66,7 +66,7 @@ jobs:
       - name: Run smoke tests
         run: |
           # Run a quick subset of tests for fast feedback
-          poetry run pytest tests/unit/ -v --maxfail=3 --tb=short || poetry run pytest --co -q | head -20
+          poetry run pytest tests/test_core.py tests/test_steps.py tests/test_pipeline.py -v --maxfail=3 --tb=short --override-ini="addopts=" || poetry run pytest --co -q | head -20
         timeout-minutes: 3
 
   # Main test matrix
@@ -113,10 +113,10 @@ jobs:
         run: |
           case "${{ matrix.test-group }}" in
             "unit")
-              poetry run pytest tests/test_*.py -v --maxfail=10
+              poetry run pytest tests/test_*.py tests/enterprise/ tests/core/ -v --maxfail=10 --override-ini="addopts="
               ;;
             "integration")
-              poetry run pytest tests/test_*_integration.py -v --maxfail=5
+              poetry run pytest tests/test_*_integration.py tests/enterprise/test_*_integration.py tests/core/test_*_integration.py -v --maxfail=5 --override-ini="addopts="
               ;;
           esac
         timeout-minutes: 15

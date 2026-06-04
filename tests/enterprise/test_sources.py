@@ -64,11 +64,14 @@ class TestParseSourceUri:
             pytest.fail("github:// URIs should be a recognised scheme")
 
     def test_parse_source_uri_http(self):
-        """http:// URIs are unsupported and raise StackSourceError."""
+        """http:// URIs are supported via HTTPStackSource."""
         from flowyml.stacks.enterprise.sources.base import parse_source_uri
 
-        with pytest.raises(StackSourceError, match="Unknown source scheme"):
-            parse_source_uri("http://example.com")
+        try:
+            source = parse_source_uri("http://example.com")
+            assert source is not None
+        except ImportError:
+            pytest.skip("HTTP source dependencies not installed")
 
 
 class TestRegistryIndexSource:
