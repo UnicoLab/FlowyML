@@ -2,7 +2,7 @@
 
 <!-- version list -->
 
-## v1.11.0 (2026-06-04)
+## v2.0.0 (2026-06-05)
 
 ### Features
 
@@ -29,6 +29,38 @@
   - 4 container registries: Docker Hub, ACR, ECR, GCR
   - CLI: `flowyml docker build/push/generate/inspect/login`
 
+- **Enterprise Secrets Management**: Unified secrets layer with 6 providers.
+  - `SecretsProvider` protocol with factory function `get_secrets_provider()`
+  - `EnvSecretsProvider` and `LocalSecretsProvider` (zero external deps)
+  - `VaultSecretsProvider` (HashiCorp Vault via `hvac`)
+  - `AzureKeyVaultProvider` (Azure Key Vault via `azure-keyvault-secrets`)
+  - `AWSSecretsManagerProvider` (AWS Secrets Manager via `boto3`)
+  - `GCPSecretManagerProvider` (GCP Secret Manager via `google-cloud-secret-manager`)
+  - `StackDefinition.get_secrets_provider()` bridge method for stack-aware resolution
+
+- **Databricks Backend Adapter**: Full Databricks SDK integration for remote
+  pipeline execution on Databricks.
+  - `prepare()`: Get-or-create clusters, reuse RUNNING, restart TERMINATED
+  - `submit()`: Submit pipelines as Databricks Job Runs via `python_wheel_task`
+  - `status()`: Map Databricks lifecycle/result states to `RunStatus`
+  - `logs()`: Stream notebook output, job logs, and error traces
+  - `cancel()`: Cancel running jobs via `WorkspaceClient.jobs.cancel_run()`
+
+- **AzureML Backend Adapter Completion**: Fully implemented all methods.
+  - `prepare()`: Compute target creation via `AmlCompute` + environment registration
+  - `submit()`: Command job submission via `MLClient.jobs.create_or_update()`
+  - `status()`: AzureML status mapping to `RunStatus`
+  - `logs()`: Streaming via `MLClient.jobs.stream()`
+  - `cancel()`: Cancellation via `MLClient.jobs.cancel()`
+
+- **Transparent Dual-Write Experiment Tracking**: Automatic dual-write to
+  FlowyML internal store and external trackers.
+  - `Pipeline.run()` auto-starts/ends external tracker runs
+  - `PipelinePluginIntegration` enhanced with lazy tracker resolution
+  - Auto-forwards params, metrics, and `Metrics` assets to configured tracker
+  - Always writes to FlowyML internal store (SQLite) for UI dashboard
+  - External tracker (MLflow/WandB) resolved from stack/plugin config
+
 - **DockerHub Container Registry**: New `DockerHubContainerRegistry` component
   using `--password-stdin` for secure authentication
 
@@ -45,15 +77,19 @@
 - Fix `docker login` not specifying registry host explicitly
 - Fix unquoted ENV values in generated Dockerfiles
 - Remove unreachable dead code in entrypoint and label generators
+- Fix Databricks adapter `_STATUS_MAP` → `status_map` (N806 lint compliance)
 
 ### Documentation
 
+- New: `SKILLS.md` — comprehensive AI agent reference for FlowyML architecture
 - New: `docs/guides/docker.md` — comprehensive Docker Image Management guide
 - Updated: `docs/reference/cli.md` — Docker CLI commands section
 - Updated: `docs/integrations/docker.md` — Docker Build & Push CLI section
 - Updated: `docs/FEATURES.md` — Feature #23 Docker Build & Push
 - Updated: `docs/QUICK_REFERENCE.md` — Docker decision guide and quick ref
 - Updated: `docs/guides/pipeline-dependencies.md` — corrected outdated claim
+- Major documentation overhaul — redesigned landing page, restructured navigation
+- 50+ docs files updated with premium hero sections, new Why FlowyML & Glossary pages
 
 ## v1.10.0 (2026-05-12)
 
