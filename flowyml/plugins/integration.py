@@ -1,39 +1,42 @@
-"""FlowyML Pipeline-Plugin Integration.
+"""FlowyML Pipeline-Plugin Integration — Transparent Dual-Write Tracking.
 
 This module integrates the native plugin system with FlowyML pipelines,
-allowing pipelines to automatically use the configured stack for:
-- Experiment tracking (log params, metrics)
-- Artifact storage (save outputs)
-- Model registry (register models)
-- Orchestration (run on configured platform)
+enabling **automatic, transparent experiment tracking** on every
+``pipeline.run()`` call.
 
-Usage:
-    # flowyml.yaml
-    plugins:
-      experiment_tracker:
-        type: mlflow
-      artifact_store:
-        type: gcs
-        bucket: my-ml-artifacts
+Architecture (dual-write):
 
-    # In code - pipeline automatically uses configured stack
-    from flowyml import pipeline, step
-    from flowyml.plugins.integration import run_with_stack
+    Pipeline.run()
+        │
+        ├──► FlowyML Internal Store   (SQLite — always, for UI dashboard)
+        │       └── via _save_run() / _log_experiment_metrics()
+        │
+        └──► External Tracker          (MLflow / WandB / etc. — from stack config)
+                └── via PipelinePluginIntegration hooks
 
-    @pipeline
-    def training_pipeline():
-        data = load_data()
-        model = train(data)
-        return model
+The integration automatically resolves the experiment tracker from:
+    1. Stack's experiment_tracker config (flowyml.yaml → stacks → <name> → experiment_tracker)
+    2. Plugin config (flowyml.yaml → plugins → experiment_tracker)
+    3. Environment variable FLOWYML_TRACKER_TYPE
 
-    # Run with automatic tracking and artifact storage
-    result = run_with_stack(training_pipeline)
+Usage::
+
+    # flowyml.yaml — just configure, never touch integration code
+    stacks:
+      production:
+        experiment_tracker:
+          type: mlflow
+          tracking_uri: http://mlflow:5000
+
+    # In code — tracking is 100% transparent
+    pipeline = Pipeline("training", context=ctx, stack="production")
+    result = pipeline.run()  # Auto-logs params, metrics, artifacts to MLflow AND FlowyML
 """
 
 import logging
+import time
 from typing import Any
 from functools import wraps
-import time
 
 from flowyml.plugins.stack import (
     start_run,
@@ -283,47 +286,250 @@ def tracked(
 
 
 class PipelinePluginIntegration:
-    """Integration layer between FlowyML pipelines and plugins.
+    """Integration layer between FlowyML pipelines and external trackers.
 
-    This class provides hooks for the pipeline executor to automatically
-    use the configured stack.
+    This class provides hooks that are called automatically during pipeline
+    execution to forward tracking data to the stack-configured external
+    experiment tracker (MLflow, WandB, etc.).
+
+    The integration implements a **dual-write** pattern:
+    - FlowyML's internal store (SQLite) is always written to by Pipeline._save_run()
+    - This class forwards the same data to the external tracker
+
+    The tracker is resolved lazily from:
+    1. Explicit tracker passed to constructor
+    2. Stack's experiment_tracker (from flowyml.yaml stacks section)
+    3. Plugin config (from flowyml.yaml plugins section)
     """
 
-    def __init__(self):
-        """Initialize the integration."""
+    def __init__(self, tracker: Any = None):
+        """Initialize the integration.
+
+        Args:
+            tracker: Optional explicit experiment tracker instance.
+                     If None, auto-resolved from stack/plugin config.
+        """
+        self._explicit_tracker = tracker
+        self._tracker = None
+        self._tracker_resolved = False
         self._current_run = None
         self._step_outputs = {}
+        self._pipeline_name = None
+        self._run_id = None
 
-    def on_pipeline_start(self, pipeline_name: str, context: dict = None):
-        """Called when a pipeline starts."""
-        self._current_run = start_run(
-            pipeline_name,
-            tags={"type": "pipeline"},
-        )
+    def _resolve_tracker(self) -> Any:
+        """Lazily resolve the experiment tracker from stack or plugin config.
 
-        if context:
-            log_params(context)
+        Resolution order:
+        1. Explicit tracker passed to constructor
+        2. Stack experiment_tracker from flowyml.yaml
+        3. Plugin experiment_tracker from flowyml.yaml
+        """
+        if self._tracker_resolved:
+            return self._tracker
 
-    def on_pipeline_end(self, success: bool, error: Exception = None):
-        """Called when a pipeline ends."""
-        if success:
-            end_run("FINISHED")
-        else:
-            if error:
-                set_tag("error", str(error))
-            end_run("FAILED")
+        self._tracker_resolved = True
 
-        self._current_run = None
+        # 1. Explicit tracker
+        if self._explicit_tracker is not None:
+            self._tracker = self._explicit_tracker
+            logger.debug("Using explicitly provided experiment tracker")
+            return self._tracker
 
-    def on_step_start(self, step_name: str, inputs: dict = None):
+        # 2. Try stack config → plugins → experiment_tracker
+        try:
+            from flowyml.plugins.config import get_tracker
+
+            tracker = get_tracker()
+            if tracker:
+                self._tracker = tracker
+                logger.debug(
+                    "Resolved experiment tracker from stack/plugin config: %s",
+                    type(tracker).__name__,
+                )
+                return self._tracker
+        except Exception as e:
+            logger.debug(f"Could not resolve tracker from config: {e}")
+
+        logger.debug("No external experiment tracker configured — FlowyML-only tracking active")
+        return None
+
+    @property
+    def has_tracker(self) -> bool:
+        """Check if an external tracker is available."""
+        return self._resolve_tracker() is not None
+
+    def on_pipeline_start(
+        self,
+        pipeline_name: str,
+        run_id: str,
+        context: dict = None,
+        tags: dict = None,
+    ) -> None:
+        """Called when a pipeline starts — opens a run on the external tracker.
+
+        Args:
+            pipeline_name: Name of the pipeline.
+            run_id: Unique run identifier.
+            context: Pipeline context parameters to log.
+            tags: Additional tags for the run.
+        """
+        self._pipeline_name = pipeline_name
+        self._run_id = run_id
+
+        tracker = self._resolve_tracker()
+        if tracker is None:
+            return
+
+        try:
+            # Build tags
+            run_tags = {
+                "flowyml.pipeline": pipeline_name,
+                "flowyml.run_id": run_id,
+                "flowyml.source": "pipeline.run()",
+            }
+            if tags:
+                run_tags.update(tags)
+
+            # Start run on external tracker
+            tracker.start_run(
+                run_name=f"{pipeline_name}_{run_id[:8]}",
+                experiment_name=pipeline_name,
+                tags=run_tags,
+            )
+            self._current_run = run_id
+
+            # Log context parameters
+            if context:
+                # Flatten and stringify for tracker compatibility
+                safe_params = {}
+                for k, v in context.items():
+                    try:
+                        safe_params[k] = str(v) if not isinstance(v, (int, float, str, bool)) else v
+                    except Exception:
+                        safe_params[k] = repr(v)
+                tracker.log_params(safe_params)
+
+            logger.info(
+                "External tracker run started: %s (tracker: %s)",
+                pipeline_name,
+                type(tracker).__name__,
+            )
+        except Exception as e:
+            logger.warning("Failed to start external tracker run: %s", e)
+
+    def on_pipeline_end(self, success: bool, result: Any = None, error: Exception = None) -> None:
+        """Called when a pipeline ends — closes the run on the external tracker.
+
+        Also forwards final metrics extracted from the pipeline result.
+
+        Args:
+            success: Whether the pipeline succeeded.
+            result: PipelineResult object.
+            error: Exception if the pipeline failed.
+        """
+        tracker = self._resolve_tracker()
+        if tracker is None or self._current_run is None:
+            return
+
+        try:
+            # Log final pipeline-level metrics
+            if result is not None:
+                final_metrics = {}
+
+                # Duration
+                if hasattr(result, "duration_seconds"):
+                    final_metrics["pipeline_duration_seconds"] = result.duration_seconds
+
+                # Step-level summary metrics
+                if hasattr(result, "step_results"):
+                    total_steps = len(result.step_results)
+                    cached_steps = sum(1 for r in result.step_results.values() if getattr(r, "cached", False))
+                    final_metrics["total_steps"] = total_steps
+                    final_metrics["cached_steps"] = cached_steps
+
+                    # Log per-step durations
+                    for step_name, step_result in result.step_results.items():
+                        if hasattr(step_result, "duration_seconds"):
+                            final_metrics[f"step.{step_name}.duration_seconds"] = step_result.duration_seconds
+
+                # Extract Metrics assets from outputs
+                if hasattr(result, "outputs"):
+                    self._forward_metrics_from_outputs(tracker, result.outputs)
+
+                if final_metrics:
+                    tracker.log_metrics(final_metrics)
+
+            # Set final status tag
+            if hasattr(tracker, "set_tag"):
+                tracker.set_tag("flowyml.status", "success" if success else "failed")
+                if error:
+                    tracker.set_tag("flowyml.error", str(error)[:250])
+
+            # End the run
+            status = "FINISHED" if success else "FAILED"
+            tracker.end_run(status)
+
+            logger.info(
+                "External tracker run ended: %s (status: %s)",
+                self._pipeline_name,
+                status,
+            )
+        except Exception as e:
+            logger.warning("Failed to end external tracker run: %s", e)
+        finally:
+            self._current_run = None
+
+    def _forward_metrics_from_outputs(self, tracker: Any, outputs: dict) -> None:
+        """Extract Metrics assets from pipeline outputs and forward to tracker.
+
+        Args:
+            tracker: The experiment tracker to log to.
+            outputs: Pipeline output dictionary.
+        """
+        try:
+            from flowyml.assets.metrics import Metrics
+
+            for output_name, output_value in outputs.items():
+                if isinstance(output_value, Metrics):
+                    # Extract numeric metrics from Metrics asset
+                    metrics_dict = output_value.get_all_metrics() or output_value.data or {}
+                    if isinstance(metrics_dict, dict):
+                        safe_metrics = {}
+                        for k, v in metrics_dict.items():
+                            if isinstance(v, (int, float)):
+                                # Use clean key names for top-level metrics outputs
+                                if output_name in ("metrics", "eval_metrics") or output_name.endswith("/metrics"):
+                                    safe_metrics[k] = v
+                                else:
+                                    safe_metrics[f"{output_name}.{k}"] = v
+                        if safe_metrics:
+                            tracker.log_metrics(safe_metrics)
+                elif isinstance(output_value, dict):
+                    # Check for nested Metrics objects
+                    for key, val in output_value.items():
+                        if isinstance(val, Metrics):
+                            metrics_dict = val.get_all_metrics() or val.data or {}
+                            if isinstance(metrics_dict, dict):
+                                safe_metrics = {
+                                    f"{key}.{k}": v for k, v in metrics_dict.items() if isinstance(v, (int, float))
+                                }
+                                if safe_metrics:
+                                    tracker.log_metrics(safe_metrics)
+        except ImportError:
+            pass  # Metrics asset not available
+
+    def on_step_start(self, step_name: str, inputs: dict = None) -> None:
         """Called when a step starts."""
-        set_tag(f"step_{step_name}_status", "started")
+        tracker = self._resolve_tracker()
+        if tracker is None or self._current_run is None:
+            return
 
-        if inputs:
-            # Log input sizes/shapes if applicable
-            for key, value in inputs.items():
-                if hasattr(value, "shape"):
-                    set_tag(f"input_{key}_shape", str(value.shape))
+        try:
+            if hasattr(tracker, "set_tag"):
+                tracker.set_tag(f"step.{step_name}.status", "running")
+        except Exception:
+            pass
 
     def on_step_end(
         self,
@@ -331,26 +537,37 @@ class PipelinePluginIntegration:
         outputs: dict = None,
         duration: float = None,
         cached: bool = False,
-    ):
-        """Called when a step ends."""
-        set_tag(f"step_{step_name}_status", "completed")
+    ) -> None:
+        """Called when a step ends — logs step metrics to external tracker."""
+        tracker = self._resolve_tracker()
+        if tracker is None or self._current_run is None:
+            return
 
-        if duration:
-            log_metrics({f"{step_name}_duration": duration})
+        try:
+            if hasattr(tracker, "set_tag"):
+                tracker.set_tag(f"step.{step_name}.status", "completed")
+                if cached:
+                    tracker.set_tag(f"step.{step_name}.cached", "true")
 
-        if cached:
-            set_tag(f"step_{step_name}_cached", "true")
+            if duration is not None:
+                tracker.log_metrics({f"step.{step_name}.duration_seconds": duration})
+        except Exception:
+            pass
 
-        # Store outputs for later saving
-        if outputs:
-            self._step_outputs[step_name] = outputs
-
-    def on_step_error(self, step_name: str, error: Exception):
+    def on_step_error(self, step_name: str, error: Exception) -> None:
         """Called when a step errors."""
-        set_tag(f"step_{step_name}_status", "failed")
-        set_tag(f"step_{step_name}_error", str(error))
+        tracker = self._resolve_tracker()
+        if tracker is None or self._current_run is None:
+            return
 
-    def save_step_outputs(self, step_name: str, outputs: dict):
+        try:
+            if hasattr(tracker, "set_tag"):
+                tracker.set_tag(f"step.{step_name}.status", "failed")
+                tracker.set_tag(f"step.{step_name}.error", str(error)[:250])
+        except Exception:
+            pass
+
+    def save_step_outputs(self, step_name: str, outputs: dict) -> None:
         """Save step outputs to the artifact store."""
         for output_name, value in outputs.items():
             path = f"steps/{step_name}/{output_name}"
@@ -367,3 +584,9 @@ def get_integration() -> PipelinePluginIntegration:
     if _integration is None:
         _integration = PipelinePluginIntegration()
     return _integration
+
+
+def reset_integration() -> None:
+    """Reset the global integration (useful for testing)."""
+    global _integration
+    _integration = None

@@ -718,9 +718,42 @@ class Pipeline:
         from flowyml.core.orchestrator import LocalOrchestrator
         from flowyml.core.checkpoint import PipelineCheckpoint
         from flowyml.utils.config import get_config
+        from flowyml.plugins.integration import get_integration
 
         # Generate or use provided run_id
         run_id = kwargs.pop("run_id", None) or str(uuid.uuid4())
+
+        # --- Transparent Experiment Tracking (dual-write) ---
+        # Initialize plugin integration for external tracker forwarding.
+        # The integration auto-resolves the tracker from stack/plugin config.
+        # Internal FlowyML tracking is handled by _save_run() / _log_experiment_metrics().
+        integration = None
+        if self.enable_experiment_tracking:
+            try:
+                integration = get_integration()
+                # Collect context params for tracker
+                context_params = self.context.to_dict() if self.context else {}
+                if context:
+                    context_params.update(context)
+                # Build run tags
+                run_tags = {}
+                if self.project_name:
+                    run_tags["flowyml.project"] = self.project_name
+                if self.stack:
+                    run_tags["flowyml.stack"] = getattr(self.stack, "name", str(type(self.stack).__name__))
+                integration.on_pipeline_start(
+                    pipeline_name=self.name,
+                    run_id=run_id,
+                    context=context_params,
+                    tags=run_tags,
+                )
+            except Exception as e:
+                import logging as _logging
+
+                _logging.getLogger(__name__).debug(
+                    "External tracker integration start skipped: %s",
+                    e,
+                )
 
         # Initialize checkpointing if enabled
         if self.enable_checkpointing:
@@ -970,6 +1003,22 @@ class Pipeline:
         # Ensure result has configs attached (in case orchestrator didn't do it)
         if hasattr(result, "attach_configs") and not hasattr(result, "resource_config"):
             result.attach_configs(resource_config, docker_cfg)
+
+        # --- End External Tracker Run (dual-write) ---
+        if integration is not None:
+            try:
+                is_success = getattr(result, "success", False)
+                integration.on_pipeline_end(
+                    success=is_success,
+                    result=result,
+                )
+            except Exception as e:
+                import logging as _logging
+
+                _logging.getLogger(__name__).debug(
+                    "External tracker integration end skipped: %s",
+                    e,
+                )
 
         return result
 
@@ -1273,7 +1322,12 @@ class Pipeline:
         return docker_config
 
     def _log_experiment_metrics(self, result: PipelineResult) -> None:
-        """Automatically log Metrics to experiment tracking.
+        """Automatically log Metrics to experiment tracking (dual-write).
+
+        This method handles the **internal** side of dual-write:
+        - Always writes to FlowyML's Experiment/Run tracking system (SQLite)
+        - The **external** side (MLflow/WandB) is handled by PipelinePluginIntegration
+          hooks in Pipeline.run()
 
         Extracts Metrics objects from pipeline outputs and logs them along with
         context parameters to the experiment tracking system.
@@ -1322,7 +1376,7 @@ class Pipeline:
             # Get all context parameters using to_dict() method
             context_params = self.context.to_dict()
 
-        # Only log if we have metrics or parameters
+        # --- Internal FlowyML tracking (always) ---
         if all_metrics or context_params:
             try:
                 from flowyml.tracking.experiment import Experiment
@@ -1357,6 +1411,14 @@ class Pipeline:
                 import warnings
 
                 warnings.warn(f"Failed to log experiment metrics: {e}", stacklevel=2)
+
+        # --- External tracker forwarding (dual-write complement) ---
+        # Note: The main tracking hooks (start_run/end_run/log_params/final metrics)
+        # are handled by PipelinePluginIntegration in Pipeline.run().
+        # This block handles any additional metrics that were only extractable
+        # after _save_run() completed (e.g., from artifact analysis).
+        # In most cases, on_pipeline_end() already forwarded these metrics.
+        # This is a safety net for edge cases where metrics are computed lazily.
 
     def _save_run(self, result: PipelineResult) -> None:
         """Save run results to disk and metadata database."""

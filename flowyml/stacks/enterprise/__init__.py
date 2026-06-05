@@ -88,6 +88,16 @@ from flowyml.stacks.enterprise.execution import ExecutionContext, BackendAdapter
 from flowyml.stacks.enterprise.audit import AuditRecord, AuditStore
 from flowyml.stacks.enterprise.resolver import StackResolver
 from flowyml.stacks.enterprise.sources.base import StackSource, parse_source_uri
+from flowyml.stacks.enterprise.secrets import (
+    SecretsProvider,
+    EnvSecretsProvider,
+    LocalSecretsProvider,
+    VaultSecretsProvider,
+    AzureKeyVaultProvider,
+    AWSSecretsManagerProvider,
+    GCPSecretManagerProvider,
+    get_secrets_provider,
+)
 
 __all__ = [
     # Models
@@ -159,4 +169,13 @@ __all__ = [
     # Sources
     "StackSource",
     "parse_source_uri",
+    # Secrets
+    "SecretsProvider",
+    "EnvSecretsProvider",
+    "LocalSecretsProvider",
+    "VaultSecretsProvider",
+    "AzureKeyVaultProvider",
+    "AWSSecretsManagerProvider",
+    "GCPSecretManagerProvider",
+    "get_secrets_provider",
 ]

@@ -553,6 +553,32 @@ class StackDefinition(BaseModel):
 
     # --- Methods ---------------------------------------------------------------
 
+    def get_secrets_provider(self) -> Any:
+        """Get an initialized secrets provider based on the stack's secrets config.
+
+        Creates and returns a ``SecretsProvider`` instance matching the
+        ``spec.secrets.provider`` and ``spec.secrets.scope`` fields.
+
+        Returns:
+            A ``SecretsProvider`` instance ready to use.
+
+        Raises:
+            ImportError: If the required SDK for the provider is not installed.
+            ValueError: If the provider type is unknown.
+
+        Example::
+
+            stack = StackDefinition.from_yaml("stacks/production.yaml")
+            secrets = stack.get_secrets_provider()
+            api_key = secrets.get_secret("OPENAI_API_KEY")
+        """
+        from flowyml.stacks.enterprise.secrets import get_secrets_provider
+
+        return get_secrets_provider(
+            provider_name=self.spec.secrets.provider,
+            scope=self.spec.secrets.scope,
+        )
+
     def compute_digest(self) -> str:
         """Compute a SHA-256 digest of the normalized stack definition.
 
@@ -732,9 +758,36 @@ class StackDefinition(BaseModel):
             return AzureMLStack(**azure_kwargs)
 
         # -----------------------------------------------------------
+        # Databricks
+        # -----------------------------------------------------------
+        if backend == "databricks":
+            # Create a stack with local executor fallback.
+            # Actual Databricks submission is handled by the DatabricksBackendAdapter
+            # in flowyml.stacks.enterprise.adapters.databricks.
+            from flowyml.stacks.base import Stack
+            from flowyml.core.executor import LocalExecutor
+            from flowyml.storage.artifacts import LocalArtifactStore
+            from flowyml.storage.metadata import SQLiteMetadataStore
+
+            import logging
+
+            logging.getLogger(__name__).info(
+                "Databricks stack '%s' created with local executor fallback. "
+                "Use the DatabricksBackendAdapter for actual remote execution.",
+                self.name,
+            )
+
+            return Stack(
+                name=self.name,
+                executor=LocalExecutor(),
+                artifact_store=LocalArtifactStore(".flowyml/artifacts"),
+                metadata_store=SQLiteMetadataStore(".flowyml/metadata.db"),
+            )
+
+        # -----------------------------------------------------------
         # Not yet supported backends
         # -----------------------------------------------------------
-        if backend in ("kubernetes", "ray", "databricks", "custom"):
+        if backend in ("kubernetes", "ray", "custom"):
             # Create a basic stack with local executor as a fallback.
             # Enterprise BackendAdapters can handle actual submission.
             from flowyml.stacks.base import Stack

@@ -11,11 +11,8 @@ The ``azure.ai.ml`` SDK is an *optional* dependency — a clear error message
 is raised if it is missing.  No credentials are hard-coded; authentication
 is delegated to ``azure.identity.DefaultAzureCredential``.
 
-.. note::
-
-    ``prepare()`` and ``submit()`` are intentionally **not yet implemented**.
-    They raise ``NotImplementedError`` with a descriptive message.  Pull
-    requests to wire in the full AzureML Job submission flow are welcome.
+All ``BackendAdapter`` protocol methods are implemented:
+``prepare()``, ``submit()``, ``status()``, ``logs()``, and ``cancel()``.
 """
 
 from __future__ import annotations
@@ -43,14 +40,19 @@ __all__ = [
 # ---------------------------------------------------------------------------
 
 try:
-    from azure.ai.ml import MLClient  # type: ignore[import-untyped]
-    from azure.ai.ml.entities import Environment as AzureMLEnvironment  # type: ignore[import-untyped]
+    from azure.ai.ml import MLClient, command  # type: ignore[import-untyped]
+    from azure.ai.ml.entities import (
+        AmlCompute,
+        Environment as AzureMLEnvironment,
+    )  # type: ignore[import-untyped]
     from azure.identity import DefaultAzureCredential  # type: ignore[import-untyped]
 
     _AZURE_AVAILABLE = True
 except ImportError:
     _AZURE_AVAILABLE = False
     MLClient = None  # type: ignore[assignment,misc]
+    command = None  # type: ignore[assignment,misc]
+    AmlCompute = None  # type: ignore[assignment,misc]
     AzureMLEnvironment = None  # type: ignore[assignment,misc]
     DefaultAzureCredential = None  # type: ignore[assignment,misc]
 
@@ -211,17 +213,19 @@ class AzureMLBackendAdapter:
     def prepare(self, context: ExecutionContext) -> None:
         """Prepare the AzureML execution environment.
 
-        This would provision or verify compute targets, build/push the
-        Docker environment, and configure the Key Vault scope.
+        Provisions or verifies the compute target and registers the
+        Docker environment in the workspace.
 
         Args:
             context: The execution context.
 
         Raises:
-            NotImplementedError: Always — this is a placeholder.
+            ImportError: If the Azure SDK is not installed.
+            RuntimeError: If compute or environment provisioning fails.
         """
         _require_azure()
 
+        ml_client = self._get_client()
         workspace_config = _map_stack_to_workspace_config(context.stack)
         env_config = _map_stack_to_environment(context.stack)
 
@@ -231,12 +235,55 @@ class AzureMLBackendAdapter:
             env_config,
         )
 
-        raise NotImplementedError(
-            "AzureMLBackendAdapter.prepare() is not yet fully implemented. "
-            "Contributions welcome!  The workspace config and environment "
-            "mapping logic is in place — what remains is wiring the "
-            "MLClient calls to provision compute and register the environment.",
-        )
+        # -- 1. Create or verify the compute target -------------------------
+        compute_name = f"flowyml-{context.stack.name}"
+        compute_size = context.stack.spec.compute.size or "Standard_DS3_v2"
+        min_instances = context.stack.spec.compute.min_instances
+        max_instances = context.stack.spec.compute.max_instances
+
+        try:
+            existing = ml_client.compute.get(compute_name)
+            logger.info(
+                "Compute target '%s' already exists (size=%s, state=%s).",
+                compute_name,
+                getattr(existing, "size", "unknown"),
+                getattr(existing, "provisioning_state", "unknown"),
+            )
+        except Exception:  # noqa: BLE001 – ResourceNotFoundError or similar
+            logger.info(
+                "Compute target '%s' not found — creating (size=%s, " "min_instances=%s, max_instances=%s).",
+                compute_name,
+                compute_size,
+                min_instances,
+                max_instances,
+            )
+            try:
+                compute_resource = AmlCompute(
+                    name=compute_name,
+                    size=compute_size,
+                    min_instances=min_instances,
+                    max_instances=max_instances,
+                )
+                ml_client.compute.begin_create_or_update(compute_resource).wait()
+                logger.info("Compute target '%s' provisioned.", compute_name)
+            except Exception as exc:
+                raise RuntimeError(
+                    f"Failed to provision AzureML compute target " f"'{compute_name}': {exc}",
+                ) from exc
+
+        # -- 2. Register the environment ------------------------------------
+        try:
+            environment = AzureMLEnvironment(**env_config)
+            ml_client.environments.create_or_update(environment)
+            logger.info(
+                "Environment '%s' (version=%s) registered.",
+                env_config["name"],
+                env_config.get("version", "latest"),
+            )
+        except Exception as exc:
+            raise RuntimeError(
+                f"Failed to register AzureML environment " f"'{env_config.get('name', 'unknown')}': {exc}",
+            ) from exc
 
     def submit(
         self,
@@ -245,27 +292,57 @@ class AzureMLBackendAdapter:
     ) -> RunHandle:
         """Submit a pipeline job to Azure ML.
 
-        This would translate the FlowyML pipeline graph into an AzureML
-        Pipeline Job (or Command Job) and submit it via ``MLClient``.
+        Translates the FlowyML pipeline graph into an AzureML Command Job
+        and submits it via ``MLClient``.
 
         Args:
             context: The execution context.
-            graph: The pipeline execution graph.
+            graph: The pipeline execution graph.  Serialised to a string
+                and passed as the job command.
 
         Returns:
             A ``RunHandle`` tracking the AzureML job.
 
         Raises:
-            NotImplementedError: Always — this is a placeholder.
+            ImportError: If the Azure SDK is not installed.
+            RuntimeError: If job submission fails.
         """
         _require_azure()
 
-        raise NotImplementedError(
-            "AzureMLBackendAdapter.submit() is not yet fully implemented. "
-            "Contributions welcome!  The expected flow is:\n"
-            "  1. Convert the FlowyML graph to an AzureML PipelineJob.\n"
-            "  2. Call MLClient.jobs.create_or_update(job).\n"
-            "  3. Return a RunHandle with the AzureML job ID.",
+        ml_client = self._get_client()
+        env_config = _map_stack_to_environment(context.stack)
+        compute_name = f"flowyml-{context.stack.name}"
+        display_name = f"{context.pipeline_name}_{context.run_id[:8]}"
+        env_name = env_config["name"]
+        env_version = env_config.get("version", "latest")
+
+        try:
+            job = command(
+                display_name=display_name,
+                command=str(graph),
+                environment=f"{env_name}:{env_version}",
+                compute=compute_name,
+            )
+            submitted_job = ml_client.jobs.create_or_update(job)
+            logger.info(
+                "AzureML job submitted: name=%s, display_name=%s.",
+                submitted_job.name,
+                display_name,
+            )
+        except Exception as exc:
+            raise RuntimeError(
+                f"Failed to submit AzureML job '{display_name}': {exc}",
+            ) from exc
+
+        return RunHandle(
+            run_id=submitted_job.name,
+            backend_name=self.backend_name,
+            status=RunStatus.PENDING,
+            metadata={
+                "display_name": display_name,
+                "compute": compute_name,
+                "environment": f"{env_name}:{env_version}",
+            },
         )
 
     def status(self, run_id: str) -> RunStatus:
@@ -278,15 +355,40 @@ class AzureMLBackendAdapter:
             Mapped ``RunStatus``.
 
         Raises:
-            NotImplementedError: Until the full integration is complete.
+            ImportError: If the Azure SDK is not installed.
+            RuntimeError: If the status query fails.
         """
         _require_azure()
 
-        raise NotImplementedError(
-            "AzureMLBackendAdapter.status() is not yet fully implemented. "
-            "Once submit() is wired, this method will call "
-            "MLClient.jobs.get(run_id) and map the AzureML status enum.",
-        )
+        ml_client = self._get_client()
+
+        status_map: dict[str, RunStatus] = {
+            "Completed": RunStatus.SUCCEEDED,
+            "Failed": RunStatus.FAILED,
+            "Canceled": RunStatus.CANCELLED,
+            "CancelRequested": RunStatus.CANCELLED,
+            "Running": RunStatus.RUNNING,
+            "Preparing": RunStatus.RUNNING,
+            "Queued": RunStatus.RUNNING,
+            "Starting": RunStatus.RUNNING,
+            "Provisioning": RunStatus.RUNNING,
+        }
+
+        try:
+            job = ml_client.jobs.get(run_id)
+            azure_status = str(job.status)
+            mapped = status_map.get(azure_status, RunStatus.PENDING)
+            logger.debug(
+                "AzureML job '%s' status: %s → %s.",
+                run_id,
+                azure_status,
+                mapped.value,
+            )
+            return mapped
+        except Exception as exc:
+            raise RuntimeError(
+                f"Failed to query status for AzureML job '{run_id}': {exc}",
+            ) from exc
 
     def logs(self, run_id: str) -> Iterator[str]:
         """Stream logs from an AzureML job.
@@ -298,21 +400,41 @@ class AzureMLBackendAdapter:
             Log line strings.
 
         Raises:
-            NotImplementedError: Until the full integration is complete.
+            ImportError: If the Azure SDK is not installed.
+            RuntimeError: If log streaming fails.
         """
         _require_azure()
 
-        raise NotImplementedError(
-            "AzureMLBackendAdapter.logs() is not yet fully implemented. "
-            "Once submit() is wired, this method will stream logs via "
-            "MLClient.jobs.stream(run_id).",
-        )
+        ml_client = self._get_client()
+
+        try:
+            ml_client.jobs.stream(run_id)
+        except Exception as exc:
+            raise RuntimeError(
+                f"Failed to stream logs for AzureML job '{run_id}': {exc}",
+            ) from exc
 
     def cancel(self, run_id: str) -> None:
-        """Cancel an Azure ML run."""
-        raise NotImplementedError(
-            "AzureML run cancellation is not yet implemented. " "Contributions welcome!",
-        )
+        """Cancel an Azure ML run.
+
+        Args:
+            run_id: The AzureML job name / run ID.
+
+        Raises:
+            ImportError: If the Azure SDK is not installed.
+            RuntimeError: If cancellation fails.
+        """
+        _require_azure()
+
+        ml_client = self._get_client()
+
+        try:
+            ml_client.jobs.cancel(run_id)
+            logger.info("Cancellation requested for AzureML job '%s'.", run_id)
+        except Exception as exc:
+            raise RuntimeError(
+                f"Failed to cancel AzureML job '{run_id}': {exc}",
+            ) from exc
 
     # ------------------------------------------------------------------
     # Internal helpers

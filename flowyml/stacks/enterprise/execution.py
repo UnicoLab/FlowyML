@@ -217,6 +217,7 @@ _BACKEND_REGISTRY: dict[str, str] = {
     "local": "flowyml.stacks.enterprise.adapters.local.LocalBackendAdapter",
     "mock": "flowyml.stacks.enterprise.adapters.mock.MockEnterpriseBackendAdapter",
     "azureml": "flowyml.stacks.enterprise.adapters.azureml.AzureMLBackendAdapter",
+    "databricks": "flowyml.stacks.enterprise.adapters.databricks.DatabricksBackendAdapter",
 }
 
 
