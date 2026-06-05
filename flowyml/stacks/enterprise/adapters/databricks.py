@@ -12,12 +12,6 @@ message is raised if it is missing.  No credentials are hard-coded;
 authentication is delegated to the Databricks SDK's unified auth which
 respects ``DATABRICKS_HOST``, ``DATABRICKS_TOKEN``, Azure AD, and other
 native credential providers.
-
-.. note::
-
-    ``prepare()`` and ``submit()`` are intentionally **not yet implemented**.
-    They raise ``NotImplementedError`` with a descriptive message.  Pull
-    requests to wire in the full Databricks Job submission flow are welcome.
 """
 
 from __future__ import annotations
@@ -270,33 +264,94 @@ class DatabricksBackendAdapter:
     def prepare(self, context: ExecutionContext) -> None:
         """Prepare the Databricks execution environment.
 
-        This would get or create a compute cluster based on the stack
-        compute spec, upload dependencies if needed, and validate
-        workspace connectivity.
+        Gets or creates a compute cluster based on the stack compute spec,
+        validates workspace connectivity, and logs the configuration.
 
         Args:
             context: The execution context.
 
         Raises:
-            NotImplementedError: Always — this is a placeholder.
+            RuntimeError: If cluster creation or validation fails.
         """
         _require_databricks()
 
+        client = self._get_client()
         cluster_config = _map_stack_to_cluster_config(context.stack)
         runtime_config = _map_stack_to_runtime(context.stack)
+        cluster_name = cluster_config.get("cluster_name", f"flowyml-{context.stack.name}")
 
         logger.info(
-            "Databricks preparation plan:\n" "  cluster config = %s\n" "  runtime config = %s",
-            cluster_config,
-            runtime_config,
+            "Preparing Databricks environment for stack '%s'...",
+            context.stack.name,
         )
 
-        raise NotImplementedError(
-            "DatabricksBackendAdapter.prepare() is not yet fully implemented. "
-            "Contributions welcome!  The cluster config and runtime mapping "
-            "logic is in place — what remains is wiring the WorkspaceClient "
-            "calls to get-or-create a cluster and validate connectivity.",
-        )
+        # Check for existing cluster with matching name
+        try:
+            existing_clusters = client.clusters.list()
+            for cluster in existing_clusters:
+                if getattr(cluster, "cluster_name", None) == cluster_name:
+                    state = getattr(cluster, "state", None)
+                    if state and str(state).upper() in ("RUNNING", "RESIZING"):
+                        logger.info(
+                            "Reusing existing cluster '%s' (id=%s, state=%s).",
+                            cluster_name,
+                            cluster.cluster_id,
+                            state,
+                        )
+                        context.metadata = context.metadata or {}
+                        context.metadata["databricks_cluster_id"] = cluster.cluster_id
+                        return
+                    elif state and str(state).upper() == "TERMINATED":
+                        # Restart terminated cluster
+                        logger.info(
+                            "Restarting terminated cluster '%s' (id=%s).",
+                            cluster_name,
+                            cluster.cluster_id,
+                        )
+                        client.clusters.start(cluster.cluster_id)
+                        context.metadata = context.metadata or {}
+                        context.metadata["databricks_cluster_id"] = cluster.cluster_id
+                        return
+        except Exception as exc:
+            logger.warning("Could not list existing clusters: %s", exc)
+
+        # Create new cluster
+        try:
+            create_kwargs = {
+                "cluster_name": cluster_name,
+                "spark_version": runtime_config.get("spark_version", "14.3.x-scala2.12"),
+                "node_type_id": cluster_config.get("node_type_id", "i3.xlarge"),
+            }
+
+            # Set workers (autoscale or fixed)
+            if "autoscale" in cluster_config:
+                create_kwargs["autoscale"] = cluster_config["autoscale"]
+            else:
+                create_kwargs["num_workers"] = cluster_config.get("num_workers", 1)
+
+            # AWS attributes (availability zone)
+            if "aws_attributes" in cluster_config:
+                create_kwargs["aws_attributes"] = cluster_config["aws_attributes"]
+
+            # Docker image if specified
+            if "docker_image" in runtime_config:
+                create_kwargs["docker_image"] = runtime_config["docker_image"]
+
+            response = client.clusters.create(**create_kwargs)
+            cluster_id = getattr(response, "cluster_id", str(response))
+
+            logger.info(
+                "Created Databricks cluster '%s' (id=%s).",
+                cluster_name,
+                cluster_id,
+            )
+            context.metadata = context.metadata or {}
+            context.metadata["databricks_cluster_id"] = cluster_id
+
+        except Exception as exc:
+            raise RuntimeError(
+                f"Failed to create Databricks cluster '{cluster_name}': {exc}",
+            ) from exc
 
     def submit(
         self,
@@ -305,9 +360,8 @@ class DatabricksBackendAdapter:
     ) -> RunHandle:
         """Submit a pipeline as a Databricks Job Run.
 
-        This would translate the FlowyML pipeline graph into a Databricks
-        Job with a ``notebook_task`` or ``python_wheel_task`` and submit
-        it via the ``WorkspaceClient``.
+        Translates the FlowyML pipeline graph into a Databricks job
+        and submits it via the WorkspaceClient.
 
         Args:
             context: The execution context.
@@ -317,18 +371,72 @@ class DatabricksBackendAdapter:
             A ``RunHandle`` tracking the Databricks job run.
 
         Raises:
-            NotImplementedError: Always — this is a placeholder.
+            RuntimeError: If job submission fails.
         """
         _require_databricks()
 
-        raise NotImplementedError(
-            "DatabricksBackendAdapter.submit() is not yet fully implemented. "
-            "Contributions welcome!  The expected flow is:\n"
-            "  1. Convert the FlowyML graph to a Databricks Job definition.\n"
-            "  2. Call WorkspaceClient.jobs.submit() with notebook_task or "
-            "python_wheel_task.\n"
-            "  3. Return a RunHandle with the Databricks run ID.",
-        )
+        client = self._get_client()
+        cluster_id = (context.metadata or {}).get("databricks_cluster_id")
+
+        run_name = f"flowyml-{context.pipeline_name}-{context.run_id[:8]}"
+
+        try:
+            # Build task configuration
+            # Serialize the pipeline graph for remote execution
+
+            graph_payload = str(graph) if not isinstance(graph, str) else graph
+
+            submit_kwargs: dict[str, Any] = {
+                "run_name": run_name,
+                "tasks": [
+                    {
+                        "task_key": "flowyml_pipeline",
+                        "description": f"FlowyML pipeline: {context.pipeline_name}",
+                        "python_wheel_task": {
+                            "package_name": "flowyml",
+                            "entry_point": "run_pipeline",
+                            "parameters": [
+                                "--pipeline-name",
+                                context.pipeline_name,
+                                "--run-id",
+                                context.run_id,
+                                "--graph",
+                                graph_payload[:1000],  # Truncate for safety
+                            ],
+                        },
+                    },
+                ],
+            }
+
+            # Attach to existing cluster if available
+            if cluster_id:
+                submit_kwargs["tasks"][0]["existing_cluster_id"] = cluster_id
+
+            response = client.jobs.submit(**submit_kwargs)
+            run_id = str(getattr(response, "run_id", response))
+
+            logger.info(
+                "Submitted Databricks job run '%s' (run_id=%s, cluster=%s).",
+                run_name,
+                run_id,
+                cluster_id or "auto",
+            )
+
+            return RunHandle(
+                run_id=run_id,
+                backend_name="databricks",
+                status=RunStatus.PENDING,
+                metadata={
+                    "run_name": run_name,
+                    "cluster_id": cluster_id,
+                    "pipeline_name": context.pipeline_name,
+                },
+            )
+
+        except Exception as exc:
+            raise RuntimeError(
+                f"Failed to submit Databricks job '{run_name}': {exc}",
+            ) from exc
 
     def status(self, run_id: str) -> RunStatus:
         """Query the status of a Databricks job run.
@@ -347,20 +455,50 @@ class DatabricksBackendAdapter:
             Mapped ``RunStatus``.
 
         Raises:
-            NotImplementedError: Until the full integration is complete.
+            RuntimeError: If status query fails.
         """
         _require_databricks()
 
-        raise NotImplementedError(
-            "DatabricksBackendAdapter.status() is not yet fully implemented. "
-            "Once submit() is wired, this method will call "
-            "WorkspaceClient.jobs.get_run(run_id) and map the lifecycle "
-            "state:\n"
-            "  PENDING/RUNNING       → RunStatus.RUNNING\n"
-            "  TERMINATED + SUCCESS  → RunStatus.SUCCEEDED\n"
-            "  TERMINATED + FAILED   → RunStatus.FAILED\n"
-            "  TERMINATED + CANCELLED→ RunStatus.CANCELLED",
-        )
+        client = self._get_client()
+
+        try:
+            run = client.jobs.get_run(int(run_id))
+            life_cycle_state = str(getattr(run.state, "life_cycle_state", "PENDING")).upper()
+            result_state = str(getattr(run.state, "result_state", "")).upper()
+
+            if life_cycle_state in ("PENDING", "RUNNING", "BLOCKED"):
+                mapped = RunStatus.RUNNING
+            elif life_cycle_state == "TERMINATED":
+                if result_state == "SUCCESS":
+                    mapped = RunStatus.SUCCEEDED
+                elif result_state in ("FAILED", "TIMEDOUT"):
+                    mapped = RunStatus.FAILED
+                elif result_state == "CANCELED":
+                    mapped = RunStatus.CANCELLED
+                else:
+                    mapped = RunStatus.FAILED
+            elif life_cycle_state in ("TERMINATING",):
+                mapped = RunStatus.RUNNING
+            elif life_cycle_state == "SKIPPED":
+                mapped = RunStatus.CANCELLED
+            elif life_cycle_state == "INTERNAL_ERROR":
+                mapped = RunStatus.FAILED
+            else:
+                mapped = RunStatus.PENDING
+
+            logger.debug(
+                "Databricks run '%s' status: lifecycle=%s result=%s → %s.",
+                run_id,
+                life_cycle_state,
+                result_state,
+                mapped.value,
+            )
+            return mapped
+
+        except Exception as exc:
+            raise RuntimeError(
+                f"Failed to query status for Databricks run '{run_id}': {exc}",
+            ) from exc
 
     def logs(self, run_id: str) -> Iterator[str]:
         """Stream logs from a Databricks job run.
@@ -372,15 +510,35 @@ class DatabricksBackendAdapter:
             Log line strings.
 
         Raises:
-            NotImplementedError: Until the full integration is complete.
+            RuntimeError: If log retrieval fails.
         """
         _require_databricks()
 
-        raise NotImplementedError(
-            "DatabricksBackendAdapter.logs() is not yet fully implemented. "
-            "Once submit() is wired, this method will stream logs via "
-            "WorkspaceClient.jobs.get_run_output(run_id).",
-        )
+        client = self._get_client()
+
+        try:
+            output = client.jobs.get_run_output(int(run_id))
+
+            # Yield notebook output if available
+            if hasattr(output, "notebook_output") and output.notebook_output:
+                result = getattr(output.notebook_output, "result", None)
+                if result:
+                    yield f"[notebook] {result}"
+
+            # Yield logs
+            if hasattr(output, "logs") and output.logs:
+                yield from output.logs.split("\n")
+
+            # Yield error info if present
+            if hasattr(output, "error") and output.error:
+                yield f"[ERROR] {output.error}"
+            if hasattr(output, "error_trace") and output.error_trace:
+                yield f"[TRACE] {output.error_trace}"
+
+        except Exception as exc:
+            raise RuntimeError(
+                f"Failed to retrieve logs for Databricks run '{run_id}': {exc}",
+            ) from exc
 
     def cancel(self, run_id: str) -> None:
         """Cancel a Databricks job run.
@@ -389,15 +547,19 @@ class DatabricksBackendAdapter:
             run_id: The Databricks run ID.
 
         Raises:
-            NotImplementedError: Until the full integration is complete.
+            RuntimeError: If cancellation fails.
         """
         _require_databricks()
 
-        raise NotImplementedError(
-            "DatabricksBackendAdapter.cancel() is not yet fully implemented. "
-            "Once submit() is wired, this method will call "
-            "WorkspaceClient.jobs.cancel_run(run_id).",
-        )
+        client = self._get_client()
+
+        try:
+            client.jobs.cancel_run(int(run_id))
+            logger.info("Cancelled Databricks run '%s'.", run_id)
+        except Exception as exc:
+            raise RuntimeError(
+                f"Failed to cancel Databricks run '{run_id}': {exc}",
+            ) from exc
 
     # ------------------------------------------------------------------
     # Internal helpers
