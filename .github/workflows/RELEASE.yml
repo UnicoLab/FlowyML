@@ -24,6 +24,9 @@ permissions:
   id-token: write
 
 jobs:
+  # ─────────────────────────────────────────────────────────────────
+  # 1. SEMANTIC RELEASE — Bump version, tag, update all version files
+  # ─────────────────────────────────────────────────────────────────
   SEMANTIC_RELEASE:
     if: ${{ !inputs.SKIP_RELEASE }}
     runs-on: ubuntu-latest
@@ -72,20 +75,42 @@ jobs:
         run: |
           echo "Release created: ${{ steps.semantic-release.outputs.new_release_published }}"
           echo "New version: ${{ steps.semantic-release.outputs.new_release_version }}"
-          echo "Release notes: ${{ steps.semantic-release.outputs.new_release_notes }}"
 
-      - name: Save release version
+      - name: Sync version across all sources
         if: steps.semantic-release.outputs.new_release_published == 'true'
         run: |
-          echo "Saving release version for recovery"
+          VERSION="${{ steps.semantic-release.outputs.new_release_version }}"
+          MAJOR_MINOR=$(echo "$VERSION" | sed 's/\.[0-9]*$//')
+
+          echo "Syncing version $VERSION (display: $MAJOR_MINOR) across all sources..."
+
+          # 1. Save recovery file
           mkdir -p .github/recovery
-          echo "${{ steps.semantic-release.outputs.new_release_version }}" > .github/recovery/last_release_version.txt
+          echo "$VERSION" > .github/recovery/last_release_version.txt
+
+          # 2. Update docs announcement banner (major.minor display)
+          if [ -f "docs/overrides/main.html" ]; then
+            sed -i "s/FlowyML v[0-9]*\.[0-9]*/FlowyML v${MAJOR_MINOR}/" docs/overrides/main.html
+            echo "✓ Updated docs banner → FlowyML v${MAJOR_MINOR}"
+          fi
+
+          # 3. Update UI sidebar version (full semver)
+          SIDEBAR="flowyml/ui/frontend/src/components/sidebar/Sidebar.jsx"
+          if [ -f "$SIDEBAR" ]; then
+            sed -i "s/FlowyML v[0-9]*\.[0-9]*\.[0-9]*/FlowyML v${VERSION}/" "$SIDEBAR"
+            echo "✓ Updated UI sidebar → FlowyML v${VERSION}"
+          fi
+
+          # 4. Commit and push all version updates
           git config user.name "${{ github.actor }}"
           git config user.email "${{ github.actor }}@users.noreply.github.com"
-          git add .github/recovery/last_release_version.txt
-          git commit -m "chore: save last release version for recovery [skip ci]" || echo "No changes to commit"
-          git push || echo "Failed to push recovery file"
+          git add -A
+          git commit -m "maint: sync version to ${VERSION} across all sources [skip ci]" || echo "No changes to commit"
+          git push || echo "Failed to push version sync"
 
+  # ─────────────────────────────────────────────────────────────
+  # 2. PYPI PUBLISH — Build frontend, package, and publish
+  # ─────────────────────────────────────────────────────────────
   PYPI_PUBLISH:
     needs: [SEMANTIC_RELEASE]
     if: ${{ needs.SEMANTIC_RELEASE.outputs.release_created == 'true' || inputs.SKIP_RELEASE }}
@@ -179,7 +204,10 @@ jobs:
         env:
           POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_TOKEN }}
 
-  UPDATE_DOCS:
+  # ────────────────────────────────────────────────────────────────────
+  # 3. DEPLOY DOCS — Build with MkDocs + deploy versioned docs via Mike
+  # ────────────────────────────────────────────────────────────────────
+  DEPLOY_DOCS:
     needs: [SEMANTIC_RELEASE, PYPI_PUBLISH]
     if: ${{ (needs.SEMANTIC_RELEASE.outputs.release_created == 'true' && !failure('PYPI_PUBLISH')) || inputs.SKIP_RELEASE }}
     runs-on: ubuntu-latest
@@ -188,7 +216,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: main
-          fetch-depth: 1
+          fetch-depth: 0
 
       - name: Get version for docs
         id: get_docs_version
@@ -217,37 +245,52 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install dependencies
+      - name: Install docs dependencies
         run: |
           python -m pip install --upgrade pip
           pip install poetry
           poetry config virtualenvs.create false
           poetry install --with docs --no-interaction
 
-      - name: Fetch gh-pages branch
+      - name: Install mike
+        run: |
+          pip install mike
+
+      - name: Configure git for mike
         run: |
           git config user.name "${{ github.actor }}"
           git config user.email "${{ github.actor }}@users.noreply.github.com"
 
-          # Fetch the gh-pages branch
-          git fetch origin gh-pages:gh-pages || echo "No gh-pages branch exists yet"
+      - name: Fetch gh-pages branch
+        run: |
+          git fetch origin gh-pages:gh-pages || echo "No gh-pages branch exists yet — mike will create it"
 
-      - name: Release documentation with mike
+      - name: Deploy versioned docs with mike
         id: deploy_docs
         run: |
-          echo "Deploying documentation for version ${{ steps.get_docs_version.outputs.VERSION }}"
+          VERSION="${{ steps.get_docs_version.outputs.VERSION }}"
+          echo "Deploying documentation for version $VERSION"
 
-          # Attempt to deploy docs
-          mike deploy --push --update-aliases ${{ steps.get_docs_version.outputs.VERSION }} latest
+          # Deploy this version and set it as 'latest'
+          mike deploy --push --update-aliases "$VERSION" latest
+
+          # Set the default version to 'latest' so root URL redirects properly
+          mike set-default --push latest
+
+          echo "✓ Deployed docs v${VERSION} (aliased as 'latest')"
+          echo "  → https://unicolab.github.io/FlowyML/latest/"
+          echo "  → https://unicolab.github.io/FlowyML/${VERSION}/"
         continue-on-error: true
 
-      - name: Retry documentation release on failure
+      - name: Retry docs deployment on failure
         if: steps.deploy_docs.outcome == 'failure'
         run: |
+          VERSION="${{ steps.get_docs_version.outputs.VERSION }}"
           echo "First documentation deploy attempt failed, retrying..."
 
           # Force-fetch the latest gh-pages branch
           git fetch origin gh-pages:gh-pages --force
 
-          # Use the version from recovery process
-          mike deploy --push --update-aliases --force ${{ steps.get_docs_version.outputs.VERSION }} latest
+          # Force deploy
+          mike deploy --push --update-aliases --force "$VERSION" latest
+          mike set-default --push latest

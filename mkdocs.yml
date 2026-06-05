@@ -88,6 +88,10 @@ plugins:
   - search
   - autorefs:
       link_titles: true
+  - mike:
+      alias_type: symlink
+      canonical_version: latest
+      version_selector: true
   - mkdocstrings:
       handlers:
         python:
@@ -142,10 +146,12 @@ nav:
       - 📚 Overview: plugins/overview.md
       - 📥 Type-Based Routing: plugins/type_routing.md
       - 🌍 Stack Configuration: plugins/stack-configuration.md
+      - 🏢 Enterprise Stacks: guides/enterprise-stacks.md
       - 🎯 Native Plugins: plugins/native-plugins.md
       - 🔄 External Frameworks: plugins/external-frameworks.md
       - 🔧 Creating Plugins: plugins/creating-plugins.md
       - 🎯 Practical Examples: plugins/practical-examples.md
+    - 📊 Experiment Tracking: guides/experiment-tracking.md
     - 🔔 Notifications: advanced/notifications.md
     - ⏰ Scheduling: user-guide/scheduling.md
     - 🏆 Model Leaderboard: advanced/model-leaderboard.md
@@ -190,6 +196,7 @@ nav:
       - ☁️ GCP: integrations/gcp.md
       - ☁️ AWS: integrations/aws.md
       - ☁️ Azure: integrations/azure.md
+      - ⚡ Databricks: integrations/databricks.md
       - 🐳 Docker: integrations/docker.md
       - ☸️ Kubernetes: integrations/kubernetes.md
     - 🏭 Production Tutorial: tutorials/production-pipeline-tutorial.md
@@ -234,6 +241,10 @@ extra_javascript:
   - javascripts/extra.js
 
 extra:
+  version:
+    provider: mike
+    default: latest
+    alias: true
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/UnicoLab/FlowyML

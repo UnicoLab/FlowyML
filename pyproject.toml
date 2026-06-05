@@ -184,7 +184,10 @@ markers = [
 
 [tool.semantic_release]
 version_toml = ["pyproject.toml:tool.poetry.version"]
-version_variables = ["flowyml/__init__.py:__version__"]
+version_variables = [
+    "flowyml/__init__.py:__version__",
+    "flowyml/ui/frontend/src/components/sidebar/Sidebar.jsx:FlowyML v",
+]
 branch = "main"
 upload_to_pypi = false
 upload_to_release = true

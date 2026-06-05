@@ -1,58 +1,252 @@
-# Secret Management for FlowyML
+---
+title: Secrets Management — FlowyML
+description: "Unified secrets layer with 6 enterprise providers: Vault, Azure Key Vault, AWS Secrets Manager, GCP Secret Manager, environment, and local."
+---
 
-FlowyML uses cloud-native secret management services (GCP Secret Manager, AWS Secrets Manager) to securely handle sensitive information like database passwords, authentication secrets, and API tokens.
+<div class="hero-section" markdown>
+
+## 🔐 Secrets Management
+
+Unified secrets layer with 6 enterprise providers — configure once in your stack, access anywhere in your pipeline.
+
+<span class="feature-badge">🏛️ HashiCorp Vault</span>
+<span class="feature-badge">☁️ Azure Key Vault</span>
+<span class="feature-badge">☁️ AWS Secrets Manager</span>
+<span class="feature-badge">☁️ GCP Secret Manager</span>
+
+</div>
+
+# 🔐 Secrets Management
+
+!!! info "What you'll learn"
+    How to configure and use FlowyML's unified secrets layer — from simple environment variables to enterprise-grade providers like HashiCorp Vault and cloud-native secret managers.
+
+---
 
 ## Overview
 
-Infrastructure is provisioned using Terraform, which creates:
-1.  **Secret Store**: A centralized secret in the cloud provider.
-2.  **Secret Version**: The actual value of the secret.
-3.  **IAM Binding**: Permissions for the compute service (Cloud Run / App Runner) to access the secret.
-4.  **Injection**: Secrets are mounted as environment variables at runtime.
+FlowyML provides a **unified `SecretsProvider` interface** with 6 backend implementations. Your pipeline code stays the same regardless of which secrets backend you use.
 
-## Usage
-
-### 1. Define Secrets Locally
-
-**DO NOT** commit secrets to version control. Instead, use a local variable definition file (e.g., `prod.secrets.tfvars`).
-
-Create a file named `prod.secrets.tfvars`:
-
-```hcl
-db_password = "super_secure_db_password"
-auth_secret = "your_jwt_signing_secret_key"
-api_token   = "your_static_api_token"
+```python
+# Pipeline code never changes — the stack handles secrets resolution
+pipeline = Pipeline("training", stack="prod-vault")
+pipeline.run()
 ```
 
-**Note**: Ensure `*.tfvars` is in your `.gitignore` (except for example files).
+---
 
-### 2. Deploy with Secrets
+## Providers
 
-When running Terraform commands, pass the secrets file using the `-var-file` flag.
+| Provider | Backend | Dependency | Zero-Config |
+|---|---|---|---|
+| `env` | Environment variables | None | ✅ |
+| `local` | Local `.env` / JSON file | None | ✅ |
+| `vault` | HashiCorp Vault | `hvac` | ❌ |
+| `azure_keyvault` | Azure Key Vault | `azure-keyvault-secrets` | ❌ |
+| `aws_secretsmanager` | AWS Secrets Manager | `boto3` | ❌ |
+| `gcp_secretmanager` | GCP Secret Manager | `google-cloud-secret-manager` | ❌ |
 
-#### GCP
+---
+
+## Configuration
+
+### Environment Variables (Default)
+
+```yaml
+# flowyml.yaml
+stacks:
+  dev:
+    secrets:
+      provider: env
+```
+
 ```bash
-cd infra/gcp
-terraform init
-terraform apply -var-file="prod.secrets.tfvars"
+export DB_PASSWORD=super_secret
+export API_KEY=sk-xxxx
 ```
 
-#### AWS
+### Local File
+
+```yaml
+stacks:
+  dev:
+    secrets:
+      provider: local
+      path: .secrets.json  # or .env format
+```
+
+### HashiCorp Vault
+
+```yaml
+stacks:
+  prod:
+    secrets:
+      provider: vault
+      vault_url: https://vault.company.com
+      vault_mount: secret
+      vault_path: ml/training
+```
+
 ```bash
-cd infra/aws
-terraform init
-terraform apply -var-file="prod.secrets.tfvars"
+# Authentication via standard Vault env vars
+export VAULT_TOKEN=hvs.xxxx
+# or use AppRole, Kubernetes auth, etc.
 ```
 
-## Secret Rotation
+### Azure Key Vault
 
-To rotate a secret:
-1.  Update the value in your `prod.secrets.tfvars` file.
-2.  Run `terraform apply -var-file="prod.secrets.tfvars"`.
-3.  Terraform will add a new version to the Secret Manager.
-4.  **Important**: You must redeploy the application (Cloud Run / App Runner) to pick up the new "latest" version of the secret. Infrastructure changes alone usually won't trigger a container restart unless the service revision template changes.
+```yaml
+stacks:
+  prod:
+    secrets:
+      provider: azure_keyvault
+      vault_url: https://my-vault.vault.azure.net
+```
 
-## Troubleshooting
+```bash
+# Authentication via Azure Identity (DefaultAzureCredential)
+# Works with: managed identity, service principal, CLI login
+```
 
-- **Permission Denied**: Ensure the Service Account (GCP) or Instance Role (AWS) has the correct IAM role (`roles/secretmanager.secretAccessor` or `secretsmanager:GetSecretValue`).
-- **Empty Secret**: GCP Secret Manager does not allow empty payloads. Ensure your variables are not empty strings.
+### AWS Secrets Manager
+
+```yaml
+stacks:
+  prod:
+    secrets:
+      provider: aws_secretsmanager
+      region: us-east-1
+      secret_name: ml/training-secrets
+```
+
+```bash
+# Authentication via standard AWS credential chain
+# Works with: env vars, ~/.aws/credentials, IAM roles
+```
+
+### GCP Secret Manager
+
+```yaml
+stacks:
+  prod:
+    secrets:
+      provider: gcp_secretmanager
+      project_id: my-gcp-project
+```
+
+```bash
+# Authentication via Application Default Credentials
+export GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
+# or use workload identity, gcloud auth
+```
+
+---
+
+## Programmatic Access
+
+### Factory Function
+
+```python
+from flowyml.stacks.enterprise.secrets import get_secrets_provider
+
+# Auto-detects provider from stack config
+provider = get_secrets_provider(stack_config)
+secret = provider.get_secret("DB_PASSWORD")
+```
+
+### Via StackDefinition
+
+```python
+from flowyml.stacks.enterprise.models import StackDefinition
+
+definition = StackDefinition.from_yaml("stacks/prod.yaml")
+provider = definition.get_secrets_provider()
+api_key = provider.get_secret("API_KEY")
+```
+
+### Provider API
+
+All providers implement the same interface:
+
+```python
+class SecretsProvider:
+    def get_secret(self, key: str) -> str | None:
+        """Get a secret by key."""
+        ...
+
+    def set_secret(self, key: str, value: str) -> None:
+        """Set a secret (if the backend supports writes)."""
+        ...
+
+    def list_secrets(self) -> list[str]:
+        """List available secret keys."""
+        ...
+
+    def delete_secret(self, key: str) -> None:
+        """Delete a secret by key."""
+        ...
+```
+
+---
+
+## Migration from Terraform
+
+If you're currently using Terraform-based secret management:
+
+| Before (Terraform) | After (FlowyML Secrets) |
+|---|---|
+| Define secrets in `.tfvars` | Configure provider in `flowyml.yaml` |
+| `terraform apply -var-file=...` | Automatic — pipeline resolves from stack |
+| Manual secret rotation | `provider.set_secret()` or cloud console |
+| Per-cloud IAM setup | Unified API, cloud-native auth |
+
+!!! tip "Gradual migration"
+    Start with `provider: env` to use existing environment variables, then migrate to Vault or cloud-native providers when ready.
+
+---
+
+## Best Practices
+
+!!! warning "Never commit secrets"
+    Use `.gitignore` to exclude `.env`, `.secrets.json`, and `*.tfvars` files. Use a secrets provider for production.
+
+!!! tip "Use managed identity in production"
+    On Azure, AWS, and GCP, use managed identity / IAM roles instead of static credentials for zero-credential deployments.
+
+!!! tip "Rotate secrets regularly"
+    All cloud providers support secret versioning. Use the provider's rotation features and FlowyML will pick up the latest version automatically.
+
+---
+
+## 🚀 What's Next?
+
+<div class="header-grid" markdown>
+
+<div class="header-card" markdown>
+
+### 🏢 Enterprise Stacks
+Governed stack definitions with policy enforcement.
+
+[Explore →](../guides/enterprise-stacks.md)
+
+</div>
+
+<div class="header-card" markdown>
+
+### ⚡ Databricks
+Run pipelines on Databricks with auto-managed clusters.
+
+[Learn more →](../integrations/databricks.md)
+
+</div>
+
+<div class="header-card" markdown>
+
+### ☁️ Azure Integration
+Deploy on Azure with AzureML and Azure Key Vault secrets.
+
+[View Guide →](../integrations/azure.md)
+
+</div>
+
+</div>

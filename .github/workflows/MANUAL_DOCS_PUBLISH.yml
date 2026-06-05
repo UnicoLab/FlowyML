@@ -6,7 +6,7 @@ on:
       RELEASE_VERSION:
         required: true
         type: string
-        description: "Release version for documentation"
+        description: "Release version for documentation (e.g. 2.1.0)"
       UPDATE_LATEST:
         required: true
         type: boolean
@@ -17,14 +17,14 @@ permissions:
   contents: write
 
 jobs:
-  UPDATE_DOCS:
+  DEPLOY_DOCS:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           ref: main
-          fetch-depth: 1
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -38,43 +38,50 @@ jobs:
           poetry config virtualenvs.create false
           poetry install --with docs --no-interaction
 
-      - name: Fetch gh-pages branch
+      - name: Install mike
+        run: |
+          pip install mike
+
+      - name: Configure git for mike
         run: |
           git config user.name "${{ github.actor }}"
           git config user.email "${{ github.actor }}@users.noreply.github.com"
 
-          # Fetch the gh-pages branch
-          git fetch origin gh-pages:gh-pages || echo "No gh-pages branch exists yet"
+      - name: Fetch gh-pages branch
+        run: |
+          git fetch origin gh-pages:gh-pages || echo "No gh-pages branch exists yet — mike will create it"
 
-      - name: Release documentation with mike
+      - name: Deploy versioned docs with mike
         id: deploy_docs
         run: |
-          echo "Deploying documentation for version ${{ inputs.RELEASE_VERSION }}"
+          VERSION="${{ inputs.RELEASE_VERSION }}"
+          echo "Deploying documentation for version ${VERSION}"
 
-          # Set up command based on whether to update latest alias
           if [[ "${{ inputs.UPDATE_LATEST }}" == "true" ]]; then
-            echo "Updating 'latest' alias to point to version ${{ inputs.RELEASE_VERSION }}"
-            COMMAND="mike deploy --push --update-aliases ${{ inputs.RELEASE_VERSION }} latest"
+            mike deploy --push --update-aliases "$VERSION" latest
+            mike set-default --push latest
+            echo "✓ Deployed v${VERSION} as 'latest'"
           else
-            echo "Not updating 'latest' alias"
-            COMMAND="mike deploy --push ${{ inputs.RELEASE_VERSION }}"
+            mike deploy --push "$VERSION"
+            echo "✓ Deployed v${VERSION} (latest alias NOT updated)"
           fi
-
-          # Execute the command
-          $COMMAND
         continue-on-error: true
 
-      - name: Retry documentation release on failure
+      - name: Retry docs deployment on failure
         if: steps.deploy_docs.outcome == 'failure'
         run: |
-          echo "First documentation deploy attempt failed, retrying..."
+          VERSION="${{ inputs.RELEASE_VERSION }}"
+          echo "Retrying documentation deployment..."
 
-          # Force-fetch the latest gh-pages branch
           git fetch origin gh-pages:gh-pages --force
 
-          # Set up command based on whether to update latest alias
           if [[ "${{ inputs.UPDATE_LATEST }}" == "true" ]]; then
-            mike deploy --push --update-aliases --force ${{ inputs.RELEASE_VERSION }} latest
+            mike deploy --push --update-aliases --force "$VERSION" latest
+            mike set-default --push latest
           else
-            mike deploy --push --force ${{ inputs.RELEASE_VERSION }}
+            mike deploy --push --force "$VERSION"
           fi
+
+      - name: List deployed versions
+        run: |
+          mike list || echo "Could not list versions"
