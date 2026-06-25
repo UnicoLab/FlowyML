@@ -191,7 +191,7 @@ class EvalResult:
         lines = [f"⚠️ Evaluation regression detected in '{self.experiment or 'unknown'}':"]
         for metric, info in regressions.items():
             lines.append(
-                f"  - {metric}: {info['baseline']:.4f} → {info['current']:.4f} " f"(Δ{info['delta']:.4f})",
+                f"  - {metric}: {info['baseline']:.4f} → {info['current']:.4f} (Δ{info['delta']:.4f})",
             )
 
         message = "\n".join(lines)
@@ -243,7 +243,7 @@ class EvalResult:
         )
 
     def __repr__(self) -> str:
-        return f"EvalResult(eval_id='{self.eval_id[:8]}...', " f"scorers={self.scorer_names}, " f"passed={self.passed})"
+        return f"EvalResult(eval_id='{self.eval_id[:8]}...', scorers={self.scorer_names}, passed={self.passed})"
 
 
 def evaluate(

@@ -183,7 +183,7 @@ class PluginManager:
         info = get_plugin_info(name)
         if not info:
             raise ValueError(
-                f"Plugin '{name}' not found. " f"Available plugins: {', '.join(list_plugin_names())}",
+                f"Plugin '{name}' not found. Available plugins: {', '.join(list_plugin_names())}",
             )
 
         logger.info(f"Installing plugin '{name}' with packages: {info.packages}")
@@ -291,7 +291,7 @@ class PluginManager:
 
         if not self._are_packages_installed(info.packages):
             raise ImportError(
-                f"Plugin '{name}' packages not installed. " f"Run: flowyml plugin install {name}",
+                f"Plugin '{name}' packages not installed. Run: flowyml plugin install {name}",
             )
 
         # Load the plugin class

@@ -102,7 +102,7 @@ class VertexAIOrchestrator(OrchestratorPlugin):
 
         except ImportError:
             raise ImportError(
-                "google-cloud-aiplatform is not installed. " "Run: flowyml plugin install vertex_ai",
+                "google-cloud-aiplatform is not installed. Run: flowyml plugin install vertex_ai",
             )
 
     def _ensure_initialized(self) -> None:

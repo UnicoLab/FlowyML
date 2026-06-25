@@ -250,7 +250,7 @@ class StackExistsRule:
                 self.name,
                 "No stack definition was provided. Cannot proceed with execution.",
                 suggestion=(
-                    "Ensure a valid stack name is specified in your flowyml.yaml " "or passed via the --stack CLI flag."
+                    "Ensure a valid stack name is specified in your flowyml.yaml or passed via the --stack CLI flag."
                 ),
             )
         return _pass(self.name, "Stack definition is present.")
@@ -347,10 +347,7 @@ class UserPermissionRule:
         if context.user is None:
             return _fail(
                 self.name,
-                (
-                    f"Stack '{context.stack.name}' is restricted to groups "
-                    f"{allowed}, but no user identity was provided."
-                ),
+                (f"Stack '{context.stack.name}' is restricted to groups {allowed}, but no user identity was provided."),
                 suggestion=(
                     "Set the FLOWYML_USER environment variable or log in "
                     "with 'flowyml auth login' to establish your identity."
@@ -365,9 +362,7 @@ class UserPermissionRule:
                     f"Stack '{context.stack.name}' requires membership in "
                     f"one of: {', '.join(allowed)}."
                 ),
-                suggestion=(
-                    f"Contact your administrator to be added to one of " f"these groups: {', '.join(allowed)}."
-                ),
+                suggestion=(f"Contact your administrator to be added to one of these groups: {', '.join(allowed)}."),
             )
 
         overlap = set(context.user_groups) & set(allowed)
@@ -381,13 +376,13 @@ class UserPermissionRule:
                     f"of: {', '.join(allowed)}."
                 ),
                 suggestion=(
-                    f"Request access to one of the required groups " f"({', '.join(allowed)}) or use a different stack."
+                    f"Request access to one of the required groups ({', '.join(allowed)}) or use a different stack."
                 ),
             )
 
         return _pass(
             self.name,
-            (f"User '{context.user}' is authorised via group(s): " f"{', '.join(sorted(overlap))}."),
+            (f"User '{context.user}' is authorised via group(s): {', '.join(sorted(overlap))}."),
         )
 
 
@@ -422,7 +417,7 @@ class ProjectPermissionRule:
                     f"Stack '{context.stack.name}' is restricted to projects "
                     f"{allowed}, but no project name was provided."
                 ),
-                suggestion=("Set 'project.name' in your flowyml.yaml or pass " "--project on the command line."),
+                suggestion=("Set 'project.name' in your flowyml.yaml or pass --project on the command line."),
             )
 
         if context.project_name not in allowed:
@@ -443,7 +438,7 @@ class ProjectPermissionRule:
 
         return _pass(
             self.name,
-            (f"Project '{context.project_name}' is allowed for stack " f"'{context.stack.name}'."),
+            (f"Project '{context.project_name}' is allowed for stack '{context.stack.name}'."),
         )
 
 
@@ -465,11 +460,7 @@ class BackendAllowedRule:
         if backend not in SUPPORTED_BACKENDS:
             return _fail(
                 self.name,
-                (
-                    f"Backend '{backend}' used by stack "
-                    f"'{context.stack.name}' is not a supported "
-                    f"execution backend."
-                ),
+                (f"Backend '{backend}' used by stack '{context.stack.name}' is not a supported execution backend."),
                 suggestion=(
                     f"Supported backends: "
                     f"{', '.join(sorted(SUPPORTED_BACKENDS))}. "
@@ -523,7 +514,7 @@ class BaseImageApprovedRule:
         if runtime.base_image is not None:
             return _pass(
                 self.name,
-                (f"Custom Docker image '{runtime.base_image}' is " f"allowed by stack policy."),
+                (f"Custom Docker image '{runtime.base_image}' is allowed by stack policy."),
             )
 
         return _pass(
@@ -554,7 +545,7 @@ class PackageAllowListRule:
         if not allowed:
             return _pass(
                 self.name,
-                (f"Stack '{context.stack.name}' has no package " f"allowlist restrictions."),
+                (f"Stack '{context.stack.name}' has no package allowlist restrictions."),
             )
 
         if not context.pipeline_packages:
@@ -614,7 +605,7 @@ class PackageDenyListRule:
         if blocked:
             return _fail(
                 self.name,
-                (f"The following packages are denied for stack " f"'{context.stack.name}': {', '.join(blocked)}."),
+                (f"The following packages are denied for stack '{context.stack.name}': {', '.join(blocked)}."),
                 suggestion=(
                     "Remove the denied packages from your pipeline "
                     "dependencies. If you believe a package should be "
@@ -667,7 +658,7 @@ class ExternalNetworkRule:
 
         return _pass(
             self.name,
-            (f"External network access is allowed for stack " f"'{context.stack.name}'."),
+            (f"External network access is allowed for stack '{context.stack.name}'."),
         )
 
 
@@ -788,7 +779,7 @@ class SignedStackRule:
 
         return _pass(
             self.name,
-            (f"Stack '{context.stack.name}' signature policy is " f"satisfied."),
+            (f"Stack '{context.stack.name}' signature policy is satisfied."),
         )
 
 
@@ -849,10 +840,8 @@ class PolicyEngine:
                 results.append(
                     _fail(
                         rule.name,
-                        (f"Policy rule '{rule.name}' encountered an " f"internal error during evaluation."),
-                        suggestion=(
-                            "This is likely a bug. Contact the platform " "team and include the full traceback."
-                        ),
+                        (f"Policy rule '{rule.name}' encountered an internal error during evaluation."),
+                        suggestion=("This is likely a bug. Contact the platform team and include the full traceback."),
                     ),
                 )
         return results
@@ -878,7 +867,7 @@ class PolicyEngine:
             first_rule = failures[0].rule_name
 
             stack_name = context.stack.name
-            summary = f"Policy validation failed for stack '{stack_name}': " f"{len(failures)} rule(s) violated."
+            summary = f"Policy validation failed for stack '{stack_name}': {len(failures)} rule(s) violated."
 
             raise PolicyViolationError(
                 summary,

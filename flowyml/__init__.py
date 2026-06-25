@@ -71,6 +71,7 @@ with contextlib.suppress(ImportError):
 # Tracking imports
 from flowyml.tracking.experiment import Experiment
 from flowyml.tracking.runs import Run
+from flowyml.tracking.auto_tracking import AutoTracker
 
 # Registry imports
 from flowyml.registry.model_registry import ModelRegistry, ModelVersion, ModelStage
@@ -259,6 +260,7 @@ __all__ = [
     # Tracking
     "Experiment",
     "Run",
+    "AutoTracker",
     # Registry
     "ModelRegistry",
     "ModelVersion",

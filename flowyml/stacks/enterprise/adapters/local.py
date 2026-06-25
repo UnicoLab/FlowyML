@@ -61,11 +61,9 @@ class LocalBackendAdapter:
                 stack_name=stack.name,
                 field="spec.backend",
                 reason=(
-                    f"LocalBackendAdapter only supports backend='local', " f"but the stack specifies '{stack.backend}'."
+                    f"LocalBackendAdapter only supports backend='local', but the stack specifies '{stack.backend}'."
                 ),
-                suggestion=(
-                    "Use a different adapter for this backend, or change " "the stack's spec.backend to 'local'."
-                ),
+                suggestion=("Use a different adapter for this backend, or change the stack's spec.backend to 'local'."),
             )
 
     def prepare(self, context: ExecutionContext) -> None:

@@ -94,7 +94,7 @@ def _require_hvac() -> None:
     """Raise ``ImportError`` with an actionable message if ``hvac`` is missing."""
     if not _HVAC_AVAILABLE:
         raise ImportError(
-            "HashiCorp Vault SDK (hvac) is required. " "Install with: pip install hvac",
+            "HashiCorp Vault SDK (hvac) is required. Install with: pip install hvac",
         )
 
 
@@ -514,7 +514,7 @@ class VaultSecretsProvider:
             return result
         except Exception:
             logger.exception("Failed to read secrets from Vault path '%s'.", self._scope)
-            return {key: None for key in keys}
+            return dict.fromkeys(keys)
 
     def list_secrets(self) -> list[str]:
         """List secret keys available at the scope path.
@@ -607,7 +607,7 @@ class VaultSecretsProvider:
         return self._client
 
     def __repr__(self) -> str:
-        return f"VaultSecretsProvider(" f"scope={self._scope!r}, " f"addr={self._vault_addr!r})"
+        return f"VaultSecretsProvider(scope={self._scope!r}, addr={self._vault_addr!r})"
 
 
 # ---------------------------------------------------------------------------
@@ -634,7 +634,7 @@ class AzureKeyVaultProvider:
     def __init__(self, scope: str | None = None) -> None:
         if not scope:
             raise ValueError(
-                "AzureKeyVaultProvider requires a scope (the Key Vault name), " "e.g. scope='ml-keyvault-prod'.",
+                "AzureKeyVaultProvider requires a scope (the Key Vault name), e.g. scope='ml-keyvault-prod'.",
             )
         self._vault_name = scope
         self._vault_url = f"https://{scope}.vault.azure.net/"
@@ -891,7 +891,7 @@ class AWSSecretsManagerProvider:
         return self._client
 
     def __repr__(self) -> str:
-        return f"AWSSecretsManagerProvider(" f"scope={self._scope!r}, " f"region={self._region_name!r})"
+        return f"AWSSecretsManagerProvider(scope={self._scope!r}, region={self._region_name!r})"
 
 
 # ---------------------------------------------------------------------------
@@ -919,7 +919,7 @@ class GCPSecretManagerProvider:
     def __init__(self, scope: str | None = None) -> None:
         if not scope:
             raise ValueError(
-                "GCPSecretManagerProvider requires a scope (the GCP project ID), " "e.g. scope='my-gcp-project'.",
+                "GCPSecretManagerProvider requires a scope (the GCP project ID), e.g. scope='my-gcp-project'.",
             )
         self._project_id = scope
         self._client: Any = None
@@ -1099,7 +1099,7 @@ def get_secrets_provider(
     if provider_cls is None:
         available = ", ".join(sorted(_PROVIDER_MAP.keys()))
         raise ValueError(
-            f"Unknown secrets provider '{provider_name}'. " f"Available providers: {available}.",
+            f"Unknown secrets provider '{provider_name}'. Available providers: {available}.",
         )
 
     logger.info("Creating secrets provider '%s' (scope=%s).", provider_name, scope)

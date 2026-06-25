@@ -155,7 +155,7 @@ class SubPipelineStep(Step):
                 child_inputs[key] = value
 
         logger.info(
-            f"Executing sub-pipeline '{self.sub_pipeline.name}' " f"({len(self.sub_pipeline.steps)} steps)",
+            f"Executing sub-pipeline '{self.sub_pipeline.name}' ({len(self.sub_pipeline.steps)} steps)",
         )
 
         # Run the sub-pipeline

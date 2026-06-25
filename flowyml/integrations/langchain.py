@@ -237,7 +237,7 @@ def instrument_chain(
             return getattr(self._chain, attr_name)
 
         def __repr__(self):
-            return f"InstrumentedChain(name={self._name!r}, " f"chain={self._chain!r})"
+            return f"InstrumentedChain(name={self._name!r}, chain={self._chain!r})"
 
     return InstrumentedChain(
         chain,

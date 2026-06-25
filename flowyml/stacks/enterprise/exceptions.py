@@ -101,8 +101,7 @@ class StackSourceError(StackError):
 
         if not suggestion:
             suggestion = (
-                "Verify the source URI is correct and accessible. "
-                "For Git sources, ensure the repository and ref exist."
+                "Verify the source URI is correct and accessible. For Git sources, ensure the repository and ref exist."
             )
 
         super().__init__(msg, details=reason, suggestion=suggestion)
@@ -127,7 +126,7 @@ class StackLockError(StackError):
         suggestion = None
 
         if expected_digest and actual_digest:
-            details = f"Expected digest: {expected_digest}\n" f"  Actual digest:   {actual_digest}"
+            details = f"Expected digest: {expected_digest}\n  Actual digest:   {actual_digest}"
             suggestion = (
                 f"The stack '{stack_name}' has changed since it was locked. "
                 f"Run 'flowyml stack update --stack {stack_name}' to update the lock file, "

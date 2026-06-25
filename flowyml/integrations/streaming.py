@@ -121,7 +121,7 @@ class SessionEventStream:
                 )
         except ImportError:
             logger.debug(
-                "httpx not installed — webhook events disabled. " "Install with: pip install httpx",
+                "httpx not installed — webhook events disabled. Install with: pip install httpx",
             )
         except Exception as e:
             logger.debug(f"Webhook POST failed: {e}")

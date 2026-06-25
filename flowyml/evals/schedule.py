@@ -134,7 +134,7 @@ class EvalSchedule:
             logger.info("Scheduled evaluation '%s' started: %s", self.name, self.cron)
         except ImportError:
             logger.warning(
-                "PipelineScheduler not available. " "Use run_once() manually or install scheduling dependencies.",
+                "PipelineScheduler not available. Use run_once() manually or install scheduling dependencies.",
             )
         except Exception as e:
             logger.error("Failed to start schedule '%s': %s", self.name, e)

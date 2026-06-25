@@ -337,7 +337,7 @@ class TracedOpenAI:
             import openai
         except ImportError:
             raise ImportError(
-                "The openai package is required. " "Install it with: pip install openai",
+                "The openai package is required. Install it with: pip install openai",
             )
 
         self._client = openai.OpenAI(**openai_kwargs)
@@ -434,7 +434,7 @@ class TracedOpenAISession:
             import openai
         except ImportError:
             raise ImportError(
-                "The openai package is required. " "Install it with: pip install openai",
+                "The openai package is required. Install it with: pip install openai",
             )
 
         self._client = openai.OpenAI(**openai_kwargs)
@@ -560,11 +560,7 @@ class TracedOpenAISession:
         return getattr(self._client, name)
 
     def __repr__(self):
-        return (
-            f"TracedOpenAISession("
-            f"project={self.genai_session.project!r}, "
-            f"turns={self.genai_session.total_turns})"
-        )
+        return f"TracedOpenAISession(project={self.genai_session.project!r}, turns={self.genai_session.total_turns})"
 
 
 # ─────────────────────────────────────────────────────

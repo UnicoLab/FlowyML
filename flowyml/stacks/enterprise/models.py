@@ -189,7 +189,7 @@ class RuntimeConfig(BaseModel):
     def validate_python_version(cls, v: str) -> str:
         if not re.match(r"^\d+\.\d+(\.\d+)?$", v):
             raise ValueError(
-                f"Invalid Python version '{v}'. " f"Expected format: '3.11' or '3.11.5'.",
+                f"Invalid Python version '{v}'. Expected format: '3.11' or '3.11.5'.",
             )
         return v
 
@@ -229,7 +229,7 @@ class ComputeConfig(BaseModel):
     def validate_compute_type(cls, v: str) -> str:
         if v not in SUPPORTED_COMPUTE_TYPES:
             raise ValueError(
-                f"Unsupported compute type '{v}'. " f"Supported: {', '.join(sorted(SUPPORTED_COMPUTE_TYPES))}.",
+                f"Unsupported compute type '{v}'. Supported: {', '.join(sorted(SUPPORTED_COMPUTE_TYPES))}.",
             )
         return v
 
@@ -237,7 +237,7 @@ class ComputeConfig(BaseModel):
     def validate_instance_range(self) -> ComputeConfig:
         if self.min_instances > self.max_instances:
             raise ValueError(
-                f"minInstances ({self.min_instances}) cannot exceed " f"maxInstances ({self.max_instances}).",
+                f"minInstances ({self.min_instances}) cannot exceed maxInstances ({self.max_instances}).",
             )
         return self
 
@@ -262,7 +262,7 @@ class StorageConfig(BaseModel):
     def validate_artifact_store(cls, v: str) -> str:
         if v not in SUPPORTED_ARTIFACT_STORES:
             raise ValueError(
-                f"Unsupported artifact store '{v}'. " f"Supported: {', '.join(sorted(SUPPORTED_ARTIFACT_STORES))}.",
+                f"Unsupported artifact store '{v}'. Supported: {', '.join(sorted(SUPPORTED_ARTIFACT_STORES))}.",
             )
         return v
 
@@ -280,7 +280,7 @@ class SecretsConfig(BaseModel):
     def validate_provider(cls, v: str) -> str:
         if v not in SUPPORTED_SECRET_PROVIDERS:
             raise ValueError(
-                f"Unsupported secrets provider '{v}'. " f"Supported: {', '.join(sorted(SUPPORTED_SECRET_PROVIDERS))}.",
+                f"Unsupported secrets provider '{v}'. Supported: {', '.join(sorted(SUPPORTED_SECRET_PROVIDERS))}.",
             )
         return v
 
@@ -426,7 +426,7 @@ class StackMetadata(BaseModel):
     def validate_semver(cls, v: str) -> str:
         if not SEMVER_PATTERN.match(v):
             raise ValueError(
-                f"Invalid semantic version '{v}'. " f"Expected format: MAJOR.MINOR.PATCH (e.g. 1.2.0, 2.0.0-beta.1).",
+                f"Invalid semantic version '{v}'. Expected format: MAJOR.MINOR.PATCH (e.g. 1.2.0, 2.0.0-beta.1).",
             )
         return v
 
@@ -478,7 +478,7 @@ class StackSpec(BaseModel):
     def validate_backend(cls, v: str) -> str:
         if v not in SUPPORTED_BACKENDS:
             raise ValueError(
-                f"Unsupported backend '{v}'. " f"Supported: {', '.join(sorted(SUPPORTED_BACKENDS))}.",
+                f"Unsupported backend '{v}'. Supported: {', '.join(sorted(SUPPORTED_BACKENDS))}.",
             )
         return v
 
@@ -721,7 +721,7 @@ class StackDefinition(BaseModel):
                 from flowyml.stacks.aws import AWSStack
             except ImportError as exc:
                 raise ImportError(
-                    "AWS stack requires boto3. Install with: " "pip install flowyml[aws]",
+                    "AWS stack requires boto3. Install with: pip install flowyml[aws]",
                 ) from exc
 
             aws_kwargs: dict[str, Any] = {
@@ -744,7 +744,7 @@ class StackDefinition(BaseModel):
                 from flowyml.stacks.azure import AzureMLStack
             except ImportError as exc:
                 raise ImportError(
-                    "AzureML stack requires azure-ai-ml. Install with: " "pip install flowyml[azure]",
+                    "AzureML stack requires azure-ai-ml. Install with: pip install flowyml[azure]",
                 ) from exc
 
             azure_kwargs: dict[str, Any] = {

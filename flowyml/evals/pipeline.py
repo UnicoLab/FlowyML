@@ -104,7 +104,7 @@ class EvalStep:
                 )
             else:
                 raise ValueError(
-                    "EvalStep requires either 'data' (EvalDataset) or " "'predictions' + 'targets' arguments",
+                    "EvalStep requires either 'data' (EvalDataset) or 'predictions' + 'targets' arguments",
                 )
         elif isinstance(data, dict):
             if "predictions" in data and "targets" in data:
@@ -166,6 +166,5 @@ class EvalStep:
 
     def __repr__(self) -> str:
         return (
-            f"EvalStep(name='{self.name}', scorers={len(self.scorers)}, "
-            f"fail_on_regression={self.fail_on_regression})"
+            f"EvalStep(name='{self.name}', scorers={len(self.scorers)}, fail_on_regression={self.fail_on_regression})"
         )

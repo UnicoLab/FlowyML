@@ -192,6 +192,7 @@ class Pipeline:
         enable_cache: bool = True,
         enable_checkpointing: bool | None = None,  # None means use config default
         enable_experiment_tracking: bool | None = None,  # None means use config default (True)
+        auto_track: bool | None = None,  # None means use enable_experiment_tracking value
         cache_dir: str | None = None,
         stack: Any | None = None,  # Stack name (str), Stack instance, or StackDefinition
         env: str | None = None,  # Environment name from flowyml.yaml (e.g. 'dev', 'staging', 'prod')
@@ -210,6 +211,7 @@ class Pipeline:
             enable_cache: Whether to enable caching
             enable_checkpointing: Whether to enable checkpointing (defaults to config setting, True by default)
             enable_experiment_tracking: Whether to enable automatic experiment tracking (defaults to config.auto_log_metrics, True by default)
+            auto_track: Whether to automatically track experiments. If None (default), uses the value of enable_experiment_tracking.
             cache_dir: Optional directory for cache
             stack: Stack to run on. Accepts:
                 - ``str``: Stack name (e.g. ``"local"``, ``"aml_cpu_small"``),
@@ -328,6 +330,18 @@ class Pipeline:
             self.project_name = project_to_use
         else:
             self.project_name = None
+
+        # Auto-tracking
+        # auto_track defaults to the same value as enable_experiment_tracking
+        self.auto_track = auto_track if auto_track is not None else self.enable_experiment_tracking
+        self._auto_tracker = None
+        if self.auto_track:
+            try:
+                from flowyml.tracking.auto_tracking import AutoTracker
+
+                self._auto_tracker = AutoTracker(enabled=True)
+            except Exception:
+                pass  # Don't fail pipeline creation if auto-tracking import fails
 
         # State
         self._built = False
@@ -735,6 +749,20 @@ class Pipeline:
                 context_params = self.context.to_dict() if self.context else {}
                 if context:
                     context_params.update(context)
+
+                # --- Auto-tracking: collect ALL parameters ---
+                if self._auto_tracker:
+                    try:
+                        auto_params = self._auto_tracker.collect_parameters(self)
+                        # Merge auto-tracked params into context_params for external tracker
+                        context_params.update(auto_params)
+                        # Fire params-collected hooks
+                        from flowyml.core.hooks import get_global_hooks as _get_hooks
+
+                        _get_hooks().run_params_collected_hooks(auto_params)
+                    except Exception:
+                        pass  # Don't fail pipeline if auto-tracking fails
+
                 # Build run tags
                 run_tags = {}
                 if self.project_name:
@@ -956,7 +984,7 @@ class Pipeline:
                         steps_str = ", ".join(g.get("steps", []))
                         machine = g.get("machine_type", "auto")
                         display.console.print(
-                            f"  {icon} [bold]{g['group_name']}[/bold]" f"  ({machine})" f"  → {steps_str}",
+                            f"  {icon} [bold]{g['group_name']}[/bold]  ({machine})  → {steps_str}",
                         )
                     if failed:
                         display.console.print(
@@ -1329,18 +1357,20 @@ class Pipeline:
         - The **external** side (MLflow/WandB) is handled by PipelinePluginIntegration
           hooks in Pipeline.run()
 
-        Extracts Metrics objects from pipeline outputs and logs them along with
-        context parameters to the experiment tracking system.
+        When auto_track is enabled (default), delegates to AutoTracker which
+        collects metrics from all step outputs (plain dicts, Metrics assets,
+        scalars) and parameters from context, stack, and environment.
+
+        When auto_track is disabled, falls back to the legacy extraction that
+        only handles Metrics assets.
 
         This is called automatically after each pipeline run if experiment tracking is enabled.
         """
         from flowyml.utils.config import get_config
-        from flowyml.assets.metrics import Metrics
 
         config = get_config()
 
         # Check if experiment tracking is enabled (default: True)
-        # Can be disabled globally via config or per-pipeline via enable_experiment_tracking
         enable_tracking = getattr(self, "enable_experiment_tracking", None)
         if enable_tracking is None:
             enable_tracking = getattr(config, "auto_log_metrics", True)
@@ -1348,22 +1378,41 @@ class Pipeline:
         if not enable_tracking:
             return
 
+        # --- AUTO-TRACKER PATH (new, preferred) ---
+        if self._auto_tracker:
+            try:
+                # Extract step-level metrics from any outputs not yet processed
+                # (e.g., steps whose results arrived after the hooks fired)
+                for step_name, step_result in result.step_results.items():
+                    if step_name not in self._auto_tracker._step_metrics:
+                        self._auto_tracker.extract_step_metrics(step_name, step_result)
+
+                # Finalize — logs to internal tracker (Experiment + Run)
+                self._auto_tracker.finalize_run(self, result)
+                return
+            except Exception as e:
+                import warnings
+
+                warnings.warn(
+                    f"AutoTracker finalization failed, falling back to legacy: {e}",
+                    stacklevel=2,
+                )
+                # Fall through to legacy path
+
+        # --- LEGACY PATH (fallback when auto_track=False or AutoTracker fails) ---
+        from flowyml.assets.metrics import Metrics
+
         # Extract all Metrics from pipeline outputs
         all_metrics = {}
         for output_name, output_value in result.outputs.items():
             if isinstance(output_value, Metrics):
-                # Extract metrics from Metrics object
                 metrics_dict = output_value.get_all_metrics() or output_value.data or {}
-                # Use output name as prefix to avoid conflicts, but simplify if output is "metrics"
                 for key, value in metrics_dict.items():
                     if output_name == "metrics" or output_name.endswith("/metrics"):
-                        # Use metric key directly for cleaner names
                         all_metrics[key] = value
                     else:
-                        # Prefix with output name to avoid conflicts
                         all_metrics[f"{output_name}.{key}"] = value
             elif isinstance(output_value, dict):
-                # Check if dict contains Metrics objects
                 for key, val in output_value.items():
                     if isinstance(val, Metrics):
                         metrics_dict = val.get_all_metrics() or val.data or {}
@@ -1373,7 +1422,6 @@ class Pipeline:
         # Extract context parameters
         context_params = {}
         if self.context:
-            # Get all context parameters using to_dict() method
             context_params = self.context.to_dict()
 
         # --- Internal FlowyML tracking (always) ---
@@ -1382,21 +1430,18 @@ class Pipeline:
                 from flowyml.tracking.experiment import Experiment
                 from flowyml.tracking.runs import Run
 
-                # Create or get experiment (use pipeline name as experiment name)
                 experiment_name = self.name
                 experiment = Experiment(
                     name=experiment_name,
                     description=f"Auto-tracked experiment for pipeline: {self.name}",
                 )
 
-                # Log run to experiment
                 experiment.log_run(
                     run_id=result.run_id,
                     metrics=all_metrics,
                     parameters=context_params,
                 )
 
-                # Also create/update Run object for compatibility
                 run = Run(
                     run_id=result.run_id,
                     pipeline_name=self.name,
@@ -1407,18 +1452,9 @@ class Pipeline:
                 run.complete(status="success" if result.success else "failed")
 
             except Exception as e:
-                # Don't fail pipeline if experiment logging fails
                 import warnings
 
                 warnings.warn(f"Failed to log experiment metrics: {e}", stacklevel=2)
-
-        # --- External tracker forwarding (dual-write complement) ---
-        # Note: The main tracking hooks (start_run/end_run/log_params/final metrics)
-        # are handled by PipelinePluginIntegration in Pipeline.run().
-        # This block handles any additional metrics that were only extractable
-        # after _save_run() completed (e.g., from artifact analysis).
-        # In most cases, on_pipeline_end() already forwarded these metrics.
-        # This is a safety net for edge cases where metrics are computed lazily.
 
     def _save_run(self, result: PipelineResult) -> None:
         """Save run results to disk and metadata database."""

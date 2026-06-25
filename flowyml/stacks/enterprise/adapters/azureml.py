@@ -199,14 +199,14 @@ class AzureMLBackendAdapter:
                 stack_name=stack.name,
                 field="spec.backend",
                 reason=(
-                    f"AzureMLBackendAdapter requires backend='azureml', " f"but the stack specifies '{stack.backend}'."
+                    f"AzureMLBackendAdapter requires backend='azureml', but the stack specifies '{stack.backend}'."
                 ),
                 suggestion="Set spec.backend to 'azureml' in the stack YAML.",
             )
 
         if not stack.spec.compute.size:
             logger.warning(
-                "Stack '%s' does not specify a compute size. " "AzureML will use the workspace default.",
+                "Stack '%s' does not specify a compute size. AzureML will use the workspace default.",
                 stack.name,
             )
 
@@ -230,7 +230,7 @@ class AzureMLBackendAdapter:
         env_config = _map_stack_to_environment(context.stack)
 
         logger.info(
-            "AzureML preparation plan:\n" "  workspace config = %s\n" "  environment      = %s",
+            "AzureML preparation plan:\n  workspace config = %s\n  environment      = %s",
             workspace_config,
             env_config,
         )
@@ -251,7 +251,7 @@ class AzureMLBackendAdapter:
             )
         except Exception:  # noqa: BLE001 – ResourceNotFoundError or similar
             logger.info(
-                "Compute target '%s' not found — creating (size=%s, " "min_instances=%s, max_instances=%s).",
+                "Compute target '%s' not found — creating (size=%s, min_instances=%s, max_instances=%s).",
                 compute_name,
                 compute_size,
                 min_instances,
@@ -268,7 +268,7 @@ class AzureMLBackendAdapter:
                 logger.info("Compute target '%s' provisioned.", compute_name)
             except Exception as exc:
                 raise RuntimeError(
-                    f"Failed to provision AzureML compute target " f"'{compute_name}': {exc}",
+                    f"Failed to provision AzureML compute target '{compute_name}': {exc}",
                 ) from exc
 
         # -- 2. Register the environment ------------------------------------
@@ -282,7 +282,7 @@ class AzureMLBackendAdapter:
             )
         except Exception as exc:
             raise RuntimeError(
-                f"Failed to register AzureML environment " f"'{env_config.get('name', 'unknown')}': {exc}",
+                f"Failed to register AzureML environment '{env_config.get('name', 'unknown')}': {exc}",
             ) from exc
 
     def submit(

@@ -172,9 +172,7 @@ def checkpoint_enabled_pipeline(pipeline, run_id: str):
 
                 logger = logging.getLogger("flowyml.checkpoint")
                 logger.info(
-                    f"Resuming pipeline from checkpoint. "
-                    f"Completed steps: {completed}. "
-                    f"Last completed: {resume_pt}",
+                    f"Resuming pipeline from checkpoint. Completed steps: {completed}. Last completed: {resume_pt}",
                 )
         else:
             pipeline._resume_from_checkpoint = False

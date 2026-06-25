@@ -203,7 +203,7 @@ class RegistryIndexSource:
             if not resolved_path.is_file():
                 raise StackSourceError(
                     source_uri=str(self._index_path),
-                    reason=(f"Stack file referenced by index entry '{entry.name}' " f"not found: {resolved_path}"),
+                    reason=(f"Stack file referenced by index entry '{entry.name}' not found: {resolved_path}"),
                     suggestion=(
                         "Check that the 'path' field in the registry index is "
                         "correct and the file exists relative to the index."

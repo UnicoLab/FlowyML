@@ -570,17 +570,17 @@ def plugin_info(plugin_name: str) -> None:
         console = Console()
 
         content = f"""
-# {info['name']} (v{info['version']})
+# {info["name"]} (v{info["version"]})
 
-{info['description']}
+{info["description"]}
 
-**Author:** {info['author']}
+**Author:** {info["author"]}
 
 ## Components
-{chr(10).join(f'- {c}' for c in info['components'])}
+{chr(10).join(f"- {c}" for c in info["components"])}
 
 ## Dependencies
-{chr(10).join(f'- {d}' for d in info['dependencies'])}
+{chr(10).join(f"- {d}" for d in info["dependencies"])}
 """
         console.print(Panel(Markdown(content), title="Plugin Info", expand=False))
 

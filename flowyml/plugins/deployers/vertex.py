@@ -84,7 +84,7 @@ class VertexEndpointDeployer(ModelDeployerPlugin):
             logger.info(f"Vertex Endpoint Deployer initialized for project {self.project}")
         except ImportError:
             raise ImportError(
-                "google-cloud-aiplatform is required. " "Install with: pip install google-cloud-aiplatform",
+                "google-cloud-aiplatform is required. Install with: pip install google-cloud-aiplatform",
             )
 
     def _ensure_initialized(self) -> None:

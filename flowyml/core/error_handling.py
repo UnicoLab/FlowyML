@@ -237,7 +237,9 @@ class ExponentialBackoff:
 
         @step(
             retry=retry(
-                max_attempts=5, backoff=ExponentialBackoff(initial=1, max=60, multiplier=2), on=[NetworkError, TimeoutError]
+                max_attempts=5,
+                backoff=ExponentialBackoff(initial=1, max=60, multiplier=2),
+                on=[NetworkError, TimeoutError],
             )
         )
         def fetch_data():

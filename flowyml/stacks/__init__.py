@@ -14,11 +14,13 @@ Quick start::
 
     # By definition
     from flowyml.stacks.enterprise import StackDefinition
+
     stack = StackDefinition.from_yaml("stacks/my_stack.yaml")
     Pipeline("training", stack=stack)
 
     # Context manager
     from flowyml.stacks import use_stack
+
     with use_stack("staging"):
         pipeline.run()
 """
@@ -113,9 +115,9 @@ def use_stack(name_or_definition):
 
         # Try enterprise resolver first
         try:
-            from flowyml.stacks.enterprise.models import StackDefinition as _SD
+            from flowyml.stacks.enterprise.models import StackDefinition as _StackDef
 
-            if isinstance(name_or_definition, _SD):
+            if isinstance(name_or_definition, _StackDef):
                 # Set environment variable so Pipeline resolves it
                 old_val = os.environ.get("FLOWYML_STACK")
                 # Store the definition on a thread-local for the resolver to pick up

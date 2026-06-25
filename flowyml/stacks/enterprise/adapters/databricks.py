@@ -249,15 +249,15 @@ class DatabricksBackendAdapter:
             raise StackValidationError(
                 stack_name=stack.name,
                 field="host",
-                reason=("No Databricks host configured. The adapter needs a " "workspace URL to connect to."),
+                reason=("No Databricks host configured. The adapter needs a workspace URL to connect to."),
                 suggestion=(
-                    "Set the DATABRICKS_HOST environment variable or pass " "'host' to DatabricksBackendAdapter()."
+                    "Set the DATABRICKS_HOST environment variable or pass 'host' to DatabricksBackendAdapter()."
                 ),
             )
 
         if not stack.spec.compute.size:
             logger.warning(
-                "Stack '%s' does not specify a compute size. " "Databricks will use a default node type.",
+                "Stack '%s' does not specify a compute size. Databricks will use a default node type.",
                 stack.name,
             )
 
@@ -620,4 +620,4 @@ class DatabricksBackendAdapter:
         return _map_stack_to_runtime(stack)
 
     def __repr__(self) -> str:
-        return f"DatabricksBackendAdapter(" f"host={self._host!r}, " f"workspace_id={self._workspace_id!r})"
+        return f"DatabricksBackendAdapter(host={self._host!r}, workspace_id={self._workspace_id!r})"

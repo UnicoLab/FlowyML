@@ -9,10 +9,12 @@ Usage::
     from flowyml.integrations.eval_bridge import SessionEvaluator
     from flowyml.evals import Relevance, Toxicity
 
-    evaluator = SessionEvaluator([
-        Relevance(model="gpt-4o-mini", threshold=0.7),
-        Toxicity(model="gpt-4o-mini", threshold=0.1),
-    ])
+    evaluator = SessionEvaluator(
+        [
+            Relevance(model="gpt-4o-mini", threshold=0.7),
+            Toxicity(model="gpt-4o-mini", threshold=0.1),
+        ]
+    )
 
     with session_trace("chatbot", evaluator=evaluator) as tracer:
         with tracer.turn("user") as t:

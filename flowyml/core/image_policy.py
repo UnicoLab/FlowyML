@@ -4,6 +4,7 @@ Provides policy validation for Docker images used in pipeline execution.
 Platform teams define which base images are approved, what labels are
 required, and whether scanning/signing is mandatory.
 """
+
 from __future__ import annotations
 
 import logging
@@ -269,7 +270,7 @@ class ImagePolicyValidator:
                         rule_name="non_root_user",
                         status="warning",
                         message=("No non-root USER directive found in Dockerfile."),
-                        suggestion=('Add "USER nonroot" or "USER 1000" for ' "production security."),
+                        suggestion=('Add "USER nonroot" or "USER 1000" for production security.'),
                     ),
                 )
             else:
@@ -339,8 +340,8 @@ class ImagePolicyValidator:
                 return ImagePolicyResult(
                     rule_name="base_image_denied",
                     status="failed",
-                    message=(f'Base image "{image}" matches denied pattern ' f'"{denied}".'),
-                    suggestion=("Use one of the approved base images from the " "platform team."),
+                    message=(f'Base image "{image}" matches denied pattern "{denied}".'),
+                    suggestion=("Use one of the approved base images from the platform team."),
                 )
 
         # Check approved list (if non-empty)

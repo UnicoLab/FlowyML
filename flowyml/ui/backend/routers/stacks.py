@@ -4,6 +4,7 @@ Provides endpoints for listing, inspecting, and governing enterprise stacks.
 All enterprise module imports are lazy so the router still loads when the
 full ``flowyml.stacks.enterprise`` package is not installed.
 """
+
 from __future__ import annotations
 
 import logging

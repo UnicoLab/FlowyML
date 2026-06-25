@@ -187,4 +187,4 @@ class EvalRun:
         }
 
     def __repr__(self) -> str:
-        return f"EvalRun(id='{self.run_id[:8]}...', " f"status='{self.status}', " f"experiment='{self.experiment}')"
+        return f"EvalRun(id='{self.run_id[:8]}...', status='{self.status}', experiment='{self.experiment}')"

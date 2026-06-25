@@ -32,7 +32,7 @@ def safe_import(module_name: str, *, package: str, install_hint: str | None = No
     except ImportError as exc:
         hint = install_hint or f"pip install {package}"
         raise ImportError(
-            f"FlowyML {package} adapter requires the '{package}' package. " f"Install it with: {hint}",
+            f"FlowyML {package} adapter requires the '{package}' package. Install it with: {hint}",
         ) from exc
 
 

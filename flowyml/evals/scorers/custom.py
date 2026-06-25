@@ -113,21 +113,21 @@ class CustomJudge(Scorer):
 
         if self.feedback_type is float:
             parts.append(
-                "\nRespond in JSON with exactly two fields: " '"score" (float 0.0 to 1.0) and "rationale" (string).',
+                '\nRespond in JSON with exactly two fields: "score" (float 0.0 to 1.0) and "rationale" (string).',
             )
         elif self.feedback_type is bool:
             parts.append(
-                "\nRespond in JSON with exactly two fields: " '"score" (boolean true/false) and "rationale" (string).',
+                '\nRespond in JSON with exactly two fields: "score" (boolean true/false) and "rationale" (string).',
             )
         elif hasattr(self.feedback_type, "__args__"):
             # Literal type — extract allowed values
             allowed = list(self.feedback_type.__args__)
             parts.append(
-                f"\nRespond in JSON with exactly two fields: " f'"score" (one of: {allowed}) and "rationale" (string).',
+                f'\nRespond in JSON with exactly two fields: "score" (one of: {allowed}) and "rationale" (string).',
             )
         else:
             parts.append(
-                "\nRespond in JSON with exactly two fields: " '"score" and "rationale" (string).',
+                '\nRespond in JSON with exactly two fields: "score" and "rationale" (string).',
             )
 
         if self.examples:

@@ -9,14 +9,13 @@ import time
 import requests
 import subprocess
 import logging
-from typing import Optional
 
 logger = logging.getLogger("flowyml.ui.tunnel")
 
 NGROK_API_URL = "http://127.0.0.1:4040/api/tunnels"
 
 
-def get_active_tunnel() -> Optional[str]:
+def get_active_tunnel() -> str | None:
     """Get the active ngrok tunnel URL if one exists.
 
     Returns:
@@ -35,7 +34,7 @@ def get_active_tunnel() -> Optional[str]:
     return None
 
 
-def start_tunnel(port: int = 8080) -> Optional[str]:
+def start_tunnel(port: int = 8080) -> str | None:
     """Start an ngrok tunnel for the specified port.
 
     Args:

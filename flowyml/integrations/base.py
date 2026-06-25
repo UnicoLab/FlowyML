@@ -552,8 +552,7 @@ class BaseTracer:
         if self.verbose:
             icon = "✅" if span.status == "success" else "❌"
             logger.info(
-                f"[FlowyML] {icon} {span.event_type}:{span.name} "
-                f"({span.duration:.3f}s, {span.total_tokens} tokens)",
+                f"[FlowyML] {icon} {span.event_type}:{span.name} ({span.duration:.3f}s, {span.total_tokens} tokens)",
             )
 
         return span

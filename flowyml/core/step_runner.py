@@ -130,7 +130,7 @@ class StepRunner:
         """
         if ":" not in self.pipeline_module:
             raise ValueError(
-                f"Invalid pipeline module format: {self.pipeline_module!r}. " "Expected 'module.path:builder_function'",
+                f"Invalid pipeline module format: {self.pipeline_module!r}. Expected 'module.path:builder_function'",
             )
 
         module_path, attr_name = self.pipeline_module.rsplit(":", 1)
@@ -196,7 +196,7 @@ class StepRunner:
 
         if not requested_steps:
             raise ValueError(
-                f"No valid steps found. Requested: {self.step_names}, " f"Available: {list(step_map.keys())}",
+                f"No valid steps found. Requested: {self.step_names}, Available: {list(step_map.keys())}",
             )
 
         # 4. Get topological order within our subset
@@ -284,7 +284,7 @@ class StepRunner:
                                 e,
                             )
                             raise RuntimeError(
-                                f"Artifact '{out_name}' could not be serialized to " f"artifact store: {e}",
+                                f"Artifact '{out_name}' could not be serialized to artifact store: {e}",
                             ) from e
                 elif len(step.outputs) == 1:
                     artifacts[step.outputs[0]] = result
@@ -298,7 +298,7 @@ class StepRunner:
                             e,
                         )
                         raise RuntimeError(
-                            f"Artifact '{step.outputs[0]}' could not be serialized to " f"artifact store: {e}",
+                            f"Artifact '{step.outputs[0]}' could not be serialized to artifact store: {e}",
                         ) from e
                 else:
                     # Multiple declared outputs but single return value
@@ -314,7 +314,7 @@ class StepRunner:
                             e,
                         )
                         raise RuntimeError(
-                            f"Artifact '{step.outputs[0]}' could not be serialized to " f"artifact store: {e}",
+                            f"Artifact '{step.outputs[0]}' could not be serialized to artifact store: {e}",
                         ) from e
 
         total = time.time() - start

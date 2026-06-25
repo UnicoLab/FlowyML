@@ -448,15 +448,15 @@ def _parse_yaml(file_path: Path) -> ProjectConfig:
             stack_name=str(file_path),
             field="(root)",
             reason=f"Failed to parse YAML: {exc}",
-            suggestion=("Ensure the file contains valid YAML syntax. " "Use a YAML linter to find formatting errors."),
+            suggestion=("Ensure the file contains valid YAML syntax. Use a YAML linter to find formatting errors."),
         ) from exc
 
     if not isinstance(data, dict):
         raise StackValidationError(
             stack_name=str(file_path),
             field="(root)",
-            reason=("Project config file must contain a YAML mapping, " "not a scalar or list."),
-            suggestion=("Ensure the file starts with 'project:' and contains " "the expected structure."),
+            reason=("Project config file must contain a YAML mapping, not a scalar or list."),
+            suggestion=("Ensure the file starts with 'project:' and contains the expected structure."),
         )
 
     try:

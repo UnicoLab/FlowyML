@@ -244,7 +244,7 @@ def get_backend_adapter(backend_name: str, **kwargs: Any) -> BackendAdapter:
     if dotted_path is None:
         available = ", ".join(sorted(_BACKEND_REGISTRY.keys()))
         raise ValueError(
-            f"Unknown backend '{backend_name}'. " f"Registered backends: {available}.",
+            f"Unknown backend '{backend_name}'. Registered backends: {available}.",
         )
 
     module_path, class_name = dotted_path.rsplit(".", 1)

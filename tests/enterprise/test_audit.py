@@ -74,7 +74,7 @@ class TestAuditStore:
         store = AuditStore(audit_dir=str(tmp_path / "audit"))
         store.record(_make_execution_context(sample_stack, run_id="run-json"))
 
-        exported = store.export("run-json", format="json")
+        exported = store.export("run-json", output_format="json")
         data = json.loads(exported)
         assert data["run_id"] == "run-json", "Exported JSON should contain run_id"
         assert data["stack_name"] == "test_cpu_stack"
@@ -84,7 +84,7 @@ class TestAuditStore:
         store = AuditStore(audit_dir=str(tmp_path / "audit"))
         store.record(_make_execution_context(sample_stack, run_id="run-yaml"))
 
-        exported = store.export("run-yaml", format="yaml")
+        exported = store.export("run-yaml", output_format="yaml")
         data = yaml.safe_load(exported)
         assert data["run_id"] == "run-yaml", "Exported YAML should contain run_id"
         assert data["pipeline"] == "test-pipeline"

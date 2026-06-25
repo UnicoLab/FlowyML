@@ -139,6 +139,11 @@ class LocalOrchestrator(Orchestrator):
 
                 # Process each step result
                 for step_result in group_results:
+                    # Fire step end hooks for grouped steps (fix: previously only ungrouped steps got hooks)
+                    step_obj = pipeline.steps_dict.get(step_result.step_name)
+                    if step_obj:
+                        hooks.run_step_end_hooks(step_obj, step_result)
+
                     # Update display
                     if hasattr(pipeline, "_display") and pipeline._display:
                         pipeline._display.update_step_status(

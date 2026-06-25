@@ -392,7 +392,7 @@ class StackConfig:
         component_cls = registry.get_component(comp_type)
         if component_cls is None:
             logger.warning(
-                f"Component type '{comp_type}' not found in registry. " f"Available: {registry.list_all()}",
+                f"Component type '{comp_type}' not found in registry. Available: {registry.list_all()}",
             )
             return None
 

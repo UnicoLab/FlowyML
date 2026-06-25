@@ -10,7 +10,7 @@ support.
 Example::
 
     source = HTTPStackSource(url="https://stacks.example.com/prod.yaml")
-    refs = source.list_stacks()     # → single-element list
+    refs = source.list_stacks()  # → single-element list
     stack = source.load_stack("aml_cpu_small")
 """
 
@@ -104,7 +104,7 @@ class HTTPStackSource:
         except httpx.HTTPStatusError as exc:
             raise StackSourceError(
                 source_uri=self._url,
-                reason=(f"HTTP {exc.response.status_code}: " f"{exc.response.reason_phrase}"),
+                reason=(f"HTTP {exc.response.status_code}: {exc.response.reason_phrase}"),
                 suggestion="Check the URL is correct and the server is accessible.",
             ) from exc
         except httpx.HTTPError as exc:

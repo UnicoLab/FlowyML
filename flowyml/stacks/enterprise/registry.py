@@ -283,6 +283,4 @@ class EnterpriseStackRegistry:
         return list(self._sources)
 
     def __repr__(self) -> str:
-        return (
-            f"EnterpriseStackRegistry(sources={len(self._sources)}, " f"lock={'yes' if self._lock_manager else 'no'})"
-        )
+        return f"EnterpriseStackRegistry(sources={len(self._sources)}, lock={'yes' if self._lock_manager else 'no'})"

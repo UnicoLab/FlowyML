@@ -229,7 +229,7 @@ class StackLockManager:
                         stack_name=name,
                         status="verified",
                         expected_digest=entry.digest,
-                        message=(f"Stack '{name}' has a recorded digest in the " f"lock file."),
+                        message=(f"Stack '{name}' has a recorded digest in the lock file."),
                     ),
                 )
             else:
@@ -238,9 +238,7 @@ class StackLockManager:
                         stack_name=name,
                         status="missing",
                         message=(
-                            f"Stack '{name}' has no digest in the lock "
-                            f"file. Re-lock this stack to record its "
-                            f"digest."
+                            f"Stack '{name}' has no digest in the lock file. Re-lock this stack to record its digest."
                         ),
                     ),
                 )

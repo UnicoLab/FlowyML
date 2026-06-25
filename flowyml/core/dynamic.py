@@ -94,7 +94,7 @@ class DynamicStep:
 
         if sub_pipeline is None:
             logger.warning(
-                f"Dynamic step '{self.name}' returned None — " f"no sub-pipeline to execute",
+                f"Dynamic step '{self.name}' returned None — no sub-pipeline to execute",
             )
             return DynamicWorkflowResult()
 
@@ -102,7 +102,7 @@ class DynamicStep:
             # If the function returned something other than a Pipeline,
             # wrap it as a direct result
             logger.debug(
-                f"Dynamic step '{self.name}' returned a non-Pipeline value — " f"treating as direct result",
+                f"Dynamic step '{self.name}' returned a non-Pipeline value — treating as direct result",
             )
             return DynamicWorkflowResult(results=sub_pipeline)
 

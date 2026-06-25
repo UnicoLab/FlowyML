@@ -656,7 +656,7 @@ class FlowyMLApp(App):
         try:
             defn = _store().get_pipeline_definition(name)
             if defn:
-                text = f"[bold cyan]🔀 Pipeline: {name}[/]\n\n" f"[green]{json.dumps(defn, indent=2, default=str)}[/]"
+                text = f"[bold cyan]🔀 Pipeline: {name}[/]\n\n[green]{json.dumps(defn, indent=2, default=str)}[/]"
             else:
                 text = (
                     f"[bold cyan]🔀 Pipeline: {name}[/]\n\n"
@@ -725,7 +725,7 @@ class FlowyMLApp(App):
                 dur = ev.get("duration")
                 ds = f" ({dur:.2f}s)" if isinstance(dur, (int, float)) else ""
                 lines.append(
-                    f"  {ico} [{ev.get('event_type', '—')}] " f"{ev.get('name', '—')}{ds}",
+                    f"  {ico} [{ev.get('event_type', '—')}] {ev.get('name', '—')}{ds}",
                 )
                 if ev.get("model"):
                     lines.append(f"      Model: {ev['model']}")
@@ -733,16 +733,14 @@ class FlowyMLApp(App):
                 if tok:
                     total_tokens += tok
                     lines.append(
-                        f"      Tokens: {ev.get('prompt_tokens', 0)} → "
-                        f"{ev.get('completion_tokens', 0)} "
-                        f"(total: {tok})",
+                        f"      Tokens: {ev.get('prompt_tokens', 0)} → {ev.get('completion_tokens', 0)} (total: {tok})",
                     )
                 c = ev.get("cost")
                 if c:
                     total_cost += c
                     lines.append(f"      Cost: ${c:.4f}")
                 if ev.get("error"):
-                    lines.append(f"      [red]Error: " f"{json.dumps(ev['error'], default=str)[:80]}[/]")
+                    lines.append(f"      [red]Error: {json.dumps(ev['error'], default=str)[:80]}[/]")
                 lines.append("")
             if total_tokens or total_cost:
                 lines.append("[bold green]  📊 Totals:[/]")
@@ -864,7 +862,7 @@ class FlowyMLApp(App):
                             conn.execute(sa_delete(tbls["experiment_runs"]))
                         r = conn.execute(sa_delete(t))
                         conn.commit()
-                        msg = f"[green]✅ Purged '{table_name}' — " f"{r.rowcount} rows[/]"
+                        msg = f"[green]✅ Purged '{table_name}' — {r.rowcount} rows[/]"
                     else:
                         msg = f"[red]Unknown table: {table_name}[/]"
             self.call_from_thread(self._show_purge_msg, msg)

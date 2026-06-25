@@ -380,9 +380,7 @@ def _sync_cloud_status(run: dict, store: SQLiteMetadataStore) -> dict:
         except Exception:
             pass
         # The console URL format for Vertex AI Pipelines:
-        dashboard_url = (
-            f"https://console.cloud.google.com/vertex-ai/" f"pipelines/runs/{job_short}" f"?project={project_id}"
-        )
+        dashboard_url = f"https://console.cloud.google.com/vertex-ai/pipelines/runs/{job_short}?project={project_id}"
 
         # Update the run dict
         run["status"] = new_status

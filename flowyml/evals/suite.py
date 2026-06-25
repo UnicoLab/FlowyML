@@ -160,4 +160,4 @@ class EvalSuite:
         return len(self.scorers)
 
     def __repr__(self) -> str:
-        return f"EvalSuite(name='{self.name}', " f"scorers={self.scorer_names})"
+        return f"EvalSuite(name='{self.name}', scorers={self.scorer_names})"

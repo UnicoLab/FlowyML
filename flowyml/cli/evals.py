@@ -158,7 +158,7 @@ def list_evals(experiment, limit):
                 scorer_names = run.get("parameters", {}).get("scorer_names", [])
                 scorers_str = ", ".join(scorer_names[:3])
                 if len(scorer_names) > 3:
-                    scorers_str += f" +{len(scorer_names)-3}"
+                    scorers_str += f" +{len(scorer_names) - 3}"
                 date = run.get("start_time", "—")[:16]
                 recho(f"  {run_id:<10} {exp:<20} {status:<12} {scorers_str:<20} {date}")
 

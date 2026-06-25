@@ -24,6 +24,14 @@ class HookRegistry:
     on_step_start: list[Callable[["Step", dict[str, Any]], None]] = field(default_factory=list)
     on_step_end: list[Callable[["Step", "ExecutionResult"], None]] = field(default_factory=list)
 
+    # Auto-tracking hooks (fire when AutoTracker collects data)
+    on_metrics_collected: list[Callable[[str, dict[str, Any]], None]] = field(
+        default_factory=list,
+    )
+    on_params_collected: list[Callable[[dict[str, Any]], None]] = field(
+        default_factory=list,
+    )
+
     def register_pipeline_start_hook(self, hook: Callable[["Pipeline"], None]) -> None:
         """Register a hook to run at pipeline start."""
         self.on_pipeline_start.append(hook)
@@ -42,6 +50,28 @@ class HookRegistry:
     def register_step_end_hook(self, hook: Callable[["Step", "ExecutionResult"], None]) -> None:
         """Register a hook to run after step execution."""
         self.on_step_end.append(hook)
+
+    def register_metrics_collected_hook(
+        self,
+        hook: Callable[[str, dict[str, Any]], None],
+    ) -> None:
+        """Register a hook to run when step metrics are auto-collected.
+
+        Args:
+            hook: Callable(step_name, metrics_dict) -> None
+        """
+        self.on_metrics_collected.append(hook)
+
+    def register_params_collected_hook(
+        self,
+        hook: Callable[[dict[str, Any]], None],
+    ) -> None:
+        """Register a hook to run when parameters are auto-collected.
+
+        Args:
+            hook: Callable(params_dict) -> None
+        """
+        self.on_params_collected.append(hook)
 
     def run_pipeline_start_hooks(self, pipeline: "Pipeline") -> None:
         """Execute all pipeline start hooks."""
@@ -74,6 +104,26 @@ class HookRegistry:
                 hook(step, result)
             except Exception as e:
                 print(f"Warning: Step end hook failed: {e}")
+
+    def run_metrics_collected_hooks(
+        self,
+        step_name: str,
+        metrics: dict[str, Any],
+    ) -> None:
+        """Execute all metrics-collected hooks."""
+        for hook in self.on_metrics_collected:
+            try:
+                hook(step_name, metrics)
+            except Exception as e:
+                print(f"Warning: Metrics collected hook failed: {e}")
+
+    def run_params_collected_hooks(self, params: dict[str, Any]) -> None:
+        """Execute all params-collected hooks."""
+        for hook in self.on_params_collected:
+            try:
+                hook(params)
+            except Exception as e:
+                print(f"Warning: Params collected hook failed: {e}")
 
 
 # Global hook registry
@@ -112,4 +162,40 @@ def on_step_end(
 ) -> Callable[["Step", "ExecutionResult"], None]:
     """Decorator to register a step end hook."""
     _global_hooks.register_step_end_hook(func)
+    return func
+
+
+def on_metrics_collected(
+    func: Callable[[str, dict[str, Any]], None],
+) -> Callable[[str, dict[str, Any]], None]:
+    """Decorator to register a metrics-collected hook.
+
+    The decorated function is called whenever the AutoTracker
+    extracts metrics from a step's output.
+
+    Example::
+
+        @on_metrics_collected
+        def handle_metrics(step_name: str, metrics: dict):
+            print(f"Step {step_name} produced: {metrics}")
+    """
+    _global_hooks.register_metrics_collected_hook(func)
+    return func
+
+
+def on_params_collected(
+    func: Callable[[dict[str, Any]], None],
+) -> Callable[[dict[str, Any]], None]:
+    """Decorator to register a params-collected hook.
+
+    The decorated function is called when the AutoTracker
+    collects parameters at pipeline start.
+
+    Example::
+
+        @on_params_collected
+        def handle_params(params: dict):
+            print(f"Tracking {len(params)} parameters")
+    """
+    _global_hooks.register_params_collected_hook(func)
     return func

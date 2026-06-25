@@ -537,8 +537,18 @@ class PipelinePluginIntegration:
         outputs: dict = None,
         duration: float = None,
         cached: bool = False,
+        auto_metrics: dict[str, float | int] | None = None,
     ) -> None:
-        """Called when a step ends — logs step metrics to external tracker."""
+        """Called when a step ends — logs step metrics to external tracker.
+
+        Args:
+            step_name: Name of the step.
+            outputs: Step output data.
+            duration: Step execution duration in seconds.
+            cached: Whether the step result was from cache.
+            auto_metrics: Metrics auto-extracted by AutoTracker from step output.
+                These are forwarded to the external tracker in real-time.
+        """
         tracker = self._resolve_tracker()
         if tracker is None or self._current_run is None:
             return
@@ -551,6 +561,12 @@ class PipelinePluginIntegration:
 
             if duration is not None:
                 tracker.log_metrics({f"step.{step_name}.duration_seconds": duration})
+
+            # Forward auto-tracked step metrics to external tracker
+            if auto_metrics:
+                safe_metrics = {k: v for k, v in auto_metrics.items() if isinstance(v, (int, float))}
+                if safe_metrics:
+                    tracker.log_metrics(safe_metrics)
         except Exception:
             pass
 

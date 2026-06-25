@@ -267,7 +267,7 @@ class DockerImageBuilder:
         target_registry = registry_uri or docker_config.registry_uri
         if not target_registry:
             raise ValueError(
-                "No registry URI specified.  Set 'registry_uri' on " "DockerConfig or pass it to build_and_push().",
+                "No registry URI specified.  Set 'registry_uri' on DockerConfig or pass it to build_and_push().",
             )
 
         # Build the image name
@@ -466,7 +466,7 @@ class DockerImageBuilder:
             if base is None:
                 supported = ", ".join(sorted(self.CUDA_BASE_IMAGES))
                 logger.warning(
-                    "Unsupported CUDA version %r (supported: %s); " "falling back to %s",
+                    "Unsupported CUDA version %r (supported: %s); falling back to %s",
                     cuda_ver,
                     supported,
                     config.base_image,
@@ -581,7 +581,7 @@ class DockerImageBuilder:
             [
                 "# Run as non-root for security",
                 "RUN groupadd --gid 1000 appuser \\",
-                "    && useradd --uid 1000 --gid appuser --shell /bin/bash " "--create-home appuser \\",
+                "    && useradd --uid 1000 --gid appuser --shell /bin/bash --create-home appuser \\",
                 "    && chown -R appuser:appuser /app",
                 "USER appuser",
                 "",
@@ -653,7 +653,7 @@ class DockerImageBuilder:
             [
                 "# Run as non-root for security",
                 "RUN groupadd --gid 1000 appuser \\",
-                "    && useradd --uid 1000 --gid appuser --shell /bin/bash " "--create-home appuser \\",
+                "    && useradd --uid 1000 --gid appuser --shell /bin/bash --create-home appuser \\",
                 "    && chown -R appuser:appuser /app",
                 "USER appuser",
                 "",
@@ -765,8 +765,7 @@ class DockerImageBuilder:
             conda_file = config.conda_file or "environment.yml"
             lines.append("# Install conda / mamba")
             lines.append(
-                "RUN apt-get update && apt-get install -y --no-install-recommends "
-                "wget && rm -rf /var/lib/apt/lists/*",
+                "RUN apt-get update && apt-get install -y --no-install-recommends wget && rm -rf /var/lib/apt/lists/*",
             )
             lines.append(
                 "RUN wget -qO /tmp/mambaforge.sh "
@@ -778,7 +777,7 @@ class DockerImageBuilder:
             lines.append('ENV PATH="/opt/conda/bin:$PATH"')
             lines.append(f"COPY {conda_file} .")
             lines.append(
-                f"RUN {cache_conda}mamba env update -n base -f {conda_file} " f"&& conda clean -afy",
+                f"RUN {cache_conda}mamba env update -n base -f {conda_file} && conda clean -afy",
             )
             return lines
 
@@ -809,7 +808,7 @@ class DockerImageBuilder:
             lines.append("COPY pyproject.toml poetry.lock ./")
             lines.append("RUN poetry config virtualenvs.in-project true")
             lines.append(
-                f"RUN {cache_pip}poetry install " f"--no-interaction --no-ansi --no-root --only main",
+                f"RUN {cache_pip}poetry install --no-interaction --no-ansi --no-root --only main",
             )
 
         # ── Pipenv ────────────────────────────────────────────────────
@@ -820,7 +819,7 @@ class DockerImageBuilder:
             )
             lines.append("COPY Pipfile Pipfile.lock ./")
             lines.append(
-                f"RUN {cache_pip}pipenv install --deploy --system " f"|| pipenv install --deploy",
+                f"RUN {cache_pip}pipenv install --deploy --system || pipenv install --deploy",
             )
 
         # ── setup.py / setup.cfg ──────────────────────────────────────

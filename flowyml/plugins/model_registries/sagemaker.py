@@ -98,7 +98,7 @@ class SageMakerModelRegistry(ModelRegistryPlugin):
             logger.info(f"SageMaker Model Registry initialized in region {self.region}")
         except ImportError:
             raise ImportError(
-                "boto3 and sagemaker are required. " "Install with: pip install boto3 sagemaker",
+                "boto3 and sagemaker are required. Install with: pip install boto3 sagemaker",
             )
 
     def _ensure_initialized(self) -> None:
@@ -169,23 +169,19 @@ class SageMakerModelRegistry(ModelRegistryPlugin):
                 account = account_map.get(region, "763104351884")
 
                 if framework == "pytorch":
-                    inference_image_uri = (
-                        f"{account}.dkr.ecr.{region}.amazonaws.com/" "pytorch-inference:2.0.0-cpu-py310"
-                    )
+                    inference_image_uri = f"{account}.dkr.ecr.{region}.amazonaws.com/pytorch-inference:2.0.0-cpu-py310"
                 elif framework == "tensorflow":
-                    inference_image_uri = f"{account}.dkr.ecr.{region}.amazonaws.com/" "tensorflow-inference:2.13-cpu"
+                    inference_image_uri = f"{account}.dkr.ecr.{region}.amazonaws.com/tensorflow-inference:2.13-cpu"
                 elif framework == "sklearn" or framework == "scikit-learn":
                     inference_image_uri = (
-                        f"{account}.dkr.ecr.{region}.amazonaws.com/" "sagemaker-scikit-learn:1.2-1-cpu-py310"
+                        f"{account}.dkr.ecr.{region}.amazonaws.com/sagemaker-scikit-learn:1.2-1-cpu-py310"
                     )
                 elif framework == "xgboost":
-                    inference_image_uri = (
-                        f"{account}.dkr.ecr.{region}.amazonaws.com/" "sagemaker-xgboost:1.7-1-cpu-py310"
-                    )
+                    inference_image_uri = f"{account}.dkr.ecr.{region}.amazonaws.com/sagemaker-xgboost:1.7-1-cpu-py310"
                 else:
                     # Default to sklearn
                     inference_image_uri = (
-                        f"{account}.dkr.ecr.{region}.amazonaws.com/" "sagemaker-scikit-learn:1.2-1-cpu-py310"
+                        f"{account}.dkr.ecr.{region}.amazonaws.com/sagemaker-scikit-learn:1.2-1-cpu-py310"
                     )
 
             # Build model package spec

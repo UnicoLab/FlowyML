@@ -56,7 +56,7 @@ class GCPCloudRunDeployer(ModelDeployerPlugin):
             subprocess.run(["gcloud", "--version"], check=True, capture_output=True)
         except (subprocess.CalledProcessError, FileNotFoundError):
             raise ImportError(
-                "gcloud CLI is required for GCP Cloud Run deployment. " "Please install the Google Cloud SDK.",
+                "gcloud CLI is required for GCP Cloud Run deployment. Please install the Google Cloud SDK.",
             )
 
     @trace_execution(operation_name="cloud_run_deploy")

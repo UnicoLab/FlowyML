@@ -139,6 +139,68 @@ class Context:
 
         return missing
 
+    @property
+    def _trackable_params(self) -> dict[str, Any]:
+        """Return a cleaned dict of parameters suitable for experiment tracking.
+
+        Filters out non-serializable values and truncates long strings.
+        Uses the ``_tracked_keys`` set if ``mark_as_tracked()`` was called,
+        otherwise includes all parameters.
+
+        Returns:
+            Dict of serializable parameters.
+        """
+        all_params = self.to_dict()
+
+        # If user explicitly marked params, filter to those
+        if hasattr(self, "_tracked_keys") and self._tracked_keys:
+            all_params = {k: v for k, v in all_params.items() if k in self._tracked_keys}
+
+        # Clean values for tracking
+        clean: dict[str, Any] = {}
+        for k, v in all_params.items():
+            if k.startswith("_"):
+                continue
+            if isinstance(v, (int, float, bool, str, type(None))):
+                if isinstance(v, str) and len(v) > 250:
+                    clean[k] = v[:250]
+                else:
+                    clean[k] = v
+            else:
+                try:
+                    clean[k] = str(v)[:250]
+                except Exception:
+                    clean[k] = f"<{type(v).__name__}>"
+
+        return clean
+
+    def mark_as_tracked(self, *param_names: str) -> "Context":
+        """Mark specific parameters for experiment tracking.
+
+        When this method is called, only the named parameters will be
+        included in auto-tracked experiment logs. If never called,
+        **all** parameters are tracked (the default).
+
+        Args:
+            *param_names: Parameter names to include in tracking.
+
+        Returns:
+            self, for chaining.
+
+        Example::
+
+            ctx = context(
+                learning_rate=0.001,
+                epochs=10,
+                batch_size=32,
+                _internal_flag=True,  # won't be tracked (starts with _)
+            ).mark_as_tracked("learning_rate", "epochs", "batch_size")
+        """
+        if not hasattr(self, "_tracked_keys"):
+            self._tracked_keys: set[str] = set()
+        self._tracked_keys.update(param_names)
+        return self
+
     def __repr__(self) -> str:
         params_str = ", ".join(f"{k}={v}" for k, v in list(self._params.items())[:5])
         if len(self._params) > 5:

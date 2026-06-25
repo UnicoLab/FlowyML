@@ -217,7 +217,7 @@ def route_artifact(
                     logger.info("Model registered, awaiting approval for deployment.")
                 elif condition == "auto" and routing_rule.deploy_min_metrics:
                     logger.info(
-                        f"Model not deployed - metrics did not meet thresholds: " f"{routing_rule.deploy_min_metrics}",
+                        f"Model not deployed - metrics did not meet thresholds: {routing_rule.deploy_min_metrics}",
                     )
 
         # Log metrics if configured

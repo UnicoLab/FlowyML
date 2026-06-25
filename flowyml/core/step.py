@@ -35,7 +35,7 @@ class StepRegistry:
     """
 
     def __init__(self) -> None:
-        self._steps: dict[str, "Step"] = {}
+        self._steps: dict[str, Step] = {}
 
     def register(self, step: "Step") -> None:
         """Register a step in the global registry.

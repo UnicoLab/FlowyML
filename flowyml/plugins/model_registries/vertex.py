@@ -98,7 +98,7 @@ class VertexModelRegistry(ModelRegistryPlugin):
             logger.info(f"Vertex AI Model Registry initialized for project {self.project}")
         except ImportError:
             raise ImportError(
-                "google-cloud-aiplatform is required. " "Install with: pip install google-cloud-aiplatform",
+                "google-cloud-aiplatform is required. Install with: pip install google-cloud-aiplatform",
             )
 
     def _ensure_initialized(self) -> None:
@@ -144,16 +144,16 @@ class VertexModelRegistry(ModelRegistryPlugin):
                 # Auto-detect based on metadata
                 framework = (metadata or {}).get("framework", "").lower()
                 if framework == "tensorflow":
-                    serving_container_image_uri = "us-docker.pkg.dev/vertex-ai/prediction/" "tf2-cpu.2-13:latest"
+                    serving_container_image_uri = "us-docker.pkg.dev/vertex-ai/prediction/tf2-cpu.2-13:latest"
                 elif framework == "pytorch":
-                    serving_container_image_uri = "us-docker.pkg.dev/vertex-ai/prediction/" "pytorch-cpu.2-0:latest"
+                    serving_container_image_uri = "us-docker.pkg.dev/vertex-ai/prediction/pytorch-cpu.2-0:latest"
                 elif framework == "sklearn" or framework == "scikit-learn":
-                    serving_container_image_uri = "us-docker.pkg.dev/vertex-ai/prediction/" "sklearn-cpu.1-3:latest"
+                    serving_container_image_uri = "us-docker.pkg.dev/vertex-ai/prediction/sklearn-cpu.1-3:latest"
                 elif framework == "xgboost":
-                    serving_container_image_uri = "us-docker.pkg.dev/vertex-ai/prediction/" "xgboost-cpu.1-7:latest"
+                    serving_container_image_uri = "us-docker.pkg.dev/vertex-ai/prediction/xgboost-cpu.1-7:latest"
                 else:
                     # Default to custom container
-                    serving_container_image_uri = "us-docker.pkg.dev/vertex-ai/prediction/" "sklearn-cpu.1-3:latest"
+                    serving_container_image_uri = "us-docker.pkg.dev/vertex-ai/prediction/sklearn-cpu.1-3:latest"
 
             model = self._aiplatform.Model.upload(
                 display_name=name,

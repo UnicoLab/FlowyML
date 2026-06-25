@@ -201,7 +201,7 @@ class DAG:
         unreachable = set(self.nodes.keys()) - reachable
         for node_name in unreachable:
             warnings.append(
-                f"Unreachable node: '{node_name}' cannot be reached from any " f"root node and will never execute",
+                f"Unreachable node: '{node_name}' cannot be reached from any root node and will never execute",
             )
 
         return errors, warnings

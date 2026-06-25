@@ -1,4 +1,5 @@
 """Model Explorer API for interactive model testing."""
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Any

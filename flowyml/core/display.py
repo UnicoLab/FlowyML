@@ -80,7 +80,7 @@ class PipelineDisplay:
         if RICH_AVAILABLE:
             # Rich header
             header = Panel(
-                f"[bold cyan]🌊 flowyml Pipeline[/bold cyan]\n" f"[bold]{self.pipeline_name}[/bold]",
+                f"[bold cyan]🌊 flowyml Pipeline[/bold cyan]\n[bold]{self.pipeline_name}[/bold]",
                 border_style="cyan",
                 box=box.ROUNDED,
             )
@@ -205,7 +205,7 @@ class PipelineDisplay:
             inputs_str = f"Inputs: {', '.join(step.inputs)}" if step.inputs else "No inputs"
             outputs_str = f"Outputs: {', '.join(step.outputs)}" if step.outputs else "No outputs"
 
-            step_text = f"[bold]{i}. {step.name}[/bold]\n" f"   {inputs_str}\n" f"   {outputs_str}"
+            step_text = f"[bold]{i}. {step.name}[/bold]\n   {inputs_str}\n   {outputs_str}"
             if deps_str:
                 step_text += f"\n   [dim]{deps_str}[/dim]"
 

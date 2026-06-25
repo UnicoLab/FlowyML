@@ -32,7 +32,9 @@ class VertexAIOrchestrator(RemoteOrchestrator):
         from flowyml.stacks.gcp import VertexAIOrchestrator
 
         orchestrator = VertexAIOrchestrator(
-            project_id="my-gcp-project", region="us-central1", service_account="my-sa@my-project.iam.gserviceaccount.com"
+            project_id="my-gcp-project",
+            region="us-central1",
+            service_account="my-sa@my-project.iam.gserviceaccount.com",
         )
         ```
     """
@@ -438,7 +440,7 @@ class VertexAIOrchestrator(RemoteOrchestrator):
             with contextlib.suppress(Exception):
                 error_msg = f": {job.error}" if job.error else ""
             raise RuntimeError(
-                f"Vertex AI job '{job.display_name}' ended with state " f"{job.state.name}{error_msg}",
+                f"Vertex AI job '{job.display_name}' ended with state {job.state.name}{error_msg}",
             )
 
     def run_pipeline(
@@ -588,8 +590,7 @@ class VertexAIOrchestrator(RemoteOrchestrator):
             has_kfp = False
         if not has_kfp:
             raise ImportError(
-                "kfp is required for Vertex AI Pipelines orchestration. "
-                "Install with: pip install kfp kfp-server-api",
+                "kfp is required for Vertex AI Pipelines orchestration. Install with: pip install kfp kfp-server-api",
             )
         from kfp import dsl
         from kfp import compiler
@@ -860,7 +861,7 @@ class VertexAIOrchestrator(RemoteOrchestrator):
             job_name = job_id.split("/")[-1]
 
             # Vertex AI custom jobs log under ml_job resource type
-            filter_str = f'resource.type="ml_job" ' f'resource.labels.job_id="{job_name}"'
+            filter_str = f'resource.type="ml_job" resource.labels.job_id="{job_name}"'
 
             entries = list(
                 client.list_entries(
@@ -880,9 +881,7 @@ class VertexAIOrchestrator(RemoteOrchestrator):
             return "\n".join(logs) if logs else "No logs found yet."
 
         except ImportError:
-            return (
-                "google-cloud-logging is required for log retrieval. " "Install with: pip install google-cloud-logging"
-            )
+            return "google-cloud-logging is required for log retrieval. Install with: pip install google-cloud-logging"
         except Exception as e:
             return f"Failed to fetch logs: {e}"
 
@@ -920,7 +919,7 @@ class VertexAIOrchestrator(RemoteOrchestrator):
                 client = cloud_logging.Client(project=self.project_id)
                 job_name = job_id.split("/")[-1]
 
-                filter_str = f'resource.type="ml_job" ' f'resource.labels.job_id="{job_name}"'
+                filter_str = f'resource.type="ml_job" resource.labels.job_id="{job_name}"'
 
                 entries = list(
                     client.list_entries(

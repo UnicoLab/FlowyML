@@ -753,7 +753,7 @@ def instrument(
             return getattr(self._graph, attr_name)
 
         def __repr__(self):
-            return f"InstrumentedGraph(name={self._name!r}, " f"graph={self._graph!r})"
+            return f"InstrumentedGraph(name={self._name!r}, graph={self._graph!r})"
 
     return InstrumentedGraph(
         graph,

@@ -260,12 +260,12 @@ class AuditStore:
 
         return records
 
-    def export(self, run_id: str, format: str = "json") -> str:
+    def export(self, run_id: str, output_format: str = "json") -> str:
         """Export an audit record as a serialised string.
 
         Args:
             run_id: The run identifier.
-            format: Output format — ``json`` or ``yaml``.
+            output_format: Output format — ``json`` or ``yaml``.
 
         Returns:
             Serialised audit record string.
@@ -282,10 +282,10 @@ class AuditStore:
 
         data = audit.model_dump(mode="json", exclude_none=True)
 
-        if format == "json":
+        if output_format == "json":
             return json.dumps(data, indent=2, ensure_ascii=False)
 
-        if format == "yaml":
+        if output_format == "yaml":
             return yaml.safe_dump(
                 data,
                 sort_keys=False,
@@ -294,7 +294,7 @@ class AuditStore:
             )
 
         raise ValueError(
-            f"Unsupported export format '{format}'. Use 'json' or 'yaml'.",
+            f"Unsupported export format '{output_format}'. Use 'json' or 'yaml'.",
         )
 
     # ------------------------------------------------------------------

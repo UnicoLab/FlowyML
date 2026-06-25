@@ -118,9 +118,7 @@ class GCPProvider(CloudProvider):
 
     def get_dashboard_url(self, remote_job_id: str) -> str:
         _project_num, _location, job_short = self._parse_job_id(remote_job_id)
-        return (
-            f"https://console.cloud.google.com/vertex-ai/" f"pipelines/runs/{job_short}" f"?project={self.project_id}"
-        )
+        return f"https://console.cloud.google.com/vertex-ai/pipelines/runs/{job_short}?project={self.project_id}"
 
     def get_run_status(self, remote_job_id: str) -> CloudRunInfo | None:
         try:
@@ -351,10 +349,7 @@ class AWSProvider(CloudProvider):
         region = parts[3] if len(parts) > 3 else "us-east-1"
         # Extract pipeline name and execution id
         resource = parts[-1] if parts else remote_job_id
-        return (
-            f"https://{region}.console.aws.amazon.com/sagemaker/home"
-            f"?region={region}#/pipeline-executions/{resource}"
-        )
+        return f"https://{region}.console.aws.amazon.com/sagemaker/home?region={region}#/pipeline-executions/{resource}"
 
     def get_run_status(self, remote_job_id: str) -> CloudRunInfo | None:
         try:
