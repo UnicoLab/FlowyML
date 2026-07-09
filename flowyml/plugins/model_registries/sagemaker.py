@@ -22,15 +22,19 @@ Usage:
     )
 """
 
+from __future__ import annotations
+
 import logging
 from typing import Any
 from datetime import datetime
 
 from flowyml.plugins.base import ModelRegistryPlugin, PluginMetadata, PluginType
+from flowyml.stacks.plugins import register_component
 
 logger = logging.getLogger(__name__)
 
 
+@register_component(name="sagemaker_model_registry")
 class SageMakerModelRegistry(ModelRegistryPlugin):
     """Native SageMaker Model Registry plugin for FlowyML.
 
@@ -316,15 +320,15 @@ class SageMakerModelRegistry(ModelRegistryPlugin):
     def transition_model_stage(
         self,
         name: str,
-        stage: str,
         version: str = None,
+        stage: str = "",
     ) -> bool:
         """Transition model approval status.
 
         Args:
             name: Model name.
-            stage: Target stage ("Approved", "Rejected", "PendingManualApproval").
             version: Specific version.
+            stage: Target stage ("Approved", "Rejected", "PendingManualApproval").
 
         Returns:
             True if successful.

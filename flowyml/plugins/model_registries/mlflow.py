@@ -4,11 +4,14 @@ This plugin provides explicit Model Registry capabilities using MLflow,
 allowing distinct management from Experiment Tracking.
 """
 
+from __future__ import annotations
+
 import logging
 from typing import Any
 from flowyml.utils.observability import trace_execution
 
 from flowyml.plugins.base import ModelRegistryPlugin, PluginMetadata, PluginType
+from flowyml.stacks.plugins import register_component
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +19,7 @@ logger = logging.getLogger(__name__)
 # import removed from here
 
 
+@register_component(name="mlflow_registry")
 class MLflowModelRegistry(ModelRegistryPlugin):
     """Native MLflow Model Registry for FlowyML.
 

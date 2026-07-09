@@ -153,6 +153,8 @@ class AzureMLOrchestrator(RemoteOrchestrator):
         workspace_name: str | None = None,
         compute: str | None = None,
         experiment_name: str = "flowyml",
+        environment: str | None = None,
+        code: str = ".",
         credential: Any | None = None,
     ):
         super().__init__(name)
@@ -161,6 +163,10 @@ class AzureMLOrchestrator(RemoteOrchestrator):
         self.workspace_name = workspace_name
         self.compute = compute
         self.experiment_name = experiment_name
+        # Azure ML environment reference (e.g. "AzureML-sklearn-1.0-ubuntu20.04-py38-cpu@latest"
+        # or a custom registered environment). Used when no docker image is provided.
+        self.environment = environment
+        self.code = code
         self.credential = credential
 
     def _client(self):
@@ -204,11 +210,37 @@ class AzureMLOrchestrator(RemoteOrchestrator):
         ml_client = self._client()
         job_name = kwargs.get("job_name") or f"{pipeline.name}-{run_id[:8]}"
 
-        # Build command job
+        # Resolve the execution environment: an explicit docker image wins,
+        # otherwise fall back to the configured Azure ML environment.
+        env_ref = None
+        if docker_config is not None and getattr(docker_config, "image", None):
+            env_ref = docker_config.image
+        elif self.environment:
+            env_ref = self.environment
+        if not env_ref:
+            raise ValueError(
+                "AzureMLOrchestrator requires either a docker image (via docker_config) "
+                "or an 'environment' (e.g. environment='AzureML-sklearn-1.0-ubuntu20.04-py38-cpu@latest').",
+            )
+
+        # Run the pipeline module inside the job. FLOWYML_STACK=local prevents the
+        # in-container run from recursively submitting back to Azure ML.
+        module = getattr(pipeline, "_source_module", None)
+        run_command = f"python -m flowyml.cli.main run {pipeline.name}" if not module else "flowyml step-runner"
+        environment_variables: dict[str, str] = {"FLOWYML_STACK": "local", "FLOWYML_RUN_ID": run_id}
+        if module:
+            environment_variables["FLOWYML_PIPELINE_MODULE"] = module
+            environment_variables["FLOWYML_RUN_ID"] = run_id
+        if context:
+            import json as _json
+
+            environment_variables["FLOWYML_CONTEXT"] = _json.dumps(context)
+
         job = command(
-            code=".",  # Use current directory or specify path
-            command="python -m flowyml.cli.run",
-            environment=docker_config.image if docker_config else self.environment_name,
+            code=self.code,
+            command=run_command,
+            environment=env_ref,
+            environment_variables=environment_variables,
             compute=self.compute,
             display_name=job_name,
             experiment_name=self.experiment_name,
@@ -251,6 +283,7 @@ class AzureMLStack(Stack):
         resource_group: str | None = None,
         workspace_name: str | None = None,
         compute: str | None = None,
+        environment: str | None = None,
         account_url: str | None = None,
         container_name: str | None = None,
         registry_name: str | None = None,
@@ -262,6 +295,7 @@ class AzureMLStack(Stack):
             resource_group=resource_group,
             workspace_name=workspace_name,
             compute=compute,
+            environment=environment,
         )
         artifact_store = AzureBlobArtifactStore(
             account_url=account_url,

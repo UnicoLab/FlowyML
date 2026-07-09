@@ -22,15 +22,19 @@ Usage:
     )
 """
 
+from __future__ import annotations
+
 import logging
 from typing import Any
 from datetime import datetime
 
 from flowyml.plugins.base import ModelRegistryPlugin, PluginMetadata, PluginType
+from flowyml.stacks.plugins import register_component
 
 logger = logging.getLogger(__name__)
 
 
+@register_component(name="vertex_model_registry")
 class VertexModelRegistry(ModelRegistryPlugin):
     """Native Vertex AI Model Registry plugin for FlowyML.
 
@@ -259,15 +263,15 @@ class VertexModelRegistry(ModelRegistryPlugin):
     def transition_model_stage(
         self,
         name: str,
-        stage: str,
         version: str = None,
+        stage: str = "",
     ) -> bool:
         """Transition model to a stage (via labels).
 
         Args:
             name: Model name.
-            stage: Target stage (e.g., "staging", "production").
             version: Specific version.
+            stage: Target stage (e.g., "staging", "production").
 
         Returns:
             True if successful.
