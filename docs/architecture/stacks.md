@@ -72,6 +72,108 @@ Manages Docker images for containerized execution.
 - **ECRContainerRegistry**: AWS Elastic Container Registry
 - **DockerHubRegistry**: Docker Hub
 
+#### 6. **Model Registry** (optional)
+Versions, stages, and resolves trained models. Exposed on a live stack as
+`stack.model_registry`.
+
+- **mlflow_registry**: MLflow Model Registry
+- **azureml_registry**: Azure ML model registry
+- **vertex_model_registry**: Vertex AI Model Registry (GCP)
+- **sagemaker_model_registry**: SageMaker Model Registry (AWS)
+- Built-in SQL registry when none is configured
+
+#### 7. **Model Deployer** (optional)
+Serves a registered model to an inference endpoint. Exposed on a live stack as
+`stack.model_deployer` and used by the [deployment layer](../guides/model-serving-deployment.md).
+
+- **local_docker**: `docker run` on the local machine
+- **kubernetes** / **openshift**: `Deployment` + `Service` + `Ingress`/`Route`
+- **vertex_endpoint** / **sagemaker_endpoint** / **gcp_cloud_run**: managed cloud endpoints
+
+## Serving Components: Model Registry & Model Deployer
+
+The **model registry** and **model deployer** are first-class stack components,
+just like the orchestrator or artifact store. This is what lets you write
+`train → register → promote → deploy → serve` code that is identical across
+clouds — only the stack changes.
+
+### Flavors are registered and discovered
+
+Every component is registered under a short **flavor** name in the
+`ComponentRegistry`. Built-in serving flavors are registered automatically the
+first time the registry is created; third-party flavors register themselves via
+the `@register_component` decorator or a `flowyml.stack_components` entry point.
+
+```python
+from flowyml.stacks.plugins import get_component_registry
+
+registry = get_component_registry()
+registry.list_model_registries()   # ['mlflow_registry', 'azureml_registry', ...]
+registry.list_model_deployers()    # ['local_docker', 'kubernetes', 'openshift', ...]
+
+# Resolve a flavor to its class
+cls = registry.get_model_deployer("openshift")
+```
+
+Register your own flavor:
+
+```python
+from flowyml.stacks.plugins import register_component
+from flowyml.deployment.base import BaseDeployer
+
+@register_component(name="my_deployer")
+class MyDeployer(BaseDeployer):
+    ...
+```
+
+FlowyML routes the class into the right bucket automatically: subclasses of
+`BaseDeployer` / `ModelDeployerPlugin` become model deployers, and subclasses of
+`ModelRegistryPlugin` become model registries.
+
+### Hydrating from `flowyml.yaml`
+
+When a stack config declares `model_registry` / `model_deployer`,
+`StackConfig.to_stack()` resolves each `type:` against the `ComponentRegistry`,
+forwards the remaining keys as constructor kwargs, and attaches the instances to
+the live stack:
+
+```yaml
+stacks:
+  openshift-prod:
+    orchestrator: { type: azure_ml, ... }
+    artifact_store: { type: azure_blob, ... }
+    model_registry:
+      type: azureml_registry
+      subscription_id: ${AZURE_SUBSCRIPTION_ID}
+      resource_group: ml-rg
+      workspace_name: ml-ws
+    model_deployer:
+      type: openshift
+      namespace: ml-prod
+      registry_uri: registry.apps.example.com/ml
+```
+
+```python
+from flowyml.plugins.config import PluginConfig
+from flowyml.plugins.stack_config import StackManager
+
+manager = StackManager(PluginConfig("flowyml.yaml"))
+stack = manager.get_stack("openshift-prod").to_stack()
+
+stack.model_registry   # AzureMLModelRegistry instance
+stack.model_deployer   # OpenShiftDeployer instance
+```
+
+The [`DeploymentService`](../guides/model-serving-deployment.md) picks up
+`stack.model_deployer` automatically, so `flowyml deploy` and
+`promote_if_better` "just work" against whatever the active stack declares.
+
+!!! tip "Governed, company-level stacks"
+    The same `model_deployer` / `model_registry` live under `spec.deployment` in
+    an **enterprise** `StackDefinition`, where a `PolicyEngine` can allow-list
+    which flavors a team is permitted to use. See
+    **[Enterprise Stacks](../guides/enterprise-stacks.md)**.
+
 ## Stack Types
 
 ### Local Stack

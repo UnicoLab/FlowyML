@@ -67,8 +67,8 @@ plugins:
 | Store artifacts in the cloud | Artifact Store | `gcs` (GCP) or `s3` (AWS) |
 | Run pipelines on cloud | Orchestrator | `vertex_ai` (GCP) or `sagemaker` (AWS) |
 | Push Docker images | Container Registry | `gcr` (GCP) or `ecr` (AWS) |
-| Register models | Model Registry | `vertex_model_registry` or `sagemaker_model_registry` |
-| Deploy models as endpoints | Model Deployer | `vertex_endpoint` or `sagemaker_endpoint` |
+| Register models | Model Registry | `mlflow_registry`, `azureml_registry`, `vertex_model_registry`, `sagemaker_model_registry` |
+| Deploy / serve models | Model Deployer | `openshift`, `kubernetes`, `local_docker`, `vertex_endpoint`, `sagemaker_endpoint`, `gcp_cloud_run` |
 
 ---
 
@@ -131,14 +131,30 @@ Publish plugins as PyPI packages with entry points — FlowyML discovers and reg
 | `kubernetes` | Kubernetes | `kubernetes` |
 | `airflow` | Apache Airflow | `apache-airflow` |
 
-### 🏷️ Model Registries & Deployers
+### 🏷️ Model Registries
 
 | Plugin | Description |
 |--------|-------------|
+| `mlflow_registry` | MLflow Model Registry ✅ |
+| `azureml_registry` | Azure ML Model Registry ✅ |
 | `vertex_model_registry` | Vertex AI Model Registry ✅ |
 | `sagemaker_model_registry` | SageMaker Model Registry ✅ |
+
+### 🚢 Model Deployers
+
+| Plugin | Description |
+|--------|-------------|
+| `local_docker` | Serve via `docker run` on the local machine ✅ |
+| `kubernetes` | `Deployment` + `Service` + `Ingress` ✅ |
+| `openshift` | `Deployment` + `Service` + `Route` ✅ |
 | `vertex_endpoint` | Vertex AI Endpoints ✅ |
 | `sagemaker_endpoint` | SageMaker Endpoints ✅ |
+| `gcp_cloud_run` | Google Cloud Run ✅ |
+
+!!! tip "Serving the models you register"
+    Model registries and deployers power the transparent
+    `train → register → promote → deploy → serve` path. See the
+    **[Model Serving & Deployment guide](../guides/model-serving-deployment.md)**.
 
 ---
 

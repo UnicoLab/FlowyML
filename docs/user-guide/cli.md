@@ -82,7 +82,27 @@ Stop it when you're done:
 flowyml ui stop
 ```
 
-## Step 5 — Pass Parameters
+## Step 5 — Serve or Deploy a Model
+
+Once a pipeline has registered a model, serve it locally (no Docker) or deploy it
+to a target:
+
+```bash
+# In-process FastAPI server for quick checks
+flowyml serve my_model --stage production
+
+# Package + deploy to local Docker / Kubernetes / OpenShift
+flowyml deploy my_model --stage production --runtime fastapi --target local_docker
+
+# Inspect and call recorded deployments
+flowyml deployment list
+flowyml deployment predict my_model-endpoint --json '{"inputs": [[0.1, 0.9, 1.2]]}'
+```
+
+See the **[Model Serving & Deployment guide](../guides/model-serving-deployment.md)**
+for runtimes, targets, promotion, and batch inference.
+
+## Step 6 — Pass Parameters
 
 Override context values from the command line without changing code:
 
@@ -92,7 +112,7 @@ flowyml run src/pipeline.py \
   --context multiplier=5
 ```
 
-## Step 6 — Try a Dry Run
+## Step 7 — Try a Dry Run
 
 See what *would* happen without actually executing:
 

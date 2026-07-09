@@ -100,3 +100,55 @@ def train():
         register=True  # Automatically register in Model Registry
     )
 ```
+
+## Registry Backends (Plugins) 🔁
+
+The examples above use the **built-in SQL registry**, which needs no setup. For
+team and production use, FlowyML ships registry **plugins** that are wired in as a
+[stack component](../architecture/stacks.md) (`stack.model_registry`) — your code
+stays identical while the backing store changes:
+
+| Flavor | Backend | Extra |
+|--------|---------|-------|
+| `mlflow_registry` | MLflow Model Registry | `pip install mlflow` |
+| `azureml_registry` | Azure ML workspace / registry | `pip install "flowyml[azure]"` |
+| `vertex_model_registry` | Vertex AI Model Registry (GCP) | `pip install "flowyml[gcp]"` |
+| `sagemaker_model_registry` | SageMaker Model Registry (AWS) | `pip install "flowyml[aws]"` |
+
+Select one per stack in `flowyml.yaml`:
+
+```yaml
+stacks:
+  prod:
+    orchestrator: { type: azure_ml, ... }
+    artifact_store: { type: azure_blob, ... }
+    model_registry:
+      type: azureml_registry
+      subscription_id: ${AZURE_SUBSCRIPTION_ID}
+      resource_group: ml-rg
+      workspace_name: ml-ws
+```
+
+Once attached, `register → promote → deploy` all target that backend
+automatically. Platform teams can even **govern** which registries a team may use
+via [Enterprise Stacks](../guides/enterprise-stacks.md) policy allow-lists.
+
+## From Registry to Endpoint 🚀
+
+A registered model is the input to serving. Reference it by **name + stage** and
+FlowyML transparently fetches, packages, and deploys it:
+
+```python
+from flowyml.deployment import DeploymentSpec, ModelRef, DeploymentService
+
+DeploymentService().deploy(DeploymentSpec(
+    name="sentiment-api",
+    model=ModelRef("sentiment_classifier", stage="production"),
+    runtime="fastapi",
+    target="kubernetes",
+))
+```
+
+Use `promote_if_better(...)` to gate promotion+deploy on a champion/challenger
+comparison. See the **[Model Serving & Deployment guide](../guides/model-serving-deployment.md)**
+and the **[end-to-end tutorial](../tutorials/production-serving-openshift.md)**.

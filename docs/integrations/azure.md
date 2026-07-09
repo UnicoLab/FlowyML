@@ -88,6 +88,70 @@ pipeline.run(
 
 ---
 
+## 🏛️ Azure ML Model Registry
+
+Version, stage, and resolve models in your Azure ML workspace (or an org-scoped
+Azure ML *registry* for cross-workspace sharing) with the `azureml_registry`
+plugin. Azure ML has no built-in stage concept, so FlowyML represents stages as
+model **tags** (`stage=production`), the common Azure ML convention.
+
+```python
+from flowyml.plugins.model_registries import AzureMLModelRegistry
+
+registry = AzureMLModelRegistry(
+    subscription_id="<subscription_id>",
+    resource_group="<resource_group>",
+    workspace_name="<workspace_name>",
+    # registry_name="<org-registry>",   # optional: cross-workspace sharing
+)
+```
+
+Or, more commonly, attach it to a stack in `flowyml.yaml` so every
+`register → promote → deploy` step uses it automatically:
+
+```yaml
+stacks:
+  azureml-openshift:
+    orchestrator:
+      type: azure_ml
+      subscription_id: ${AZURE_SUBSCRIPTION_ID}
+      resource_group: ${AZURE_RESOURCE_GROUP}
+      workspace_name: ${AZURE_WORKSPACE}
+      compute: cpu-cluster
+    artifact_store:
+      type: azure_blob
+      account_url: ${AZURE_BLOB_ACCOUNT_URL}
+      container_name: ml-artifacts
+    model_registry:
+      type: azureml_registry
+      subscription_id: ${AZURE_SUBSCRIPTION_ID}
+      resource_group: ${AZURE_RESOURCE_GROUP}
+      workspace_name: ${AZURE_WORKSPACE}
+    model_deployer:
+      type: openshift          # serve on OpenShift, or kubernetes / local_docker
+      namespace: ml-prod
+      registry_uri: ${OPENSHIFT_REGISTRY}
+```
+
+This is exactly the stack used in the end-to-end tutorial: **train on Azure ML,
+register to Azure ML (or MLflow), and serve on OpenShift** — all by switching a
+stack, with no pipeline code changes.
+
+!!! tip "Train on Azure ML → serve anywhere"
+    Because the model registry and model deployer are
+    [stack components](../architecture/stacks.md), the same code that trains and
+    registers on Azure ML can serve the winner on OpenShift, Kubernetes, or your
+    laptop. See **[Serve on OpenShift (E2E)](../tutorials/production-serving-openshift.md)**
+    and the **[Model Serving & Deployment guide](../guides/model-serving-deployment.md)**.
+
+Install the Azure extra to enable the orchestrator, Blob store, and registry:
+
+```bash
+pip install "flowyml[azure]"   # azure-ai-ml, azure-identity, adlfs
+```
+
+---
+
 ## 🔐 Authentication
 
 FlowyML supports multiple Azure credential methods:

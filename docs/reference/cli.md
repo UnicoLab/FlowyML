@@ -479,6 +479,120 @@ echo $TOKEN | flowyml docker login docker.io -u myuser --password-stdin
 
 ---
 
+### `flowyml deploy`
+
+Package a registered model and deploy it to a target (local Docker, Kubernetes,
+or OpenShift). See the [Model Serving & Deployment guide](../guides/model-serving-deployment.md).
+
+```bash
+flowyml deploy MODEL [OPTIONS]
+```
+
+**Arguments:**
+
+- `MODEL`: Registered model name.
+
+**Options:**
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--name` | `<model>-endpoint` | Deployment name |
+| `--version` | — | Explicit model version to deploy |
+| `--stage` | — | Resolve version from a registry stage (e.g. `production`) |
+| `--runtime` | `fastapi` | `fastapi`, `triton`, `tensorflow_serving`, `torchserve` |
+| `--target` | `local_docker` | `local_docker`, `kubernetes`, `openshift` |
+| `--namespace` | — | Kubernetes/OpenShift namespace |
+| `--route-host` | — | External host for the Route/Ingress |
+| `--registry` | — | Container registry to push the serving image to |
+| `--replicas` | `1` | Number of replicas |
+| `--port` | `8080` | Service port |
+| `--cpu` | `500m` | CPU request |
+| `--memory` | `1Gi` | Memory request |
+| `--gpu` | `0` | Number of GPUs |
+| `--env` | — | Environment variable `KEY=VALUE` (repeatable) |
+| `--spec` | — | Load a `DeploymentSpec` from a YAML file |
+| `--dry-run` | `false` | Render manifests without applying (k8s/openshift) |
+
+**Examples:**
+```bash
+# Deploy the production model to OpenShift
+flowyml deploy churn --stage production --runtime fastapi --target openshift \
+    --namespace ml-prod --route-host churn.apps.example.com \
+    --registry registry.apps.example.com/ml
+
+# Deploy a specific version to local Docker with Triton
+flowyml deploy fraud --version v7 --runtime triton --target local_docker
+
+# Render GitOps manifests without a cluster
+flowyml deploy churn --target kubernetes --dry-run > k8s.yaml
+```
+
+---
+
+### `flowyml serve`
+
+Serve a registered model locally with an in-process FastAPI server — no Docker
+required. Great for development and quick checks.
+
+```bash
+flowyml serve MODEL [OPTIONS]
+```
+
+**Options:**
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--version` | — | Explicit model version |
+| `--stage` | — | Resolve version from a registry stage |
+| `--port` | `8080` | Local port to bind |
+| `--host` | `127.0.0.1` | Host to bind |
+
+**Examples:**
+```bash
+flowyml serve churn --stage production
+curl -X POST http://127.0.0.1:8080/predict -d '{"inputs": [[0.1, 0.9, 1.2]]}'
+```
+
+---
+
+### `flowyml deployment`
+
+Manage running deployments.
+
+#### `flowyml deployment list`
+
+List recorded deployments.
+
+```bash
+flowyml deployment list
+```
+
+#### `flowyml deployment status`
+
+Show live status of a deployment.
+
+```bash
+flowyml deployment status NAME
+```
+
+#### `flowyml deployment predict`
+
+Send a prediction request to a deployment.
+
+```bash
+flowyml deployment predict NAME --json '{"inputs": [[0.9, 1.0, 0.1]]}'
+```
+
+#### `flowyml deployment delete`
+
+Tear down a deployment.
+
+```bash
+flowyml deployment delete NAME
+```
+
+---
+
 ### `flowyml ui`
 
 Manage the FlowyML UI server.

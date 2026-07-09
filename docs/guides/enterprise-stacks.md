@@ -185,6 +185,117 @@ The `PolicyEngine` validates stacks before execution:
 
 ---
 
+## Governed Model Serving
+
+A company-level `StackDefinition` isn't limited to *where pipelines run* — it can
+also govern *how models are registered and served*. The `spec.deployment` section
+declares the **model registry** and **model deployer** flavors a stack uses for
+the `train → register → promote → serve` path, and the policy engine can
+allow-list which flavors each team is permitted to use.
+
+```yaml title="stacks/aml_openshift_prod.yaml"
+apiVersion: flowyml.io/v1
+kind: Stack
+metadata:
+  name: aml_openshift_prod
+  version: 1.0.0
+  owner: ml-platform-team
+  tags: [azureml, openshift, production]
+spec:
+  backend: azureml
+  compute:
+    type: cpu
+    size: Standard_DS3_v2
+    region: francecentral
+  storage:
+    artifactStore: azure_blob
+    uri: az://ml-artifacts/prod
+
+  # --- Governed model serving --------------------------------------------
+  deployment:
+    modelRegistry: azureml_registry       # where models are versioned/staged
+    modelDeployer: openshift              # where they are served
+    namespace: ml-prod
+    registryUri: registry.apps.example.com/ml
+    config:                              # extra flavor-specific kwargs
+      subscription_id: ${AZURE_SUBSCRIPTION_ID}
+      resource_group: ml-rg
+      workspace_name: ml-ws
+
+  # --- Policy allow-lists ------------------------------------------------
+  policies:
+    allowedModelDeployers: [openshift, kubernetes]     # no ad-hoc local_docker in prod
+    allowedModelRegistries: [azureml_registry, mlflow_registry]
+
+  # --- Ownership / RBAC --------------------------------------------------
+  permissions:
+    allowedGroups: [ml-engineers, ml-platform-team]
+    allowedProjects: [fraud-detection, churn]
+```
+
+!!! info "Flavor names must resolve at runtime"
+    `modelDeployer` and `modelRegistry` are validated against the flavors
+    registered with the runtime `ComponentRegistry`, so a governed definition is
+    **executable**, not merely descriptive. Supported deployers include
+    `local_docker`, `kubernetes`, `openshift`, `vertex_endpoint`,
+    `sagemaker_endpoint`, and `gcp_cloud_run`; supported registries include
+    `mlflow_registry`, `azureml_registry`, `vertex_model_registry`, and
+    `sagemaker_model_registry`.
+
+### Hydrating a governed stack
+
+`StackDefinition.to_stack()` builds the backend execution stack **and** attaches
+the governed deployment components, so the resulting `Stack` exposes
+`.model_deployer` / `.model_registry` for the deployment service and
+champion/challenger promotion:
+
+```python
+from flowyml.stacks.enterprise.models import StackDefinition
+
+stack = StackDefinition.from_yaml("stacks/aml_openshift_prod.yaml").to_stack()
+stack.model_registry    # AzureMLModelRegistry
+stack.model_deployer    # OpenShiftDeployer (namespace=ml-prod, registry_uri=...)
+```
+
+Unresolvable flavors (e.g. a serving SDK that isn't installed locally) are logged
+and skipped rather than raising, so a governed definition stays usable for
+execution even on a developer laptop.
+
+### Serving-aware policy rules
+
+Two built-in rules enforce the serving allow-lists, alongside the execution
+rules already covered above:
+
+| Rule | What it checks |
+|------|----------------|
+| `ModelDeployerAllowedRule` | `spec.deployment.modelDeployer` ∈ `policies.allowedModelDeployers` |
+| `ModelRegistryAllowedRule`  | `spec.deployment.modelRegistry` ∈ `policies.allowedModelRegistries` |
+
+Empty allow-lists mean "no restriction", and a stack with no `deployment`
+section makes both rules no-ops. Enforcement is identical to every other rule —
+`PolicyEngine.check()` raises `PolicyViolationError` on any failure:
+
+```python
+from flowyml.stacks.enterprise.policy import PolicyEngine, PolicyContext
+
+ctx = PolicyContext(
+    stack=stack_def,
+    user="alice",
+    user_groups=["ml-engineers"],
+    project_name="fraud-detection",
+)
+PolicyEngine().check(ctx)   # raises if the deployer/registry/group isn't allowed
+```
+
+!!! tip "Ownership & RBAC"
+    `metadata.owner` records the accountable team, while `permissions.allowedGroups`
+    and `permissions.allowedProjects` gate *who* may use the stack. The
+    `UserPermissionRule` and `ProjectPermissionRule` enforce these before any
+    training or deployment begins — so a governed serving stack can only be used
+    by approved teams on approved projects.
+
+---
+
 ## Audit & Locking
 
 ### Audit Store
@@ -295,6 +406,15 @@ Run pipelines on Databricks with auto-managed clusters.
 Transparent dual-write to FlowyML and external trackers.
 
 [View Guide →](experiment-tracking.md)
+
+</div>
+
+<div class="header-card" markdown>
+
+### 🚢 Model Serving & Deployment
+Package and serve governed models to OpenShift, Kubernetes, or Docker.
+
+[View Guide →](model-serving-deployment.md)
 
 </div>
 

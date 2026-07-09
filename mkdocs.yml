@@ -176,6 +176,8 @@ nav:
     - 🛠 CLI Reference: user-guide/cli.md
     - 🚀 Deployment:
       - 📋 Overview: deployment.md
+      - 🚢 Model Serving & Deployment: guides/model-serving-deployment.md
+      - 🧪 Model Flavors (Rule-Based & Bayesian): guides/model-flavors.md
       - ☁️ GCP Deployment: DEPLOYMENT_GCP.md
       - 🔐 Secrets Management: deployment/secrets.md
       - 🏭 Production Guide: production_deployment.md
@@ -200,6 +202,7 @@ nav:
       - 🐳 Docker: integrations/docker.md
       - ☸️ Kubernetes: integrations/kubernetes.md
     - 🏭 Production Tutorial: tutorials/production-pipeline-tutorial.md
+    - 🚢 Serve on OpenShift (E2E): tutorials/production-serving-openshift.md
     - 🔧 Extensible Pipeline: tutorials/extensible-pipeline.md
   - 📚 Reference:
     - 📖 Glossary: glossary.md
