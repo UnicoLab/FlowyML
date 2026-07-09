@@ -14,15 +14,19 @@ Usage:
     )
 """
 
+from __future__ import annotations
+
 import logging
 from typing import Any
 import time
 
 from flowyml.plugins.base import ModelDeployerPlugin, PluginMetadata, PluginType
+from flowyml.stacks.plugins import register_component
 
 logger = logging.getLogger(__name__)
 
 
+@register_component(name="sagemaker_endpoint")
 class SageMakerEndpointDeployer(ModelDeployerPlugin):
     """Native SageMaker Endpoint deployer for FlowyML.
 

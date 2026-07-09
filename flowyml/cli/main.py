@@ -51,6 +51,10 @@ click.rich_click.COMMAND_GROUPS = {
             "commands": ["stack", "docker", "config", "cache", "db", "schedule"],
         },
         {
+            "name": "🚢 Serving & Deployment",
+            "commands": ["deploy", "serve", "deployment"],
+        },
+        {
             "name": "🌐 Services",
             "commands": ["ui", "zenml", "plugin"],
         },
@@ -2711,6 +2715,16 @@ def docker_login(registry, username, password_stdin):
         recho(f"[red]✗ Login failed: {e}", err=True)
     except FileNotFoundError:
         recho("[red]✗ Docker CLI not found. Install Docker first.", err=True)
+
+
+# ── Deployment CLI Registration ──────────────────────────────────────────
+# Register serving/deployment commands (deploy, serve, deployment group).
+try:
+    from flowyml.cli.deploy import register_deployment_commands
+
+    register_deployment_commands(cli)
+except ImportError:
+    pass
 
 
 # ── Enterprise CLI Registration ──────────────────────────────────────────

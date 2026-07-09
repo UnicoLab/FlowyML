@@ -4,6 +4,8 @@ This plugin provides direct integration with Google Cloud Run
 for serverless model serving.
 """
 
+from __future__ import annotations
+
 import logging
 import subprocess
 import json
@@ -11,6 +13,7 @@ from typing import Any
 from flowyml.utils.observability import trace_execution
 
 from flowyml.plugins.base import ModelDeployerPlugin, PluginMetadata, PluginType
+from flowyml.stacks.plugins import register_component
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +21,7 @@ logger = logging.getLogger(__name__)
 # import removed from here
 
 
+@register_component(name="gcp_cloud_run")
 class GCPCloudRunDeployer(ModelDeployerPlugin):
     """Native GCP Cloud Run deployer for FlowyML.
 

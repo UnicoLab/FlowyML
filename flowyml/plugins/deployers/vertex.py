@@ -14,13 +14,17 @@ Usage:
     )
 """
 
+from __future__ import annotations
+
 import logging
 
 from flowyml.plugins.base import ModelDeployerPlugin, PluginMetadata, PluginType
+from flowyml.stacks.plugins import register_component
 
 logger = logging.getLogger(__name__)
 
 
+@register_component(name="vertex_endpoint")
 class VertexEndpointDeployer(ModelDeployerPlugin):
     """Native Vertex AI Endpoint deployer for FlowyML.
 
