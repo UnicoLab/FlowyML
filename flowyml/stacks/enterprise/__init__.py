@@ -29,6 +29,7 @@ from __future__ import annotations
 
 from flowyml.stacks.enterprise.models import (
     ComputeConfig,
+    DeploymentConfig,
     ObservabilityConfig,
     PermissionsConfig,
     PolicyConfig,
@@ -62,6 +63,8 @@ from flowyml.stacks.enterprise.policy import (
     CostLimitRule,
     ExternalNetworkRule,
     MaxRuntimeRule,
+    ModelDeployerAllowedRule,
+    ModelRegistryAllowedRule,
     PackageAllowListRule,
     PackageDenyListRule,
     PolicyContext,
@@ -107,6 +110,7 @@ __all__ = [
     "RuntimeConfig",
     "ComputeConfig",
     "StorageConfig",
+    "DeploymentConfig",
     "SecretsConfig",
     "ObservabilityConfig",
     "PolicyConfig",
@@ -145,6 +149,8 @@ __all__ = [
     "MaxRuntimeRule",
     "CostLimitRule",
     "SignedStackRule",
+    "ModelDeployerAllowedRule",
+    "ModelRegistryAllowedRule",
     # Lock
     "StackLockManager",
     "LockVerificationResult",

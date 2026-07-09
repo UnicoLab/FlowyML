@@ -84,6 +84,30 @@ SUPPORTED_ARTIFACT_STORES = frozenset(
     },
 )
 
+# Governed model-serving flavors.  These mirror the flavor names registered
+# with the runtime ``ComponentRegistry`` (``@register_component(name=...)``),
+# so a governed stack definition can only reference deployers/registries that
+# actually resolve at runtime.
+SUPPORTED_MODEL_DEPLOYERS = frozenset(
+    {
+        "local_docker",
+        "kubernetes",
+        "openshift",
+        "vertex_endpoint",
+        "sagemaker_endpoint",
+        "gcp_cloud_run",
+    },
+)
+
+SUPPORTED_MODEL_REGISTRIES = frozenset(
+    {
+        "mlflow_registry",
+        "azureml_registry",
+        "vertex_model_registry",
+        "sagemaker_model_registry",
+    },
+)
+
 
 # ---------------------------------------------------------------------------
 # Enums
@@ -267,6 +291,60 @@ class StorageConfig(BaseModel):
         return v
 
 
+class DeploymentConfig(BaseModel):
+    """Model-serving configuration for a governed stack.
+
+    Declares which model deployer and model registry flavors a stack uses
+    for the *train → register → promote → serve* path.  Flavor names must
+    match those registered with the runtime ``ComponentRegistry`` so the
+    definition is executable, not just descriptive.
+    """
+
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+    model_deployer: str | None = Field(
+        alias="modelDeployer",
+        default=None,
+        description="Model deployer flavor (e.g. openshift, kubernetes, local_docker).",
+    )
+    model_registry: str | None = Field(
+        alias="modelRegistry",
+        default=None,
+        description="Model registry flavor (e.g. azureml_registry, mlflow_registry).",
+    )
+    namespace: str | None = Field(
+        default=None,
+        description="Target namespace for cluster deployers (k8s/OpenShift).",
+    )
+    registry_uri: str | None = Field(
+        alias="registryUri",
+        default=None,
+        description="Container/model registry URI used by the deployer.",
+    )
+    config: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Extra flavor-specific keyword arguments.",
+    )
+
+    @field_validator("model_deployer")
+    @classmethod
+    def validate_model_deployer(cls, v: str | None) -> str | None:
+        if v is not None and v not in SUPPORTED_MODEL_DEPLOYERS:
+            raise ValueError(
+                f"Unsupported model deployer '{v}'. Supported: {', '.join(sorted(SUPPORTED_MODEL_DEPLOYERS))}.",
+            )
+        return v
+
+    @field_validator("model_registry")
+    @classmethod
+    def validate_model_registry(cls, v: str | None) -> str | None:
+        if v is not None and v not in SUPPORTED_MODEL_REGISTRIES:
+            raise ValueError(
+                f"Unsupported model registry '{v}'. Supported: {', '.join(sorted(SUPPORTED_MODEL_REGISTRIES))}.",
+            )
+        return v
+
+
 class SecretsConfig(BaseModel):
     """Secrets provider configuration."""
 
@@ -336,6 +414,16 @@ class PolicyConfig(BaseModel):
         alias="requireSignedStack",
         default=False,
         description="Whether stack signature verification is required.",
+    )
+    allowed_model_deployers: list[str] = Field(
+        alias="allowedModelDeployers",
+        default_factory=list,
+        description="Allowlist of model deployer flavors. Empty means all allowed.",
+    )
+    allowed_model_registries: list[str] = Field(
+        alias="allowedModelRegistries",
+        default_factory=list,
+        description="Allowlist of model registry flavors. Empty means all allowed.",
     )
 
     @model_validator(mode="after")
@@ -451,6 +539,10 @@ class StackSpec(BaseModel):
     storage: StorageConfig = Field(
         default_factory=StorageConfig,
         description="Artifact storage configuration.",
+    )
+    deployment: DeploymentConfig | None = Field(
+        default=None,
+        description="Model deployer / registry configuration for serving.",
     )
     secrets: SecretsConfig = Field(
         default_factory=SecretsConfig,
@@ -656,6 +748,78 @@ class StackDefinition(BaseModel):
         return DockerConfig(**kwargs)
 
     def to_stack(self) -> Any:
+        """Convert this declarative definition to a runtime ``Stack`` instance.
+
+        Builds the backend execution stack and then attaches the governed
+        model deployer / model registry (``spec.deployment``) so the resulting
+        stack exposes ``.model_deployer`` and ``.model_registry`` for the
+        deployment service and champion/challenger promotion.
+
+        Returns:
+            A ``flowyml.stacks.base.Stack`` (or subclass) instance.
+        """
+        stack = self._build_backend_stack()
+        self._attach_deployment_components(stack)
+        return stack
+
+    def _attach_deployment_components(self, stack: Any) -> None:
+        """Resolve and attach ``spec.deployment`` flavors onto *stack*.
+
+        Uses the runtime ``ComponentRegistry`` to instantiate the declared
+        model deployer / model registry.  Unresolvable flavors are logged and
+        skipped rather than raising, so a governed definition remains usable
+        for execution even when a serving SDK is not installed locally.
+
+        Args:
+            stack: The runtime ``Stack`` to mutate in place.
+        """
+        deployment = self.spec.deployment
+        if deployment is None:
+            return
+
+        from flowyml.plugins.stack_config import _ensure_providers_loaded
+        from flowyml.stacks.plugins import get_component_registry
+
+        import logging
+
+        log = logging.getLogger(__name__)
+        registry = get_component_registry()
+
+        def _instantiate(flavor: str | None, extra: dict[str, Any]) -> Any:
+            if not flavor:
+                return None
+            _ensure_providers_loaded(flavor)
+            cls = registry.get_component(flavor)
+            if cls is None:
+                log.warning(
+                    "Deployment flavor '%s' not found in the component registry.",
+                    flavor,
+                )
+                return None
+            try:
+                return cls(**extra)
+            except TypeError as exc:
+                log.warning("Failed to instantiate '%s': %s", flavor, exc)
+                try:
+                    return cls()
+                except Exception:  # noqa: BLE001
+                    return None
+
+        deployer_kwargs: dict[str, Any] = dict(deployment.config)
+        if deployment.namespace:
+            deployer_kwargs.setdefault("namespace", deployment.namespace)
+        if deployment.registry_uri:
+            deployer_kwargs.setdefault("registry_uri", deployment.registry_uri)
+
+        model_deployer = _instantiate(deployment.model_deployer, deployer_kwargs)
+        model_registry = _instantiate(deployment.model_registry, {})
+
+        if model_deployer is not None:
+            stack.model_deployer = model_deployer
+        if model_registry is not None:
+            stack.model_registry = model_registry
+
+    def _build_backend_stack(self) -> Any:
         """Convert this declarative definition to a runtime ``Stack`` instance.
 
         This bridges the declarative enterprise model to the existing FlowyML

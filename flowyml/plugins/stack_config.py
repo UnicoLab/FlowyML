@@ -321,6 +321,9 @@ class StackConfig:
         # --- Model deployer (optional) ---
         model_deployer = self._instantiate_component(self.model_deployer)
 
+        # --- Model registry (optional) ---
+        model_registry = self._instantiate_component(self.model_registry)
+
         # --- Build the live stack ---
         # Determine executor: local stacks need a LocalExecutor,
         # cloud stacks delegate execution to the orchestrator itself
@@ -342,6 +345,7 @@ class StackConfig:
             container_registry=container_registry,
             orchestrator=orchestrator,
             model_deployer=model_deployer,
+            model_registry=model_registry,
         )
 
         # Attach routing config so the routing module can read it
@@ -423,9 +427,27 @@ _YAML_KEY_ALIASES: dict[str, str] = {
 }
 
 # Component types provided by each cloud provider module.
-_GCP_COMPONENT_TYPES = {"vertex_ai", "gcs", "gcr", "vertex_model_registry", "vertex_endpoint"}
-_AWS_COMPONENT_TYPES = {"sagemaker", "s3", "ecr", "aws_batch", "sagemaker_model_registry"}
+_GCP_COMPONENT_TYPES = {"vertex_ai", "gcs", "gcr"}
+_AWS_COMPONENT_TYPES = {"sagemaker", "s3", "ecr", "aws_batch"}
 _AZURE_COMPONENT_TYPES = {"azure_ml", "azure_blob", "acr"}
+
+# Deployment targets (BaseDeployer stack components) provided by
+# ``flowyml.deployment.targets``.  These serve models on the local Docker
+# daemon or on Kubernetes/OpenShift clusters.
+_DEPLOYER_COMPONENT_TYPES = {"local_docker", "kubernetes", "openshift"}
+
+# Cloud model deployer plugins (ModelDeployerPlugin) provided by
+# ``flowyml.plugins.deployers``.
+_CLOUD_DEPLOYER_COMPONENT_TYPES = {"vertex_endpoint", "sagemaker_endpoint", "gcp_cloud_run"}
+
+# Model registry plugins (ModelRegistryPlugin) provided by
+# ``flowyml.plugins.model_registries``.
+_MODEL_REGISTRY_COMPONENT_TYPES = {
+    "mlflow_registry",
+    "azureml_registry",
+    "vertex_model_registry",
+    "sagemaker_model_registry",
+}
 
 
 def _ensure_providers_loaded(comp_type: str) -> None:
@@ -441,6 +463,15 @@ def _ensure_providers_loaded(comp_type: str) -> None:
     elif comp_type in _AZURE_COMPONENT_TYPES:
         with contextlib.suppress(ImportError):
             import flowyml.stacks.azure  # noqa: F401
+    elif comp_type in _DEPLOYER_COMPONENT_TYPES:
+        with contextlib.suppress(ImportError):
+            import flowyml.deployment.targets  # noqa: F401
+    elif comp_type in _CLOUD_DEPLOYER_COMPONENT_TYPES:
+        with contextlib.suppress(ImportError):
+            import flowyml.plugins.deployers  # noqa: F401
+    elif comp_type in _MODEL_REGISTRY_COMPONENT_TYPES:
+        with contextlib.suppress(ImportError):
+            import flowyml.plugins.model_registries  # noqa: F401
 
 
 # =============================================================================

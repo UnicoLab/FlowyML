@@ -80,6 +80,8 @@ class ComponentRegistry:
         self._orchestrators: dict[str, type[Orchestrator]] = {}
         self._artifact_stores: dict[str, type[ArtifactStore]] = {}
         self._container_registries: dict[str, type[ContainerRegistry]] = {}
+        self._model_deployers: dict[str, type[Any]] = {}
+        self._model_registries: dict[str, type[Any]] = {}
         self._custom_components: dict[str, type[StackComponent]] = {}
         self._plugins: dict[str, PluginInfo] = {}
         self._bridges: dict[str, PluginBridge] = {}
@@ -89,6 +91,56 @@ class ComponentRegistry:
 
         # Auto-discover plugins
         self._discover_installed_plugins()
+
+    def _register_builtin_components(self) -> None:
+        """Register first-party serving flavors so a fresh registry is complete.
+
+        Model deployers (local Docker / Kubernetes / OpenShift) and model
+        registries (MLflow / Azure ML / Vertex / SageMaker) are registered via
+        ``@register_component`` decorators that only fire on first import.
+        Because the global registry can be reset (e.g. in tests), we (re-)apply
+        the built-in flavors explicitly here so they resolve regardless of the
+        module import cache — mirroring ZenML's built-in flavor registration.
+
+        Imports are light-weight: heavy cloud SDKs are only imported when a
+        component is actually *initialized*, never at class-definition time.
+        """
+        import contextlib
+
+        with contextlib.suppress(Exception):
+            from flowyml.deployment.targets import (
+                KubernetesDeployer,
+                LocalDockerDeployer,
+                OpenShiftDeployer,
+            )
+
+            self.register(LocalDockerDeployer, "local_docker")
+            self.register(KubernetesDeployer, "kubernetes")
+            self.register(OpenShiftDeployer, "openshift")
+
+        with contextlib.suppress(Exception):
+            from flowyml.plugins.model_registries import (
+                AzureMLModelRegistry,
+                MLflowModelRegistry,
+                SageMakerModelRegistry,
+                VertexModelRegistry,
+            )
+
+            self.register(MLflowModelRegistry, "mlflow_registry")
+            self.register(AzureMLModelRegistry, "azureml_registry")
+            self.register(VertexModelRegistry, "vertex_model_registry")
+            self.register(SageMakerModelRegistry, "sagemaker_model_registry")
+
+        with contextlib.suppress(Exception):
+            from flowyml.plugins.deployers import (
+                GCPCloudRunDeployer,
+                SageMakerEndpointDeployer,
+                VertexEndpointDeployer,
+            )
+
+            self.register(VertexEndpointDeployer, "vertex_endpoint")
+            self.register(SageMakerEndpointDeployer, "sagemaker_endpoint")
+            self.register(GCPCloudRunDeployer, "gcp_cloud_run")
 
     def _register_default_bridges(self) -> None:
         """Register default bridges."""
@@ -177,15 +229,61 @@ class ComponentRegistry:
         if name is None:
             name = self._class_to_snake_case(component_class.__name__)
 
-        # Determine component type and register
+        # Determine component type and register.  Model deployers and model
+        # registries are first-class component types (mirroring ZenML's
+        # ``BaseModelDeployer`` / ``BaseModelRegistry`` flavors), so they get
+        # dedicated buckets *and* remain reachable via ``get_component`` for
+        # backward compatibility.
         if issubclass(component_class, Orchestrator):
             self._orchestrators[name] = component_class
         elif issubclass(component_class, ArtifactStore):
             self._artifact_stores[name] = component_class
         elif issubclass(component_class, ContainerRegistry):
             self._container_registries[name] = component_class
+        elif self._is_model_deployer(component_class):
+            self._model_deployers[name] = component_class
+        elif self._is_model_registry(component_class):
+            self._model_registries[name] = component_class
         else:
             self._custom_components[name] = component_class
+
+    @staticmethod
+    def _is_model_deployer(component_class: type) -> bool:
+        """Return True if *component_class* is a model deployer flavor.
+
+        Recognizes both the deployment-layer ``BaseDeployer`` (a
+        ``StackComponent``) and the plugin-layer ``ModelDeployerPlugin``.
+        Imports are performed lazily to avoid import cycles.
+        """
+        for module_path, attr in (
+            ("flowyml.deployment.base", "BaseDeployer"),
+            ("flowyml.plugins.base", "ModelDeployerPlugin"),
+        ):
+            try:
+                module = importlib.import_module(module_path)
+                base = getattr(module, attr)
+                if isinstance(component_class, type) and issubclass(component_class, base):
+                    return True
+            except Exception:
+                continue
+        return False
+
+    @staticmethod
+    def _is_model_registry(component_class: type) -> bool:
+        """Return True if *component_class* is a model registry flavor.
+
+        Recognizes the plugin-layer ``ModelRegistryPlugin``.  Imports are
+        performed lazily to avoid import cycles.
+        """
+        try:
+            from flowyml.plugins.base import ModelRegistryPlugin
+
+            return isinstance(component_class, type) and issubclass(
+                component_class,
+                ModelRegistryPlugin,
+            )
+        except Exception:
+            return False
 
     def get_orchestrator(self, name: str) -> type[Orchestrator] | None:
         """Get orchestrator class by name."""
@@ -199,12 +297,22 @@ class ComponentRegistry:
         """Get container registry class by name."""
         return self._container_registries.get(name)
 
+    def get_model_deployer(self, name: str) -> type[Any] | None:
+        """Get a model deployer class by its flavor name (e.g. ``openshift``)."""
+        return self._model_deployers.get(name) or self._custom_components.get(name)
+
+    def get_model_registry(self, name: str) -> type[Any] | None:
+        """Get a model registry class by its flavor name (e.g. ``azureml_registry``)."""
+        return self._model_registries.get(name) or self._custom_components.get(name)
+
     def get_component(self, name: str) -> type[StackComponent] | None:
         """Get any component by name."""
         return (
             self._orchestrators.get(name)
             or self._artifact_stores.get(name)
             or self._container_registries.get(name)
+            or self._model_deployers.get(name)
+            or self._model_registries.get(name)
             or self._custom_components.get(name)
         )
 
@@ -220,12 +328,22 @@ class ComponentRegistry:
         """List all registered container registries."""
         return list(self._container_registries.keys())
 
+    def list_model_deployers(self) -> list[str]:
+        """List all registered model deployers."""
+        return list(self._model_deployers.keys())
+
+    def list_model_registries(self) -> list[str]:
+        """List all registered model registries."""
+        return list(self._model_registries.keys())
+
     def list_all(self) -> dict[str, list[str]]:
         """List all registered components."""
         return {
             "orchestrators": self.list_orchestrators(),
             "artifact_stores": self.list_artifact_stores(),
             "container_registries": self.list_container_registries(),
+            "model_deployers": self.list_model_deployers(),
+            "model_registries": self.list_model_registries(),
             "custom": list(self._custom_components.keys()),
         }
 
@@ -473,7 +591,11 @@ def get_component_registry() -> ComponentRegistry:
     """Get the global component registry."""
     global _global_component_registry
     if _global_component_registry is None:
+        # Assign the global *before* registering built-ins so the
+        # ``@register_component`` decorators triggered by those imports resolve
+        # to this same instance instead of recursively constructing another.
         _global_component_registry = ComponentRegistry()
+        _global_component_registry._register_builtin_components()
     return _global_component_registry
 
 

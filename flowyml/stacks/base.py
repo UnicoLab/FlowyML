@@ -15,6 +15,7 @@ class StackConfig:
     container_registry: str | None = None
     orchestrator: str | None = None
     model_deployer: str | None = None
+    model_registry: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
@@ -26,6 +27,7 @@ class StackConfig:
             "container_registry": self.container_registry,
             "orchestrator": self.orchestrator,
             "model_deployer": self.model_deployer,
+            "model_registry": self.model_registry,
         }
 
 
@@ -38,6 +40,8 @@ class Stack:
     - Metadata Store: Where run metadata is stored (SQLite, Postgres)
     - Container Registry: For containerized execution (optional)
     - Orchestrator: For workflow orchestration (optional)
+    - Model Deployer: For serving models to inference endpoints (optional)
+    - Model Registry: For versioning/staging trained models (optional)
     """
 
     def __init__(
@@ -49,6 +53,7 @@ class Stack:
         container_registry: Any | None = None,
         orchestrator: Any | None = None,
         model_deployer: Any | None = None,
+        model_registry: Any | None = None,
     ):
         self.name = name
         self.executor = executor
@@ -57,6 +62,7 @@ class Stack:
         self.container_registry = container_registry
         self.orchestrator = orchestrator
         self.model_deployer = model_deployer
+        self.model_registry = model_registry
 
         self.config = StackConfig(
             name=name,
@@ -66,6 +72,7 @@ class Stack:
             container_registry=type(container_registry).__name__ if container_registry else None,
             orchestrator=type(orchestrator).__name__ if orchestrator else None,
             model_deployer=type(model_deployer).__name__ if model_deployer else None,
+            model_registry=type(model_registry).__name__ if model_registry else None,
         )
 
     def activate(self) -> None:

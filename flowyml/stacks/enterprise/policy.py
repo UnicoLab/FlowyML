@@ -76,6 +76,8 @@ __all__ = [
     "MaxRuntimeRule",
     "CostLimitRule",
     "SignedStackRule",
+    "ModelDeployerAllowedRule",
+    "ModelRegistryAllowedRule",
 ]
 
 
@@ -783,6 +785,112 @@ class SignedStackRule:
         )
 
 
+class ModelDeployerAllowedRule:
+    """Validates the stack's model deployer against the policy allowlist.
+
+    An empty ``allowedModelDeployers`` list means any deployer flavor is
+    permitted.  When the stack has no ``deployment`` section this rule is a
+    no-op.
+    """
+
+    name: str = "model_deployer_allowed"
+
+    def validate(self, context: PolicyContext) -> PolicyResult:
+        """Verify the declared model deployer is allowed.
+
+        Args:
+            context: Policy evaluation context.
+
+        Returns:
+            Result indicating whether the deployer flavor is permitted.
+        """
+        deployment = context.stack.spec.deployment
+        allowed = context.stack.spec.policies.allowed_model_deployers
+
+        if deployment is None or deployment.model_deployer is None:
+            return _pass(self.name, "No model deployer declared for this stack.")
+
+        flavor = deployment.model_deployer
+        if not allowed:
+            return _pass(
+                self.name,
+                f"Stack '{context.stack.name}' has no model deployer restrictions.",
+            )
+
+        if flavor not in allowed:
+            return _fail(
+                self.name,
+                (
+                    f"Model deployer '{flavor}' is not allowed for stack "
+                    f"'{context.stack.name}'. Allowed: {', '.join(sorted(allowed))}."
+                ),
+                suggestion=(
+                    f"Use one of the approved deployers ({', '.join(sorted(allowed))}) "
+                    f"or ask the stack owner "
+                    f"({context.stack.metadata.owner or 'platform team'}) to allow "
+                    f"'{flavor}'."
+                ),
+            )
+
+        return _pass(
+            self.name,
+            f"Model deployer '{flavor}' is approved for stack '{context.stack.name}'.",
+        )
+
+
+class ModelRegistryAllowedRule:
+    """Validates the stack's model registry against the policy allowlist.
+
+    An empty ``allowedModelRegistries`` list means any registry flavor is
+    permitted.  When the stack has no ``deployment`` section this rule is a
+    no-op.
+    """
+
+    name: str = "model_registry_allowed"
+
+    def validate(self, context: PolicyContext) -> PolicyResult:
+        """Verify the declared model registry is allowed.
+
+        Args:
+            context: Policy evaluation context.
+
+        Returns:
+            Result indicating whether the registry flavor is permitted.
+        """
+        deployment = context.stack.spec.deployment
+        allowed = context.stack.spec.policies.allowed_model_registries
+
+        if deployment is None or deployment.model_registry is None:
+            return _pass(self.name, "No model registry declared for this stack.")
+
+        flavor = deployment.model_registry
+        if not allowed:
+            return _pass(
+                self.name,
+                f"Stack '{context.stack.name}' has no model registry restrictions.",
+            )
+
+        if flavor not in allowed:
+            return _fail(
+                self.name,
+                (
+                    f"Model registry '{flavor}' is not allowed for stack "
+                    f"'{context.stack.name}'. Allowed: {', '.join(sorted(allowed))}."
+                ),
+                suggestion=(
+                    f"Use one of the approved registries ({', '.join(sorted(allowed))}) "
+                    f"or ask the stack owner "
+                    f"({context.stack.metadata.owner or 'platform team'}) to allow "
+                    f"'{flavor}'."
+                ),
+            )
+
+        return _pass(
+            self.name,
+            f"Model registry '{flavor}' is approved for stack '{context.stack.name}'.",
+        )
+
+
 # ---------------------------------------------------------------------------
 # Engine
 # ---------------------------------------------------------------------------
@@ -899,4 +1007,6 @@ class PolicyEngine:
             MaxRuntimeRule(),
             CostLimitRule(),
             SignedStackRule(),
+            ModelDeployerAllowedRule(),
+            ModelRegistryAllowedRule(),
         ]
