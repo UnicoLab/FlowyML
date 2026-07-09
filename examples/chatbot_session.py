@@ -9,12 +9,12 @@ Demonstrates session-level aggregation for a chatbot application:
 This example simulates a chatbot without calling a real LLM.
 """
 
+from __future__ import annotations
+
 import time
 
-from flowyml.integrations import (
-    SessionEventStream,
-    session_trace,
-)
+from flowyml.integrations.base import session_trace
+from flowyml.integrations.streaming import SessionEventStream
 
 
 def simple_chatbot_session():
@@ -47,10 +47,10 @@ def simple_chatbot_session():
             tracer.end_span(
                 span,
                 outputs={
-                    "content": "Our return policy allows returns within " "30 days of purchase with a receipt.",
+                    "content": "Our return policy allows returns within 30 days of purchase with a receipt.",
                 },
             )
-            turn.content = "Our return policy allows returns within " "30 days of purchase with a receipt."
+            turn.content = "Our return policy allows returns within 30 days of purchase with a receipt."
 
         # Turn 2: Follow-up question
         with tracer.turn("user") as turn:
@@ -66,10 +66,10 @@ def simple_chatbot_session():
             tracer.end_span(
                 span,
                 outputs={
-                    "content": "Without a receipt, we can offer store " "credit at the current selling price.",
+                    "content": "Without a receipt, we can offer store credit at the current selling price.",
                 },
             )
-            turn.content = "Without a receipt, we can offer store " "credit at the current selling price."
+            turn.content = "Without a receipt, we can offer store credit at the current selling price."
 
         # Turn 3: User asks about a tool
         with tracer.turn("user") as turn:
@@ -94,10 +94,10 @@ def simple_chatbot_session():
             tracer.end_span(
                 llm_span,
                 outputs={
-                    "content": "Order #12345 has been shipped and should " "arrive in approximately 2 business days.",
+                    "content": "Order #12345 has been shipped and should arrive in approximately 2 business days.",
                 },
             )
-            turn.content = "Order #12345 has been shipped and should " "arrive in approximately 2 business days."
+            turn.content = "Order #12345 has been shipped and should arrive in approximately 2 business days."
 
 
 def session_with_streaming():
@@ -163,10 +163,10 @@ def session_with_manual_evals():
             tracer.end_span(
                 span,
                 outputs={
-                    "content": "Machine learning is a subset of AI " "that enables systems to learn from data.",
+                    "content": "Machine learning is a subset of AI that enables systems to learn from data.",
                 },
             )
-            turn.content = "Machine learning is a subset of AI " "that enables systems to learn from data."
+            turn.content = "Machine learning is a subset of AI that enables systems to learn from data."
 
         # Manually add evals after the turn
         tracer.genai_session.add_eval(
@@ -193,10 +193,10 @@ def session_with_manual_evals():
             tracer.end_span(
                 span,
                 outputs={
-                    "content": "Neural networks are computing systems " "inspired by biological neural networks.",
+                    "content": "Neural networks are computing systems inspired by biological neural networks.",
                 },
             )
-            turn.content = "Neural networks are computing systems " "inspired by biological neural networks."
+            turn.content = "Neural networks are computing systems inspired by biological neural networks."
 
         tracer.genai_session.add_eval(
             "relevance",

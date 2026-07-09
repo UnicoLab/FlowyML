@@ -15,15 +15,32 @@ Set your API key:
     export OPENAI_API_KEY=sk-...
 """
 
+from __future__ import annotations
+
+import importlib.util
+
+# ──────────────────────────────────────────────────────
+# Optional dependency guard — skip cleanly if libs are missing
+# ──────────────────────────────────────────────────────
+_REQUIRED = ("langgraph", "langchain_openai", "langchain_core")
+_MISSING = [m for m in _REQUIRED if importlib.util.find_spec(m) is None]
+if _MISSING:
+    print(
+        "⚠️  This example requires LangGraph + LangChain.\n"
+        f"    Missing: {', '.join(_MISSING)}\n"
+        '    Install with:  pip install "flowyml[langgraph]" langchain-openai',
+    )
+    raise SystemExit(0)
+
 # ──────────────────────────────────────────────────────
 # Setup: Build a simple LangGraph ReAct Agent
 # ──────────────────────────────────────────────────────
-from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage
-from langchain_core.tools import tool
-from langgraph.prebuilt import create_react_agent
+from langchain_core.messages import HumanMessage  # noqa: E402
+from langchain_core.tools import tool  # noqa: E402
+from langchain_openai import ChatOpenAI  # noqa: E402
+from langgraph.prebuilt import create_react_agent  # noqa: E402
 
-from flowyml.integrations.langgraph import (
+from flowyml.integrations.langgraph import (  # noqa: E402
     FlowyMLCallbackHandler,
     instrument,
     observe,
@@ -223,9 +240,9 @@ if __name__ == "__main__":
         choice = sys.argv[1]
         if choice in examples:
             name, func = examples[choice]
-            print(f"\n{'='*60}")
+            print(f"\n{'=' * 60}")
             print(f"  Running: {name}")
-            print(f"{'='*60}")
+            print(f"{'=' * 60}")
             func()
         else:
             print(f"Unknown example: {choice}. Choose 1-5.")
@@ -240,9 +257,9 @@ if __name__ == "__main__":
 
         for k, (name, func) in examples.items():
             try:
-                print(f"\n{'='*60}")
+                print(f"\n{'=' * 60}")
                 print(f"  Running Example {k}: {name}")
-                print(f"{'='*60}")
+                print(f"{'=' * 60}")
                 if k == "3":
                     func()
                 else:

@@ -4,13 +4,15 @@ Demonstrates using EvalAssert for quality gates in CI/CD pipelines.
 This can be used in pytest tests or GitHub Actions.
 """
 
+from __future__ import annotations
+
 from flowyml.evals import (
-    EvalDataset,
-    EvalAssert,
-    evaluate,
     Accuracy,
+    EvalAssert,
+    EvalDataset,
     F1Score,
     Precision,
+    evaluate,
 )
 
 
@@ -32,7 +34,7 @@ def ci_assertions_example():
     )
 
     # Create assertions
-    assertion = EvalAssert(result=result)
+    assertion = EvalAssert(eval_result=result)
 
     print("=== CI/CD Assertions ===")
     print(f"Accuracy: {result.summary.get('accuracy', 0):.4f}")
@@ -57,9 +59,9 @@ def ci_assertions_example():
     except AssertionError as e:
         print(f"❌ {e}")
 
-    # Validate all at once
-    validation = assertion.validate()
-    print(f"\nOverall: {'PASSED' if validation.passed else 'FAILED'}")
+    # Validate all at once (don't raise — we just want the boolean here)
+    passed = assertion.validate(raise_on_failure=False)
+    print(f"\nOverall: {'PASSED' if passed else 'FAILED'}")
 
 
 if __name__ == "__main__":

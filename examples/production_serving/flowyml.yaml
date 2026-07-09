@@ -1,0 +1,61 @@
+# FlowyML multi-stack configuration for the production serving tutorial.
+#
+# Switch stacks with:  export FLOWYML_STACK=azureml-openshift
+# or per-run:          flowyml run training --stack azureml-openshift
+#
+# Secrets/ids are read from environment variables (${VAR}) so this file is safe
+# to commit.
+
+stacks:
+
+  # 1) Local development — everything on your machine, built-in SQL registry.
+  local:
+    orchestrator: { type: local }
+    artifact_store: { type: local, path: ./.flowyml/artifacts }
+    model_deployer:
+      type: local_docker
+
+  # 2) Production — train on Azure ML, register to Azure ML, serve on OpenShift.
+  azureml-openshift:
+    orchestrator:
+      type: azure_ml
+      subscription_id: ${AZURE_SUBSCRIPTION_ID}
+      resource_group: ${AZURE_RESOURCE_GROUP}
+      workspace_name: ${AZURE_WORKSPACE}
+      compute: cpu-cluster
+      environment: "AzureML-sklearn-1.0-ubuntu20.04-py38-cpu@latest"
+    artifact_store:
+      type: azure_blob
+      account_url: ${AZURE_BLOB_ACCOUNT_URL}
+      container_name: ml-artifacts
+    model_registry:
+      type: azureml_registry
+      subscription_id: ${AZURE_SUBSCRIPTION_ID}
+      resource_group: ${AZURE_RESOURCE_GROUP}
+      workspace_name: ${AZURE_WORKSPACE}
+    model_deployer:
+      type: openshift
+      namespace: ml-prod
+      registry_uri: ${OPENSHIFT_REGISTRY}   # e.g. default-route-openshift-image-registry.apps.example.com/ml-prod
+
+  # 3) Alternative — train on Azure ML but register to a central MLflow server.
+  azureml-mlflow:
+    orchestrator:
+      type: azure_ml
+      subscription_id: ${AZURE_SUBSCRIPTION_ID}
+      resource_group: ${AZURE_RESOURCE_GROUP}
+      workspace_name: ${AZURE_WORKSPACE}
+      compute: cpu-cluster
+    artifact_store:
+      type: azure_blob
+      account_url: ${AZURE_BLOB_ACCOUNT_URL}
+      container_name: ml-artifacts
+    model_registry:
+      type: mlflow_registry
+      registry_uri: ${MLFLOW_TRACKING_URI}
+    model_deployer:
+      type: kubernetes
+      namespace: ml
+      registry_uri: ${CONTAINER_REGISTRY}
+
+active_stack: local

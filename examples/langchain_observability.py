@@ -14,6 +14,28 @@ Usage:
 
 from __future__ import annotations
 
+import importlib.util
+import os
+
+
+def _preflight() -> bool:
+    """Return ``True`` if LangChain + an OpenAI API key are available."""
+    missing = [m for m in ("langchain_core", "langchain_openai") if importlib.util.find_spec(m) is None]
+    if missing:
+        print(
+            "⚠️  This example requires LangChain.\n"
+            f"    Missing: {', '.join(missing)}\n"
+            '    Install with:  pip install "flowyml[langchain]" langchain-openai',
+        )
+        return False
+    if not os.environ.get("OPENAI_API_KEY"):
+        print(
+            "⚠️  Set OPENAI_API_KEY to run this example — it makes real "
+            "OpenAI API calls.\n    export OPENAI_API_KEY=sk-...",
+        )
+        return False
+    return True
+
 
 def example_trace_chain():
     """Trace a LangChain chain with a context manager."""
@@ -116,6 +138,9 @@ if __name__ == "__main__":
         "observe": example_observe_chain,
         "instrument": example_instrument_chain,
     }
+
+    if not _preflight():
+        raise SystemExit(0)
 
     if len(sys.argv) > 1 and sys.argv[1] in examples:
         examples[sys.argv[1]]()

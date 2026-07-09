@@ -3,10 +3,13 @@
 This pipeline demonstrates how the same pipeline code runs on different
 stacks based on environment configuration.
 """
+
+from __future__ import annotations
+
 from flowyml import Pipeline, step
 
 
-@step
+@step(outputs=["data"])
 def load_data():
     """Load the churn dataset."""
     # In a real project, this would load from a database or file
@@ -20,7 +23,7 @@ def load_data():
     return data
 
 
-@step
+@step(inputs=["data"], outputs=["processed"])
 def preprocess(data):
     """Preprocess the dataset."""
     # Simple normalization
@@ -29,15 +32,15 @@ def preprocess(data):
     return {"features": features, "labels": labels, "preprocessed": True}
 
 
-@step
-def train_model(data):
+@step(inputs=["processed"], outputs=["model"])
+def train_model(processed):
     """Train a model."""
-    # Simulate training
+    # Simulate training on the preprocessed data
     model = {"type": "logistic_regression", "accuracy": 0.85, "trained": True}
     return model
 
 
-@step
+@step(inputs=["model"], outputs=["metrics"])
 def evaluate(model):
     """Evaluate the model."""
     metrics = {
@@ -74,4 +77,4 @@ if __name__ == "__main__":
         print("Running on default (local) stack")
         result = pipe.run()
 
-    print(f"Pipeline completed: {result.status}")
+    print(f"Pipeline completed: {result.state}")

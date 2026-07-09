@@ -10,13 +10,13 @@ an OpenAI API key. In production, use scorers like:
     Toxicity(model="gpt-4o-mini", threshold=0.1)
 """
 
+from __future__ import annotations
+
 import time
 
-from flowyml.integrations import (
-    SessionEvaluator,
-    session_trace,
-)
 from flowyml.evals.base import Scorer, ScorerFeedback, ScorerType
+from flowyml.integrations.base import session_trace
+from flowyml.integrations.eval_bridge import SessionEvaluator
 
 
 # ─────────────────────────────────────────────────────
@@ -133,7 +133,7 @@ def session_with_auto_evals():
                     "propagating errors backward through the network.",
                 },
             )
-            turn.content = "Backpropagation is the core algorithm for " "training neural networks."
+            turn.content = "Backpropagation is the core algorithm for training neural networks."
 
         # Turn 3 — short answer
         with tracer.turn("user") as turn:
@@ -161,7 +161,7 @@ def session_with_auto_evals():
         for ev in turn.eval_results:
             status = "✅" if ev.get("passed") else "❌"
             print(
-                f"    {status} {ev['scorer']}: " f"{ev['score']:.2f} — {ev.get('rationale', '')[:60]}",
+                f"    {status} {ev['scorer']}: {ev['score']:.2f} — {ev.get('rationale', '')[:60]}",
             )
 
     evaluator.shutdown()

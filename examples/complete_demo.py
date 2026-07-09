@@ -1,9 +1,12 @@
 """Comprehensive example demonstrating all flowyml features."""
 
-import numpy as np
-import time
+from __future__ import annotations
+
 import sys
+import time
 from pathlib import Path
+
+import numpy as np
 
 # Add project root to path
 sys.path.append(str(Path(__file__).parent.parent))
@@ -11,6 +14,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 from flowyml import (  # noqa: E402
     Pipeline,
     step,
+    clear_step_registry,
     context,
     PipelineScheduler,
     configure_notifications,
@@ -107,9 +111,17 @@ versioned_pipeline.add_step(evaluate_model)
 versioned_pipeline.version = "v1.1.0"
 versioned_pipeline.save_version(metadata={"description": "Added evaluation step"})
 
-# Compare versions
-print("\n📊 Comparing versions:")
-versioned_pipeline.display_comparison("v1.0.0")
+# Compare versions (v1.1.0 currently loaded vs the saved v1.0.0)
+print("\n📊 Comparing versions (v1.1.0 vs v1.0.0):")
+diff = versioned_pipeline.compare_with("v1.0.0")
+if diff["added_steps"]:
+    print(f"   + Added steps: {', '.join(diff['added_steps'])}")
+if diff["removed_steps"]:
+    print(f"   - Removed steps: {', '.join(diff['removed_steps'])}")
+if diff["modified_steps"]:
+    print(f"   ~ Modified steps: {', '.join(diff['modified_steps'])}")
+if not any([diff["added_steps"], diff["removed_steps"], diff["modified_steps"]]):
+    print("   No differences found")
 
 # ============================================================================
 # PART 3: Projects & Multi-Tenancy
@@ -168,15 +180,15 @@ leaderboard = ModelLeaderboard(metric="accuracy", higher_is_better=True)
 
 # Add some model scores
 for i in range(5):
-    model_name = f"model_v{i+1}"
-    run_id = f"run_{i+1}"
+    model_name = f"model_v{i + 1}"
+    run_id = f"run_{i + 1}"
     score = 0.7 + np.random.rand() * 0.25  # Random accuracy between 0.7-0.95
 
     leaderboard.add_score(
         model_name=model_name,
         run_id=run_id,
         score=score,
-        metadata={"version": f"v{i+1}"},
+        metadata={"version": f"v{i + 1}"},
     )
 
 # Display leaderboard
@@ -190,9 +202,11 @@ print("\n" + "=" * 80)
 print("PART 6: Pipeline Templates")
 print("=" * 80)
 
-# from flowyml import list_templates  # Moved to top
-
 print(f"Available templates: {list_templates()}")
+
+# Templates register their own internal steps (e.g. "load_data") in the global
+# registry, so clear our demo steps first to avoid name collisions.
+clear_step_registry()
 
 template_pipeline = create_from_template(
     "ml_training",

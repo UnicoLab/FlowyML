@@ -6,15 +6,38 @@ This demonstrates a complete ML pipeline using FlowyML with:
 - Model initialization and training with Keras
 - Evaluation and metrics tracking
 - Conditional deployment based on model performance
+
+Required extra (optional/heavy dependency)::
+
+    pip install "flowyml[tensorflow]"
+
+The example loads ``data.csv`` from the repository root, so it runs from any
+working directory.
 """
 
+from __future__ import annotations
+
+from pathlib import Path
+
 import numpy as np
-import tensorflow as tf
-import keras
-from flowyml import Pipeline, step, context, PipelineScheduler
-from flowyml import Dataset, Model, Metrics
-from flowyml import If
+
+try:
+    import keras
+    import tensorflow as tf
+except ImportError as exc:  # pragma: no cover - optional dependency guard
+    print(
+        "⚠️  This example needs TensorFlow + Keras (heavy, optional dependencies).\n"
+        f"    Missing module: {exc.name!r}\n"
+        '    Install with:  pip install "flowyml[tensorflow]"',
+    )
+    raise SystemExit(0) from exc
+
+from flowyml import Dataset, If, Metrics, Model, Pipeline, PipelineScheduler, context, step
 from flowyml.integrations.keras import FlowymlKerasCallback
+
+# ``data.csv`` lives at the repository root; resolve it so the example runs
+# regardless of the current working directory.
+DATA_PATH = Path(__file__).resolve().parent.parent / "data.csv"
 
 # Define context with training hyperparameters
 ctx = context(
@@ -22,7 +45,7 @@ ctx = context(
     batch_size=8,
     epochs=100,
     min_mae_threshold=0.2,
-    data_path="data.csv",
+    data_path=str(DATA_PATH),
 )
 
 

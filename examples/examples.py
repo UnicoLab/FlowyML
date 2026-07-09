@@ -1,5 +1,9 @@
 """Flowy Examples - Comprehensive examples of using the framework."""
 
+from __future__ import annotations
+
+from flowyml import clear_step_registry
+
 # ============================================================================
 # Example 1: Basic Pipeline with Context Injection
 # ============================================================================
@@ -7,7 +11,11 @@
 
 def example_basic_pipeline():
     """Simple pipeline with automatic context injection."""
-    from flowyml import Pipeline, step, context
+    from flowyml import Pipeline, context, step
+
+    # Each example re-defines steps with familiar names; start from a clean
+    # registry so those names never collide across examples.
+    clear_step_registry()
 
     # Define context
     ctx = context(
@@ -50,8 +58,10 @@ def example_basic_pipeline():
 
 def example_asset_pipeline():
     """Pipeline demonstrating asset-centric design."""
-    from flowyml import Pipeline, step, context
-    from flowyml.assets import Dataset, Model, Metrics
+    from flowyml import Pipeline, context, step
+    from flowyml.assets import Dataset, Metrics, Model
+
+    clear_step_registry()
 
     ctx = context(
         data_path="./data/train.csv",
@@ -133,8 +143,11 @@ def example_asset_pipeline():
 
 def example_caching():
     """Demonstrate intelligent caching."""
-    from flowyml import Pipeline, step, context
     import time
+
+    from flowyml import Pipeline, context, step
+
+    clear_step_registry()
 
     ctx = context(data_size=1000, threshold=0.5)
 
@@ -180,7 +193,9 @@ def example_caching():
 
 def example_experiment_tracking():
     """Demonstrate experiment tracking."""
-    from flowyml import Pipeline, step, context, Experiment
+    from flowyml import Experiment, Pipeline, context, step
+
+    clear_step_registry()
 
     # Run multiple experiments with different parameters
     experiments_data = []
@@ -188,7 +203,7 @@ def example_experiment_tracking():
     for lr in [0.001, 0.01, 0.1]:
         ctx = context(learning_rate=lr, epochs=10)
 
-        @step(outputs=["metrics"])
+        @step(outputs=["metrics"], register=False)
         def train_and_evaluate(learning_rate: float, epochs: int):
             # Simulate training with different learning rates
             accuracy = 0.8 + (learning_rate * 10)  # Fake relationship
@@ -247,7 +262,9 @@ def example_experiment_tracking():
 
 def example_complex_pipeline():
     """Complex pipeline with multiple branches and assets."""
-    from flowyml import Pipeline, step, context, Dataset, Model
+    from flowyml import Dataset, Model, Pipeline, context, step
+
+    clear_step_registry()
 
     ctx = context(
         data_path="./data",
@@ -267,7 +284,7 @@ def example_complex_pipeline():
 
     @step(inputs=["data/raw"], outputs=["data/train", "data/test"])
     def split_data(raw_data: Dataset, train_split: float):
-        print(f"Splitting data: {train_split} train, {1-train_split} test")
+        print(f"Splitting data: {train_split} train, {1 - train_split} test")
 
         train_data = Dataset.create(
             data={"samples": 8000},

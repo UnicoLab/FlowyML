@@ -14,6 +14,25 @@ Usage:
 
 from __future__ import annotations
 
+import importlib.util
+import os
+
+
+def _preflight() -> bool:
+    """Return ``True`` if the OpenAI SDK and an API key are available."""
+    if importlib.util.find_spec("openai") is None:
+        print(
+            '⚠️  This example requires the OpenAI SDK.\n    Install with:  pip install "flowyml[openai]"',
+        )
+        return False
+    if not os.environ.get("OPENAI_API_KEY"):
+        print(
+            "⚠️  Set OPENAI_API_KEY to run this example — it makes real "
+            "OpenAI API calls.\n    export OPENAI_API_KEY=sk-...",
+        )
+        return False
+    return True
+
 
 def example_traced_client():
     """Drop-in replacement for openai.OpenAI()."""
@@ -128,6 +147,9 @@ if __name__ == "__main__":
         "stream": example_streaming,
         "decorator": example_decorator,
     }
+
+    if not _preflight():
+        raise SystemExit(0)
 
     if len(sys.argv) > 1 and sys.argv[1] in examples:
         examples[sys.argv[1]]()
