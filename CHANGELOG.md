@@ -2,6 +2,70 @@
 
 <!-- version list -->
 
+## v2.2.0 (2026-07-09)
+
+### Bug Fixes
+
+- Add always() to release pipeline so SKIP_RELEASE works correctly
+  ([`467f89b`](https://github.com/UnicoLab/FlowyML/commit/467f89b5451821ca5137cc57513dbbb5b4edc1ca))
+
+- Update recovery version to 2.1.1 for PyPI publish
+  ([`926cb6b`](https://github.com/UnicoLab/FlowyML/commit/926cb6b2f236eaf6b4dfb1f42e60e88a8b7dd245))
+
+- **core**: Restore integrations re-exports, versioning, templates, and evals scorer adapters
+  ([`2a9eee7`](https://github.com/UnicoLab/FlowyML/commit/2a9eee731e9b44bf9af15aab660233d09f6ac1be))
+
+### Build System
+
+- Ignore .venv virtualenv directory in git
+  ([`01d9e02`](https://github.com/UnicoLab/FlowyML/commit/01d9e0279553424b922108ef73ab651bdb4a4646))
+
+- Regenerate poetry.lock after dependency relaxation
+  ([`0e64d0a`](https://github.com/UnicoLab/FlowyML/commit/0e64d0a74cd5cbd2bc42eb0b7deb9e614198f507))
+
+### Continuous Integration
+
+- Retrigger CI after poetry.lock fix
+  ([`6d1d1b2`](https://github.com/UnicoLab/FlowyML/commit/6d1d1b20869087ad6d4450dd81a7f016c5a6e53c))
+
+### Documentation
+
+- Document model serving/deployment, governed stacks, model flavors, azure ML, and deploy/serve CLI
+  ([`908ce40`](https://github.com/UnicoLab/FlowyML/commit/908ce404363c6ec347e38136ea40c9df65627399))
+
+- **examples**: Add production-serving example and align example imports with integrations
+  re-exports
+  ([`1b867b9`](https://github.com/UnicoLab/FlowyML/commit/1b867b92dec4f69ef3a86cf8358baf6da4d2b306))
+
+### Features
+
+- **deployment**: Add model serving & deployment layer (FastAPI/Triton/TF-Serving runtimes,
+  local-docker/k8s/openshift targets, bundling, batch, champion-challenger promotion,
+  deploy/serve/deployment CLI)
+  ([`5196e64`](https://github.com/UnicoLab/FlowyML/commit/5196e649f58a3a3e9e772b4f44bee9e5cd7fd390))
+
+- **models**: Add rule-based and PyMC/Bayesian model flavors with PyMC materializer
+  ([`59a2c47`](https://github.com/UnicoLab/FlowyML/commit/59a2c4746a17fab19f5e6592a094037896b14d06))
+
+- **registry**: Add Azure ML / MLflow / Vertex / SageMaker model registry plugins with Azure ML
+  stack support
+  ([`7d18104`](https://github.com/UnicoLab/FlowyML/commit/7d181047cb9001fdcdb2712439411f036f205188))
+
+- **stacks**: Wire model deployer & registry as governed stack components with enterprise policy
+  allow-lists
+  ([`b596cfa`](https://github.com/UnicoLab/FlowyML/commit/b596cfa2224c9789e8e8a47cf2b156bf76c6bef1))
+
+### Refactoring
+
+- Relax all dependency constraints and fix lint errors
+  ([`dc82bf3`](https://github.com/UnicoLab/FlowyML/commit/dc82bf30bff742436331eb24cf9a54f83365749a))
+
+### Testing
+
+- Add deployment, stack-wiring, enterprise policy, and core regression tests
+  ([`f2d4f30`](https://github.com/UnicoLab/FlowyML/commit/f2d4f30c6ec970a701ad22caa5d3699bcd348f34))
+
+
 ## v2.1.0 (2026-06-05)
 
 ### Features
