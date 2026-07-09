@@ -22,10 +22,10 @@ class TestPolicyEngineDefaults:
     """PolicyEngine initialization and default rules."""
 
     def test_policy_engine_default_rules(self):
-        """Default engine loads exactly 12 built-in rules."""
+        """Default engine loads exactly 14 built-in rules."""
         engine = PolicyEngine()
         rules = PolicyEngine.get_default_rules()
-        assert len(rules) == 12, f"Expected 12 default rules, got {len(rules)}"
+        assert len(rules) == 14, f"Expected 14 default rules, got {len(rules)}"
 
 
 class TestPolicyChecks:
@@ -117,7 +117,7 @@ class TestPolicyChecks:
         assert sig_result.status == "failed", "Unsigned stack should fail signed_stack rule"
 
     def test_policy_check_max_runtime(self, azureml_stack):
-        """maxRuntimeMinutes set produces a warning."""
+        """Setting maxRuntimeMinutes produces a warning."""
         engine = PolicyEngine()
         ctx = PolicyContext(
             stack=azureml_stack,
@@ -130,7 +130,7 @@ class TestPolicyChecks:
         assert "120" in rt_result.message, "Warning should mention the 120-minute limit"
 
     def test_policy_check_cost_limit(self, sample_stack_dict):
-        """maxEstimatedCostUsd set produces a warning."""
+        """Setting maxEstimatedCostUsd produces a warning."""
         data = copy.deepcopy(sample_stack_dict)
         data["spec"]["policies"] = {"maxEstimatedCostUsd": 50.0}
         stack = StackDefinition.from_dict(data)
