@@ -71,8 +71,8 @@ class DeepEvalAnswerRelevancy(Scorer):
     description = "DeepEval: measures how relevant the answer is to the input query"
 
     def __init__(self, *, model: str = "gpt-4o-mini", threshold: float | None = 0.7):
+        super().__init__(threshold=threshold, model=model)
         self.model = model
-        self.threshold = threshold
 
     def score(
         self,
@@ -115,8 +115,8 @@ class DeepEvalHallucination(Scorer):
     lower_is_better = True
 
     def __init__(self, *, model: str = "gpt-4o-mini", threshold: float | None = 0.3):
+        super().__init__(threshold=threshold, model=model)
         self.model = model
-        self.threshold = threshold
 
     def score(
         self,
@@ -159,8 +159,8 @@ class DeepEvalBias(Scorer):
     lower_is_better = True
 
     def __init__(self, *, model: str = "gpt-4o-mini", threshold: float | None = 0.3):
+        super().__init__(threshold=threshold, model=model)
         self.model = model
-        self.threshold = threshold
 
     def score(
         self,
@@ -203,8 +203,8 @@ class DeepEvalToxicity(Scorer):
     lower_is_better = True
 
     def __init__(self, *, model: str = "gpt-4o-mini", threshold: float | None = 0.3):
+        super().__init__(threshold=threshold, model=model)
         self.model = model
-        self.threshold = threshold
 
     def score(
         self,

@@ -53,7 +53,7 @@ class MLTrainingTemplate(PipelineTemplate):
         pipeline = Pipeline(name, context=ctx)
 
         if data_loader:
-            load_step = step(name="load_data", outputs=["dataset"])(data_loader)
+            load_step = step(name="load_data", outputs=["dataset"], register=False)(data_loader)
             pipeline.add_step(load_step)
 
         if preprocessor:
@@ -61,6 +61,7 @@ class MLTrainingTemplate(PipelineTemplate):
                 name="preprocess",
                 inputs=["dataset"],
                 outputs=["processed_data"],
+                register=False,
             )(preprocessor)
             pipeline.add_step(preprocess_step)
 
@@ -69,6 +70,7 @@ class MLTrainingTemplate(PipelineTemplate):
                 name="train",
                 inputs=["processed_data"],
                 outputs=["model"],
+                register=False,
             )(trainer)
             pipeline.add_step(train_step)
 
@@ -77,6 +79,7 @@ class MLTrainingTemplate(PipelineTemplate):
                 name="evaluate",
                 inputs=["model", "processed_data"],
                 outputs=["metrics"],
+                register=False,
             )(evaluator)
             pipeline.add_step(eval_step)
 
@@ -84,6 +87,7 @@ class MLTrainingTemplate(PipelineTemplate):
             save_step = step(
                 name="save_model",
                 inputs=["model"],
+                register=False,
             )(model_saver)
             pipeline.add_step(save_step)
 
@@ -116,7 +120,7 @@ class DataPipelineTemplate(PipelineTemplate):
         pipeline = Pipeline(name, context=ctx)
 
         if extractor:
-            extract_step = step(name="extract", outputs=["raw_data"])(extractor)
+            extract_step = step(name="extract", outputs=["raw_data"], register=False)(extractor)
             pipeline.add_step(extract_step)
 
         if transformer:
@@ -124,6 +128,7 @@ class DataPipelineTemplate(PipelineTemplate):
                 name="transform",
                 inputs=["raw_data"],
                 outputs=["transformed_data"],
+                register=False,
             )(transformer)
             pipeline.add_step(transform_step)
 
@@ -131,6 +136,7 @@ class DataPipelineTemplate(PipelineTemplate):
             load_step = step(
                 name="load",
                 inputs=["transformed_data"],
+                register=False,
             )(loader)
             pipeline.add_step(load_step)
 
@@ -161,7 +167,7 @@ class ABTestPipelineTemplate(PipelineTemplate):
         pipeline = Pipeline(name, context=ctx)
 
         if data_loader:
-            load_step = step(name="load_data", outputs=["dataset"])(data_loader)
+            load_step = step(name="load_data", outputs=["dataset"], register=False)(data_loader)
             pipeline.add_step(load_step)
 
         if model_a_trainer:
@@ -169,6 +175,7 @@ class ABTestPipelineTemplate(PipelineTemplate):
                 name="train_model_a",
                 inputs=["dataset"],
                 outputs=["model_a", "metrics_a"],
+                register=False,
             )(model_a_trainer)
             pipeline.add_step(train_a)
 
@@ -177,6 +184,7 @@ class ABTestPipelineTemplate(PipelineTemplate):
                 name="train_model_b",
                 inputs=["dataset"],
                 outputs=["model_b", "metrics_b"],
+                register=False,
             )(model_b_trainer)
             pipeline.add_step(train_b)
 
@@ -185,6 +193,7 @@ class ABTestPipelineTemplate(PipelineTemplate):
                 name="compare",
                 inputs=["metrics_a", "metrics_b"],
                 outputs=["winner"],
+                register=False,
             )(comparator)
             pipeline.add_step(compare)
 

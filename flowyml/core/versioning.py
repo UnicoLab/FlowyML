@@ -322,7 +322,7 @@ class VersionedPipeline:
 
         logger.info(
             "Version comparison: %s vs %s",
-            self.current_version,
+            self.version,
             other_version,
         )
 

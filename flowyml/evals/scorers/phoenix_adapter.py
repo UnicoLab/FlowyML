@@ -127,8 +127,8 @@ class PhoenixHallucination(Scorer):
     lower_is_better = True
 
     def __init__(self, *, model: str = "openai/gpt-4o-mini", threshold: float | None = 0.3):
+        super().__init__(threshold=threshold, model=model)
         self.model = model
-        self.threshold = threshold
 
     def score(
         self,
@@ -163,8 +163,8 @@ class PhoenixToxicity(Scorer):
     lower_is_better = True
 
     def __init__(self, *, model: str = "openai/gpt-4o-mini", threshold: float | None = 0.3):
+        super().__init__(threshold=threshold, model=model)
         self.model = model
-        self.threshold = threshold
 
     def score(
         self,
@@ -198,8 +198,8 @@ class PhoenixQACorrectness(Scorer):
     description = "Phoenix: verifies answer accuracy against reference text"
 
     def __init__(self, *, model: str = "openai/gpt-4o-mini", threshold: float | None = 0.7):
+        super().__init__(threshold=threshold, model=model)
         self.model = model
-        self.threshold = threshold
 
     def score(
         self,
@@ -235,8 +235,8 @@ class PhoenixSummarization(Scorer):
     description = "Phoenix: evaluates quality and faithfulness of text summaries"
 
     def __init__(self, *, model: str = "openai/gpt-4o-mini", threshold: float | None = 0.7):
+        super().__init__(threshold=threshold, model=model)
         self.model = model
-        self.threshold = threshold
 
     def score(
         self,

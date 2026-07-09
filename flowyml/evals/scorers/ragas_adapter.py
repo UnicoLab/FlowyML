@@ -87,7 +87,7 @@ class RagasFaithfulness(Scorer):
     description = "RAGAS: factual consistency of the answer with the context"
 
     def __init__(self, *, threshold: float | None = 0.7):
-        self.threshold = threshold
+        super().__init__(threshold=threshold)
 
     def score(
         self,
@@ -124,7 +124,7 @@ class RagasContextPrecision(Scorer):
     description = "RAGAS: relevance of retrieved context to the query"
 
     def __init__(self, *, threshold: float | None = 0.7):
-        self.threshold = threshold
+        super().__init__(threshold=threshold)
 
     def score(
         self,
@@ -173,7 +173,7 @@ class RagasContextRecall(Scorer):
     description = "RAGAS: how much relevant information was retrieved"
 
     def __init__(self, *, threshold: float | None = 0.7):
-        self.threshold = threshold
+        super().__init__(threshold=threshold)
 
     def score(
         self,
@@ -222,7 +222,7 @@ class RagasAnswerRelevancy(Scorer):
     description = "RAGAS: relevance of the answer to the original question"
 
     def __init__(self, *, threshold: float | None = 0.7):
-        self.threshold = threshold
+        super().__init__(threshold=threshold)
 
     def score(
         self,

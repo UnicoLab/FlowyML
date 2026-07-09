@@ -26,10 +26,18 @@ Session-level (GenAI-first):
 import contextlib
 
 # ─── Framework-agnostic core (always available) ─────
+from flowyml.integrations.base import (
+    GenAISession,
+    SessionTracer,
+    Turn,
+    session_trace,
+)
 
 # ─── Eval bridge (always available) ────────────────
+from flowyml.integrations.eval_bridge import SessionEvaluator
 
 # ─── Streaming (always available) ──────────────────
+from flowyml.integrations.streaming import SessionEventStream
 
 # ─── LangGraph / LangChain (optional) ──────────────
 with contextlib.suppress(ImportError):
@@ -62,6 +70,14 @@ with contextlib.suppress(ImportError):
     from flowyml.integrations.keras import FlowymlKerasCallback
 
 __all__ = [
+    # Session-level (always available)
+    "session_trace",
+    "GenAISession",
+    "Turn",
+    "SessionTracer",
+    "SessionEvaluator",
+    "SessionEventStream",
+    # Framework integrations (optional)
     "FlowyMLCallbackHandler",
     "instrument",
     "observe_graph",

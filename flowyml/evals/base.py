@@ -223,5 +223,5 @@ class Scorer(ABC):
             else str(self.scorer_type),
             "threshold": self.threshold,
             "description": self.description,
-            "config": self._config,
+            "config": getattr(self, "_config", {}),
         }
