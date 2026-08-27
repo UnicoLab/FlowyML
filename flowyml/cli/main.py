@@ -2,6 +2,7 @@
 
 import os
 import rich_click as click
+from flowyml import __version__
 from flowyml.cli.rich_utils import recho
 from pathlib import Path
 from flowyml.utils.config import get_config
@@ -77,7 +78,7 @@ click.rich_click.OPTION_GROUPS = {
 
 
 @click.group()
-@click.version_option(version="0.1.0", prog_name="flowyml")
+@click.version_option(version=__version__, prog_name="flowyml")
 def cli() -> None:
     """[bold cyan]🌊 FlowyML[/] — Next-Generation ML Pipeline Framework
 
@@ -1031,12 +1032,7 @@ def system_info() -> None:
     print_banner(console=console, subtitle="Next-Generation ML Pipeline Framework")
 
     # System info
-    try:
-        import flowyml
-
-        version = getattr(flowyml, "__version__", "0.1.0")
-    except Exception:
-        version = "0.1.0"
+    version = __version__
 
     cfg = get_config()
     ui_running = is_ui_running("localhost", cfg.ui_port)
