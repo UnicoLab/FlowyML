@@ -188,7 +188,10 @@ python_files = ["test_*.py"]
 python_functions = ["test_*"]
 # Sequential by default; CI/local can add `-n auto --dist=worksteal` for parallelism
 addopts = "-v --cov=flowyml --cov-report=term-missing"
-asyncio_mode = "auto"
+# No asyncio_mode here: pytest-asyncio is not a dependency, so the option was
+# silently unknown and only produced a PytestConfigWarning on every run. The
+# suite's async tests are driven by anyio's pytest plugin via
+# `@pytest.mark.anyio`, which works because anyio ships with starlette.
 # Markers for test organization
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",

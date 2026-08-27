@@ -64,7 +64,16 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install poetry
-          poetry install --no-interaction --with dev --all-extras
+          # Only the extras the tests actually exercise. An audit of every
+          # import in tests/ finds torch, tensorflow, keras and sklearn and
+          # nothing else; tensorflow and scikit-learn already come from the dev
+          # group, and keras ships with tensorflow, so `pytorch` is the only
+          # extra left. --all-extras additionally pulled gcp, aws, azure, kfp,
+          # sagemaker, mlflow, wandb and the genai stack - roughly 30 packages
+          # and a set of CUDA wheels that no test imports. The extras' own
+          # correctness is covered by tests/test_packaging_metadata.py and by
+          # the --all-extras install the release workflow still performs.
+          poetry install --no-interaction --with dev --extras pytorch
       - name: Run smoke tests
         run: |
           # Run a quick subset of tests for fast feedback
@@ -109,7 +118,16 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install poetry
-          poetry install --no-interaction --with dev --all-extras
+          # Only the extras the tests actually exercise. An audit of every
+          # import in tests/ finds torch, tensorflow, keras and sklearn and
+          # nothing else; tensorflow and scikit-learn already come from the dev
+          # group, and keras ships with tensorflow, so `pytorch` is the only
+          # extra left. --all-extras additionally pulled gcp, aws, azure, kfp,
+          # sagemaker, mlflow, wandb and the genai stack - roughly 30 packages
+          # and a set of CUDA wheels that no test imports. The extras' own
+          # correctness is covered by tests/test_packaging_metadata.py and by
+          # the --all-extras install the release workflow still performs.
+          poetry install --no-interaction --with dev --extras pytorch
 
       - name: Run tests - ${{ matrix.test-group }}
         run: |
@@ -182,7 +200,16 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install poetry
-          poetry install --no-interaction --with dev --all-extras
+          # Only the extras the tests actually exercise. An audit of every
+          # import in tests/ finds torch, tensorflow, keras and sklearn and
+          # nothing else; tensorflow and scikit-learn already come from the dev
+          # group, and keras ships with tensorflow, so `pytorch` is the only
+          # extra left. --all-extras additionally pulled gcp, aws, azure, kfp,
+          # sagemaker, mlflow, wandb and the genai stack - roughly 30 packages
+          # and a set of CUDA wheels that no test imports. The extras' own
+          # correctness is covered by tests/test_packaging_metadata.py and by
+          # the --all-extras install the release workflow still performs.
+          poetry install --no-interaction --with dev --extras pytorch
 
       - name: Run tests with coverage
         run: |
