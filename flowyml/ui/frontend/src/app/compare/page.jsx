@@ -5,7 +5,7 @@ import { ArrowLeft, PlayCircle, Clock, Calendar, CheckCircle, XCircle, AlertTria
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
-import { format } from 'date-fns';
+import { formatDate } from '../../utils/date';
 import { StatusBadge } from '../../components/ui/ExecutionStatus';
 
 export function RunComparisonPage() {
@@ -105,7 +105,7 @@ export function RunComparisonPage() {
                                 <StatusBadge status={run.status} />
                                 <div className="min-w-0">
                                     <h3 className="font-bold text-slate-900 dark:text-white truncate" title={run.run_id}>{run.run_id}</h3>
-                                    <p className="text-xs text-slate-500">{format(new Date(run.start_time), 'MMM d, HH:mm:ss')}</p>
+                                    <p className="text-xs text-slate-500">{formatDate(run.start_time, 'MMM d, HH:mm:ss')}</p>
                                 </div>
                             </div>
                         ))}

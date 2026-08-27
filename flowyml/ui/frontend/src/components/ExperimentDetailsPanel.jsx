@@ -17,7 +17,7 @@ import {
 import { Card } from './ui/Card';
 import { Badge } from './ui/Badge';
 import { Button } from './ui/Button';
-import { format } from 'date-fns';
+import { formatDate } from '../utils/date';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { StatusBadge } from './ui/ExecutionStatus';
@@ -93,7 +93,7 @@ export function ExperimentDetailsPanel({ experiment, onClose }) {
                                     </span>
                                 )}
                                 <span>•</span>
-                                <span>{format(new Date(experiment.created_at || Date.now()), 'MMM d, yyyy')}</span>
+                                <span>{formatDate(experiment.created_at || Date.now(), 'MMM d, yyyy')}</span>
                             </div>
                         </div>
                     </div>
@@ -182,7 +182,7 @@ export function ExperimentDetailsPanel({ experiment, onClose }) {
                                                 <div className="flex items-center gap-3 text-xs text-slate-500 mt-1">
                                                     <span className="flex items-center gap-1">
                                                         <Calendar size={12} />
-                                                        {format(new Date(run.created || run.start_time), 'MMM d, HH:mm')}
+                                                        {formatDate(run.created || run.start_time, 'MMM d, HH:mm')}
                                                     </span>
                                                     <span className="flex items-center gap-1">
                                                         <Clock size={12} />

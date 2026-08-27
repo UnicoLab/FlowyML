@@ -13,7 +13,7 @@ import {
     ResponsiveContainer,
     ReferenceLine
 } from 'recharts';
-import { format } from 'date-fns';
+import { formatDate } from '../../../../utils/date';
 import { Box, Activity, Clock, Tag, BarChart2 } from 'lucide-react';
 import { Card } from '../../../../components/ui/Card';
 import { Badge } from '../../../../components/ui/Badge';
@@ -95,7 +95,7 @@ function ModelMetricsDashboard({ modelName, metrics }) {
         if (!acc[timeKey]) {
             acc[timeKey] = {
                 timestamp: timeKey,
-                displayDate: format(new Date(timeKey), 'MMM d HH:mm'),
+                displayDate: formatDate(timeKey, 'MMM d HH:mm'),
                 tags: curr.tags,
                 run_id: curr.run_id,
                 environment: curr.environment
@@ -131,7 +131,7 @@ function ModelMetricsDashboard({ modelName, metrics }) {
                         <h3 className="font-semibold text-slate-900 dark:text-white">{modelName}</h3>
                         <div className="flex items-center gap-2 text-xs text-slate-500">
                             <Clock size={12} />
-                            Last updated: {format(new Date(latestMetricEntry.created_at), 'MMM d, yyyy HH:mm')}
+                            Last updated: {formatDate(latestMetricEntry.created_at, 'MMM d, yyyy HH:mm')}
                         </div>
                     </div>
                 </div>

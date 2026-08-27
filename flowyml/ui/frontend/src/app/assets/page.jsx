@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import { formatDate } from '../../utils/date';
 import { fetchApi } from '../../utils/api';
 import { downloadArtifactById } from '../../utils/downloads';
 import { Link } from 'react-router-dom';
@@ -915,7 +916,7 @@ function AssetCard({ asset, onSelect, isSelected }) {
                     {/* Metadata */}
                     <div className="flex items-center justify-between text-[10px] text-slate-500">
                         <span className="truncate max-w-[100px]">{asset.step || 'N/A'}</span>
-                        <span>{asset.created_at ? format(new Date(asset.created_at), 'MMM d') : '-'}</span>
+                        <span>{asset.created_at ? formatDate(asset.created_at, 'MMM d') : '-'}</span>
                     </div>
 
                     {/* Run ID */}

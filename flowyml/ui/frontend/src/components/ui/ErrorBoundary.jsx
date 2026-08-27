@@ -1,6 +1,7 @@
 import React from 'react';
 import { RefreshCw, Bug, Terminal } from 'lucide-react';
 import { Button } from './Button';
+import { fetchApi } from '../../utils/api';
 
 export class ErrorBoundary extends React.Component {
     constructor(props) {
@@ -25,8 +26,9 @@ export class ErrorBoundary extends React.Component {
         if (this.state.reported) return;
 
         try {
-            // Use relative URL to work with proxy or same origin
-            await fetch('/api/client/errors', {
+            // Routed through fetchApi so reports reach the configured API
+            // origin in remote-execution mode, not just the page's own host.
+            await fetchApi('/api/client/errors', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

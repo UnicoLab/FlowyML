@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { fetchApi } from '../../utils/api';
 import { Calendar, Play, Pause, Trash2, Plus, Clock, CheckCircle, XCircle, Activity, Globe, History, AlertCircle } from 'lucide-react';
-import { format } from 'date-fns';
+import { formatDate } from '../../utils/date';
 import { DataView } from '../../components/ui/DataView';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
@@ -181,7 +181,7 @@ export function Schedules() {
             render: (schedule) => (
                 <div className="flex items-center gap-2 text-slate-500">
                     <Calendar size={14} />
-                    {schedule.next_run ? format(new Date(schedule.next_run), 'MMM d, HH:mm:ss') : 'N/A'}
+                    {schedule.next_run ? formatDate(schedule.next_run, 'MMM d, HH:mm:ss') : 'N/A'}
                 </div>
             )
         },
@@ -256,7 +256,7 @@ export function Schedules() {
                 <div className="flex items-center justify-between text-sm">
                     <span className="text-slate-500 flex items-center gap-2"><Calendar size={14} /> Next Run</span>
                     <span className="font-mono text-slate-700 dark:text-slate-300">
-                        {schedule.next_run ? format(new Date(schedule.next_run), 'MMM d, HH:mm') : 'N/A'}
+                        {schedule.next_run ? formatDate(schedule.next_run, 'MMM d, HH:mm') : 'N/A'}
                     </span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
@@ -558,7 +558,7 @@ export function Schedules() {
                                             </div>
                                             <div>
                                                 <div className="font-medium text-slate-900 dark:text-white">
-                                                    {format(new Date(run.started_at), 'MMM d, yyyy HH:mm:ss')}
+                                                    {formatDate(run.started_at, 'MMM d, yyyy HH:mm:ss')}
                                                 </div>
                                                 <div className="text-xs text-slate-500">
                                                     Duration: {run.duration_seconds ? `${run.duration_seconds.toFixed(2)}s` : 'N/A'}

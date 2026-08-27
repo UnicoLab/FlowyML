@@ -9,6 +9,7 @@ on:
       - "**.py"
       - "pyproject.toml"
       - "tests/**"
+      - "flowyml/ui/frontend/**"
   pull_request:
     branches:
       - dev
@@ -21,6 +22,7 @@ on:
       - "**.py"
       - "pyproject.toml"
       - "tests/**"
+      - "flowyml/ui/frontend/**"
   workflow_dispatch:
     inputs:
       PYTHON_VERSION:
@@ -130,6 +132,33 @@ jobs:
             pytest.xml
             htmlcov/
           retention-days: 7
+
+  # Frontend unit tests and production build. Nothing previously exercised the
+  # UI in CI, so a change that broke the build or a shared helper only surfaced
+  # at release time, when the wheel is packaged with a prebuilt bundle.
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: flowyml/ui/frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: flowyml/ui/frontend
+        run: npm ci
+
+      - name: Run unit tests
+        working-directory: flowyml/ui/frontend
+        run: npm test
+
+      - name: Build production bundle
+        working-directory: flowyml/ui/frontend
+        run: npm run build
 
   # Coverage job (only on main Python version)
   coverage:

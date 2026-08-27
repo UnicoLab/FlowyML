@@ -5,7 +5,7 @@ import { ArrowLeft, FlaskConical, Calendar, CheckCircle, XCircle, AlertTriangle,
 import { Card } from '../../../components/ui/Card';
 import { Badge } from '../../../components/ui/Badge';
 import { Button } from '../../../components/ui/Button';
-import { format } from 'date-fns';
+import { formatDate } from '../../../utils/date';
 
 export function ExperimentComparisonPage() {
     const [searchParams] = useSearchParams();
@@ -164,7 +164,7 @@ export function ExperimentComparisonPage() {
                                 </div>
                                 <div className="min-w-0">
                                     <h3 className="font-bold text-slate-900 dark:text-white truncate" title={exp.name}>{exp.name}</h3>
-                                    <p className="text-xs text-slate-500">{format(new Date(exp.created_at || Date.now()), 'MMM d, yyyy')}</p>
+                                    <p className="text-xs text-slate-500">{formatDate(exp.created_at || Date.now(), 'MMM d, yyyy')}</p>
                                 </div>
                             </div>
                         ))}

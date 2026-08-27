@@ -5,7 +5,7 @@ import { PlayCircle, Package, GitBranch, TrendingUp, Activity, Clock, CheckCircl
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { StatusBadge } from '../../components/ui/ExecutionStatus';
-import { format } from 'date-fns';
+import { formatDate } from '../../utils/date';
 import { motion } from 'framer-motion';
 import { useProject } from '../../contexts/ProjectContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -322,7 +322,7 @@ function RecentRunCard({ run, index }) {
                                 {run.start_time && (
                                     <>
                                         <span>•</span>
-                                        <span>{format(new Date(run.start_time), 'MMM d, HH:mm')}</span>
+                                        <span>{formatDate(run.start_time, 'MMM d, HH:mm')}</span>
                                     </>
                                 )}
                             </div>
