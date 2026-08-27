@@ -6,7 +6,7 @@ import { CheckCircle, XCircle, Clock, Calendar, Package, ArrowRight, BarChart2, 
 import { Card } from '../../../components/ui/Card';
 import { Badge } from '../../../components/ui/Badge';
 import { Button } from '../../../components/ui/Button';
-import { format } from 'date-fns';
+import { formatDate } from '../../../utils/date';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArtifactViewer } from '../../../components/ArtifactViewer';
 import { PipelineGraph } from '../../../components/PipelineGraph';
@@ -267,7 +267,7 @@ export function RunDetails() {
                 <StatsCard
                     icon={<Calendar size={24} />}
                     label="Started At"
-                    value={run.start_time ? format(new Date(run.start_time), 'MMM d, HH:mm:ss') : '-'}
+                    value={run.start_time ? formatDate(run.start_time, 'MMM d, HH:mm:ss') : '-'}
                     color="purple"
                 />
                 <StatsCard
@@ -1148,7 +1148,7 @@ function ArtifactModal({ artifact, onClose }) {
                                             {artifact.created_at && (
                                                 <MetadataRow
                                                     label="Created"
-                                                    value={format(new Date(artifact.created_at), 'MMM d, yyyy HH:mm:ss')}
+                                                    value={formatDate(artifact.created_at, 'MMM d, yyyy HH:mm:ss')}
                                                 />
                                             )}
                                         </div>

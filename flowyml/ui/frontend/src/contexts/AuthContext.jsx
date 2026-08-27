@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { fetchApi } from '../utils/api';
 
 const AuthContext = createContext(null);
 
@@ -16,7 +17,7 @@ export const AuthProvider = ({ children }) => {
 
     const checkAuthStatus = async () => {
         try {
-            const response = await fetch('/api/auth/me');
+            const response = await fetchApi('/api/auth/me', { credentials: 'include' });
             if (response.ok) {
                 const userData = await response.json();
                 setUser(userData);
@@ -35,9 +36,10 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (username, password) => {
         try {
-            const response = await fetch('/api/auth/login', {
+            const response = await fetchApi('/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ username, password }),
             });
 
@@ -60,7 +62,7 @@ export const AuthProvider = ({ children }) => {
 
     const logout = async () => {
         try {
-            await fetch('/api/auth/logout', { method: 'POST' });
+            await fetchApi('/api/auth/logout', { method: 'POST', credentials: 'include' });
             setUser(null);
             navigate('/login');
         } catch (error) {

@@ -30,7 +30,7 @@ import {
 import { Card } from './ui/Card';
 import { Badge } from './ui/Badge';
 import { Button } from './ui/Button';
-import { format } from 'date-fns';
+import { formatDate } from '../utils/date';
 import { downloadArtifactById } from '../utils/downloads';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -230,7 +230,7 @@ export function AssetDetailsPanel({ asset, onClose, hideHeader = false }) {
                                     <InfoCard
                                         icon={Calendar}
                                         label="Created"
-                                        value={asset.created_at ? format(new Date(asset.created_at), 'MMM d, yyyy HH:mm') : 'N/A'}
+                                        value={asset.created_at ? formatDate(asset.created_at, 'MMM d, yyyy HH:mm') : 'N/A'}
                                     />
                                     <InfoCard
                                         icon={HardDrive}

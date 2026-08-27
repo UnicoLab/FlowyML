@@ -18,7 +18,7 @@ import {
 import { Card } from './ui/Card';
 import { Badge } from './ui/Badge';
 import { Button } from './ui/Button';
-import { format } from 'date-fns';
+import { formatDate } from '../utils/date';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { StatusBadge } from './ui/ExecutionStatus';
@@ -139,7 +139,7 @@ export function RunDetailsPanel({ run, onClose }) {
                     />
                     <StatCard
                         label="Started"
-                        value={runData.start_time ? format(new Date(runData.start_time), 'MMM d, HH:mm') : '-'}
+                        value={runData.start_time ? formatDate(runData.start_time, 'MMM d, HH:mm') : '-'}
                         icon={Calendar}
                         color="purple"
                     />

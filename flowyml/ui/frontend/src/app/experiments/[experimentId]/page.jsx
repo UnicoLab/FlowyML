@@ -5,7 +5,7 @@ import { Activity, ChevronRight, FlaskConical, TrendingUp, Calendar, BarChart3 }
 import { Card } from '../../../components/ui/Card';
 import { Badge } from '../../../components/ui/Badge';
 import { Button } from '../../../components/ui/Button';
-import { format } from 'date-fns';
+import { formatDate } from '../../../utils/date';
 import { motion } from 'framer-motion';
 
 export function ExperimentDetails() {
@@ -145,7 +145,7 @@ export function ExperimentDetails() {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-sm text-slate-500">
-                                                {run.timestamp ? format(new Date(run.timestamp), 'MMM d, HH:mm:ss') : '-'}
+                                                {run.timestamp ? formatDate(run.timestamp, 'MMM d, HH:mm:ss') : '-'}
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="flex flex-wrap gap-2">
@@ -250,6 +250,6 @@ function getLastRunDate(runs) {
     });
 
     return sorted[0]?.timestamp
-        ? format(new Date(sorted[0].timestamp), 'MMM d, HH:mm')
+        ? formatDate(sorted[0].timestamp, 'MMM d, HH:mm')
         : '-';
 }

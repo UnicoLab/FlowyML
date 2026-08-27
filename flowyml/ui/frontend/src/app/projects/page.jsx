@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { fetchApi } from '../../utils/api';
 import { Link } from 'react-router-dom';
 import { Folder, Plus, Trash2, Activity, Database, Clock } from 'lucide-react';
-import { format } from 'date-fns';
+import { formatDate } from '../../utils/date';
 import { DataView } from '../../components/ui/DataView';
 import { Button } from '../../components/ui/Button';
 import { useProject } from '../../contexts/ProjectContext';
@@ -117,7 +117,7 @@ export function Projects() {
                     </div>
                     <div>
                         <div className="font-medium text-slate-900 dark:text-white">{project.name}</div>
-                        <div className="text-xs text-slate-500">Created {format(new Date(project.created_at), 'MMM d, yyyy')}</div>
+                        <div className="text-xs text-slate-500">Created {formatDate(project.created_at, 'MMM d, yyyy')}</div>
                     </div>
                 </div>
             )
@@ -186,7 +186,7 @@ export function Projects() {
                             <div>
                                 <h3 className="font-bold text-lg text-slate-900 dark:text-white">{project.name}</h3>
                                 <p className="text-xs text-slate-500">
-                                    Created {format(new Date(project.created_at), 'MMM d, yyyy')}
+                                    Created {formatDate(project.created_at, 'MMM d, yyyy')}
                                 </p>
                             </div>
                         </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { fetchApi } from '../../utils/api';
 import { Trophy, TrendingUp, TrendingDown, Filter, RefreshCw } from 'lucide-react';
-import { format } from 'date-fns';
+import { formatDate } from '../../utils/date';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { Button } from '../../components/ui/Button';
 
@@ -121,7 +121,7 @@ export function Leaderboard() {
                                         {model.run_id?.substring(0, 8) || 'N/A'}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
-                                        {model.timestamp ? format(new Date(model.timestamp), 'MMM d, HH:mm') : '-'}
+                                        {model.timestamp ? formatDate(model.timestamp, 'MMM d, HH:mm') : '-'}
                                     </td>
                                 </tr>
                             ))}
