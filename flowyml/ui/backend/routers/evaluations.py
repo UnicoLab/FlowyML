@@ -7,7 +7,7 @@ comparing runs, and listing available scorers.
 import logging
 
 from fastapi import APIRouter, HTTPException, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 logger = logging.getLogger(__name__)
 
@@ -57,8 +57,7 @@ class ScorerInfo(BaseModel):
     description: str
     cls: str = Field(alias="class", default="")
 
-    class Config:
-        populate_by_name = True
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class CompareRequest(BaseModel):

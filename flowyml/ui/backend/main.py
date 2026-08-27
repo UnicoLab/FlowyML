@@ -5,8 +5,19 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.exceptions import RequestValidationError
 import os
 import traceback
+from contextlib import asynccontextmanager
 
+from flowyml import __version__
 from flowyml.monitoring.alerts import alert_manager, AlertLevel
+from flowyml.ui.backend.security import (
+    allow_insecure,
+    assert_production_security,
+    constant_time_equals,
+    get_api_token,
+    get_cors_origins,
+    is_production,
+    is_public_path,
+)
 
 # OpenTelemetry Imports
 from opentelemetry import trace, metrics
@@ -66,8 +77,12 @@ if _otlp_endpoint:
     except ImportError:
         # Fallback to console if OTLP exporter not installed
         trace_provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
-else:
-    # Development: Console exporter for debugging
+elif os.getenv("FLOWYML_OTEL_CONSOLE", "").strip().lower() in {"1", "true", "yes", "on"}:
+    # Opt-in local debugging. The console exporter prints a multi-line JSON
+    # document per span - four or more per HTTP request - so enabling it by
+    # default drowned real log output and made `flowyml ui` unreadable in a
+    # terminal. Tracing stays fully active either way; only the noisy stdout
+    # sink is opt-in.
     trace_provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
 trace.set_tracer_provider(trace_provider)
 
@@ -78,10 +93,18 @@ metrics.set_meter_provider(meter_provider)
 
 # Routers included above
 
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    """Validate the deployment before accepting the first request."""
+    assert_production_security()
+    yield
+
+
 app = FastAPI(
     title="flowyml UI",
     description="Real-time UI for flowyml pipelines",
-    version="0.1.0",
+    version=__version__,
+    lifespan=lifespan,
 )
 
 # Instrument FastAPI
@@ -91,89 +114,82 @@ FastAPIInstrumentor.instrument_app(app)
 metrics_app = make_asgi_app()
 app.mount("/metrics", metrics_app)
 
-# Configure CORS - Production settings with localhost for development
-_is_production = os.getenv("FLOWYML_ENV") == "production"
-_cors_origins = (
-    [
-        # Production: Only allow specific origins
-        "https://flowyml.unicolab.ai",
-        "https://app.flowyml.io",
-    ]
-    if _is_production
-    else [
-        # Development: Allow localhost and common dev ports
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "http://localhost:8080",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:5173",
-        "http://127.0.0.1:8080",
-        "*",  # Fallback for dev flexibility
-    ]
-)
-
+# Configure CORS. Origins are resolved from the environment so that a
+# wildcard is never paired with credentialed requests - see
+# flowyml.ui.backend.security.get_cors_origins for why that pairing is unsafe.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_cors_origins,
+    allow_origins=get_cors_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
+def _unauthorized(message: str) -> JSONResponse:
+    """Build a 401 that tells the client how to authenticate."""
+    return JSONResponse(
+        status_code=401,
+        content={"error": "Unauthorized", "message": message},
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+
 class AuthMiddleware(BaseHTTPMiddleware):
+    """Require a bearer token for every non-public request in production.
+
+    Development deliberately runs open so ``flowyml ui`` needs no setup. In
+    production the middleware fails *closed*: an instance that declares
+    ``FLOWYML_ENV=production`` without ``FLOWYML_API_TOKEN`` is rejected at
+    startup by ``assert_production_security``, and this middleware refuses
+    every request as a second line of defence in case startup validation was
+    bypassed (for example by an ASGI host that imports ``app`` directly).
+    """
+
     async def dispatch(self, request: Request, call_next):
-        # 0. Skip if not in production to allow easy local development
-        if os.getenv("FLOWYML_ENV") != "production":
+        # Local development runs without authentication by design.
+        if not is_production():
             return await call_next(request)
 
-        # 1. Check if token auth is enabled via env var
-        api_token = os.getenv("FLOWYML_API_TOKEN")
-        if not api_token:
+        # An operator fronting FlowyML with their own auth proxy opts out.
+        if allow_insecure():
             return await call_next(request)
 
-        # 2. Define public paths
         path = request.url.path
-        if (
-            path in ["/api/health", "/metrics", "/docs", "/redoc", "/openapi.json"]
-            or path.startswith(
-                ("/assets", "/api/auth/login", "/api/auth/logout"),
-            )  # Allow login endpoints
-            or path == "/"
-            or request.method == "OPTIONS"
-        ):
+
+        # CORS preflight carries no credentials by definition.
+        if request.method == "OPTIONS" or is_public_path(path):
             return await call_next(request)
 
-        # 3. Check Auth Header OR Cookie
-        auth_header = request.headers.get("Authorization")
-        if not auth_header:
-            # Check for cookie
-            cookie_token = request.cookies.get("access_token")
-            if cookie_token:
-                auth_header = cookie_token  # Reuse validation logic below
-            else:
-                token_param = request.query_params.get("token")
-                if token_param == api_token:
-                    return await call_next(request)
-
-                return JSONResponse(
-                    status_code=401,
-                    content={"error": "Unauthorized", "message": "Missing authentication token"},
-                )
-
-        # 4. Validate Token
-        try:
-            scheme, token = auth_header.split()
-            if scheme.lower() != "bearer" or token != api_token:
-                return JSONResponse(
-                    status_code=401,
-                    content={"error": "Unauthorized", "message": "Invalid authentication token"},
-                )
-        except ValueError:
+        api_token = get_api_token()
+        if api_token is None:
+            # Fail closed. Previously this branch let the request through,
+            # which left the whole control plane - including remote pipeline
+            # execution - open to anyone who could reach the port.
             return JSONResponse(
-                status_code=401,
-                content={"error": "Unauthorized", "message": "Invalid Authorization header format"},
+                status_code=503,
+                content={
+                    "error": "Service Unavailable",
+                    "message": (
+                        "Server is misconfigured: FLOWYML_ENV=production but "
+                        "FLOWYML_API_TOKEN is not set, so no request can be "
+                        "authenticated."
+                    ),
+                },
             )
+
+        auth_header = request.headers.get("Authorization") or request.cookies.get("access_token")
+
+        if not auth_header:
+            return _unauthorized("Missing authentication token")
+
+        # Accept "Bearer <token>" from either the header or the session cookie.
+        scheme, _, token = auth_header.partition(" ")
+        if scheme.lower() != "bearer" or not token:
+            return _unauthorized("Invalid Authorization header format")
+
+        if not constant_time_equals(token.strip(), api_token):
+            return _unauthorized("Invalid authentication token")
 
         return await call_next(request)
 
@@ -184,7 +200,7 @@ app.add_middleware(AuthMiddleware)
 # Health check endpoint
 @app.get("/api/health")
 async def health_check():
-    return {"status": "ok", "version": "0.1.0"}
+    return {"status": "ok", "version": __version__}
 
 
 @app.get("/api/config")

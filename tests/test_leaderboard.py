@@ -4,6 +4,8 @@ Tests for model leaderboard and comparison.
 
 import unittest
 import os
+import shutil
+import tempfile
 from datetime import datetime
 from flowyml.tracking.leaderboard import ModelLeaderboard, ModelScore, compare_runs
 from flowyml.storage.metadata import SQLiteMetadataStore
@@ -11,14 +13,14 @@ from flowyml.storage.metadata import SQLiteMetadataStore
 
 class TestModelLeaderboard(unittest.TestCase):
     def setUp(self):
-        self.db_path = ".flowyml/test_leaderboard.db"
-        if os.path.exists(self.db_path):
-            os.remove(self.db_path)
+        # Private directory per test: a shared path under .flowyml/ races when
+        # tests run in parallel.
+        self._tmpdir = tempfile.mkdtemp(prefix="flowyml-leaderboard-")
+        self.db_path = os.path.join(self._tmpdir, "test_leaderboard.db")
         self.metadata_store = SQLiteMetadataStore(self.db_path)
 
     def tearDown(self):
-        if os.path.exists(self.db_path):
-            os.remove(self.db_path)
+        shutil.rmtree(self._tmpdir, ignore_errors=True)
 
     def test_add_score(self):
         """Test adding scores to leaderboard."""
@@ -115,14 +117,14 @@ class TestModelLeaderboard(unittest.TestCase):
 
 class TestCompareRuns(unittest.TestCase):
     def setUp(self):
-        self.db_path = ".flowyml/test_compare.db"
-        if os.path.exists(self.db_path):
-            os.remove(self.db_path)
+        # Private directory per test: a shared path under .flowyml/ races when
+        # tests run in parallel.
+        self._tmpdir = tempfile.mkdtemp(prefix="flowyml-leaderboard-")
+        self.db_path = os.path.join(self._tmpdir, "test_compare.db")
         self.metadata_store = SQLiteMetadataStore(self.db_path)
 
     def tearDown(self):
-        if os.path.exists(self.db_path):
-            os.remove(self.db_path)
+        shutil.rmtree(self._tmpdir, ignore_errors=True)
 
     def test_compare_runs(self):
         """Test comparing multiple runs."""
