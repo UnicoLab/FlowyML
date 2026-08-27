@@ -14,7 +14,7 @@ from __future__ import annotations
 import pytest
 
 from flowyml.utils.packages import (
-    InvalidPackageName,
+    InvalidPackageNameError,
     normalize_distribution_name,
     validate_requirement,
     validate_uninstall_target,
@@ -62,11 +62,11 @@ class TestOptionInjection:
         ],
     )
     def test_pip_options_are_rejected(self, requirement):
-        with pytest.raises(InvalidPackageName):
+        with pytest.raises(InvalidPackageNameError):
             validate_requirement(requirement)
 
     def test_the_error_explains_the_leading_dash(self):
-        with pytest.raises(InvalidPackageName, match="option"):
+        with pytest.raises(InvalidPackageNameError, match="option"):
             validate_requirement("--index-url=http://evil.example")
 
 
@@ -94,11 +94,11 @@ class TestNonPackageSpecifiers:
         ],
     )
     def test_anything_that_is_not_a_package_name_is_rejected(self, requirement):
-        with pytest.raises(InvalidPackageName):
+        with pytest.raises(InvalidPackageNameError):
             validate_requirement(requirement)
 
     def test_non_string_input_is_rejected(self):
-        with pytest.raises(InvalidPackageName):
+        with pytest.raises(InvalidPackageNameError):
             validate_requirement(None)
 
 
@@ -109,13 +109,13 @@ class TestUninstallProtection:
     )
     def test_the_servers_own_dependencies_cannot_be_removed(self, distribution):
         """Uninstalling any of these stops the process handling the request."""
-        with pytest.raises(InvalidPackageName, match="depends on it"):
+        with pytest.raises(InvalidPackageNameError, match="depends on it"):
             validate_uninstall_target(distribution)
 
     def test_normalisation_defeats_spelling_tricks(self):
         """PEP 503 treats pydantic_core, pydantic-core and Pydantic.Core alike."""
         for spelling in ("pydantic_core", "pydantic.core", "PYDANTIC-CORE"):
-            with pytest.raises(InvalidPackageName):
+            with pytest.raises(InvalidPackageNameError):
                 validate_uninstall_target(spelling)
 
     def test_a_third_party_plugin_can_be_removed(self):
@@ -127,7 +127,7 @@ class TestUninstallProtection:
         assert validate_uninstall_target("some-plugin[extra]") == "some-plugin"
 
     def test_options_are_rejected_for_uninstall_too(self):
-        with pytest.raises(InvalidPackageName):
+        with pytest.raises(InvalidPackageNameError):
             validate_uninstall_target("--yes")
 
 

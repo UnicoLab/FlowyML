@@ -57,7 +57,7 @@ PROTECTED_DISTRIBUTIONS: frozenset[str] = frozenset(
 )
 
 
-class InvalidPackageName(ValueError):
+class InvalidPackageNameError(ValueError):
     """Raised when a package specifier is unsafe to hand to pip."""
 
 
@@ -74,23 +74,23 @@ def validate_requirement(requirement: str) -> str:
     read as an option, a URL, a filesystem path, or a second argument.
 
     Raises:
-        InvalidPackageName: if *requirement* is not a plain package specifier.
+        InvalidPackageNameError: if *requirement* is not a plain package specifier.
     """
     if not isinstance(requirement, str):
-        raise InvalidPackageName(f"Package specifier must be a string, got {type(requirement)!r}")
+        raise InvalidPackageNameError(f"Package specifier must be a string, got {type(requirement)!r}")
 
     candidate = requirement.strip()
     if not candidate:
-        raise InvalidPackageName("Package specifier must not be empty")
+        raise InvalidPackageNameError("Package specifier must not be empty")
 
     if candidate.startswith("-"):
-        raise InvalidPackageName(
+        raise InvalidPackageNameError(
             f"Refusing '{requirement}': a leading '-' would be interpreted by pip as an option, "
             "not a package name.",
         )
 
     if not _REQUIREMENT_RE.match(candidate):
-        raise InvalidPackageName(
+        raise InvalidPackageNameError(
             f"Refusing '{requirement}': only plain package specifiers are accepted "
             "(name, optional [extras], optional version specifiers). URLs, paths and "
             "pip options are not permitted.",
@@ -106,7 +106,7 @@ def validate_uninstall_target(name: str) -> str:
     distribution the running server depends on.
 
     Raises:
-        InvalidPackageName: if *name* is malformed or protected.
+        InvalidPackageNameError: if *name* is malformed or protected.
     """
     candidate = validate_requirement(name)
 
@@ -117,7 +117,7 @@ def validate_uninstall_target(name: str) -> str:
     if normalize_distribution_name(bare) in {
         normalize_distribution_name(p) for p in PROTECTED_DISTRIBUTIONS
     }:
-        raise InvalidPackageName(
+        raise InvalidPackageNameError(
             f"Refusing to uninstall '{bare}': the running server depends on it.",
         )
 

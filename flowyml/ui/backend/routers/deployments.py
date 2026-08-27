@@ -9,7 +9,7 @@ import anyio
 import secrets
 
 from flowyml.ui.backend.artifact_paths import ArtifactPathError, resolve_within_root
-from flowyml.utils.packages import InvalidPackageName, validate_requirement
+from flowyml.utils.packages import InvalidPackageNameError, validate_requirement
 
 router = APIRouter(prefix="/deployments", tags=["deployments"])
 
@@ -625,7 +625,7 @@ async def install_dependencies(
             # an arbitrary package index.
             try:
                 packages.append(validate_requirement(framework))
-            except InvalidPackageName as exc:
+            except InvalidPackageNameError as exc:
                 raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     if not packages:
@@ -657,7 +657,7 @@ def _install_packages_sync(packages: list[str]):
             # Validated again at the point of use: this function also runs from
             # a background task, decoupled from the request that queued it.
             target = validate_requirement(package)
-        except InvalidPackageName as exc:
+        except InvalidPackageNameError as exc:
             logger.error(f"Refusing to install {package!r}: {exc}")
             continue
 

@@ -7,7 +7,7 @@ import sys
 import subprocess
 
 from flowyml.utils.packages import (
-    InvalidPackageName,
+    InvalidPackageNameError,
     validate_requirement,
     validate_uninstall_target,
 )
@@ -662,7 +662,7 @@ async def install_plugin(request: InstallRequest):
 
     try:
         package = validate_requirement(request.plugin_id)
-    except InvalidPackageName as exc:
+    except InvalidPackageNameError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     try:
@@ -688,7 +688,7 @@ async def uninstall_plugin(plugin_id: str):
     # server mid-request.
     try:
         target = validate_uninstall_target(plugin_id)
-    except InvalidPackageName as exc:
+    except InvalidPackageNameError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     try:

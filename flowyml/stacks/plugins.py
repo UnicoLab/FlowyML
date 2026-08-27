@@ -465,11 +465,11 @@ class ComponentRegistry:
         ``--index-url=http://...`` as an option rather than a package, letting
         a caller redirect the install at an arbitrary index.
         """
-        from flowyml.utils.packages import InvalidPackageName, validate_requirement
+        from flowyml.utils.packages import InvalidPackageNameError, validate_requirement
 
         try:
             requirement = validate_requirement(package_name)
-        except InvalidPackageName as exc:
+        except InvalidPackageNameError as exc:
             logger.warning(f"Refusing to install plugin: {exc}")
             return False
 
