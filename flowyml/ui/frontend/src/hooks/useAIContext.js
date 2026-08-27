@@ -9,7 +9,9 @@ import { fetchApi } from '../utils/api';
  * Automatically cleans up context when navigating away.
  *
  * @param {Object} options - Configuration options
- * @param {string} options.pageType - Type of page ('run', 'pipeline', 'experiment', etc.)
+ * @param {string} options.pageType - Type of page. The backend currently builds
+ *   context for 'run' only; any other value returns a 400 and the hook falls
+ *   back to the basic client-side context.
  * @param {string} options.resourceId - The resource ID (run_id, pipeline_name, etc.)
  * @param {boolean} options.includeLogs - Whether to include logs (default: true)
  * @param {boolean} options.includeCode - Whether to include step code (default: true)

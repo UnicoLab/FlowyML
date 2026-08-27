@@ -1,6 +1,8 @@
 """Tests for advanced scheduler features."""
 
 import os
+import shutil
+import tempfile
 import time
 import unittest
 from datetime import datetime, timedelta
@@ -31,12 +33,15 @@ class TestSchedulerPersistence(unittest.TestCase):
     """Test scheduler persistence."""
 
     def setUp(self):
-        self.db_path = "test_scheduler.db"
+        # A fixed filename in the working directory collides when tests run in
+        # parallel: one worker's tearDown deletes the database another worker
+        # is still using. Each test gets its own directory instead.
+        self._tmpdir = tempfile.mkdtemp(prefix="flowyml-scheduler-")
+        self.db_path = os.path.join(self._tmpdir, "test_scheduler.db")
         self.persistence = SchedulerPersistence(self.db_path)
 
     def tearDown(self):
-        if os.path.exists(self.db_path):
-            os.remove(self.db_path)
+        shutil.rmtree(self._tmpdir, ignore_errors=True)
 
     def test_save_and_load(self):
         """Test saving and loading schedules."""
@@ -81,13 +86,11 @@ class TestDistributedLock(unittest.TestCase):
     """Test distributed locking."""
 
     def setUp(self):
-        self.lock_file = ".lock_test_lock"
-        if os.path.exists(self.lock_file):
-            os.remove(self.lock_file)
+        self._tmpdir = tempfile.mkdtemp(prefix="flowyml-lock-")
+        self.lock_file = os.path.join(self._tmpdir, ".lock_test_lock")
 
     def tearDown(self):
-        if os.path.exists(self.lock_file):
-            os.remove(self.lock_file)
+        shutil.rmtree(self._tmpdir, ignore_errors=True)
 
     def test_file_lock(self):
         """Test file-based locking."""
@@ -198,12 +201,10 @@ class TestPipelineSchedulerAdvanced(unittest.TestCase):
 
     def test_execution_history(self):
         """Test execution history persistence."""
-        # Create scheduler with persistence enabled
-        db_path = "test_history.db"
-
-        # Clean up any existing database
-        if os.path.exists(db_path):
-            os.remove(db_path)
+        # Create scheduler with persistence enabled, in a private directory so
+        # parallel workers cannot delete each other's database.
+        tmpdir = tempfile.mkdtemp(prefix="flowyml-history-")
+        db_path = os.path.join(tmpdir, "test_history.db")
 
         config = SchedulerConfig(
             persist_schedules=True,
@@ -232,5 +233,4 @@ class TestPipelineSchedulerAdvanced(unittest.TestCase):
         finally:
             scheduler.stop()
             scheduler.clear()
-            if os.path.exists(db_path):
-                os.remove(db_path)
+            shutil.rmtree(tmpdir, ignore_errors=True)

@@ -13,6 +13,10 @@ from flowyml.utils.config import get_config
 
 router = APIRouter(prefix="/api/ai", tags=["ai"])
 
+#: Page types this router can build context for. Kept in one place so the
+#: error message and the documented contract cannot drift apart.
+SUPPORTED_PAGE_TYPES = frozenset({"run"})
+
 
 class AIContextRequest(BaseModel):
     """Request model for AI context."""
@@ -211,23 +215,34 @@ async def get_ai_context(request: AIContextRequest):
         )
 
     # Add more page types as needed
-    raise HTTPException(status_code=400, detail=f"Unsupported page type: {request.page_type}")
+    raise HTTPException(
+        status_code=400,
+        detail=(
+            f"Unsupported page type: {request.page_type}. "
+            f"Supported page types: {sorted(SUPPORTED_PAGE_TYPES)}"
+        ),
+    )
 
 
-@router.get("/context/run/{run_id}")
-async def get_run_ai_context(
-    run_id: str,
+@router.get("/context/{page_type}/{resource_id}")
+async def get_resource_ai_context(
+    page_type: str,
+    resource_id: str,
     include_logs: bool = True,
     include_code: bool = True,
     include_metrics: bool = True,
 ):
-    """
-    Convenience endpoint for getting AI context for a specific run.
+    """Convenience GET form of :func:`get_ai_context`.
+
+    Accepts any ``page_type`` so that an unsupported one yields the same
+    explanatory 400 as the POST endpoint. Previously this route was hardcoded
+    to ``/context/run/{run_id}``, so the UI - which builds the URL from a
+    generic ``pageType`` - got an unexplained routing 404 for every other page.
     """
     return await get_ai_context(
         AIContextRequest(
-            page_type="run",
-            resource_id=run_id,
+            page_type=page_type,
+            resource_id=resource_id,
             include_logs=include_logs,
             include_code=include_code,
             include_metrics=include_metrics,

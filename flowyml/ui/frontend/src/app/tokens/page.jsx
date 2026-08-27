@@ -17,7 +17,7 @@ import {
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
-import { format } from 'date-fns';
+import { formatDate } from '../../utils/date';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export function TokenManagement() {
@@ -142,7 +142,12 @@ export function TokenManagement() {
                     <CardContent>
                         <div className="space-y-3">
                             {tokens.map((token, idx) => (
-                                <TokenItem key={idx} token={token} onRevoke={fetchTokens} />
+                                <TokenItem
+                                    key={token.id ?? idx}
+                                    token={token}
+                                    onRevoke={fetchTokens}
+                                    onError={setError}
+                                />
                             ))}
                         </div>
                     </CardContent>
@@ -205,18 +210,39 @@ function PermissionChip({ perm }) {
     );
 }
 
-function TokenItem({ token, onRevoke }) {
+function TokenItem({ token, onRevoke, onError }) {
     const [showRevoke, setShowRevoke] = useState(false);
+    const [revoking, setRevoking] = useState(false);
 
     const handleRevoke = async () => {
+        // Prefer the opaque id: token names are user-supplied labels and are
+        // not required to be unique, so revoking by name could remove more
+        // than the row the operator clicked.
+        const ref = token.id ?? token.name;
+        setRevoking(true);
         try {
-            // This would need to be implemented in the backend
-            await fetchApi(`/api/execution/tokens/${token.name}`, {
+            const res = await fetchApi(`/api/execution/tokens/${encodeURIComponent(ref)}`, {
                 method: 'DELETE'
             });
+            if (!res.ok) {
+                let detail = `Request failed with status ${res.status}`;
+                try {
+                    const body = await res.json();
+                    if (body?.detail) detail = body.detail;
+                } catch {
+                    // Response had no JSON body; keep the status-based message.
+                }
+                throw new Error(detail);
+            }
+            setShowRevoke(false);
             onRevoke();
         } catch (err) {
             console.error('Failed to revoke token:', err);
+            // Surface the failure: silently swallowing it told the operator a
+            // leaked token had been revoked when it was still valid.
+            onError?.(`Failed to revoke token "${token.name}": ${err.message}`);
+        } finally {
+            setRevoking(false);
         }
     };
 
@@ -244,10 +270,10 @@ function TokenItem({ token, onRevoke }) {
                     <div className="flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
                         <span className="flex items-center gap-1">
                             <Calendar size={12} />
-                            Created: {format(new Date(token.created_at), 'MMM d, yyyy')}
+                            Created: {formatDate(token.created_at)}
                         </span>
                         {token.last_used && (
-                            <span>Last used: {format(new Date(token.last_used), 'MMM d, yyyy')}</span>
+                            <span>Last used: {formatDate(token.last_used)}</span>
                         )}
                     </div>
                 </div>
@@ -266,10 +292,15 @@ function TokenItem({ token, onRevoke }) {
                         Are you sure you want to revoke this token? This action cannot be undone.
                     </p>
                     <div className="flex gap-2">
-                        <Button variant="danger" size="sm" onClick={handleRevoke}>
-                            Yes, Revoke
+                        <Button variant="danger" size="sm" onClick={handleRevoke} disabled={revoking}>
+                            {revoking ? 'Revoking...' : 'Yes, Revoke'}
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={() => setShowRevoke(false)}>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowRevoke(false)}
+                            disabled={revoking}
+                        >
                             Cancel
                         </Button>
                     </div>
