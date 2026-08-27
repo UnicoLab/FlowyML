@@ -21,6 +21,12 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+// Bumped by semantic-release via [tool.semantic_release].version_variables,
+// which rewrites assignments only. The entry used to point at the version
+// printed inline in the JSX below, which it cannot match, so every release
+// silently left the sidebar showing the previous version.
+const VERSION = "2.2.0";
+
 const NAV_GROUPS = [
     {
         title: 'Workspace',
@@ -171,7 +177,7 @@ export function Sidebar({ collapsed, setCollapsed, isMobile = false, mobileOpen 
                         <>
                             <div className="flex items-center gap-2 mb-2">
                                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                                <p className="text-xs font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">FlowyML v2.2.0</p>
+                                <p className="text-xs font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap">FlowyML v{VERSION}</p>
                             </div>
                             <p className="text-[10px] text-slate-400 dark:text-slate-500 whitespace-nowrap">
                                 Made with ❤️ by <span className="font-medium text-primary-500">UnicoLab</span>

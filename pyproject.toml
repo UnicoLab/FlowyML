@@ -203,7 +203,7 @@ markers = [
 version_toml = ["pyproject.toml:tool.poetry.version"]
 version_variables = [
     "flowyml/__init__.py:__version__",
-    "flowyml/ui/frontend/src/components/sidebar/Sidebar.jsx:FlowyML v",
+    "flowyml/ui/frontend/src/components/sidebar/Sidebar.jsx:VERSION",
 ]
 branch = "main"
 upload_to_pypi = false

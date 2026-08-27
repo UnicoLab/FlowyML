@@ -85,15 +85,57 @@ class TestApiSurfaces:
         assert client.get("/api/execution/info").json()["version"] == flowyml.__version__
 
 
+SIDEBAR = REPO_ROOT / "flowyml" / "ui" / "frontend" / "src" / "components" / "sidebar" / "Sidebar.jsx"
+
+
 def test_the_frontend_sidebar_shows_the_current_version(declared_version):
-    """The sidebar literal is updated by semantic-release; verify it kept up."""
-    sidebar = REPO_ROOT / "flowyml" / "ui" / "frontend" / "src" / "components" / "sidebar"
-    sidebar_file = sidebar / "Sidebar.jsx"
-    if not sidebar_file.exists():
+    """The sidebar constant is bumped by semantic-release; verify it kept up."""
+    if not SIDEBAR.exists():
         pytest.skip("frontend sources not present")
 
-    text = sidebar_file.read_text(encoding="utf-8")
-    versions = re.findall(r"FlowyML v(\d+\.\d+\.\d+)", text)
+    versions = re.findall(r'^const VERSION = "(\d+\.\d+\.\d+)";', SIDEBAR.read_text(encoding="utf-8"), re.M)
 
-    assert versions, "no 'FlowyML v<version>' string found in the sidebar"
+    assert versions, 'no `const VERSION = "x.y.z";` found in the sidebar'
     assert all(v == declared_version for v in versions), f"sidebar shows {versions}, expected {declared_version}"
+
+
+def test_the_sidebar_does_not_print_a_version_inline():
+    """An inline literal is invisible to the release automation.
+
+    ``version_variables`` rewrites assignments; it cannot touch a number
+    sitting in JSX text. While the version was written straight into the
+    markup, every release bumped ``pyproject.toml`` and ``__init__.py`` and
+    left the sidebar advertising the previous version.
+    """
+    if not SIDEBAR.exists():
+        pytest.skip("frontend sources not present")
+
+    inline = re.findall(r">FlowyML v\d+\.\d+\.\d+<", SIDEBAR.read_text(encoding="utf-8"))
+
+    assert not inline, f"the sidebar prints a hardcoded version in its markup: {inline}; render {{VERSION}} instead"
+
+
+def test_every_release_version_variable_can_actually_be_rewritten(declared_version):
+    """A ``version_variables`` entry that matches nothing fails silently.
+
+    semantic-release looks for ``<variable> = "<current version>"``. If the
+    entry names something that is not assigned that way it updates nothing,
+    reports success, and the surface keeps showing the old version - which is
+    exactly what happened to the sidebar.
+    """
+    config = toml.loads((REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    entries = config["tool"]["semantic_release"]["version_variables"]
+
+    unmatched = []
+    for entry in entries:
+        path_part, _, variable = entry.rpartition(":")
+        target = REPO_ROOT / path_part
+        if not target.exists():
+            continue  # frontend sources may be absent in a packaged checkout
+        pattern = rf'{re.escape(variable)}\s*[:=]\s*["\']{re.escape(declared_version)}["\']'
+        if not re.search(pattern, target.read_text(encoding="utf-8")):
+            unmatched.append(entry)
+
+    assert not unmatched, (
+        "these version_variables entries match nothing, so semantic-release " f"will silently skip them: {unmatched}"
+    )
