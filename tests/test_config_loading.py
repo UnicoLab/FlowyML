@@ -22,8 +22,14 @@ class ConfigurableOrchestrator:
 def registry():
     import flowyml.stacks.plugins
 
+    previous = flowyml.stacks.plugins._global_component_registry
     flowyml.stacks.plugins._global_component_registry = None
-    return get_component_registry()
+    try:
+        yield get_component_registry()
+    finally:
+        # Restore the process-wide registry so this test cannot leak a rebuilt
+        # instance into unrelated tests running in the same worker.
+        flowyml.stacks.plugins._global_component_registry = previous
 
 
 def test_load_plugins_from_yaml(registry):
@@ -61,9 +67,18 @@ plugins:
 
 
 def test_load_plugins_invalid_config(registry):
-    """Test loading from invalid config."""
+    """An unusable config must register nothing and must not raise.
+
+    Asserted as a *delta* rather than an absolute count: a freshly built
+    registry legitimately carries built-in flavors and any cloud components
+    already registered in this process, and that baseline varies with import
+    order across test workers.
+    """
+    before = set(registry.list_orchestrators())
+
     with patch("builtins.open", mock_open(read_data="invalid: yaml")):
         with patch("pathlib.Path.exists", return_value=True):
             # Should not raise exception, just log error
             registry.load_plugins_from_config("bad.yaml")
-            assert len(registry.list_orchestrators()) == 0
+
+    assert set(registry.list_orchestrators()) == before

@@ -16,6 +16,8 @@ import sys
 from dataclasses import dataclass, field
 from typing import Any, Protocol, runtime_checkable
 
+from loguru import logger
+
 from flowyml.stacks.components import (
     StackComponent,
     Orchestrator,
@@ -586,6 +588,30 @@ class ComponentRegistry:
 # Global registry instance
 _global_component_registry: ComponentRegistry | None = None
 
+# Durable record of every component registered through ``register_component``.
+#
+# ``@register_component`` fires exactly once per process, when the defining
+# module is first imported.  Python caches modules in ``sys.modules``, so a
+# later ``import`` of that module is a no-op and the decorator never runs
+# again.  That makes registration by import side effect fragile: if the global
+# registry is ever rebuilt (tests reset it, an embedding host re-initializes
+# the process, a plugin reload), every component whose module was already
+# imported would silently disappear and ``get_component(...)`` would start
+# returning ``None`` for the rest of the process.
+#
+# Recording each ``(class, name)`` pair here and replaying it into every newly
+# constructed registry makes registration durable and idempotent, without
+# depending on import ordering.  Registrations are keyed by the resolved name
+# so a later re-registration of the same name wins, matching the behaviour of
+# calling ``ComponentRegistry.register`` directly.
+_recorded_components: dict[str, type[StackComponent]] = {}
+
+
+def _record_component(component_class: type[StackComponent], name: str | None) -> None:
+    """Remember a decorator-registered component so registry rebuilds keep it."""
+    resolved = name or ComponentRegistry._class_to_snake_case(component_class.__name__)
+    _recorded_components[resolved] = component_class
+
 
 def get_component_registry() -> ComponentRegistry:
     """Get the global component registry."""
@@ -596,17 +622,39 @@ def get_component_registry() -> ComponentRegistry:
         # to this same instance instead of recursively constructing another.
         _global_component_registry = ComponentRegistry()
         _global_component_registry._register_builtin_components()
+        # Replay decorator registrations from modules already imported in this
+        # process; their decorators will not fire again (see ``_recorded_components``).
+        for recorded_name, recorded_cls in _recorded_components.items():
+            try:
+                _global_component_registry.register(recorded_cls, recorded_name)
+            except Exception:  # pragma: no cover - a bad plugin must not break startup
+                logger.warning(
+                    f"Failed to restore recorded component '{recorded_name}'",
+                )
     return _global_component_registry
+
+
+def reset_component_registry() -> None:
+    """Drop the global registry so the next access rebuilds it.
+
+    The rebuilt registry still contains every built-in flavor and every
+    component previously registered via ``register_component``, because those
+    are replayed from ``_recorded_components``.
+    """
+    global _global_component_registry
+    _global_component_registry = None
 
 
 def register_component(component_class=None, name: str | None = None):
     """Decorator to register a custom component."""
 
     def wrapper(cls):
+        _record_component(cls, name)
         get_component_registry().register(cls, name)
         return cls
 
     if component_class is not None:
+        _record_component(component_class, name)
         get_component_registry().register(component_class, name)
         return component_class
 
