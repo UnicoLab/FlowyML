@@ -222,8 +222,7 @@ async def get_ai_context(request: AIContextRequest):
     raise HTTPException(
         status_code=400,
         detail=(
-            f"Unsupported page type: {request.page_type}. "
-            f"Supported page types: {sorted(SUPPORTED_PAGE_TYPES)}"
+            f"Unsupported page type: {request.page_type}. " f"Supported page types: {sorted(SUPPORTED_PAGE_TYPES)}"
         ),
     )
 

@@ -20,8 +20,14 @@ repos:
     hooks:
       - id: check-yaml
         args: ["--allow-multiple-documents", "--unsafe"]
+      # The built frontend bundle is generated output, and rewriting it is not
+      # merely noisy: minified JS contains multi-line template literals where a
+      # trailing space is part of the string, so stripping it changes what the
+      # program does. Never let the whitespace fixers near it.
       - id: end-of-file-fixer
+        exclude: ^flowyml/ui/frontend/dist/
       - id: trailing-whitespace
+        exclude: ^flowyml/ui/frontend/dist/
       - id: check-docstring-first
       - id: check-toml
       - id: check-added-large-files
@@ -31,10 +37,13 @@ repos:
       - id: check-merge-conflict
       - id: debug-statements
         exclude: ^flowyml/utils/debug\.py$
+      # package-lock.json is written by npm in its own format; reformatting it
+      # here just guarantees npm rewrites it back on the next install.
       - id: pretty-format-json
         args:
           - "--autofix"
           - "--indent=2"
+        exclude: ^(flowyml/ui/frontend/(dist/|package-lock\.json)|.*\.ipynb)$
   - repo: local
     hooks:
       - id: validate-commit-msg

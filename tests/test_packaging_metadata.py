@@ -13,7 +13,9 @@ in ``[tool.poetry.dependencies]``: Poetry drops it without warning, so
 
 from __future__ import annotations
 
-import tomllib
+# `tomllib` is stdlib only from Python 3.11; this project supports 3.10,
+# and `toml` is already a core dependency.
+import toml
 from pathlib import Path
 
 import pytest
@@ -43,8 +45,7 @@ def _normalize(name: str) -> str:
 
 @pytest.fixture(scope="module")
 def pyproject() -> dict:
-    with PYPROJECT.open("rb") as fh:
-        return tomllib.load(fh)
+    return toml.loads(PYPROJECT.read_text(encoding="utf-8"))
 
 
 @pytest.fixture(scope="module")
@@ -64,11 +65,7 @@ def _is_optional(spec: object) -> bool:
 def test_core_dependencies_are_not_listed_in_any_extra(declared_dependencies, extras):
     """A non-optional dependency named in an extra becomes extra-only."""
     optional_names = {_normalize(n) for n, s in declared_dependencies.items() if _is_optional(s)}
-    core_names = {
-        _normalize(n)
-        for n, s in declared_dependencies.items()
-        if n != "python" and not _is_optional(s)
-    }
+    core_names = {_normalize(n) for n, s in declared_dependencies.items() if n != "python" and not _is_optional(s)}
 
     offenders: dict[str, list[str]] = {}
     for extra_name, packages in extras.items():
@@ -141,11 +138,7 @@ def test_installed_distribution_exposes_core_dependencies_unconditionally():
     assert requirements is not None
 
     # A requirement with no environment marker is installed unconditionally.
-    unconditional = {
-        _normalize(r.split(";")[0].strip().split()[0].split("[")[0])
-        for r in requirements
-        if ";" not in r
-    }
+    unconditional = {_normalize(r.split(";")[0].strip().split()[0].split("[")[0]) for r in requirements if ";" not in r}
 
     missing = sorted(REQUIRED_CORE_PACKAGES - unconditional)
     assert not missing, (

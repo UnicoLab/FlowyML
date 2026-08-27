@@ -10,7 +10,6 @@ router = APIRouter()
 MAX_PAGE_SIZE = 1000
 
 
-
 def get_projects_manager() -> ProjectManager:
     """Instantiate a ProjectManager bound to the current config."""
     config = get_config()

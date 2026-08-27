@@ -13,7 +13,6 @@ router = APIRouter(prefix="/explorer", tags=["model-explorer"])
 MAX_LOG_LINES = 10000
 
 
-
 # ==================== Schemas ====================
 
 

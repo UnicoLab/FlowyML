@@ -98,6 +98,7 @@ metrics.set_meter_provider(meter_provider)
 
 # Routers included above
 
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     """Validate the deployment before accepting the first request."""
@@ -314,18 +315,13 @@ async def http_exception_handler_with_redaction(request, exc):
     errors carry absolute server paths. The real message is always logged; only
     what crosses the wire is reduced.
     """
-    if (
-        exc.status_code == 404
-        and _frontend_index is not None
-        and not request.url.path.startswith(("/api", "/ws"))
-    ):
+    if exc.status_code == 404 and _frontend_index is not None and not request.url.path.startswith(("/api", "/ws")):
         return FileResponse(_frontend_index)
 
     if exc.status_code >= 500:
         reference = _error_reference()
         logger.error(
-            f"[{reference}] {request.method} {request.url.path} -> {exc.status_code}: "
-            f"{exc.detail}",
+            f"[{reference}] {request.method} {request.url.path} -> {exc.status_code}: " f"{exc.detail}",
         )
         if is_production():
             return JSONResponse(
@@ -349,8 +345,7 @@ async def global_exception_handler(request, exc):
 
     # Always record the full failure server-side, whatever we return.
     logger.error(
-        f"[{reference}] Unhandled exception in {request.method} {request.url.path}: "
-        f"{error_msg}\n{stack_trace}",
+        f"[{reference}] Unhandled exception in {request.method} {request.url.path}: " f"{error_msg}\n{stack_trace}",
     )
 
     alert_manager.send_alert(

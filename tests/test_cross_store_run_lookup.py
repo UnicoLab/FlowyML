@@ -114,9 +114,7 @@ class TestEndpointsAgreeOnWhatExists:
         context = client.get("/api/ai/context/run/run-project")
 
         assert detail.status_code == 200
-        assert context.status_code == 200, (
-            "the AI context endpoint 404'd for a run the detail page renders"
-        )
+        assert context.status_code == 200, "the AI context endpoint 404'd for a run the detail page renders"
 
     def test_both_agree_a_missing_run_is_missing(self, client, global_store):
         assert client.get("/api/runs/never-existed").status_code == 404

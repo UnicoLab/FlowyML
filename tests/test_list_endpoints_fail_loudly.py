@@ -79,8 +79,7 @@ class TestStorageFailuresAreReported:
         response = client.get(url)
 
         assert response.status_code >= 500, (
-            f"{url} answered {response.status_code}; a storage failure must not be "
-            "reported as success"
+            f"{url} answered {response.status_code}; a storage failure must not be " "reported as success"
         )
 
     @pytest.mark.parametrize(
@@ -105,8 +104,7 @@ class TestStorageFailuresAreReported:
         body = client.get(url).json()
 
         assert body.get(collection) != [], (
-            f"{url} returned an empty {collection} list on failure, which the UI "
-            "renders as its empty state"
+            f"{url} returned an empty {collection} list on failure, which the UI " "renders as its empty state"
         )
 
     def test_pipeline_stats_do_not_report_zeroes_on_failure(self, client, monkeypatch):

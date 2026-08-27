@@ -17,8 +17,6 @@ router = APIRouter(prefix="/deployments", tags=["deployments"])
 MAX_LOG_LINES = 10000
 
 
-
-
 def _artifact_file_exists(artifact_path: str | None) -> bool:
     """Whether an artifact's file is present in the configured artifacts directory.
 
@@ -259,10 +257,7 @@ async def get_available_models() -> list[dict]:
 
         # If no models found, return all artifacts with paths as potential models
         if not models and artifacts:
-            fallback_exists = [
-                await anyio.to_thread.run_sync(_artifact_file_exists, a.get("path"))
-                for a in artifacts
-            ]
+            fallback_exists = [await anyio.to_thread.run_sync(_artifact_file_exists, a.get("path")) for a in artifacts]
             models = [
                 {
                     "artifact_id": a.get("artifact_id") or f"{a.get('run_id')}_{a.get('step')}_{a.get('name')}",
