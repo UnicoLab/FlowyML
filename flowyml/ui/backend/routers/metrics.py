@@ -29,10 +29,14 @@ def get_project_manager() -> ProjectManager:
     return ProjectManager(str(config.projects_dir))
 
 
-def get_global_store() -> SQLiteMetadataStore:
-    """Metadata store for shared metrics."""
-    config = get_config()
-    return SQLiteMetadataStore(str(config.metadata_db))
+def get_global_store():
+    """Metadata store for shared metrics.
+
+    Delegates to ``get_store()`` so ``FLOWYML_DATABASE_URL`` is honoured.
+    Building a store from ``config.metadata_db`` pinned this to a local SQLite
+    file, so logged model metrics went somewhere the rest of the API never read.
+    """
+    return get_store()
 
 
 class MetricsLogRequest(BaseModel):

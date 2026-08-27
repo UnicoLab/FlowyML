@@ -7,6 +7,7 @@ comparing runs, and listing available scorers.
 import logging
 
 from fastapi import APIRouter, HTTPException, Query
+from flowyml.ui.backend.dependencies import get_store
 from pydantic import BaseModel, ConfigDict, Field
 
 logger = logging.getLogger(__name__)
@@ -132,9 +133,7 @@ async def run_evaluation(request: EvalRunRequest):
 async def get_eval_result(eval_id: str):
     """Get detailed results for an evaluation run."""
     try:
-        from flowyml.storage.sql import SQLMetadataStore
-
-        store = SQLMetadataStore()
+        store = get_store()
         run = store.load_run(eval_id)
         if not run:
             raise HTTPException(status_code=404, detail=f"Evaluation '{eval_id}' not found")
@@ -152,9 +151,7 @@ async def list_evaluations(
 ):
     """List recent evaluation runs."""
     try:
-        from flowyml.storage.sql import SQLMetadataStore
-
-        store = SQLMetadataStore()
+        store = get_store()
         runs = store.list_runs(limit=limit * 3)  # Fetch more to filter
 
         eval_runs = [r for r in runs if r.get("tags", {}).get("type") == "evaluation"]
@@ -170,9 +167,7 @@ async def list_evaluations(
 async def compare_evaluations(request: CompareRequest):
     """Compare two or more evaluation runs."""
     try:
-        from flowyml.storage.sql import SQLMetadataStore
-
-        store = SQLMetadataStore()
+        store = get_store()
         runs = {}
         for eid in request.eval_ids:
             run = store.load_run(eid)

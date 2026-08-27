@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useToast } from '../../contexts/ToastContext';
 import { fetchApi } from '../../utils/api';
 import {
     Activity, Zap, MessageSquare, Clock, DollarSign,
@@ -440,6 +441,7 @@ function TraceDetailPanel({ traceData, onClose }) {
 
 // ─── Main Traces Page ───────────────────────────────────────────────
 export function Traces() {
+    const toast = useToast();
     const [traces, setTraces] = useState([]);
     const [selectedTrace, setSelectedTrace] = useState(null);
     const [detailData, setDetailData] = useState(null);
@@ -461,6 +463,7 @@ export function Traces() {
             setTraces(await response.json());
         } catch (error) {
             console.error('Failed to fetch traces:', error);
+            toast.error(`Could not load traces: ${error.message}`);
         } finally {
             setLoading(false);
         }
@@ -474,6 +477,7 @@ export function Traces() {
             setDetailData(await response.json());
         } catch (error) {
             console.error('Failed to fetch trace details:', error);
+            toast.error(`Could not load trace details: ${error.message}`);
         } finally {
             setDetailLoading(false);
         }

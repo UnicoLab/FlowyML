@@ -82,13 +82,17 @@ class InstantiateResponse(BaseModel):
 
 
 def _get_store():
-    """Get the SQLMetadataStore instance."""
-    import os
+    """Get the shared metadata store.
 
-    from flowyml.storage.sql import SQLMetadataStore
+    Delegates to ``get_store()`` rather than building a store per call. The
+    previous version created a fresh SQLAlchemy engine - and therefore a fresh
+    connection pool - on every request, and fell back to the default local
+    SQLite file whenever ``FLOWYML_DATABASE_URL`` was unset, ignoring the
+    configured ``metadata_db`` path that the rest of the API uses.
+    """
+    from flowyml.ui.backend.dependencies import get_store
 
-    db_url = os.getenv("FLOWYML_DATABASE_URL")
-    return SQLMetadataStore(db_url=db_url)
+    return get_store()
 
 
 def _get_current_user() -> str | None:

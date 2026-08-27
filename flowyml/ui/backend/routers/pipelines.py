@@ -3,6 +3,8 @@ from pydantic import BaseModel
 from flowyml.ui.backend.dependencies import get_store
 from flowyml.core.project import ProjectManager
 
+from loguru import logger
+
 router = APIRouter()
 
 #: Upper bound on any client-supplied page size. Without it a request such as
@@ -121,8 +123,13 @@ async def get_all_pipelines_stats():
             "pipelines": stats,
         }
     except Exception as e:
-        # Database might not exist yet
-        return {"total_pipelines": 0, "total_runs": 0, "pipelines": [], "error": str(e)}
+        # See assets.list_assets: zeroed statistics are indistinguishable from
+        # a real "nothing has run yet", so a broken store looked like an idle one.
+        logger.exception("Failed to compute pipeline statistics")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to compute pipeline statistics: {e}",
+        ) from e
 
 
 @router.get("/{pipeline_name}/stats")
@@ -149,7 +156,12 @@ async def get_pipeline_stats(pipeline_name: str):
             "last_run": runs[0] if runs else None,
         }
     except Exception as e:
-        return {"total_runs": 0, "success_rate": 0, "avg_duration": 0, "error": str(e)}
+        # See get_all_pipelines_stats.
+        logger.exception("Failed to compute statistics for pipeline")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to compute pipeline statistics: {e}",
+        ) from e
 
 
 class ProjectUpdate(BaseModel):

@@ -5,6 +5,8 @@ from flowyml.core.project import ProjectManager
 import json
 from flowyml.ui.backend.dependencies import get_store
 
+from loguru import logger
+
 router = APIRouter()
 
 #: Upper bound on any client-supplied page size. Without it a request such as
@@ -117,7 +119,9 @@ async def list_runs(
 
         return {"runs": synced_runs}
     except Exception as e:
-        return {"runs": [], "error": str(e)}
+        # See assets.list_assets: a 200 with an empty list hides an outage.
+        logger.exception("Failed to list runs")
+        raise HTTPException(status_code=500, detail=f"Failed to list runs: {e}") from e
 
 
 class RunCreate(BaseModel):

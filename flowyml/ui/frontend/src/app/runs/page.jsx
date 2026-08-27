@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { fetchApi } from '../../utils/api';
+import { fetchApi, fetchJson } from '../../utils/api';
+import { useToast } from '../../contexts/ToastContext';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { PlayCircle, Clock, CheckCircle, XCircle, Activity, ArrowRight, Calendar, Filter, RefreshCw, Layout, GitCompare, CheckSquare, X } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
-import { format } from 'date-fns';
 import { DataView } from '../../components/ui/DataView';
 import { StatusBadge } from '../../components/ui/ExecutionStatus';
 import { useProject } from '../../contexts/ProjectContext';
@@ -13,6 +13,7 @@ import { NavigationTree } from '../../components/NavigationTree';
 import { RunDetailsPanel } from '../../components/RunDetailsPanel';
 
 export function Runs() {
+    const toast = useToast();
     const [runs, setRuns] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedRun, setSelectedRun] = useState(null);
@@ -40,11 +41,13 @@ export function Runs() {
                 url += `&pipeline=${encodeURIComponent(pipelineFilter)}`;
             }
 
-            const res = await fetchApi(url);
-            const data = await res.json();
+            const data = await fetchJson(url);
             setRuns(data.runs || []);
         } catch (err) {
+            // Without this the page rendered its empty state, so a failing
+            // backend looked identical to a project with no runs.
             console.error(err);
+            toast.error(`Could not load runs: ${err.message}`);
         } finally {
             setLoading(false);
         }
