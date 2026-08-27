@@ -6,6 +6,12 @@ from typing import Any
 import sys
 import subprocess
 
+from flowyml.utils.packages import (
+    InvalidPackageName,
+    validate_requirement,
+    validate_uninstall_target,
+)
+
 from flowyml.stacks.plugins import get_component_registry
 from flowyml.stacks.migration import StackMigrator
 
@@ -655,7 +661,12 @@ async def install_plugin(request: InstallRequest):
     registry = get_component_registry()
 
     try:
-        success = registry.install_plugin(request.plugin_id)
+        package = validate_requirement(request.plugin_id)
+    except InvalidPackageName as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    try:
+        success = registry.install_plugin(package)
         if success:
             return {
                 "success": True,
@@ -672,15 +683,23 @@ async def uninstall_plugin(plugin_id: str):
     """Uninstall a plugin."""
     import asyncio
 
+    # pip cannot distinguish a package named "--index-url=..." from the option
+    # of the same spelling, and uninstalling flowyml itself would stop the
+    # server mid-request.
+    try:
+        target = validate_uninstall_target(plugin_id)
+    except InvalidPackageName as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     try:
         # Run subprocess in executor to avoid blocking
         loop = asyncio.get_event_loop()
         await loop.run_in_executor(
             None,
             subprocess.check_call,
-            [sys.executable, "-m", "pip", "uninstall", "-y", plugin_id],
+            [sys.executable, "-m", "pip", "uninstall", "-y", target],
         )
-        return {"success": True, "message": f"Plugin {plugin_id} uninstalled successfully"}
+        return {"success": True, "message": f"Plugin {target} uninstalled successfully"}
     except subprocess.CalledProcessError as e:
         raise HTTPException(status_code=500, detail=str(e))
 
