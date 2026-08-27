@@ -149,7 +149,10 @@ class TestAuthMiddleware:
         client = TestClient(app)  # not used as a context manager => no lifespan
         response = client.get("/api/runs/")
         assert response.status_code == 503
-        assert "FLOWYML_API_TOKEN" in response.json()["message"]
+        # The remedy is logged for the operator; the caller is told nothing
+        # that would confirm the instance is running unauthenticated.
+        assert "FLOWYML_API_TOKEN" not in response.text
+        assert "misconfigured" in response.json()["message"]
 
     def test_production_rejects_missing_token(self, production_env, monkeypatch, app):
         monkeypatch.setenv("FLOWYML_API_TOKEN", "secret-token")
@@ -231,13 +234,14 @@ class TestLogin:
         """Must never accept the publicly documented default in production."""
         monkeypatch.setenv("FLOWYML_API_TOKEN", "secret-token")
 
-        client = TestClient(app)  # no lifespan: exercise the endpoint guard
+        client = TestClient(app, raise_server_exceptions=False)
         response = client.post(
             "/api/auth/login",
             json={"username": "admin", "password": security.INSECURE_DEFAULT_PASSWORD},
         )
+        # Refused, and without echoing the configuration detail to the caller.
         assert response.status_code == 503
-        assert "FLOWYML_ADMIN_PASSWORD" in response.json()["detail"]
+        assert "FLOWYML_ADMIN_PASSWORD" not in response.text
 
     def test_production_login_never_issues_placeholder_token(
         self,
@@ -248,13 +252,15 @@ class TestLogin:
         """The old code handed out the guessable string 'dev-token-placeholder'."""
         monkeypatch.setenv("FLOWYML_ADMIN_PASSWORD", "correct-horse")
 
-        client = TestClient(app)
+        client = TestClient(app, raise_server_exceptions=False)
         response = client.post(
             "/api/auth/login",
             json={"username": "admin", "password": "correct-horse"},
         )
         assert response.status_code == 503
-        assert "FLOWYML_API_TOKEN" in response.json()["detail"]
+        # Crucially, no token is issued - least of all a guessable placeholder.
+        assert "dev-token-placeholder" not in response.text
+        assert "access_token" not in response.json()
 
     def test_successful_production_login_sets_secure_cookie(
         self,

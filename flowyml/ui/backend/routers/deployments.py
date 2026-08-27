@@ -1,12 +1,16 @@
 """Deployment management API for model serving."""
 
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+from fastapi import APIRouter, HTTPException, BackgroundTasks, Query
 from pydantic import BaseModel, Field
 from datetime import datetime
 from uuid import uuid4
 import secrets
 
 router = APIRouter(prefix="/deployments", tags=["deployments"])
+
+#: Upper bound on how many log lines a single request may pull back.
+MAX_LOG_LINES = 10000
+
 
 
 # ==================== Schemas ====================
@@ -321,7 +325,7 @@ async def stop_deployment(
 @router.get("/{deployment_id}/logs")
 async def get_deployment_logs(
     deployment_id: str,
-    lines: int = 100,
+    lines: int = Query(100, ge=1, le=MAX_LOG_LINES),
 ) -> dict:
     """Get deployment logs."""
     if deployment_id not in _deployments:

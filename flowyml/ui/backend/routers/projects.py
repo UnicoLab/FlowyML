@@ -1,9 +1,14 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Query
 from flowyml.core.project import ProjectManager
 from flowyml.utils.config import get_config
 from pydantic import BaseModel
 
 router = APIRouter()
+
+#: Upper bound on any client-supplied page size. Without it a request such as
+#: `?limit=100000000` makes the server materialise an unbounded result set.
+MAX_PAGE_SIZE = 1000
+
 
 
 def get_projects_manager() -> ProjectManager:
@@ -93,7 +98,7 @@ async def get_project(project_name: str, manager: ProjectManager = Depends(get_p
 async def get_project_runs(
     project_name: str,
     pipeline_name: str | None = None,
-    limit: int = 100,
+    limit: int = Query(100, ge=1, le=MAX_PAGE_SIZE),
     manager: ProjectManager = Depends(get_projects_manager),
 ):
     """Get runs for a project."""
@@ -109,7 +114,7 @@ async def get_project_runs(
 async def get_project_artifacts(
     project_name: str,
     artifact_type: str | None = None,
-    limit: int = 100,
+    limit: int = Query(100, ge=1, le=MAX_PAGE_SIZE),
     manager: ProjectManager = Depends(get_projects_manager),
 ):
     """Get artifacts for a project."""
@@ -125,7 +130,7 @@ async def get_project_artifacts(
 async def get_project_metrics(
     project_name: str,
     model_name: str | None = None,
-    limit: int = 100,
+    limit: int = Query(100, ge=1, le=MAX_PAGE_SIZE),
     manager: ProjectManager = Depends(get_projects_manager),
 ):
     """Get logged metrics for a project (from model_metrics table and Metrics artifacts)."""

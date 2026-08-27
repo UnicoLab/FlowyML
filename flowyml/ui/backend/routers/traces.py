@@ -1,13 +1,18 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from flowyml.ui.backend.dependencies import get_store
 
 router = APIRouter()
 
+#: Upper bound on any client-supplied page size. Without it a request such as
+#: `?limit=100000000` makes the server materialise an unbounded result set.
+MAX_PAGE_SIZE = 1000
+
+
 
 @router.get("/")
 async def list_traces(
-    limit: int = 50,
+    limit: int = Query(50, ge=1, le=MAX_PAGE_SIZE),
     trace_id: str | None = None,
     event_type: str | None = None,
     project: str | None = None,
@@ -73,7 +78,10 @@ async def trace_stats(project: str | None = None):
 
 
 @router.get("/sessions")
-async def list_sessions(limit: int = 50, project: str | None = None):
+async def list_sessions(
+    limit: int = Query(50, ge=1, le=MAX_PAGE_SIZE),
+    project: str | None = None,
+):
     """List session-level traces (aggregated multi-turn sessions)."""
     store = get_store()
     # Sessions are stored as event_type='session' or 'genai_session'

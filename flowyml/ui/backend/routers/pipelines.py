@@ -1,9 +1,14 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from flowyml.ui.backend.dependencies import get_store
 from flowyml.core.project import ProjectManager
 
 router = APIRouter()
+
+#: Upper bound on any client-supplied page size. Without it a request such as
+#: `?limit=100000000` makes the server materialise an unbounded result set.
+MAX_PAGE_SIZE = 1000
+
 
 
 def _iter_metadata_stores():
@@ -24,7 +29,10 @@ def _iter_metadata_stores():
 
 
 @router.get("/")
-async def list_pipelines(project: str | None = None, limit: int = 100):
+async def list_pipelines(
+    project: str | None = None,
+    limit: int = Query(100, ge=1, le=MAX_PAGE_SIZE),
+):
     """List all unique pipelines with details, optionally filtered by project."""
     try:
         pipeline_map = {}  # pipeline_name -> data
@@ -74,7 +82,10 @@ async def list_pipelines(project: str | None = None, limit: int = 100):
 
 
 @router.get("/{pipeline_name}/runs")
-async def list_pipeline_runs(pipeline_name: str, limit: int = 10):
+async def list_pipeline_runs(
+    pipeline_name: str,
+    limit: int = Query(10, ge=1, le=MAX_PAGE_SIZE),
+):
     """List runs for a specific pipeline."""
     store = get_store()
     runs = store.query(pipeline_name=pipeline_name)

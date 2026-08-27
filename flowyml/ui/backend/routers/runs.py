@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from flowyml.storage.metadata import SQLiteMetadataStore
 from flowyml.core.project import ProjectManager
@@ -6,6 +6,11 @@ import json
 from flowyml.ui.backend.dependencies import get_store
 
 router = APIRouter()
+
+#: Upper bound on any client-supplied page size. Without it a request such as
+#: `?limit=100000000` makes the server materialise an unbounded result set.
+MAX_PAGE_SIZE = 1000
+
 
 
 def _iter_metadata_stores():
@@ -47,7 +52,7 @@ def _sort_runs(runs):
 
 @router.get("/")
 async def list_runs(
-    limit: int = 20,
+    limit: int = Query(20, ge=1, le=MAX_PAGE_SIZE),
     project: str | None = None,
     pipeline_name: str | None = None,
     status: str | None = None,
@@ -869,7 +874,7 @@ async def post_step_logs(run_id: str, step_name: str, log_chunk: LogChunk):
 
 
 @router.get("/{run_id}/steps/{step_name}/logs")
-async def get_step_logs(run_id: str, step_name: str, offset: int = 0):
+async def get_step_logs(run_id: str, step_name: str, offset: int = Query(0, ge=0)):
     """Get logs for a specific step.
 
     For local runs, reads from the local log file.

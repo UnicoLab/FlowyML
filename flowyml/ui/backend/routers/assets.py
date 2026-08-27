@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi import APIRouter, HTTPException, UploadFile, File, Query
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from flowyml.core.project import ProjectManager
@@ -15,6 +15,11 @@ import asyncio
 import contextlib
 
 router = APIRouter()
+
+#: Upper bound on any client-supplied page size. Without it a request such as
+#: `?limit=100000000` makes the server materialise an unbounded result set.
+MAX_PAGE_SIZE = 1000
+
 
 
 def _artifacts_root() -> Path:
@@ -76,7 +81,7 @@ def _dedupe_assets(assets):
 
 @router.get("/")
 async def list_assets(
-    limit: int = 50,
+    limit: int = Query(50, ge=1, le=MAX_PAGE_SIZE),
     asset_type: str = None,
     run_id: str = None,
     project: str = None,
@@ -321,7 +326,11 @@ async def get_asset_stats(project: str | None = None):
 
 
 @router.get("/search")
-async def search_assets(q: str, limit: int = 50, project: str | None = None):
+async def search_assets(
+    q: str = Query(..., min_length=1, max_length=200),
+    limit: int = Query(50, ge=1, le=MAX_PAGE_SIZE),
+    project: str | None = None,
+):
     """Search assets by name or properties."""
     try:
         combined_assets = []
@@ -364,7 +373,7 @@ async def search_assets(q: str, limit: int = 50, project: str | None = None):
 async def get_asset_lineage(
     asset_id: str | None = None,
     project: str | None = None,
-    depth: int = 3,
+    depth: int = Query(3, ge=1, le=10),
 ):
     """
     Get lineage graph for artifacts.
