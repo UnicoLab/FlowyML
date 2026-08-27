@@ -20,6 +20,8 @@ from __future__ import annotations
 import os
 import secrets
 
+from loguru import logger
+
 # The historical default password. Shipping it means every deployment that
 # forgets to set FLOWYML_ADMIN_PASSWORD shares one publicly documented
 # credential, so it is rejected outright in production.
@@ -32,6 +34,11 @@ PUBLIC_PATHS: frozenset[str] = frozenset(
     {
         "/",
         "/api/health",
+        # The browser must read this before it can authenticate: in
+        # remote-execution mode it carries the API's base URL, so gating it
+        # behind auth made the login request itself unaddressable. It exposes
+        # deployment topology only - no credentials.
+        "/api/config",
         "/api/auth/login",
         "/api/auth/logout",
         "/docs",
@@ -154,12 +161,17 @@ def assert_production_security() -> None:
         return
 
     bullet_list = "\n".join(f"  - {p}" for p in problems)
-    raise RuntimeError(
+    message = (
         "FlowyML refuses to start: FLOWYML_ENV=production but the deployment "
         f"is not secured.\n{bullet_list}\n\n"
         "Set the variables above, or set FLOWYML_ALLOW_INSECURE=1 if "
-        "authentication is enforced by a proxy in front of FlowyML.",
+        "authentication is enforced by a proxy in front of FlowyML."
     )
+
+    # Logged as well as raised: the ASGI server wraps a startup failure in a
+    # lifespan traceback, which buries the part an operator needs to read.
+    logger.error(message)
+    raise RuntimeError(message)
 
 
 def get_cors_origins() -> list[str]:
