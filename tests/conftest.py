@@ -6,7 +6,39 @@ steps/stacks are registered by different test functions or when config
 files left by parallel xdist workers leak into other tests.
 """
 
+import os
+import tempfile
+
 import pytest
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _isolate_cache_dir_per_worker(request):
+    """Give every xdist worker its own step cache directory.
+
+    ``_reset_all`` deletes the cache directory between tests. With the default
+    relative ``.flowyml/cache`` every worker shares one directory, so one
+    worker's delete raced another worker's create:
+    ``Path.mkdir(parents=True, exist_ok=True)`` re-raises ``FileExistsError``
+    when the directory disappears between its failed ``mkdir`` and its
+    ``is_dir()`` recheck. That produced an intermittent failure in whichever
+    test happened to be constructing a cache at the time.
+
+    Isolating per worker also keeps the suite from deleting a developer's real
+    ``.flowyml/cache``.
+    """
+    worker_id = getattr(request.config, "workerinput", {}).get("workerid", "master")
+
+    with tempfile.TemporaryDirectory(prefix=f"flowyml-cache-{worker_id}-") as cache_dir:
+        previous = os.environ.get("FLOWYML_CACHE_DIR")
+        os.environ["FLOWYML_CACHE_DIR"] = cache_dir
+        try:
+            yield cache_dir
+        finally:
+            if previous is None:
+                os.environ.pop("FLOWYML_CACHE_DIR", None)
+            else:
+                os.environ["FLOWYML_CACHE_DIR"] = previous
 
 
 @pytest.fixture(autouse=True)
