@@ -29,7 +29,14 @@ jobs:
       - name: Check Pull Request Title
         uses: Slashgear/action-check-pr-title@main
         with:
-          regexp: '(break|build|ci|docs|feat|fix|perf|refactor|style|test|ops|hotfix)\\([a-z,A-Z,0-9,\\-,\\_,\\/,:]+\\)(:)\\s{1}([\\w\\s]+)' # Regex the title should match.
+          # Kept identical to the `validate-commit-msg` hook in
+          # .pre-commit-config.yaml so a title that passes locally passes here.
+          # The previous pattern was double-escaped for a YAML single-quoted
+          # scalar (which has no backslash escapes), so `[a-z,A-Z,0-9,\-,...]`
+          # reached JavaScript containing a `\`-to-`,` range and RegExp threw
+          # "Range out of order in character class" before reading any title -
+          # the check could never pass, whatever the PR was called.
+          regexp: '^(break|build|ci|docs|feat|fix|perf|refactor|style|test|ops|hotfix|release|maint|init|enh|revert|reformat)(\([\w.,\-()/]+\))?(!)?:\s.+$'
       - name: Getting changed files list
         id: files
         uses: jitterbit/get-changed-files@v1
