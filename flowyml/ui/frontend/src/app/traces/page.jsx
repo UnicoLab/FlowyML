@@ -457,7 +457,7 @@ export function Traces() {
             const params = new URLSearchParams();
             if (filterType !== 'all') params.append('event_type', filterType);
             if (selectedProject) params.append('project', selectedProject);
-            const response = await fetchApi(`/api/traces?${params}`);
+            const response = await fetchApi(`/api/traces/?${params}`);
             setTraces(await response.json());
         } catch (error) {
             console.error('Failed to fetch traces:', error);

@@ -97,8 +97,8 @@ export function Assets() {
                 const baseUrl = selectedProject ? `&project=${encodeURIComponent(selectedProject)}` : '';
                 const [assetsRes, runsRes, pipelinesRes, statsRes] = await Promise.all([
                     fetchApi(`/api/assets/?limit=500${baseUrl.replace('&', '?')}`),
-                    fetchApi(`/api/runs?limit=200${baseUrl}`),
-                    fetchApi(`/api/pipelines?limit=100${baseUrl}`),
+                    fetchApi(`/api/runs/?limit=200${baseUrl}`),
+                    fetchApi(`/api/pipelines/?limit=100${baseUrl}`),
                     fetchApi(`/api/assets/stats${baseUrl.replace('&', '?')}`)
                 ]);
 

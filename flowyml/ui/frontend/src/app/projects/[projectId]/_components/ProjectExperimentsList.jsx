@@ -11,7 +11,7 @@ export function ProjectExperimentsList({ projectId }) {
     useEffect(() => {
         const fetchExperiments = async () => {
             try {
-                const response = await fetchApi(`/api/experiments?project=${projectId}`);
+                const response = await fetchApi(`/api/experiments/?project=${projectId}`);
                 const data = await response.json();
 
                 if (data.experiments && Array.isArray(data.experiments)) {

@@ -1,13 +1,42 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { lazy, Suspense, useState, useEffect, useCallback } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from '../components/sidebar/Sidebar';
 import { Header } from '../components/header/Header';
 
 import { ErrorBoundary } from '../components/ui/ErrorBoundary';
 import { AIAssistantButton } from '../components/ai/AIAssistantButton';
-import { AIAssistantPanel } from '../components/ai/AIAssistantPanel';
+import { useAIAssistant } from '../contexts/AIAssistantContext';
+
+// The assistant panel pulls in the markdown renderer and syntax highlighter,
+// which together are larger than the rest of the application shell. It is a
+// closed overlay on every page load, so its code is fetched the first time a
+// user actually opens it.
+const AIAssistantPanel = lazy(() =>
+    import('../components/ai/AIAssistantPanel').then(m => ({ default: m.AIAssistantPanel })),
+);
 
 const MOBILE_BREAKPOINT = 768;
+
+/**
+ * Mounts the assistant panel once it has been opened, and keeps it mounted
+ * afterwards so its open/close transitions still run.
+ */
+function AIAssistantOverlay() {
+    const { isOpen } = useAIAssistant();
+    const [hasOpened, setHasOpened] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) setHasOpened(true);
+    }, [isOpen]);
+
+    if (!hasOpened) return null;
+
+    return (
+        <Suspense fallback={null}>
+            <AIAssistantPanel />
+        </Suspense>
+    );
+}
 
 function useIsMobile() {
     const [isMobile, setIsMobile] = useState(
@@ -80,7 +109,7 @@ export function MainLayout() {
 
             {/* AI Assistant - Floating button and slide-out panel */}
             <AIAssistantButton />
-            <AIAssistantPanel />
+            <AIAssistantOverlay />
         </div>
     );
 }

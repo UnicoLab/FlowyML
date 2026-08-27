@@ -44,7 +44,7 @@ export function RunDetailsPanel({ run, onClose }) {
         try {
             const [runRes, assetsRes] = await Promise.all([
                 fetchApi(`/api/runs/${run.run_id}`),
-                fetchApi(`/api/assets?run_id=${run.run_id}`)
+                fetchApi(`/api/assets/?run_id=${run.run_id}`)
             ]);
 
             const data = await runRes.json();

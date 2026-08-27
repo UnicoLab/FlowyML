@@ -1,36 +1,51 @@
+import { lazy, Suspense } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
 import { MainLayout } from '../layouts/MainLayout';
-import { Dashboard } from '../app/dashboard/page';
-import { Pipelines } from '../app/pipelines/page';
-import { Runs } from '../app/runs/page';
-import { RunDetails } from '../app/runs/[runId]/page';
-import { Assets } from '../app/assets/page';
-import { Experiments } from '../app/experiments/page';
-import { ExperimentDetails } from '../app/experiments/[experimentId]/page';
-import { Traces } from '../app/traces/page';
-import { Projects } from '../app/projects/page';
-import { ProjectDetails } from '../app/projects/[projectId]/page';
-import { Schedules } from '../app/schedules/page';
-import { Observability } from '../app/observability/page';
-import { Leaderboard } from '../app/leaderboard/page';
-import { Plugins } from '../app/plugins/page';
-import { Settings } from '../app/settings/page';
-import { TokenManagement } from '../app/tokens/page';
-import { RunComparisonPage } from '../app/compare/page';
-import { ExperimentComparisonPage } from '../app/experiments/compare/page';
-import { DeploymentLab } from '../app/deployments/page';
-import { ModelExplorer } from '../app/model-explorer/page';
-import { Evaluations } from '../app/evaluations/page';
-import { EvaluationDetail } from '../app/evaluations/[evalId]/page';
-import { EvaluationCompare } from '../app/evaluations/compare/page';
-import { Login } from '../app/auth/Login';
+
 import { RequireAuth, AuthProvider } from '../contexts/AuthContext';
 import { Outlet } from 'react-router-dom';
+
+// Every page is loaded on demand. Bundling all of them together meant a
+// visitor to the dashboard downloaded the code for every other screen -
+// including the charting and graph libraries only a few of them use.
+const Dashboard = lazy(() => import('../app/dashboard/page').then(m => ({ default: m.Dashboard })));
+const Pipelines = lazy(() => import('../app/pipelines/page').then(m => ({ default: m.Pipelines })));
+const Runs = lazy(() => import('../app/runs/page').then(m => ({ default: m.Runs })));
+const RunDetails = lazy(() => import('../app/runs/[runId]/page').then(m => ({ default: m.RunDetails })));
+const Assets = lazy(() => import('../app/assets/page').then(m => ({ default: m.Assets })));
+const Experiments = lazy(() => import('../app/experiments/page').then(m => ({ default: m.Experiments })));
+const ExperimentDetails = lazy(() => import('../app/experiments/[experimentId]/page').then(m => ({ default: m.ExperimentDetails })));
+const Traces = lazy(() => import('../app/traces/page').then(m => ({ default: m.Traces })));
+const Projects = lazy(() => import('../app/projects/page').then(m => ({ default: m.Projects })));
+const ProjectDetails = lazy(() => import('../app/projects/[projectId]/page').then(m => ({ default: m.ProjectDetails })));
+const Schedules = lazy(() => import('../app/schedules/page').then(m => ({ default: m.Schedules })));
+const Observability = lazy(() => import('../app/observability/page').then(m => ({ default: m.Observability })));
+const Leaderboard = lazy(() => import('../app/leaderboard/page').then(m => ({ default: m.Leaderboard })));
+const Plugins = lazy(() => import('../app/plugins/page').then(m => ({ default: m.Plugins })));
+const Settings = lazy(() => import('../app/settings/page').then(m => ({ default: m.Settings })));
+const TokenManagement = lazy(() => import('../app/tokens/page').then(m => ({ default: m.TokenManagement })));
+const RunComparisonPage = lazy(() => import('../app/compare/page').then(m => ({ default: m.RunComparisonPage })));
+const ExperimentComparisonPage = lazy(() => import('../app/experiments/compare/page').then(m => ({ default: m.ExperimentComparisonPage })));
+const DeploymentLab = lazy(() => import('../app/deployments/page').then(m => ({ default: m.DeploymentLab })));
+const ModelExplorer = lazy(() => import('../app/model-explorer/page').then(m => ({ default: m.ModelExplorer })));
+const Evaluations = lazy(() => import('../app/evaluations/page').then(m => ({ default: m.Evaluations })));
+const EvaluationDetail = lazy(() => import('../app/evaluations/[evalId]/page').then(m => ({ default: m.EvaluationDetail })));
+const EvaluationCompare = lazy(() => import('../app/evaluations/compare/page').then(m => ({ default: m.EvaluationCompare })));
+const Login = lazy(() => import('../app/auth/Login').then(m => ({ default: m.Login })));
+
+// Shown while a route's chunk is in flight.
+const RouteFallback = () => (
+    <div className="flex items-center justify-center h-96" role="status" aria-label="Loading page">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600" />
+    </div>
+);
 
 // Layout Wrapper to provide Auth Context
 const AppLayout = () => (
     <AuthProvider>
-        <Outlet />
+        <Suspense fallback={<RouteFallback />}>
+            <Outlet />
+        </Suspense>
     </AuthProvider>
 );
 

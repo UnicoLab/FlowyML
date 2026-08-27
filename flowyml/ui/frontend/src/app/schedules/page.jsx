@@ -89,7 +89,7 @@ export function Schedules() {
     const createSchedule = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetchApi('/api/schedules', {
+            const response = await fetchApi('/api/schedules/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
