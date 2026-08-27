@@ -93,16 +93,17 @@ class TokenManager:
             prefix=self.tokens_file.name,
             suffix=".tmp",
         )
+        tmp = Path(tmp_path)
         try:
             with os.fdopen(fd, "w") as handle:
                 json.dump(self.tokens, handle, indent=2)
                 handle.flush()
                 os.fsync(handle.fileno())
-            os.chmod(tmp_path, 0o600)
-            os.replace(tmp_path, self.tokens_file)
+            tmp.chmod(0o600)
+            tmp.replace(self.tokens_file)
         except BaseException:
             with contextlib.suppress(OSError):
-                os.unlink(tmp_path)
+                tmp.unlink()
             raise
 
     def _hash_token(self, token: str) -> str:
