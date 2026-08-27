@@ -5,7 +5,27 @@ from datetime import datetime
 import asyncio
 import contextlib
 
+from flowyml.ui.backend.security import is_websocket_authorized
+
 router = APIRouter()
+
+#: Close code for a handshake rejected on policy grounds (RFC 6455).
+WS_POLICY_VIOLATION = 1008
+
+
+async def _reject_unauthorized(websocket: WebSocket) -> bool:
+    """Refuse an unauthenticated handshake. Returns True when rejected.
+
+    Closing *before* accepting makes the handshake itself fail (Starlette
+    answers HTTP 403), so an unauthorized client never reaches an open socket.
+    Accepting first and closing afterwards would leave the client believing the
+    connection succeeded.
+    """
+    if is_websocket_authorized(websocket.headers, websocket.cookies):
+        return False
+
+    await websocket.close(code=WS_POLICY_VIOLATION)
+    return True
 
 
 class ConnectionManager:
@@ -78,6 +98,9 @@ async def websocket_logs(websocket: WebSocket, run_id: str, step_name: str = "__
         {"type": "log", "step": "step_name", "content": "...", "timestamp": "..."}
         {"type": "dead_steps", "steps": ["step1", "step2"]}
     """
+    if await _reject_unauthorized(websocket):
+        return
+
     await manager.connect(websocket, run_id, step_name)
     try:
         # Keep connection alive and handle incoming messages
@@ -103,6 +126,9 @@ async def websocket_logs(websocket: WebSocket, run_id: str, step_name: str = "__
 @router.websocket("/ws/runs/{run_id}/steps/{step_name}/logs")
 async def websocket_step_logs(websocket: WebSocket, run_id: str, step_name: str):
     """WebSocket endpoint for streaming logs of a specific step."""
+    if await _reject_unauthorized(websocket):
+        return
+
     await manager.connect(websocket, run_id, step_name)
     try:
         while True:

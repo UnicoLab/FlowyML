@@ -194,3 +194,40 @@ def get_cors_origins() -> list[str]:
         "http://127.0.0.1:5173",
         "http://127.0.0.1:8080",
     ]
+
+
+def is_websocket_authorized(headers: dict, cookies: dict) -> bool:
+    """Whether a WebSocket handshake carries valid credentials.
+
+    ``AuthMiddleware`` is a Starlette ``BaseHTTPMiddleware``, which only sees
+    scopes of type ``http``. WebSocket handshakes pass straight through it, so
+    in production the log-streaming endpoints were reachable with no
+    credentials at all while every HTTP route required a bearer token.
+
+    Browsers cannot set request headers on a WebSocket handshake, so the
+    session cookie is accepted alongside an ``Authorization`` header for
+    non-browser clients. A token in the query string is deliberately not
+    accepted, matching the HTTP rule: URLs end up in access logs and
+    ``Referer`` headers.
+
+    Args:
+        headers: Request headers (case-insensitive mapping).
+        cookies: Request cookies.
+    """
+    if not is_production() or allow_insecure():
+        return True
+
+    api_token = get_api_token()
+    if api_token is None:
+        # Fail closed, exactly as the HTTP middleware does.
+        return False
+
+    credential = headers.get("authorization") or cookies.get("access_token")
+    if not credential:
+        return False
+
+    scheme, _, token = credential.partition(" ")
+    if scheme.lower() != "bearer" or not token:
+        return False
+
+    return constant_time_equals(token.strip(), api_token)
