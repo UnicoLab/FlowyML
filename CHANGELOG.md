@@ -2,6 +2,96 @@
 
 <!-- version list -->
 
+## v2.2.1 (2026-08-27)
+
+### Bug Fixes
+
+- **api**: Bound pagination inputs and stop leaking internals in error responses
+  ([`79a01ee`](https://github.com/UnicoLab/FlowyML/commit/79a01ee7f097d2f69a31342634a4965a0be2b493))
+
+- **api**: Look runs up in every store, and share one implementation
+  ([`d198a11`](https://github.com/UnicoLab/FlowyML/commit/d198a11179f573ae11a7815bd23d8b2f0654b5de))
+
+- **api**: Read the configured database, and report storage failures honestly
+  ([`459f408`](https://github.com/UnicoLab/FlowyML/commit/459f408ae1ed73b76e3abcca76e31d61369a0ad9))
+
+- **assets**: Confine artifact file access to the artifacts directory
+  ([`a9e67c7`](https://github.com/UnicoLab/FlowyML/commit/a9e67c760e91e51f20a20725eab92f1d03a2dbc8))
+
+- **assets**: Keep artifact ids addressable and locate model files correctly
+  ([`3ae81e2`](https://github.com/UnicoLab/FlowyML/commit/3ae81e2422356271086259bff4755b2b562ceb0f))
+
+- **auth**: Keep /api/config reachable before login, and surface startup failures
+  ([`fd39ed4`](https://github.com/UnicoLab/FlowyML/commit/fd39ed44b02558ce02b95b69d729a38d3cd3d6d3))
+
+- **ci**: Pin GitPython so the release pipeline can start
+  ([`308d202`](https://github.com/UnicoLab/FlowyML/commit/308d202e0cfd7025a22a73adc65d0793e9c5bef0))
+
+- **ci**: Regenerate the lock file, restore Python 3.10 support, and make pre-commit pass
+  ([`0756129`](https://github.com/UnicoLab/FlowyML/commit/07561294f71e9eb4f86b1a0c7a6b97a64228ede5))
+
+- **ci**: Repair the PR-title check, which could never pass
+  ([`529417d`](https://github.com/UnicoLab/FlowyML/commit/529417dad2a67b4c464a0b2b150429329b9727b5))
+
+- **cli**: Report the real version instead of a hardcoded 0.1.0
+  ([`e83ff61`](https://github.com/UnicoLab/FlowyML/commit/e83ff61603087302ccd7247ec86db740eff8b2a7))
+
+- **explorer**: Bound the in-memory exploration session state
+  ([`8b640a6`](https://github.com/UnicoLab/FlowyML/commit/8b640a685fd94d1eb0a1ebd2e760466667130d93))
+
+- **packaging**: Ship UI/CLI deps unconditionally and make component registration durable
+  ([`13f1e0b`](https://github.com/UnicoLab/FlowyML/commit/13f1e0b64bef467448d7c8f8e65d568032c74149))
+
+- **plugins**: Validate package names before handing them to pip
+  ([`986a248`](https://github.com/UnicoLab/FlowyML/commit/986a248d7be01d179008dfde82f5e93c64c6c6e8))
+
+- **release**: Let semantic-release actually bump the sidebar version
+  ([`9177c9b`](https://github.com/UnicoLab/FlowyML/commit/9177c9b3070e00a37f669afd612c3d9411bd4e45))
+
+- **runs**: Confine step-log file paths to the runs directory
+  ([`2732031`](https://github.com/UnicoLab/FlowyML/commit/2732031e07babbb315f972a728801a1127f64a6a))
+
+- **runs**: Release heartbeat tracking state and bound the last query params
+  ([`b0c6c20`](https://github.com/UnicoLab/FlowyML/commit/b0c6c20816044b89171d24b646f9ae8fb8486d89))
+
+- **ui**: Make the backend fail closed and implement the endpoints the UI calls
+  ([`9b92fcd`](https://github.com/UnicoLab/FlowyML/commit/9b92fcd0760b64e86c82ec76707cf60c9cee0e54))
+
+- **ui**: Stop a single bad timestamp from taking down a page; add frontend tests
+  ([`1bf01ec`](https://github.com/UnicoLab/FlowyML/commit/1bf01ec7dc9511d6cf57679b852f6050ff6449eb))
+
+- **ws**: Require authentication on the log-streaming WebSockets
+  ([`d863fd7`](https://github.com/UnicoLab/FlowyML/commit/d863fd72bdc44a6a98ced3599b96a5cb0e5b0d3b))
+
+### Code Style
+
+- Rename InvalidPackageName to InvalidPackageNameError for ruff N818
+  ([`7a2ba35`](https://github.com/UnicoLab/FlowyML/commit/7a2ba350767ba2a8abeca39f064c35270f88d6a6))
+
+### Continuous Integration
+
+- Install only the extras the tests use, and drop the stale asyncio_mode option
+  ([`05eeaee`](https://github.com/UnicoLab/FlowyML/commit/05eeaeedfbaf2407ff9a1f0bac9996069bdf1bce))
+
+### Documentation
+
+- Document the production security requirements
+  ([`27a51a5`](https://github.com/UnicoLab/FlowyML/commit/27a51a514ecfe200992c33e18094fa5e5c8bfeee))
+
+### Performance Improvements
+
+- **ui**: Cut initial bundle from 7.9 MB to 394 KB and fix redirected API calls
+  ([`7f5b0c7`](https://github.com/UnicoLab/FlowyML/commit/7f5b0c79f95209e4b52b2c18bd970220c6ddfb8b))
+
+### Testing
+
+- Give each xdist worker its own cache directory
+  ([`6cbcfa2`](https://github.com/UnicoLab/FlowyML/commit/6cbcfa291bb78864cf0541ee1e8f64ea3408d4f9))
+
+- Reset the cached metadata store between tests
+  ([`f3db8d4`](https://github.com/UnicoLab/FlowyML/commit/f3db8d4f49b6e202f8e9dfa48428e9523b456ffc))
+
+
 ## v2.2.0 (2026-07-09)
 
 ### Bug Fixes

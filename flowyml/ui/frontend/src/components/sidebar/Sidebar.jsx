@@ -25,7 +25,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 // which rewrites assignments only. The entry used to point at the version
 // printed inline in the JSX below, which it cannot match, so every release
 // silently left the sidebar showing the previous version.
-const VERSION = "2.2.0";
+const VERSION = "2.2.1";
 
 const NAV_GROUPS = [
     {
