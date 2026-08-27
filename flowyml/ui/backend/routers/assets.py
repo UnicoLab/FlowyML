@@ -4,11 +4,39 @@ from pydantic import BaseModel, Field
 from flowyml.core.project import ProjectManager
 from pathlib import Path
 from flowyml.ui.backend.dependencies import get_store
+from flowyml.ui.backend.artifact_paths import (
+    ArtifactPathError,
+    resolve_within_root,
+    sanitize_path_segment,
+    strip_reserved_metadata,
+)
 import shutil
 import asyncio
 import contextlib
 
 router = APIRouter()
+
+
+def _artifacts_root() -> Path:
+    """The single directory every artifact file must live under."""
+    from flowyml.utils.config import get_config
+
+    return Path(get_config().artifacts_dir)
+
+
+def _resolve_artifact_file(artifact_path: str) -> Path:
+    """Resolve a stored artifact path, refusing anything outside the root.
+
+    Relative paths are interpreted against the artifacts directory, which is
+    also how they are written, so download and inline-content agree on where a
+    file lives.
+    """
+    try:
+        return resolve_within_root(artifact_path, _artifacts_root())
+    except ArtifactPathError as exc:
+        # 404 rather than 403: the caller must not learn whether the
+        # out-of-bounds file they aimed at exists.
+        raise HTTPException(status_code=404, detail="Artifact file not found") from exc
 
 
 def _save_file_sync(src, dst):
@@ -118,8 +146,10 @@ async def create_asset(asset: AssetCreate):
     try:
         store = get_store()
 
-        # Prepare metadata
-        metadata = asset.metadata.copy()
+        # Prepare metadata. Keys the server owns (notably "path") are dropped:
+        # persisting a client-supplied path turned this endpoint into an
+        # arbitrary-file-read primitive via GET /{artifact_id}/download.
+        metadata = strip_reserved_metadata(asset.metadata)
         metadata.update(
             {
                 "name": asset.name,
@@ -160,20 +190,26 @@ async def upload_asset_content(artifact_id: str, file: UploadFile = File(...)):
         config = get_config()
         artifact_store = LocalArtifactStore(base_path=config.artifacts_dir)
 
-        # Construct a path if not present
+        # Construct a path if not present. Every component here is
+        # client-supplied, so each is reduced to a single safe segment: a ".."
+        # escaped the artifacts directory and an absolute component replaced it
+        # outright (Path("/base") / "/etc/passwd" == Path("/etc/passwd")).
         if not existing.get("path"):
             # Create a path structure: project/run_id/artifact_id/filename
-            project = existing.get("project", "default")
-            run_id = existing.get("run_id", "unknown")
-            filename = file.filename or "content"
-            rel_path = f"{project}/{run_id}/{artifact_id}/{filename}"
+            project = sanitize_path_segment(existing.get("project") or "", fallback="default")
+            run_id = sanitize_path_segment(existing.get("run_id") or "", fallback="unknown")
+            safe_artifact_id = sanitize_path_segment(artifact_id, fallback="artifact")
+            filename = sanitize_path_segment(file.filename or "", fallback="content")
+            rel_path = f"{project}/{run_id}/{safe_artifact_id}/{filename}"
         else:
             rel_path = existing.get("path")
-            # If path is absolute, make it relative to artifacts dir if possible, or just use it
-            # But LocalArtifactStore expects relative paths usually, or handles absolute ones
 
-        # Save the file
-        full_path = artifact_store.base_path / rel_path
+        # Confine the destination to the artifacts directory before writing.
+        try:
+            full_path = resolve_within_root(rel_path, artifact_store.base_path)
+        except ArtifactPathError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
         full_path.parent.mkdir(parents=True, exist_ok=True)
 
         loop = asyncio.get_running_loop()
@@ -205,14 +241,18 @@ async def delete_asset(artifact_id: str):
         # Delete file if it exists locally (since backend is local to itself)
         path = asset.get("path")
         if path:
-            from flowyml.storage.artifacts import LocalArtifactStore
-            from flowyml.utils.config import get_config
+            # Confine first: without this, a stored path such as
+            # "/etc/hostname" made this endpoint an arbitrary-file-delete
+            # primitive. An out-of-bounds path leaves the file alone and only
+            # the metadata record is removed.
+            try:
+                resolved = resolve_within_root(path, _artifacts_root())
+            except ArtifactPathError:
+                resolved = None
 
-            config = get_config()
-            artifact_store = LocalArtifactStore(base_path=config.artifacts_dir)
-
-            with contextlib.suppress(Exception):
-                artifact_store.delete(path)
+            if resolved is not None and resolved.is_file():
+                with contextlib.suppress(OSError):
+                    resolved.unlink()
 
         # Delete metadata
         store.delete_artifact(artifact_id)
@@ -492,8 +532,12 @@ async def download_asset(artifact_id: str):
     if not artifact_path:
         raise HTTPException(status_code=404, detail="Artifact path not available")
 
-    file_path = Path(artifact_path)
-    if not file_path.exists():
+    # Relative paths are resolved against the artifacts directory, matching how
+    # uploads store them; previously this handler treated them as relative to
+    # the server's working directory, so downloads 404'd for files the inline
+    # content endpoint served fine.
+    file_path = _resolve_artifact_file(artifact_path)
+    if not file_path.is_file():
         raise HTTPException(status_code=404, detail="Artifact file not found on disk")
 
     return FileResponse(
@@ -516,16 +560,8 @@ async def get_asset_content(artifact_id: str):
     if not artifact_path:
         raise HTTPException(status_code=404, detail="Artifact path not available")
 
-    # Handle relative paths for local store
-    from flowyml.utils.config import get_config
-
-    config = get_config()
-
-    file_path = Path(artifact_path)
-    if not file_path.is_absolute():
-        file_path = config.artifacts_dir / file_path
-
-    if not file_path.exists():
+    file_path = _resolve_artifact_file(artifact_path)
+    if not file_path.is_file():
         raise HTTPException(status_code=404, detail="Artifact file not found on disk")
 
     # Guess mime type
