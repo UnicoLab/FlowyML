@@ -1,9 +1,12 @@
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from flowyml.storage.metadata import SQLiteMetadataStore
-from flowyml.core.project import ProjectManager
 import json
-from flowyml.ui.backend.dependencies import get_store
+from flowyml.ui.backend.dependencies import (
+    find_run_across_stores,
+    get_store,
+    iter_metadata_stores,
+)
 from flowyml.ui.backend.artifact_paths import resolve_run_log_path
 
 from loguru import logger
@@ -18,19 +21,7 @@ MAX_PAGE_SIZE = 1000
 
 def _iter_metadata_stores():
     """Yield tuples of (project_name, store) including global and project stores."""
-    stores: list[tuple[str | None, SQLiteMetadataStore]] = [(None, get_store())]
-    try:
-        manager = ProjectManager()
-        for project_meta in manager.list_projects():
-            name = project_meta.get("name")
-            if not name:
-                continue
-            project = manager.get_project(name)
-            if project:
-                stores.append((name, project.metadata_store))
-    except Exception:
-        pass
-    return stores
+    return iter_metadata_stores()
 
 
 def _deduplicate_runs(runs):
@@ -239,13 +230,7 @@ async def update_run_project(run_id: str, update: ProjectUpdate):
 
 
 def _find_run(run_id: str):
-    for project_name, store in _iter_metadata_stores():
-        run = store.load_run(run_id)
-        if run:
-            if project_name and not run.get("project"):
-                run["project"] = project_name
-            return run, store
-    return None, None
+    return find_run_across_stores(run_id)
 
 
 def _find_store_for_run(run_id: str) -> SQLiteMetadataStore:

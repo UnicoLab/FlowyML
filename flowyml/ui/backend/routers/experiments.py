@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from flowyml.core.project import ProjectManager
-from flowyml.ui.backend.dependencies import get_store
+from flowyml.ui.backend.dependencies import get_store, iter_metadata_stores
 from pydantic import BaseModel
 
 from loguru import logger
@@ -9,27 +8,8 @@ router = APIRouter()
 
 
 def _iter_metadata_stores():
-    """Yield tuples of (project_name, store) including global and project stores.
-
-    The global store comes from ``get_store()``, which honours
-    ``FLOWYML_DATABASE_URL``. Constructing ``SQLiteMetadataStore()`` directly
-    always opened the default local SQLite file, so in the Postgres deployment
-    this endpoint read a different (and empty, and container-local) database
-    than the one pipelines write their experiments to.
-    """
-    stores = [(None, get_store())]
-    try:
-        manager = ProjectManager()
-        for project_meta in manager.list_projects():
-            name = project_meta.get("name")
-            if not name:
-                continue
-            project = manager.get_project(name)
-            if project:
-                stores.append((name, project.metadata_store))
-    except Exception:
-        pass
-    return stores
+    """Yield tuples of (project_name, store) including global and project stores."""
+    return iter_metadata_stores()
 
 
 @router.get("/")

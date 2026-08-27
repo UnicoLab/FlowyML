@@ -33,7 +33,13 @@ def client(monkeypatch):
 
 
 def _break_store(monkeypatch, module_name: str) -> None:
-    """Make the router's metadata store raise, as an unreachable database would."""
+    """Make the metadata store raise, as an unreachable database would.
+
+    Patched at ``dependencies``, the single place every router now obtains a
+    store from, plus the router's own re-exported name for the handlers that
+    still call ``get_store()`` directly.
+    """
+    from flowyml.ui.backend import dependencies
     from flowyml.ui.backend.routers import (  # noqa: F401
         assets,
         experiments,
@@ -41,17 +47,20 @@ def _break_store(monkeypatch, module_name: str) -> None:
         runs,
     )
 
+    def unavailable(*args, **kwargs):
+        raise RuntimeError("could not connect to server: Connection refused")
+
+    monkeypatch.setattr(dependencies, "get_store", unavailable)
+    monkeypatch.setattr(dependencies, "iter_metadata_stores", unavailable)
+
     module = {
         "assets": assets,
         "experiments": experiments,
         "pipelines": pipelines,
         "runs": runs,
     }[module_name]
-
-    def unavailable(*args, **kwargs):
-        raise RuntimeError("could not connect to server: Connection refused")
-
-    monkeypatch.setattr(module, "get_store", unavailable)
+    if hasattr(module, "get_store"):
+        monkeypatch.setattr(module, "get_store", unavailable)
 
 
 class TestStorageFailuresAreReported:
