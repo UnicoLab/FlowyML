@@ -459,9 +459,22 @@ class ComponentRegistry:
                 print(f"Failed to load plugin {config.name}: {e}")
 
     def install_plugin(self, package_name: str) -> bool:
-        """Install a plugin package via pip."""
+        """Install a plugin package via pip.
+
+        The name is validated first: pip would read an argument such as
+        ``--index-url=http://...`` as an option rather than a package, letting
+        a caller redirect the install at an arbitrary index.
+        """
+        from flowyml.utils.packages import InvalidPackageName, validate_requirement
+
         try:
-            subprocess.check_call([sys.executable, "-m", "pip", "install", package_name])
+            requirement = validate_requirement(package_name)
+        except InvalidPackageName as exc:
+            logger.warning(f"Refusing to install plugin: {exc}")
+            return False
+
+        try:
+            subprocess.check_call([sys.executable, "-m", "pip", "install", requirement])
             # Refresh discovery
             importlib.invalidate_caches()
             self._discover_installed_plugins()

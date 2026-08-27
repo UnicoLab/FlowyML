@@ -9,6 +9,7 @@ import anyio
 import secrets
 
 from flowyml.ui.backend.artifact_paths import ArtifactPathError, resolve_within_root
+from flowyml.utils.packages import InvalidPackageName, validate_requirement
 
 router = APIRouter(prefix="/deployments", tags=["deployments"])
 
@@ -618,8 +619,14 @@ async def install_dependencies(
         if framework_lower in ML_DEPENDENCIES:
             packages.extend(ML_DEPENDENCIES[framework_lower])
         else:
-            # Allow direct package names too
-            packages.append(framework)
+            # A direct package name is still allowed, but it must actually look
+            # like one: pip reads an argument such as "--index-url=http://..."
+            # as an option, which would let a caller redirect the installer at
+            # an arbitrary package index.
+            try:
+                packages.append(validate_requirement(framework))
+            except InvalidPackageName as exc:
+                raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     if not packages:
         raise HTTPException(status_code=400, detail="No valid frameworks specified")
@@ -640,25 +647,39 @@ async def install_dependencies(
 def _install_packages_sync(packages: list[str]):
     """Background task to install packages via pip."""
     import subprocess
+    import sys
     import logging
 
     logger = logging.getLogger(__name__)
 
     for package in packages:
         try:
-            logger.info(f"Installing {package}...")
+            # Validated again at the point of use: this function also runs from
+            # a background task, decoupled from the request that queued it.
+            target = validate_requirement(package)
+        except InvalidPackageName as exc:
+            logger.error(f"Refusing to install {package!r}: {exc}")
+            continue
+
+        try:
+            logger.info(f"Installing {target}...")
             result = subprocess.run(
-                ["pip", "install", package],
+                # `sys.executable -m pip` rather than a bare `pip`, which
+                # resolves from PATH and can install into a different
+                # interpreter than the one serving requests - reporting success
+                # while the import still fails.
+                [sys.executable, "-m", "pip", "install", target],
                 capture_output=True,
                 text=True,
                 timeout=300,  # 5 min timeout per package
+                check=False,
             )
             if result.returncode == 0:
-                logger.info(f"Successfully installed {package}")
+                logger.info(f"Successfully installed {target}")
             else:
-                logger.warning(f"Failed to install {package}: {result.stderr}")
+                logger.warning(f"Failed to install {target}: {result.stderr}")
         except Exception as e:
-            logger.error(f"Error installing {package}: {e}")
+            logger.error(f"Error installing {target}: {e}")
 
 
 @router.get("/dependencies/status")
