@@ -3,14 +3,44 @@
 from fastapi import APIRouter, HTTPException, BackgroundTasks, Query
 from pydantic import BaseModel, Field
 from datetime import datetime
+from pathlib import Path
 from uuid import uuid4
+import anyio
 import secrets
+
+from flowyml.ui.backend.artifact_paths import ArtifactPathError, resolve_within_root
 
 router = APIRouter(prefix="/deployments", tags=["deployments"])
 
 #: Upper bound on how many log lines a single request may pull back.
 MAX_LOG_LINES = 10000
 
+
+
+
+def _artifact_file_exists(artifact_path: str | None) -> bool:
+    """Whether an artifact's file is present in the configured artifacts directory.
+
+    The previous implementation joined the path onto a hard-coded
+    "/app/artifacts", which is only correct inside the project's Docker image.
+    Anyone running ``flowyml ui`` from a pip install has their artifacts under
+    the configured artifacts directory, so this always returned False and the
+    deployments page labelled every model "Missing".
+
+    Resolution is confined to the artifacts root, so an artifact path pointing
+    outside it reports False instead of probing the host filesystem.
+    """
+    if not artifact_path:
+        return False
+
+    from flowyml.utils.config import get_config
+
+    try:
+        resolved = resolve_within_root(artifact_path, Path(get_config().artifacts_dir))
+    except ArtifactPathError:
+        return False
+
+    return resolved.exists()
 
 
 # ==================== Schemas ====================
@@ -166,7 +196,6 @@ async def get_available_models() -> list[dict]:
     """Get list of models available for deployment."""
     # Import here to avoid circular imports
     from flowyml.ui.backend.dependencies import get_store
-    import os
 
     store = get_store()
     try:
@@ -206,11 +235,8 @@ async def get_available_models() -> list[dict]:
 
             # Skip if no file path (inline values can't be deployed as model servers)
             has_file = bool(path)
-            file_exists = False
-            if has_file:
-                # Check if file exists (in container, paths are relative to artifacts dir)
-                full_path = os.path.join("/app/artifacts", path)
-                file_exists = os.path.exists(full_path)
+            # Filesystem probes are blocking, so they run off the event loop.
+            file_exists = await anyio.to_thread.run_sync(_artifact_file_exists, path)
 
             if is_model:
                 # Generate artifact_id if not present
@@ -232,6 +258,10 @@ async def get_available_models() -> list[dict]:
 
         # If no models found, return all artifacts with paths as potential models
         if not models and artifacts:
+            fallback_exists = [
+                await anyio.to_thread.run_sync(_artifact_file_exists, a.get("path"))
+                for a in artifacts
+            ]
             models = [
                 {
                     "artifact_id": a.get("artifact_id") or f"{a.get('run_id')}_{a.get('step')}_{a.get('name')}",
@@ -242,14 +272,10 @@ async def get_available_models() -> list[dict]:
                     "run_id": a.get("run_id"),
                     "project": a.get("project"),
                     "has_file": bool(a.get("path")),
-                    "file_exists": os.path.exists(
-                        os.path.join("/app/artifacts", a.get("path") or ""),
-                    )
-                    if a.get("path")
-                    else False,
+                    "file_exists": fallback_exists[index],
                     "path": a.get("path"),
                 }
-                for a in artifacts
+                for index, a in enumerate(artifacts)
             ]
 
         return models

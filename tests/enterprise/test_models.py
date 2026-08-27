@@ -48,7 +48,7 @@ class TestStackDefinitionFromDict:
             StackDefinition.from_dict(sample_stack_dict)
 
     def test_stack_definition_instance_range(self, sample_stack_dict):
-        """minInstances > maxInstances is rejected."""
+        """A stack whose minInstances exceeds maxInstances is rejected."""
         sample_stack_dict["spec"]["compute"]["minInstances"] = 5
         sample_stack_dict["spec"]["compute"]["maxInstances"] = 2
         with pytest.raises(ValidationError, match="minInstances.*cannot exceed.*maxInstances"):

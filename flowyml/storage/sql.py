@@ -436,14 +436,23 @@ class SQLMetadataStore(MetadataStore):
             conn.commit()
 
     def load_artifact(self, artifact_id: str) -> dict | None:
-        """Load artifact metadata."""
+        """Load artifact metadata.
+
+        ``artifact_id`` is always present in the result. It lives in its own
+        column, and callers that wrote metadata without repeating it there
+        (anything created through ``POST /api/assets/``, for example) would
+        otherwise get back a record the UI cannot address, since download and
+        content URLs are built from that field.
+        """
         with self.engine.connect() as conn:
             stmt = select(self.artifacts.c.metadata).where(
                 self.artifacts.c.artifact_id == artifact_id,
             )
             row = conn.execute(stmt).fetchone()
             if row:
-                return json.loads(row[0])
+                data = json.loads(row[0])
+                data.setdefault("artifact_id", artifact_id)
+                return data
             return None
 
     def delete_artifact(self, artifact_id: str) -> None:
@@ -453,9 +462,14 @@ class SQLMetadataStore(MetadataStore):
             conn.commit()
 
     def list_assets(self, limit: int | None = None, **filters) -> list[dict]:
-        """List assets with optional filters."""
+        """List assets with optional filters.
+
+        Each result carries its ``artifact_id``, projected from the column
+        rather than trusted to be duplicated inside the metadata JSON - the
+        same treatment :meth:`query` gives ``run_id``.
+        """
         with self.engine.connect() as conn:
-            stmt = select(self.artifacts.c.metadata)
+            stmt = select(self.artifacts.c.artifact_id, self.artifacts.c.metadata)
 
             for key, value in filters.items():
                 if value is not None and hasattr(self.artifacts.c, key):
@@ -466,8 +480,12 @@ class SQLMetadataStore(MetadataStore):
             if limit:
                 stmt = stmt.limit(limit)
 
-            rows = conn.execute(stmt).fetchall()
-            return [json.loads(row[0]) for row in rows]
+            assets = []
+            for artifact_id, raw_metadata in conn.execute(stmt).fetchall():
+                data = json.loads(raw_metadata)
+                data.setdefault("artifact_id", artifact_id)
+                assets.append(data)
+            return assets
 
     def query(self, **filters) -> list[dict]:
         """Query runs with filters."""
