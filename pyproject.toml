@@ -59,6 +59,9 @@ boto3 = {version = ">=1.28", optional = true}
 sagemaker = {version = ">=2.100", optional = true}
 mlflow = {version = ">=2.0", optional = true}
 wandb = {version = ">=0.15", optional = true}
+azure-ai-ml = {version = ">=1.12.0", optional = true}
+azure-identity = {version = ">=1.15.0", optional = true}
+azure-storage-blob = {version = ">=12.19.0", optional = true}
 langchain-core = {version = ">=0.2.0", optional = true}
 langgraph = {version = ">=0.2.0", optional = true}
 openai = {version = ">=1.0.0", optional = true}
@@ -105,16 +108,26 @@ griffe = ">=1.5.0"
 mkdocs-include-markdown-plugin = ">=7.2.0"
 
 [tool.poetry.extras]
+# IMPORTANT: only list dependencies declared with `optional = true` here.
+# Poetry marks any dependency named in an extra as extra-only, so listing a
+# *core* dependency (fastapi, uvicorn, websockets, python-multipart, rich)
+# would strip it from a plain `pip install flowyml` and break the web UI and
+# CLI for every user. `ui` and `rich` are therefore intentionally empty: the
+# packages they used to carry are unconditional dependencies now, and the
+# empty extras keep `pip install flowyml[ui]` working for existing scripts.
 pytorch = ["torch"]
 tensorflow = ["tensorflow"]
+keras = ["keras"]
 sklearn = ["scikit-learn"]
 gcp = ["google-cloud-aiplatform", "google-cloud-storage", "kfp", "kfp-server-api"]
-aws = ["boto3"]
+aws = ["boto3", "sagemaker"]
 azure = ["azure-ai-ml", "azure-identity", "azure-storage-blob"]
-# UI extra kept for backward compatibility (dependencies are now in main)
-ui = ["fastapi", "uvicorn", "websockets", "python-multipart"]
-# Rich display for beautiful CLI output
-rich = ["rich"]
+mlflow = ["mlflow"]
+wandb = ["wandb"]
+# UI extra kept for backward compatibility (dependencies are installed by default)
+ui = []
+# Rich display for beautiful CLI output (installed by default)
+rich = []
 # GenAI integration extras
 langchain = ["langchain-core"]
 langgraph = ["langgraph", "langchain-core"]
@@ -123,18 +136,19 @@ genai = ["langgraph", "langchain-core", "openai"]
 all = [
     "torch",
     "tensorflow",
+    "keras",
     "scikit-learn",
     "google-cloud-aiplatform",
     "google-cloud-storage",
+    "kfp",
+    "kfp-server-api",
     "boto3",
+    "sagemaker",
     "azure-ai-ml",
     "azure-identity",
     "azure-storage-blob",
-    # UI dependencies are included by default, but listed here for clarity
-    "fastapi",
-    "uvicorn",
-    "websockets",
-    "python-multipart",
+    "mlflow",
+    "wandb",
     # GenAI
     "langgraph",
     "langchain-core",
