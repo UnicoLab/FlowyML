@@ -26,7 +26,7 @@ export function ProjectRunsList({ projectId }) {
     useEffect(() => {
         const fetchRuns = async () => {
             try {
-                const response = await fetchApi(`/api/runs?project=${projectId}`);
+                const response = await fetchApi(`/api/runs/?project=${projectId}`);
                 const data = await response.json();
                 // API returns {runs: [...]}
                 setRuns(Array.isArray(data?.runs) ? data.runs : []);

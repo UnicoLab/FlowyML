@@ -14,7 +14,7 @@ export function ProjectPipelinesList({ projectId }) {
             try {
                 // In a real scenario, we would filter by project ID
                 // For now, we'll fetch all and filter client-side or assume the API handles it
-                const response = await fetchApi(`/api/pipelines?project=${projectId}`);
+                const response = await fetchApi(`/api/pipelines/?project=${projectId}`);
                 const data = await response.json();
                 // API returns {pipelines: [...]}
                 setPipelines(Array.isArray(data?.pipelines) ? data.pipelines : []);

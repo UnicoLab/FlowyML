@@ -48,9 +48,9 @@ export function ProjectDetails() {
 
                 // Fetch stats
                 const [runsRes, artifactsRes, experimentsRes] = await Promise.all([
-                    fetchApi(`/api/runs?project=${projectId}&limit=1000`),
-                    fetchApi(`/api/assets?project=${projectId}&limit=1000`),
-                    fetchApi(`/api/experiments?project=${projectId}`)
+                    fetchApi(`/api/runs/?project=${projectId}&limit=1000`),
+                    fetchApi(`/api/assets/?project=${projectId}&limit=1000`),
+                    fetchApi(`/api/experiments/?project=${projectId}`)
                 ]);
 
                 const runsData = await runsRes.json();

@@ -46,9 +46,9 @@ export function ProjectRelations() {
                 if (!projectId) return;
 
                 const [pipelinesRes, runsRes, artifactsRes] = await Promise.all([
-                    fetchApi(`/api/pipelines?project=${projectId}`),
-                    fetchApi(`/api/runs?project=${projectId}`),
-                    fetchApi(`/api/assets?project=${projectId}`)
+                    fetchApi(`/api/pipelines/?project=${projectId}`),
+                    fetchApi(`/api/runs/?project=${projectId}`),
+                    fetchApi(`/api/assets/?project=${projectId}`)
                 ]);
 
                 const pipelinesData = await pipelinesRes.json();

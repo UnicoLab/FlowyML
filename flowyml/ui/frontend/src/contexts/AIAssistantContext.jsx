@@ -1,5 +1,4 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
-import * as webllm from '@mlc-ai/web-llm';
 
 // FlowyML System Prompt - comprehensive knowledge base for the AI assistant
 const FLOWYML_SYSTEM_PROMPT = `You are FlowyML Assistant, an expert AI advisor for the FlowyML ML pipeline framework. You help users optimize their pipelines, debug issues, and follow best practices.
@@ -88,6 +87,12 @@ export function AIAssistantProvider({ children }) {
         setLoadStatus('Initializing...');
 
         try {
+            // Loaded on demand: the WebLLM runtime is by far the largest
+            // dependency in the app, and only matters once a user actually
+            // starts the in-browser assistant. Importing it statically put the
+            // whole runtime in the initial bundle for every page load.
+            const webllm = await import('@mlc-ai/web-llm');
+
             const engine = await webllm.CreateMLCEngine(MODEL_ID, {
                 initProgressCallback: (progress) => {
                     setLoadProgress(Math.round(progress.progress * 100));

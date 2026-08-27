@@ -104,9 +104,9 @@ export function ProjectHierarchy({ projectId }) {
             try {
                 // Fetch with higher limits to ensure we get the full tree
                 const [pipelinesRes, runsRes, artifactsRes] = await Promise.all([
-                    fetchApi(`/api/pipelines?project=${projectId}`),
-                    fetchApi(`/api/runs?project=${projectId}&limit=100`),
-                    fetchApi(`/api/assets?project=${projectId}&limit=100`)
+                    fetchApi(`/api/pipelines/?project=${projectId}`),
+                    fetchApi(`/api/runs/?project=${projectId}&limit=100`),
+                    fetchApi(`/api/assets/?project=${projectId}&limit=100`)
                 ]);
 
                 const pipelinesData = await pipelinesRes.json();

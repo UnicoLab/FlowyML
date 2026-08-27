@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { fetchApi } from '../../../utils/api';
+import { fetchApi, getWebSocketUrl } from '../../../utils/api';
 import { downloadArtifactById } from '../../../utils/downloads';
 import { useParams, Link } from 'react-router-dom';
 import { CheckCircle, XCircle, Clock, Calendar, Package, ArrowRight, BarChart2, FileText, Database, Box, ChevronRight, Activity, Layers, Code2, Terminal, Info, X, Maximize2, TrendingUp, TrendingDown, Download, ArrowDownCircle, ArrowUpCircle, Tag, Zap, AlertCircle, FolderPlus, Cloud, Server, LineChart, Minimize2, RefreshCw } from 'lucide-react';
@@ -115,7 +115,7 @@ export function RunDetails() {
             try {
                 const [runRes, assetsRes] = await Promise.all([
                     fetchApi(`/api/runs/${runId}`),
-                    fetchApi(`/api/assets?run_id=${runId}`)
+                    fetchApi(`/api/assets/?run_id=${runId}`)
                 ]);
 
                 const runData = await runRes.json();
@@ -172,7 +172,7 @@ export function RunDetails() {
         try {
             const [runRes, assetsRes] = await Promise.all([
                 fetchApi(`/api/runs/${runId}`),
-                fetchApi(`/api/assets?run_id=${runId}`)
+                fetchApi(`/api/assets/?run_id=${runId}`)
             ]);
             const runData = await runRes.json();
             const assetsData = await assetsRes.json();
@@ -1331,43 +1331,53 @@ function LogsViewer({ runId, stepName, isRunning, maxHeight = "max-h-96", minima
 
         // Set up WebSocket for live updates if running
         if (isRunning && useWebSocket) {
-            try {
-                const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-                const wsUrl = `${wsProtocol}//${window.location.host}/ws/runs/${runId}/steps/${stepName}/logs`;
-                const ws = new WebSocket(wsUrl);
+            // Resolving the URL is async, so the socket may arrive after this
+            // effect is torn down; `isMounted` guards against connecting (and
+            // then leaking) a socket for a step the user has navigated away from.
+            const endpoint =
+                `/ws/runs/${encodeURIComponent(runId)}` +
+                `/steps/${encodeURIComponent(stepName)}/logs`;
 
-                ws.onopen = () => {
-                    console.log('WebSocket connected for logs');
-                };
+            getWebSocketUrl(endpoint)
+                .then((wsUrl) => {
+                    if (!isMounted) return;
 
-                ws.onmessage = (event) => {
-                    try {
-                        const data = JSON.parse(event.data);
-                        if (data.type === 'log' && isMounted) {
-                            setLogs(prev => prev + data.content + '\n');
+                    const ws = new WebSocket(wsUrl);
+
+                    ws.onopen = () => {
+                        console.log('WebSocket connected for logs');
+                    };
+
+                    ws.onmessage = (event) => {
+                        try {
+                            const data = JSON.parse(event.data);
+                            if (data.type === 'log' && isMounted) {
+                                setLogs(prev => prev + data.content + '\n');
+                            }
+                        } catch (e) {
+                            // Plain text message
+                            if (isMounted && event.data !== 'pong') {
+                                setLogs(prev => prev + event.data + '\n');
+                            }
                         }
-                    } catch (e) {
-                        // Plain text message
-                        if (isMounted && event.data !== 'pong') {
-                            setLogs(prev => prev + event.data + '\n');
-                        }
-                    }
-                };
+                    };
 
-                ws.onerror = () => {
-                    console.log('WebSocket error, falling back to polling');
-                    setUseWebSocket(false);
-                };
+                    ws.onerror = () => {
+                        console.log('WebSocket error, falling back to polling');
+                        if (isMounted) setUseWebSocket(false);
+                    };
 
-                ws.onclose = () => {
-                    console.log('WebSocket closed');
-                };
+                    ws.onclose = () => {
+                        console.log('WebSocket closed');
+                    };
 
-                wsRef.current = ws;
-            } catch (error) {
-                console.error('Failed to create WebSocket:', error);
-                setUseWebSocket(false);
-            }
+                    wsRef.current = ws;
+                    if (!isMounted) ws.close();
+                })
+                .catch((error) => {
+                    console.error('Failed to create WebSocket:', error);
+                    if (isMounted) setUseWebSocket(false);
+                });
         }
 
         // Fallback to polling if WebSocket not available

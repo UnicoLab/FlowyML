@@ -31,14 +31,14 @@ export function Projects() {
             const projectsWithStats = await Promise.all(projectsList.map(async (project) => {
                 try {
                     // Fetch runs for this project
-                    const runsRes = await fetchApi(`/api/runs?project=${encodeURIComponent(project.name)}`);
+                    const runsRes = await fetchApi(`/api/runs/?project=${encodeURIComponent(project.name)}`);
                     const runsData = await runsRes.json();
 
                     // Fetch pipelines - we need to count unique pipelines from runs
                     const pipelineNames = new Set((runsData.runs || []).map(r => r.pipeline_name));
 
                     // Fetch artifacts for this project
-                    const artifactsRes = await fetchApi(`/api/assets?project=${encodeURIComponent(project.name)}`);
+                    const artifactsRes = await fetchApi(`/api/assets/?project=${encodeURIComponent(project.name)}`);
                     const artifactsData = await artifactsRes.json();
 
                     return {

@@ -23,6 +23,31 @@ export const getBaseUrl = async () => {
   return '';
 };
 
+/**
+ * Build an absolute WebSocket URL for an API path.
+ *
+ * Mirrors getBaseUrl(): in remote-execution mode the API lives on a different
+ * origin than the page, and hardcoding window.location.host connected the
+ * socket to the wrong server (which then fell back to polling).
+ *
+ * @param {string} endpoint - Path beginning with `/ws/`.
+ * @returns {Promise<string>} Absolute ws:// or wss:// URL.
+ */
+export const getWebSocketUrl = async (endpoint) => {
+    const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    const baseUrl = await getBaseUrl();
+
+    if (baseUrl) {
+        // Reuse the configured API origin, swapping http(s) for ws(s).
+        const url = new URL(path, baseUrl);
+        url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+        return url.toString();
+    }
+
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    return `${wsProtocol}//${window.location.host}${path}`;
+};
+
 export const fetchApi = async (endpoint, options = {}) => {
   const baseUrl = await getBaseUrl();
   // Ensure endpoint starts with /

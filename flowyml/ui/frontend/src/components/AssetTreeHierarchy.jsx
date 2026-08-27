@@ -150,14 +150,14 @@ export function AssetTreeHierarchy({ projectId, onAssetSelect, compact = false }
                 // Determine what to fetch based on projectId
                 const endpoints = projectId
                     ? [
-                        fetchApi(`/api/pipelines?project=${projectId}`),
-                        fetchApi(`/api/runs?project=${projectId}&limit=200`),
-                        fetchApi(`/api/assets?project=${projectId}&limit=500`)
+                        fetchApi(`/api/pipelines/?project=${projectId}`),
+                        fetchApi(`/api/runs/?project=${projectId}&limit=200`),
+                        fetchApi(`/api/assets/?project=${projectId}&limit=500`)
                     ]
                     : [
-                        fetchApi('/api/pipelines?limit=100'),
-                        fetchApi('/api/runs?limit=200'),
-                        fetchApi('/api/assets?limit=500')
+                        fetchApi('/api/pipelines/?limit=100'),
+                        fetchApi('/api/runs/?limit=200'),
+                        fetchApi('/api/assets/?limit=500')
                     ];
 
                 const [pipelinesRes, runsRes, artifactsRes] = await Promise.all(endpoints);

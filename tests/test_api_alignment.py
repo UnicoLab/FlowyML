@@ -227,3 +227,44 @@ def test_endpoints_the_ui_depends_on_exist(backend_routes):
         if path not in backend_routes or verb not in backend_routes[path]
     }
     assert not missing, f"Required endpoints missing or wrong method: {missing}"
+
+
+def _exact_route_matchers(backend_routes: dict[str, set[str]]):
+    """Regexes that match a path *including* its exact trailing slash."""
+    matchers = []
+    for route in backend_routes:
+        pattern = re.escape(route)
+        pattern = re.sub(r"\\\{[^}]*\\\}", "[^/]+", pattern)
+        matchers.append((re.compile("^" + pattern + "$"), route))
+    return matchers
+
+
+@pytest.mark.skipif(not FRONTEND_SRC.exists(), reason="frontend sources not present")
+def test_no_frontend_call_depends_on_a_trailing_slash_redirect(backend_routes):
+    """Calls must hit the declared path, not rely on FastAPI's 307.
+
+    ``redirect_slashes`` papers over a mismatch at the cost of a second round
+    trip for every request, and it depends on the client following redirects -
+    which a POST only survives because 307 preserves the body. It also breaks
+    outright behind any proxy that does not forward redirects. This was live:
+    five pages issued a redirected request on every load.
+    """
+    matchers = _exact_route_matchers(backend_routes)
+
+    def matches_exactly(path: str) -> bool:
+        probe = path.replace(INTERPOLATION, "X")
+        return any(rx.match(probe) for rx, _ in matchers)
+
+    redirected = []
+    for url, method, source in _iter_frontend_calls():
+        literal = _mask_interpolations(url).split("?", 1)[0]
+        if matches_exactly(literal):
+            continue
+        alternative = literal[:-1] if literal.endswith("/") else literal + "/"
+        if matches_exactly(alternative):
+            redirected.append(f"{method} {url}  ({source}) -> declared as {alternative}")
+
+    assert not redirected, (
+        "These frontend calls only work via a trailing-slash redirect:\n"
+        + "\n".join(f"  {entry}" for entry in redirected)
+    )

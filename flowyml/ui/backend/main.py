@@ -275,21 +275,14 @@ if os.path.exists(frontend_dist):
     # Instead, mount a StaticFiles handler for the root, but do it AFTER API routes
     # Actually, let's try a different approach - use a custom middleware or exceptions
 
-    # The trick is to let FastAPI handle routes first, then catch 404s
-    @app.get("/{spa_path:path}", include_in_schema=False)
-    async def serve_spa(spa_path: str):
-        """Serve the SPA shell for client-side routes.
-
-        Registered last, so every API route and static mount takes precedence.
-        Unmatched /api paths must still 404 as JSON rather than silently
-        returning HTML, which would make a typo in a fetch URL look like a
-        successful response the client then fails to parse.
-        """
-        if spa_path.startswith(("api/", "ws/")):
-            raise StarletteHTTPException(status_code=404, detail="Not Found")
-        return FileResponse(os.path.join(frontend_dist, "index.html"))
+    # Client-side routes are served by the 404 handler below rather than a
+    # catch-all route. A catch-all would match *before* Starlette's
+    # redirect_slashes logic, turning every `/api/stats` (declared as
+    # `/api/stats/`) into a 404 instead of a redirect.
+    _frontend_index = os.path.join(frontend_dist, "index.html")
 
 else:
+    _frontend_index = None
 
     @app.get("/")
     async def root():
@@ -306,7 +299,14 @@ def _error_reference() -> str:
 
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler_with_redaction(request, exc):
-    """Keep 4xx details, redact 5xx details in production.
+    """Serve the SPA for unknown page routes; redact 5xx details in production.
+
+    A single handler covers both concerns because Starlette allows only one
+    handler per exception type.
+
+    Unknown ``/api`` and ``/ws`` paths deliberately keep their JSON 404: a typo
+    in a fetch URL must not come back as the HTML shell, which the caller would
+    then fail to parse with a confusing error far from the cause.
 
     Handlers across the API raise ``HTTPException(500, detail=str(e))``. In
     production that text reaches the client verbatim, and for SQLAlchemy errors
@@ -314,6 +314,13 @@ async def http_exception_handler_with_redaction(request, exc):
     errors carry absolute server paths. The real message is always logged; only
     what crosses the wire is reduced.
     """
+    if (
+        exc.status_code == 404
+        and _frontend_index is not None
+        and not request.url.path.startswith(("/api", "/ws"))
+    ):
+        return FileResponse(_frontend_index)
+
     if exc.status_code >= 500:
         reference = _error_reference()
         logger.error(
