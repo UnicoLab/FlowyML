@@ -65,8 +65,21 @@ services:
       FLOWYML_REMOTE_UI_URL: ${FLOWYML_REMOTE_UI_URL:-http://localhost:8080}
 
       # Authentication
+      #
+      # With FLOWYML_ENV=production the server refuses to start unless both
+      # FLOWYML_API_TOKEN and FLOWYML_ADMIN_PASSWORD are set. Without them
+      # every endpoint - including POST /api/execution/execute, which imports
+      # and runs arbitrary Python modules - would be reachable unauthenticated.
+      # Set FLOWYML_ALLOW_INSECURE=1 only if a proxy in front of FlowyML
+      # already enforces authentication.
       FLOWYML_AUTH_SECRET: ${FLOWYML_AUTH_SECRET:-change-this-secret-in-production}
       FLOWYML_API_TOKEN: ${FLOWYML_API_TOKEN:-}
+      FLOWYML_ADMIN_USER: ${FLOWYML_ADMIN_USER:-admin}
+      FLOWYML_ADMIN_PASSWORD: ${FLOWYML_ADMIN_PASSWORD:-}
+      FLOWYML_ALLOW_INSECURE: ${FLOWYML_ALLOW_INSECURE:-}
+
+      # Browser origins allowed to call the API (comma-separated).
+      FLOWYML_CORS_ORIGINS: ${FLOWYML_CORS_ORIGINS:-}
 
       # Environment
       FLOWYML_ENV: ${FLOWYML_ENV:-development}

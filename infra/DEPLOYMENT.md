@@ -156,13 +156,34 @@ terraform output app_url
 
 | Variable | Required | Description |
 |---|---|---|
-| `FLOWYML_DATABASE_URL` | Yes | PostgreSQL connection string |
+| `FLOWYML_DATABASE_URL` | Yes | PostgreSQL connection string. Every API endpoint reads it, so an unset value silently falls back to a container-local SQLite file. |
 | `FLOWYML_AUTH_SECRET` | Yes | JWT signing secret |
-| `FLOWYML_API_TOKEN` | No | Static API token for SDK auth |
+| `FLOWYML_API_TOKEN` | **Yes in production** | Bearer token for API, SDK and WebSocket auth. The server refuses to start without it when `FLOWYML_ENV=production`. |
 | `FLOWYML_ADMIN_USER` | No | Admin username (default: `admin`) |
-| `FLOWYML_ADMIN_PASSWORD` | Yes | Admin password for UI login |
+| `FLOWYML_ADMIN_PASSWORD` | **Yes in production** | Admin password for UI login. Must not be the documented default `flowyml`. |
+| `FLOWYML_ALLOW_INSECURE` | No | Set to `1` to skip the checks above when a proxy already enforces authentication. |
+| `FLOWYML_CORS_ORIGINS` | No | Comma-separated browser origins allowed to call the API. |
 | `FLOWYML_ENV` | No | `production` or `development` |
+| `FLOWYML_OTEL_CONSOLE` | No | Set to `1` to print OpenTelemetry spans to stdout (verbose; debugging only). |
 | `SERVER_PORT` | No | Port to listen on (default: `8080`) |
+
+### Failing closed
+
+With `FLOWYML_ENV=production`, FlowyML refuses to start unless it can
+authenticate requests, and says which variable is missing:
+
+```
+FlowyML refuses to start: FLOWYML_ENV=production but the deployment is not secured.
+  - FLOWYML_API_TOKEN is not set. ...
+```
+
+This is deliberate. `POST /api/execution/execute` imports and runs arbitrary
+Python modules, so an unauthenticated instance is remote code execution rather
+than merely an information leak. Generate a token with:
+
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(32))"
+```
 
 ---
 
