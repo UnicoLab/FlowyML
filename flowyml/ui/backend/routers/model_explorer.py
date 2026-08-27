@@ -3,6 +3,7 @@
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from typing import Any
+from collections import OrderedDict
 from datetime import datetime
 from uuid import uuid4
 
@@ -93,7 +94,32 @@ class ExplorationSession(BaseModel):
 
 # ==================== In-Memory State ====================
 
-_sessions: dict[str, dict] = {}
+#: Exploration sessions live in the server process, not the database: they are
+#: scratch state for the interactive model explorer.
+#:
+#: Both bounds below exist because nothing ever expired this state. A session
+#: was created per model the user opened and never removed unless deleted by
+#: hand, and every prediction and sweep appended to a list that only grew, so a
+#: long-running server accumulated them until it ran out of memory.
+MAX_SESSIONS = 100
+MAX_HISTORY_PER_SESSION = 500
+
+_sessions: OrderedDict[str, dict] = OrderedDict()
+
+
+def _record_session_entry(session_id: str, key: str, entry: dict) -> None:
+    """Append to a session's bounded history, dropping the oldest entries."""
+    session = _sessions.get(session_id)
+    if session is None:
+        return
+
+    history = session.setdefault(key, [])
+    history.append(entry)
+    if len(history) > MAX_HISTORY_PER_SESSION:
+        del history[: len(history) - MAX_HISTORY_PER_SESSION]
+
+    # Mark the session as recently used so eviction targets idle ones.
+    _sessions.move_to_end(session_id)
 
 
 # ==================== Endpoints ====================
@@ -190,8 +216,7 @@ async def predict(request: PredictionRequest) -> PredictionResult:
 
                 # Store in session
                 session_id = request.deployment_id
-                if session_id in _sessions:
-                    _sessions[session_id]["predictions"].append(result.model_dump())
+                _record_session_entry(session_id, "predictions", result.model_dump())
 
                 return result
         except Exception as e:
@@ -223,8 +248,7 @@ async def predict(request: PredictionRequest) -> PredictionResult:
             )
 
             session_id = request.model_artifact_id
-            if session_id in _sessions:
-                _sessions[session_id]["predictions"].append(result.model_dump())
+            _record_session_entry(session_id, "predictions", result.model_dump())
 
             return result
         except Exception as e:
@@ -287,8 +311,7 @@ async def parameter_sweep(request: SweepRequest) -> SweepResult:
 
     # Store in session
     session_id = request.deployment_id or request.model_artifact_id
-    if session_id in _sessions:
-        _sessions[session_id]["sweeps"].append(sweep_result.model_dump())
+    _record_session_entry(session_id, "sweeps", sweep_result.model_dump())
 
     return sweep_result
 
@@ -327,6 +350,9 @@ async def create_session(
     }
 
     _sessions[session_id] = session
+    while len(_sessions) > MAX_SESSIONS:
+        # Evict least-recently-used so an idle tab cannot hold memory forever.
+        _sessions.popitem(last=False)
 
     return {"session_id": session_id}
 
