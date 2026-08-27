@@ -743,15 +743,51 @@ HEARTBEAT_INTERVAL = 5
 # Number of missed heartbeats before marking step as dead
 DEAD_THRESHOLD = 3
 
+# How long to keep heartbeat state for a run after its last heartbeat.
+#
+# ``_cleanup_heartbeats`` existed but was never called from anywhere, so both
+# dictionaries above grew by one entry per run and one per step for the life of
+# the process. A server executing pipelines continuously leaked that state
+# without bound. Cleanup now runs when a run is stopped, and stale entries are
+# pruned opportunistically for runs that simply stop reporting - a crashed
+# worker never sends a completion signal.
+HEARTBEAT_RETENTION_SECONDS = 3600
+
+# Hard ceiling on tracked runs, as a backstop if pruning cannot keep up.
+MAX_TRACKED_RUNS = 1000
+
+
+def _prune_stale_heartbeats_locked(now: float) -> None:
+    """Drop tracking for runs that stopped reporting. Caller holds the lock."""
+    stale = [
+        run_id
+        for run_id, steps in _heartbeat_timestamps.items()
+        if steps and now - max(steps.values()) > HEARTBEAT_RETENTION_SECONDS
+    ]
+    for run_id in stale:
+        _heartbeat_timestamps.pop(run_id, None)
+        _step_metrics.pop(run_id, None)
+
+    # Backstop: evict the least-recently-active runs beyond the ceiling.
+    while len(_heartbeat_timestamps) > MAX_TRACKED_RUNS:
+        oldest = min(
+            _heartbeat_timestamps,
+            key=lambda rid: max(_heartbeat_timestamps[rid].values(), default=0.0),
+        )
+        _heartbeat_timestamps.pop(oldest, None)
+        _step_metrics.pop(oldest, None)
+
 
 def _record_heartbeat(run_id: str, step_name: str) -> None:
     """Record heartbeat timestamp for a step."""
     import time
 
+    now = time.time()
     with _heartbeat_lock:
         if run_id not in _heartbeat_timestamps:
             _heartbeat_timestamps[run_id] = {}
-        _heartbeat_timestamps[run_id][step_name] = time.time()
+        _heartbeat_timestamps[run_id][step_name] = now
+        _prune_stale_heartbeats_locked(now)
 
 
 def _record_step_metrics(run_id: str, step_name: str, metrics: dict) -> None:
@@ -813,6 +849,10 @@ async def step_heartbeat(run_id: str, step_name: str, heartbeat: HeartbeatReques
     if run_status in ["stopping", "stopped", "cancelled", "cancelling"]:
         return {"action": "stop"}
 
+    if run_status in ["completed", "failed", "success", "error"]:
+        # Terminal state reported while a straggler step was still beating.
+        _cleanup_heartbeats(run_id)
+
     return {"action": "continue"}
 
 
@@ -832,6 +872,8 @@ async def stop_run(run_id: str):
         # Update run status to STOPPING
         # This will be picked up by the next heartbeat
         store.update_run_status(run_id, "stopping")
+        # The run is finishing, so its heartbeat tracking is no longer needed.
+        _cleanup_heartbeats(run_id)
         return {"status": "success", "message": "Stop signal sent"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

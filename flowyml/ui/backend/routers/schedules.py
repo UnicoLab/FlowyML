@@ -1,9 +1,13 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from flowyml.core.scheduler import PipelineScheduler
 from flowyml.registry.pipeline_registry import pipeline_registry
 
 router = APIRouter()
+
+#: Upper bound on how many past executions a single request may return.
+MAX_HISTORY_ENTRIES = 1000
+
 _scheduler = None
 
 
@@ -204,7 +208,10 @@ async def disable_schedule(schedule_name: str):
 
 
 @router.get("/{schedule_name}/history")
-async def get_schedule_history(schedule_name: str, limit: int = 50):
+async def get_schedule_history(
+    schedule_name: str,
+    limit: int = Query(50, ge=1, le=MAX_HISTORY_ENTRIES),
+):
     """Get execution history for a schedule."""
     return get_scheduler().get_history(schedule_name, limit)
 
