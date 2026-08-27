@@ -1,15 +1,19 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from flowyml.ui.backend.dependencies import get_store
 from flowyml.tracking.leaderboard import ModelLeaderboard, compare_runs
 
 router = APIRouter()
+
+#: Upper bound on how many models a single leaderboard request may return.
+MAX_LEADERBOARD_ENTRIES = 500
+
 
 
 @router.get("/{metric}")
 async def get_leaderboard(
     metric: str,
     higher_is_better: bool = True,
-    n: int = 10,
+    n: int = Query(10, ge=1, le=MAX_LEADERBOARD_ENTRIES),
 ):
     """Get leaderboard for a metric."""
     try:
