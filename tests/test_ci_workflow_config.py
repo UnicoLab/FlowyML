@@ -83,3 +83,32 @@ def test_titles_the_project_already_uses_are_accepted(title):
 def test_malformed_titles_are_still_rejected(title):
     """The check has to keep checking something."""
     assert not re.match(_pr_title_pattern(), title), f"{title!r} should not pass the PR-title check"
+
+
+RELEASE_WORKFLOW = REPO_ROOT / ".github" / "workflows" / "RELEASE.yml"
+
+
+@pytest.mark.skipif(not RELEASE_WORKFLOW.exists(), reason="release workflow not present")
+def test_the_release_workflow_constrains_gitpython():
+    """An unpinned install of the release tooling breaks the release.
+
+    GitPython 3.1.60 removed ``Actor.name_email_regex``, which
+    python-semantic-release reads while loading its configuration.
+    python-semantic-release asks only for ``gitpython~=3.0``, so pip resolves
+    the broken pair and ``semantic-release version`` aborts on the first step
+    of the release with::
+
+        ::ERROR:: type object 'Actor' has no attribute 'name_email_regex'
+
+    Nothing else in the pipeline runs, so the release produces no tag, no
+    PyPI upload and no docs deploy.
+    """
+    workflow = yaml.safe_load(RELEASE_WORKFLOW.read_text(encoding="utf-8"))
+    steps = workflow["jobs"]["SEMANTIC_RELEASE"]["steps"]
+    install = next(s for s in steps if s.get("name") == "Install dependencies")["run"]
+
+    assert "python-semantic-release" in install
+    assert "gitpython" in install.lower(), (
+        "The release workflow installs python-semantic-release without "
+        "constraining GitPython; pip will resolve a version that breaks it."
+    )
