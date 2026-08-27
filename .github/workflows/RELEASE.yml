@@ -48,7 +48,15 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install poetry python-semantic-release
+          # GitPython 3.1.60 removed `Actor.name_email_regex`, which
+          # python-semantic-release reads unconditionally while loading its
+          # configuration. python-semantic-release only asks for
+          # `gitpython~=3.0`, so an unpinned install picks the broken one and
+          # every release aborts before it does anything:
+          #   ::ERROR:: type object 'Actor' has no attribute 'name_email_regex'
+          # Cap GitPython below that release rather than pinning
+          # python-semantic-release, so this picks up the upstream fix.
+          pip install poetry python-semantic-release "gitpython<3.1.60"
 
       - name: Semantic Release
         id: semantic-release
