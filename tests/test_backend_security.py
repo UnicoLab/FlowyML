@@ -209,6 +209,46 @@ class TestAuthMiddleware:
         with TestClient(app) as client:
             assert client.get("/api/health").status_code == 200
 
+    def test_config_stays_public_in_production(self, production_env, monkeypatch, app):
+        """The browser must read it before it can authenticate.
+
+        In remote-execution mode /api/config carries the API's base URL, so
+        gating it behind auth left the login request itself unaddressable.
+        """
+        monkeypatch.setenv("FLOWYML_API_TOKEN", "secret-token")
+        monkeypatch.setenv("FLOWYML_ADMIN_PASSWORD", "pw")
+
+        with TestClient(app) as client:
+            response = client.get("/api/config")
+
+        assert response.status_code == 200
+        assert "api_token" not in response.text
+        assert "secret-token" not in response.text
+
+    @pytest.mark.parametrize(
+        "path",
+        [
+            "/api/runs/",
+            "/api/assets/",
+            "/api/execution/tokens",
+            "/api/execution/execute",
+            "/api/projects/",
+            "/api/plugins/installed",
+        ],
+    )
+    def test_everything_else_requires_authentication(
+        self,
+        production_env,
+        monkeypatch,
+        app,
+        path,
+    ):
+        monkeypatch.setenv("FLOWYML_API_TOKEN", "secret-token")
+        monkeypatch.setenv("FLOWYML_ADMIN_PASSWORD", "pw")
+
+        with TestClient(app) as client:
+            assert client.get(path).status_code == 401, path
+
     def test_malformed_authorization_header_is_rejected(self, production_env, monkeypatch, app):
         monkeypatch.setenv("FLOWYML_API_TOKEN", "secret-token")
         monkeypatch.setenv("FLOWYML_ADMIN_PASSWORD", "pw")
