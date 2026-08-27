@@ -1,9 +1,8 @@
 from fastapi import APIRouter, HTTPException, UploadFile, File, Query
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
-from flowyml.core.project import ProjectManager
 from pathlib import Path
-from flowyml.ui.backend.dependencies import get_store
+from flowyml.ui.backend.dependencies import get_store, iter_metadata_stores
 from flowyml.ui.backend.artifact_paths import (
     ArtifactPathError,
     resolve_within_root,
@@ -52,20 +51,7 @@ def _save_file_sync(src, dst):
 
 
 def _iter_metadata_stores():
-    # Use the main configured store (PostgreSQL in Docker deployment)
-    stores = [(None, get_store())]
-    try:
-        manager = ProjectManager()
-        for project_meta in manager.list_projects():
-            name = project_meta.get("name")
-            if not name:
-                continue
-            project = manager.get_project(name)
-            if project:
-                stores.append((name, project.metadata_store))
-    except Exception:
-        pass
-    return stores
+    return iter_metadata_stores()
 
 
 def _dedupe_assets(assets):

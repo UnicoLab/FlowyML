@@ -7,7 +7,7 @@ rich context for the in-browser AI assistant.
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
-from ..dependencies import get_store
+from ..dependencies import find_run_across_stores, get_store
 from ..artifact_paths import resolve_run_log_path
 import json
 from flowyml.utils.config import get_config
@@ -182,9 +182,10 @@ async def get_ai_context(request: AIContextRequest):
     might need to provide helpful, context-aware responses.
     """
     if request.page_type == "run":
-        # Fetch run data
-        store = get_store()
-        run = store.load_run(request.resource_id)
+        # A run may live in the global store or in a project's own store; the
+        # run-detail page searches both, so this must too or it answers 404 for
+        # runs the UI is displaying.
+        run, _store = find_run_across_stores(request.resource_id)
 
         if not run:
             raise HTTPException(status_code=404, detail="Run not found")
