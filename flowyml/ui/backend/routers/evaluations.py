@@ -13,6 +13,11 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/evaluations", tags=["evaluations"])
 
+#: Upper bound on any client-supplied page size. Without it a request such as
+#: `?limit=100000000` makes the server materialise an unbounded result set.
+MAX_PAGE_SIZE = 1000
+
+
 
 # ─── Request/Response Models ─────────────────────────────────────────
 
@@ -143,7 +148,7 @@ async def get_eval_result(eval_id: str):
 @router.get("/list")
 async def list_evaluations(
     experiment: str | None = Query(None, description="Filter by experiment"),
-    limit: int = Query(20, description="Max results"),
+    limit: int = Query(20, ge=1, le=MAX_PAGE_SIZE, description="Max results"),
 ):
     """List recent evaluation runs."""
     try:

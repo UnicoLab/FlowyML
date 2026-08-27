@@ -6,7 +6,7 @@ rich context for the in-browser AI assistant.
 """
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from ..dependencies import get_store
 import json
 from flowyml.utils.config import get_config
@@ -26,7 +26,8 @@ class AIContextRequest(BaseModel):
     include_logs: bool = True
     include_code: bool = True
     include_metrics: bool = True
-    max_log_lines: int = 100
+    # Bounded: this drives how much log text is read into memory and returned.
+    max_log_lines: int = Field(default=100, ge=1, le=5000)
 
 
 class AIContextResponse(BaseModel):

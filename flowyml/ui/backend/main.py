@@ -5,7 +5,12 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.exceptions import RequestValidationError
 import os
 import traceback
+import uuid
 from contextlib import asynccontextmanager
+
+from loguru import logger
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from fastapi.exception_handlers import http_exception_handler
 
 from flowyml import __version__
 from flowyml.monitoring.alerts import alert_manager, AlertLevel
@@ -166,15 +171,20 @@ class AuthMiddleware(BaseHTTPMiddleware):
             # Fail closed. Previously this branch let the request through,
             # which left the whole control plane - including remote pipeline
             # execution - open to anyone who could reach the port.
+            #
+            # The specifics go to the log, not to the caller: telling an
+            # anonymous client which environment variable is missing confirms
+            # for an attacker that the instance is unauthenticated.
+            logger.error(
+                "Refusing request: FLOWYML_ENV=production but FLOWYML_API_TOKEN is "
+                "not set, so no request can be authenticated. Set FLOWYML_API_TOKEN, "
+                "or set FLOWYML_ALLOW_INSECURE=1 if a proxy enforces authentication.",
+            )
             return JSONResponse(
                 status_code=503,
                 content={
                     "error": "Service Unavailable",
-                    "message": (
-                        "Server is misconfigured: FLOWYML_ENV=production but "
-                        "FLOWYML_API_TOKEN is not set, so no request can be "
-                        "authenticated."
-                    ),
+                    "message": "Server is misconfigured and cannot serve requests.",
                 },
             )
 
@@ -266,16 +276,18 @@ if os.path.exists(frontend_dist):
     # Actually, let's try a different approach - use a custom middleware or exceptions
 
     # The trick is to let FastAPI handle routes first, then catch 404s
-    from starlette.exceptions import HTTPException as StarletteHTTPException
-    from fastapi.exception_handlers import http_exception_handler
+    @app.get("/{spa_path:path}", include_in_schema=False)
+    async def serve_spa(spa_path: str):
+        """Serve the SPA shell for client-side routes.
 
-    @app.exception_handler(StarletteHTTPException)
-    async def custom_http_exception_handler(request, exc):
-        # If it's a 404 and not an API route, serve the SPA
-        if exc.status_code == 404 and not request.url.path.startswith("/api"):
-            return FileResponse(os.path.join(frontend_dist, "index.html"))
-        # Otherwise, use the default handler
-        return await http_exception_handler(request, exc)
+        Registered last, so every API route and static mount takes precedence.
+        Unmatched /api paths must still 404 as JSON rather than silently
+        returning HTML, which would make a typo in a fetch URL look like a
+        successful response the client then fails to parse.
+        """
+        if spa_path.startswith(("api/", "ws/")):
+            raise StarletteHTTPException(status_code=404, detail="Not Found")
+        return FileResponse(os.path.join(frontend_dist, "index.html"))
 
 else:
 
@@ -287,27 +299,71 @@ else:
         }
 
 
+def _error_reference() -> str:
+    """A short id tying a client's error response to a server log entry."""
+    return uuid.uuid4().hex[:12]
+
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler_with_redaction(request, exc):
+    """Keep 4xx details, redact 5xx details in production.
+
+    Handlers across the API raise ``HTTPException(500, detail=str(e))``. In
+    production that text reaches the client verbatim, and for SQLAlchemy errors
+    it carries the failing SQL statement and connection details, while file
+    errors carry absolute server paths. The real message is always logged; only
+    what crosses the wire is reduced.
+    """
+    if exc.status_code >= 500:
+        reference = _error_reference()
+        logger.error(
+            f"[{reference}] {request.method} {request.url.path} -> {exc.status_code}: "
+            f"{exc.detail}",
+        )
+        if is_production():
+            return JSONResponse(
+                status_code=exc.status_code,
+                content={
+                    "error": "Internal Server Error",
+                    "message": "The server failed to handle this request.",
+                    "reference": reference,
+                },
+                headers=getattr(exc, "headers", None) or {},
+            )
+
+    return await http_exception_handler(request, exc)
+
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
     error_msg = str(exc)
     stack_trace = traceback.format_exc()
+    reference = _error_reference()
 
-    # Log and alert
+    # Always record the full failure server-side, whatever we return.
+    logger.error(
+        f"[{reference}] Unhandled exception in {request.method} {request.url.path}: "
+        f"{error_msg}\n{stack_trace}",
+    )
+
     alert_manager.send_alert(
         title="Backend API Error",
         message=f"Unhandled exception in {request.method} {request.url.path}: {error_msg}",
         level=AlertLevel.ERROR,
-        metadata={"traceback": stack_trace, "path": request.url.path},
+        metadata={"traceback": stack_trace, "path": request.url.path, "reference": reference},
     )
 
-    return JSONResponse(
-        status_code=500,
-        content={
-            "error": "Internal Server Error",
-            "message": "Something went wrong on our end. We've been notified.",
-            "detail": error_msg,  # In prod maybe hide this, but for now it's useful
-        },
-    )
+    content = {
+        "error": "Internal Server Error",
+        "message": "Something went wrong on our end. We've been notified.",
+        "reference": reference,
+    }
+    # Exception text can carry SQL, credentials and server paths, so it is only
+    # echoed outside production where the operator is the developer.
+    if not is_production():
+        content["detail"] = error_msg
+
+    return JSONResponse(status_code=500, content=content)
 
 
 @app.exception_handler(RequestValidationError)

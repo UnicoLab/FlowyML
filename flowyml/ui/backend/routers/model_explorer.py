@@ -1,12 +1,16 @@
 """Model Explorer API for interactive model testing."""
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from typing import Any
 from datetime import datetime
 from uuid import uuid4
 
 router = APIRouter(prefix="/explorer", tags=["model-explorer"])
+
+#: Upper bound on how many log lines a single request may pull back.
+MAX_LOG_LINES = 10000
+
 
 
 # ==================== Schemas ====================
@@ -552,7 +556,10 @@ async def get_model_info(deployment_id: str) -> dict:
 
 
 @router.get("/logs/{deployment_id}")
-async def get_deployment_logs(deployment_id: str, lines: int = 100) -> dict:
+async def get_deployment_logs(
+    deployment_id: str,
+    lines: int = Query(100, ge=1, le=MAX_LOG_LINES),
+) -> dict:
     """Get logs from a deployed model server.
 
     Returns recent log entries for debugging and monitoring.
