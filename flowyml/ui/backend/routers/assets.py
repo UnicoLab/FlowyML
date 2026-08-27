@@ -14,6 +14,8 @@ import shutil
 import asyncio
 import contextlib
 
+from loguru import logger
+
 router = APIRouter()
 
 #: Upper bound on any client-supplied page size. Without it a request such as
@@ -131,7 +133,13 @@ async def list_assets(
 
         return {"assets": assets}
     except Exception as e:
-        return {"assets": [], "error": str(e)}
+        # Answering 200 with an empty list made a database outage look exactly
+        # like "you have no assets": the UI rendered its empty state, nothing
+        # alerted, and the failure was invisible until someone asked why their
+        # data had vanished. The detail is redacted in production by the
+        # application-wide handler.
+        logger.exception("Failed to list assets")
+        raise HTTPException(status_code=500, detail=f"Failed to list assets: {e}") from e
 
 
 class AssetCreate(BaseModel):

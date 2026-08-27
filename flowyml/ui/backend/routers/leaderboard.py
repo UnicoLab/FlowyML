@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
+from flowyml.ui.backend.dependencies import get_store
 from flowyml.tracking.leaderboard import ModelLeaderboard, compare_runs
-from flowyml.storage.metadata import SQLiteMetadataStore
 
 router = APIRouter()
 
@@ -13,7 +13,10 @@ async def get_leaderboard(
 ):
     """Get leaderboard for a metric."""
     try:
-        store = SQLiteMetadataStore()
+        # get_store() honours FLOWYML_DATABASE_URL; SQLiteMetadataStore() always
+        # opened the default local SQLite file, so in the Postgres deployment
+        # the leaderboard read an empty, container-local database.
+        store = get_store()
         leaderboard = ModelLeaderboard(metric, higher_is_better, store)
 
         top_models = leaderboard.get_top(n=n)
@@ -49,10 +52,8 @@ async def generate_sample_data():
     """Generate sample data for the leaderboard."""
     import random
     from datetime import datetime, timedelta
-    from flowyml.storage.metadata import SQLiteMetadataStore
-
     try:
-        store = SQLiteMetadataStore()
+        store = get_store()
 
         models = ["ResNet50", "BERT-Base", "YOLOv8", "EfficientNet", "GPT-2"]
 

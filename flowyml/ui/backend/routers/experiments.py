@@ -1,15 +1,23 @@
 from fastapi import APIRouter, HTTPException
-from flowyml.storage.metadata import SQLiteMetadataStore
 from flowyml.core.project import ProjectManager
 from flowyml.ui.backend.dependencies import get_store
 from pydantic import BaseModel
+
+from loguru import logger
 
 router = APIRouter()
 
 
 def _iter_metadata_stores():
-    """Yield tuples of (project_name, store) including global and project stores."""
-    stores = [(None, SQLiteMetadataStore())]
+    """Yield tuples of (project_name, store) including global and project stores.
+
+    The global store comes from ``get_store()``, which honours
+    ``FLOWYML_DATABASE_URL``. Constructing ``SQLiteMetadataStore()`` directly
+    always opened the default local SQLite file, so in the Postgres deployment
+    this endpoint read a different (and empty, and container-local) database
+    than the one pipelines write their experiments to.
+    """
+    stores = [(None, get_store())]
     try:
         manager = ProjectManager()
         for project_meta in manager.list_projects():
@@ -50,7 +58,9 @@ async def list_experiments(project: str | None = None):
 
         return {"experiments": combined_experiments}
     except Exception as e:
-        return {"experiments": [], "error": str(e)}
+        # See assets.list_assets: a 200 with an empty list hides an outage.
+        logger.exception("Failed to list experiments")
+        raise HTTPException(status_code=500, detail=f"Failed to list experiments: {e}") from e
 
 
 @router.get("/{experiment_id}")

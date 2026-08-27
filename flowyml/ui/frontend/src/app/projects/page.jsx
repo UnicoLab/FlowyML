@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useToast } from '../../contexts/ToastContext';
 import { fetchApi } from '../../utils/api';
 import { Link } from 'react-router-dom';
 import { Folder, Plus, Trash2, Activity, Database, Clock } from 'lucide-react';
@@ -8,6 +9,7 @@ import { Button } from '../../components/ui/Button';
 import { useProject } from '../../contexts/ProjectContext';
 
 export function Projects() {
+    const toast = useToast();
     const [projects, setProjects] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -61,6 +63,7 @@ export function Projects() {
             setProjects(projectsWithStats);
         } catch (error) {
             console.error('Failed to fetch projects:', error);
+            toast.error(`Could not load projects: ${error.message}`);
         } finally {
             setLoading(false);
         }
@@ -86,6 +89,7 @@ export function Projects() {
             }
         } catch (error) {
             console.error('Failed to create project:', error);
+            toast.error(`Could not create project: ${error.message}`);
         }
     };
 

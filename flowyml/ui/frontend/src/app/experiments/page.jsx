@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
+import { useToast } from '../../contexts/ToastContext';
 import { fetchApi } from '../../utils/api';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { FlaskConical, ArrowRight, Sparkles, Calendar, Activity, FolderPlus, Layout } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
-import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DataView } from '../../components/ui/DataView';
 import { useProject } from '../../contexts/ProjectContext';
@@ -14,6 +14,7 @@ import { NavigationTree } from '../../components/NavigationTree';
 import { ExperimentDetailsPanel } from '../../components/ExperimentDetailsPanel';
 
 export function Experiments() {
+    const toast = useToast();
     const [experiments, setExperiments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedExperiment, setSelectedExperiment] = useState(null);
@@ -36,6 +37,7 @@ export function Experiments() {
                 setExperiments(data.experiments || []);
             } catch (err) {
                 console.error(err);
+                toast.error(`Could not load experiments: ${err.message}`);
             } finally {
                 setLoading(false);
             }
