@@ -18,6 +18,7 @@ def _clear_global_registries():
     - Stale active-stack state leaking executor=None into unrelated tests
     - Filesystem-based stack/flowyml.yaml config leaking between xdist workers
     - Cached step outputs from previous tests contaminating current tests
+    - A memoised metadata-store engine bound to a previous test's temp database
     """
     _reset_all()
     yield
@@ -55,7 +56,19 @@ def _reset_all():
     except Exception:
         pass
 
-    # 5. Clear the cache store to prevent stale cached step outputs
+    # 5. Reset the UI backend's cached metadata store.
+    # dependencies.get_store() memoises a SQLAlchemy engine for the process,
+    # which is right in production (one connection pool) but means a store
+    # built against one test's temporary config would serve every later test,
+    # letting rows written by one test appear in another's queries.
+    try:
+        import flowyml.ui.backend.dependencies as ui_deps
+
+        ui_deps._store = None
+    except Exception:
+        pass
+
+    # 6. Clear the cache store to prevent stale cached step outputs
     # from leaking between tests (e.g., evaluate_model returning 0.95
     # in one test being served from cache in another test expecting 0.85)
     try:
