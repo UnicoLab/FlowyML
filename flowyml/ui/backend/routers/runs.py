@@ -4,6 +4,7 @@ from flowyml.storage.metadata import SQLiteMetadataStore
 from flowyml.core.project import ProjectManager
 import json
 from flowyml.ui.backend.dependencies import get_store
+from flowyml.ui.backend.artifact_paths import resolve_run_log_path
 
 from loguru import logger
 
@@ -849,12 +850,12 @@ async def post_step_logs(run_id: str, step_name: str, log_chunk: LogChunk):
 
     from flowyml.utils.config import get_config
 
-    # Store logs in the runs directory
+    # Store logs in the runs directory. The path is confined to it: run_id and
+    # step_name are URL path parameters, and a bare ".." segment let a client
+    # append attacker-supplied text to a file outside the runs directory.
     runs_dir = get_config().runs_dir
-    log_dir = runs_dir / run_id / "logs"
-    log_dir.mkdir(parents=True, exist_ok=True)
-
-    log_file = log_dir / f"{step_name}.log"
+    log_file = resolve_run_log_path(runs_dir, run_id, step_name)
+    log_file.parent.mkdir(parents=True, exist_ok=True)
 
     # Append log content
     timestamp = log_chunk.timestamp or ""
@@ -889,7 +890,7 @@ async def get_step_logs(run_id: str, step_name: str, offset: int = Query(0, ge=0
     from flowyml.utils.config import get_config
 
     runs_dir = get_config().runs_dir
-    log_file = runs_dir / run_id / "logs" / f"{step_name}.log"
+    log_file = resolve_run_log_path(runs_dir, run_id, step_name)
 
     # Try local log file first
     if log_file.exists():
@@ -1071,7 +1072,7 @@ async def get_run_logs(run_id: str):
     from flowyml.utils.config import get_config
 
     runs_dir = get_config().runs_dir
-    log_dir = runs_dir / run_id / "logs"
+    log_dir = resolve_run_log_path(runs_dir, run_id)
 
     if not log_dir.exists():
         return {"logs": {}}

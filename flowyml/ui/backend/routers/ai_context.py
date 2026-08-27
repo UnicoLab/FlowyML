@@ -8,6 +8,7 @@ rich context for the in-browser AI assistant.
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from ..dependencies import get_store
+from ..artifact_paths import resolve_run_log_path
 import json
 from flowyml.utils.config import get_config
 
@@ -107,7 +108,8 @@ def _get_run_logs(run_id: str, max_lines: int = 100) -> dict:
     """Fetch recent logs for a run from filesystem."""
     logs_by_step = {}
     runs_dir = get_config().runs_dir
-    log_dir = runs_dir / run_id / "logs"
+    # Confined: run_id reaches here from a URL path parameter.
+    log_dir = resolve_run_log_path(runs_dir, run_id)
 
     if not log_dir.exists():
         return {}

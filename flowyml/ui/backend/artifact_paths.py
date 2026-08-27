@@ -84,3 +84,31 @@ def resolve_within_root(candidate: str | os.PathLike[str], root: str | os.PathLi
 def strip_reserved_metadata(metadata: dict) -> dict:
     """Return *metadata* without keys the server owns."""
     return {key: value for key, value in metadata.items() if key not in RESERVED_METADATA_KEYS}
+
+
+def resolve_run_log_path(
+    runs_root: str | os.PathLike[str],
+    run_id: str,
+    step_name: str | None = None,
+) -> Path:
+    """Build the log path for a run (or one of its steps), confined to *runs_root*.
+
+    ``run_id`` and ``step_name`` arrive as URL path parameters. Starlette
+    matches a path parameter against a single segment, which blocks an encoded
+    ``%2F``, but a bare ``..`` is a perfectly valid segment: a client sending
+    ``POST /api/runs/../steps/x/logs`` (curl's ``--path-as-is`` will) reached a
+    handler that appended attacker-supplied text to a file outside the runs
+    directory.
+
+    Each component is reduced to one safe segment and the result is checked
+    against the root, so neither traversal nor an absolute value can escape.
+    """
+    root = Path(runs_root)
+    safe_run = sanitize_path_segment(run_id, fallback="unknown-run")
+    log_dir = resolve_within_root(Path(safe_run) / "logs", root)
+
+    if step_name is None:
+        return log_dir
+
+    safe_step = sanitize_path_segment(step_name, fallback="unknown-step")
+    return resolve_within_root(log_dir / f"{safe_step}.log", root)
