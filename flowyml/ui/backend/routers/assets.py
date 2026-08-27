@@ -22,7 +22,6 @@ router = APIRouter()
 MAX_PAGE_SIZE = 1000
 
 
-
 def _artifacts_root() -> Path:
     """The single directory every artifact file must live under."""
     from flowyml.utils.config import get_config

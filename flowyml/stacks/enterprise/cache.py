@@ -98,7 +98,11 @@ class StackCache:
             path.unlink(missing_ok=True)
             return None
 
-    def set(self, key: str, stack: StackDefinition) -> None:
+    # A003 flags `set` as shadowing the builtin. It does not: the name is only
+    # ever reached as `cache.set(...)`, and `get`/`set` is the conventional
+    # cache interface this class implements. Later ruff releases removed the
+    # rule for exactly this reason.
+    def set(self, key: str, stack: StackDefinition) -> None:  # noqa: A003
         """Store a stack definition in the cache.
 
         Args:

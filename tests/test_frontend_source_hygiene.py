@@ -85,8 +85,7 @@ def test_websocket_urls_are_built_through_the_shared_helper():
             offenders.append(_relative(path))
 
     assert not offenders, (
-        "These files build a WebSocket URL from window.location.host instead of "
-        f"getWebSocketUrl(): {offenders}"
+        "These files build a WebSocket URL from window.location.host instead of " f"getWebSocketUrl(): {offenders}"
     )
 
 
@@ -106,9 +105,8 @@ def test_api_calls_go_through_the_shared_fetch_wrapper():
             if re.search(r"(?<!\w)fetch\(\s*[`'\"]/api/", line):
                 offenders.append(f"{_relative(path)}:{number}: {line.strip()[:90]}")
 
-    assert not offenders, (
-        "Use fetchApi() so the configured remote API base URL is honoured:\n"
-        + "\n".join(f"  {o}" for o in offenders)
+    assert not offenders, "Use fetchApi() so the configured remote API base URL is honoured:\n" + "\n".join(
+        f"  {o}" for o in offenders
     )
 
 

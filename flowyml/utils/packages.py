@@ -85,8 +85,7 @@ def validate_requirement(requirement: str) -> str:
 
     if candidate.startswith("-"):
         raise InvalidPackageNameError(
-            f"Refusing '{requirement}': a leading '-' would be interpreted by pip as an option, "
-            "not a package name.",
+            f"Refusing '{requirement}': a leading '-' would be interpreted by pip as an option, " "not a package name.",
         )
 
     if not _REQUIREMENT_RE.match(candidate):
@@ -114,9 +113,7 @@ def validate_uninstall_target(name: str) -> str:
     # the operator about what was actually removed.
     bare = re.split(r"[\[<>=!~]", candidate, maxsplit=1)[0].strip()
 
-    if normalize_distribution_name(bare) in {
-        normalize_distribution_name(p) for p in PROTECTED_DISTRIBUTIONS
-    }:
+    if normalize_distribution_name(bare) in {normalize_distribution_name(p) for p in PROTECTED_DISTRIBUTIONS}:
         raise InvalidPackageNameError(
             f"Refusing to uninstall '{bare}': the running server depends on it.",
         )

@@ -15,7 +15,10 @@ fail if a literal creeps back in.
 from __future__ import annotations
 
 import re
-import tomllib
+
+# `tomllib` is stdlib only from Python 3.11; this project supports 3.10,
+# and `toml` is already a core dependency.
+import toml
 from pathlib import Path
 
 import pytest
@@ -27,8 +30,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 
 @pytest.fixture(scope="module")
 def declared_version() -> str:
-    with (REPO_ROOT / "pyproject.toml").open("rb") as fh:
-        return tomllib.load(fh)["tool"]["poetry"]["version"]
+    return toml.loads((REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8"))["tool"]["poetry"]["version"]
 
 
 def test_package_version_matches_pyproject(declared_version):
@@ -44,8 +46,7 @@ def test_cli_reports_the_package_version():
 
     assert result.exit_code == 0
     assert flowyml.__version__ in result.output, (
-        f"`flowyml --version` printed {result.output.strip()!r}, "
-        f"expected it to contain {flowyml.__version__!r}"
+        f"`flowyml --version` printed {result.output.strip()!r}, " f"expected it to contain {flowyml.__version__!r}"
     )
 
 
@@ -55,9 +56,9 @@ def test_cli_does_not_hardcode_a_version():
 
     match = re.search(r"@click\.version_option\(\s*version\s*=\s*([^,)]+)", source)
     assert match, "version_option not found"
-    assert "__version__" in match.group(1), (
-        f"CLI version is hardcoded as {match.group(1).strip()}; derive it from __version__"
-    )
+    assert "__version__" in match.group(
+        1,
+    ), f"CLI version is hardcoded as {match.group(1).strip()}; derive it from __version__"
 
 
 class TestApiSurfaces:
@@ -95,6 +96,4 @@ def test_the_frontend_sidebar_shows_the_current_version(declared_version):
     versions = re.findall(r"FlowyML v(\d+\.\d+\.\d+)", text)
 
     assert versions, "no 'FlowyML v<version>' string found in the sidebar"
-    assert all(v == declared_version for v in versions), (
-        f"sidebar shows {versions}, expected {declared_version}"
-    )
+    assert all(v == declared_version for v in versions), f"sidebar shows {versions}, expected {declared_version}"

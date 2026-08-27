@@ -18,7 +18,6 @@ router = APIRouter()
 MAX_PAGE_SIZE = 1000
 
 
-
 def _iter_metadata_stores():
     """Yield tuples of (project_name, store) including global and project stores."""
     return iter_metadata_stores()

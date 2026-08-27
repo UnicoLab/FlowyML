@@ -101,10 +101,7 @@ class TestSessionHistoryIsBounded:
         for index in range(model_explorer.MAX_HISTORY_PER_SESSION + 25):
             model_explorer._record_session_entry(session_id, "sweeps", {"n": index})
 
-        assert (
-            len(model_explorer._sessions[session_id]["sweeps"])
-            == model_explorer.MAX_HISTORY_PER_SESSION
-        )
+        assert len(model_explorer._sessions[session_id]["sweeps"]) == model_explorer.MAX_HISTORY_PER_SESSION
 
     def test_recording_against_an_unknown_session_is_a_no_op(self, client):
         """An evicted session must not resurrect itself on the next prediction."""

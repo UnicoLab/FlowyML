@@ -130,8 +130,7 @@ class TokenManager:
         unknown = sorted(set(requested) - VALID_PERMISSIONS)
         if unknown:
             raise ValueError(
-                f"Unknown permission(s): {unknown}. Valid permissions are "
-                f"{sorted(VALID_PERMISSIONS)}.",
+                f"Unknown permission(s): {unknown}. Valid permissions are " f"{sorted(VALID_PERMISSIONS)}.",
             )
 
         token = f"uf_{secrets.token_urlsafe(32)}"

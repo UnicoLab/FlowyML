@@ -8,7 +8,6 @@ router = APIRouter()
 MAX_LEADERBOARD_ENTRIES = 500
 
 
-
 @router.get("/{metric}")
 async def get_leaderboard(
     metric: str,
@@ -56,6 +55,7 @@ async def generate_sample_data():
     """Generate sample data for the leaderboard."""
     import random
     from datetime import datetime, timedelta
+
     try:
         store = get_store()
 

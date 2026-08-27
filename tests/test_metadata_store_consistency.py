@@ -17,6 +17,7 @@ import pytest
 
 pytest.importorskip("fastapi", reason="fastapi not installed")
 
+
 @pytest.fixture
 def configured_store(monkeypatch, tmp_path):
     """Point FLOWYML_DATABASE_URL at a non-default database and reset the cache."""
@@ -60,9 +61,9 @@ class TestRoutersUseTheConfiguredStore:
         with TestClient(app) as client:
             listed = client.get("/api/experiments/").json()["experiments"]
 
-        assert any(entry.get("name") == "training-sweep" for entry in listed), (
-            "an experiment written to the configured store was invisible to the API"
-        )
+        assert any(
+            entry.get("name") == "training-sweep" for entry in listed
+        ), "an experiment written to the configured store was invisible to the API"
 
 
 class TestNoRouterBypassesTheStoreFactory:

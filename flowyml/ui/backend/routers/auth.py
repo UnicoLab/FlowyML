@@ -63,8 +63,7 @@ async def login(response: Response, login_data: LoginRequest):
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail=(
-                    "Server is misconfigured: FLOWYML_ADMIN_PASSWORD is not set, "
-                    "so no login can be authenticated."
+                    "Server is misconfigured: FLOWYML_ADMIN_PASSWORD is not set, " "so no login can be authenticated."
                 ),
             )
         expected_password = INSECURE_DEFAULT_PASSWORD
@@ -90,10 +89,7 @@ async def login(response: Response, login_data: LoginRequest):
             # replay as a valid production session.
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail=(
-                    "Server is misconfigured: FLOWYML_API_TOKEN is not set, so "
-                    "no session token can be issued."
-                ),
+                detail=("Server is misconfigured: FLOWYML_API_TOKEN is not set, so " "no session token can be issued."),
             )
         # Development only: the auth middleware is inactive here anyway, so
         # this value is a placeholder rather than a credential.

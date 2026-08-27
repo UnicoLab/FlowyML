@@ -9,7 +9,6 @@ router = APIRouter()
 MAX_PAGE_SIZE = 1000
 
 
-
 @router.get("/")
 async def list_traces(
     limit: int = Query(50, ge=1, le=MAX_PAGE_SIZE),

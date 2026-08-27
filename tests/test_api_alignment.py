@@ -92,7 +92,7 @@ def _iter_frontend_calls():
         for match in CALL_START_RE.finditer(source):
             quote = match.group(1)
             url, end = _read_string_literal(source, quote, match.end())
-            method_match = METHOD_RE.match(source[end: end + 500])
+            method_match = METHOD_RE.match(source[end : end + 500])
             method = method_match.group(1).upper() if method_match else "GET"
             yield url, method, path.relative_to(REPO_ROOT)
 
@@ -222,9 +222,7 @@ def test_endpoints_the_ui_depends_on_exist(backend_routes):
         "/api/config": "GET",
     }
     missing = {
-        path: verb
-        for path, verb in required.items()
-        if path not in backend_routes or verb not in backend_routes[path]
+        path: verb for path, verb in required.items() if path not in backend_routes or verb not in backend_routes[path]
     }
     assert not missing, f"Required endpoints missing or wrong method: {missing}"
 
@@ -264,7 +262,6 @@ def test_no_frontend_call_depends_on_a_trailing_slash_redirect(backend_routes):
         if matches_exactly(alternative):
             redirected.append(f"{method} {url}  ({source}) -> declared as {alternative}")
 
-    assert not redirected, (
-        "These frontend calls only work via a trailing-slash redirect:\n"
-        + "\n".join(f"  {entry}" for entry in redirected)
+    assert not redirected, "These frontend calls only work via a trailing-slash redirect:\n" + "\n".join(
+        f"  {entry}" for entry in redirected
     )
